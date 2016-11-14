@@ -44,7 +44,7 @@
 #endif
 
 #ifdef _MSC_VER
-#include "../win32/wingetopt.h"
+#include "wingetopt.h"
 #include <atltime.h>
 #elif _AIX
 #include <unistd.h>

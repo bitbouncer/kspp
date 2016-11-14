@@ -1,41 +1,32 @@
 cmake_minimum_required(VERSION 2.8.11)
 
-SET(BOOST_PATH ${CMAKE_SOURCE_DIR}/../boost)
-SET(Boost_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/../boost)
-SET(Boost_LIBRARY_DIRS ${CMAKE_SOURCE_DIR}/../boost/stage/lib)
-
 SET(CSI_INCLUDE_PATH 
 ${CMAKE_SOURCE_DIR}/../include
 ${CMAKE_SOURCE_DIR}/../rocksdb
-${CMAKE_SOURCE_DIR}/../protobuf
-${CMAKE_SOURCE_DIR}/../boost
 )
 
 if(WIN32)
-SET(OPENSSL_PATH C:/OpenSSL-Win64)
-
 SET(CSI_INCLUDE_PATH ${CSI_INCLUDE_PATH}
   ${CMAKE_SOURCE_DIR}/../zlib
   ${CMAKE_SOURCE_DIR}/../zlib/build
-  ${OPENSSL_PATH}/include
+  ${CMAKE_SOURCE_DIR}/../openssl/include
 )
 
 SET(CSI_LIBRARY_PATH        
-	${CMAKE_SOURCE_DIR}/../lib/$(Platform)
-	${OPENSSL_PATH}/lib/VC/static
+#	${CMAKE_SOURCE_DIR}/../lib/$(Platform)
+	${CMAKE_SOURCE_DIR}/../openssl
 	${CMAKE_SOURCE_DIR}/../zlib/build
-    ${CMAKE_SOURCE_DIR}/../protobuf/cmake/build/solution
-    ${CMAKE_SOURCE_DIR}/../rocksdb/build
-	${CMAKE_SOURCE_DIR}/../boost/stage/lib/$(Platform)/lib
-    ${CMAKE_SOURCE_DIR}/lib/$(Platform)
+#  ${CMAKE_SOURCE_DIR}/../protobuf/cmake/build/solution
+  ${CMAKE_SOURCE_DIR}/../rocksdb/build
+#	${CMAKE_SOURCE_DIR}/../boost/stage/lib/$(Platform)/lib
+  ${CMAKE_SOURCE_DIR}/lib/$(Platform)
 )
 SET(LIBRARY_OUTPUT_PATH     ${CMAKE_SOURCE_DIR}/lib/$(Platform))
 SET(EXECUTABLE_OUTPUT_PATH  ${CMAKE_SOURCE_DIR}/bin/$(Platform))
 else()
-SET(CSI_LIBRARY_PATH        ${CMAKE_SOURCE_DIR}/../boost/stage/lib
+#SET(CSI_LIBRARY_PATH        ${CMAKE_SOURCE_DIR}/../boost/stage/lib)
 set(LIBRARY_OUTPUT_PATH     ${CMAKE_SOURCE_DIR}/lib)
 SET(EXECUTABLE_OUTPUT_PATH  ${CMAKE_SOURCE_DIR}/bin)
-)
 endif() 
 
 #COMMON DEFINITIONS
@@ -61,7 +52,7 @@ add_definitions(/wd4200) #nonstandard extension used : zero-sized array in struc
 add_definitions(-DCURL_STATICLIB)
 add_definitions(-DCARES_STATICLIB)
 add_definitions(-DNGHTTP2_STATICLIB)
-add_definitions(-DLIBKAFKARD_STATICLIB)
+add_definitions(-DLIBRDKAFKA_STATICLIB)
 endif()
 
 if(__LINUX__)
@@ -84,7 +75,8 @@ endif()
 
 if(WIN32)
 SET(CSI_BOOST_LIBS)
-SET(CSI_LIBS librdkafkacpp librdkafka ${CSI_BOOST_LIBS} debug libprotobufd optimized libprotobuf rocksdb libssl64MT libcrypto64MT debug zlibstaticd optimized zlibstatic crypt32 Ws2_32 legacy_stdio_definitions)
+#SET(CSI_LIBS librdkafkacpp librdkafka ${CSI_BOOST_LIBS} debug libprotobufd optimized libprotobuf rocksdb libssl64MT libcrypto64MT debug zlibstaticd optimized zlibstatic crypt32 Ws2_32 legacy_stdio_definitions)
+SET(CSI_LIBS librdkafkacpp librdkafka ${CSI_BOOST_LIBS} rocksdb libssl libcrypto debug zlibstaticd optimized zlibstatic crypt32 Ws2_32 legacy_stdio_definitions)
 endif()
 
 if(__LINUX__)
@@ -112,7 +104,7 @@ file(GLOB librdkafka_cpp_files
 
 list(REMOVE_ITEM librdkafka_files ${CMAKE_CURRENT_SOURCE_DIR}/../librdkafka/src/rdkafka_sasl.c)
 
-add_definitions(-DLIBKAFKARD_STATICLIB)
+add_definitions(-DLIBRDKAFKA_STATICLIB)
 add_library(librdkafka STATIC ${librdkafka_files})
 add_library(librdkafkacpp STATIC ${librdkafka_cpp_files})
 
