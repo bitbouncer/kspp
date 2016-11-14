@@ -1,2 +1,4 @@
 #add_subdirectory(protobuf)
 add_subdirectory(librdkafka)
+add_subdirectory(rocksdb)
+add_subdirectory(ex1)

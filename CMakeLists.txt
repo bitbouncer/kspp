@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.11)
 
 SET(CSI_INCLUDE_PATH 
 ${CMAKE_SOURCE_DIR}/../include
-${CMAKE_SOURCE_DIR}/../rocksdb
+${CMAKE_SOURCE_DIR}/../rocksdb/include
 )
 
 if(WIN32)
@@ -74,9 +74,12 @@ include_directories(/opt/X11/include)
 endif()
 
 if(WIN32)
-SET(CSI_BOOST_LIBS)
+#SET(CSI_BOOST_LIBS)
 #SET(CSI_LIBS librdkafkacpp librdkafka ${CSI_BOOST_LIBS} debug libprotobufd optimized libprotobuf rocksdb libssl64MT libcrypto64MT debug zlibstaticd optimized zlibstatic crypt32 Ws2_32 legacy_stdio_definitions)
-SET(CSI_LIBS librdkafkacpp librdkafka ${CSI_BOOST_LIBS} rocksdb libssl libcrypto debug zlibstaticd optimized zlibstatic crypt32 Ws2_32 legacy_stdio_definitions)
+SET(CSI_ROCKSDB_LIBS rocksdb rocksdblib Rpcrt4)
+SET(ZLIB_LIBS debug zlibstaticd optimized zlibstatic)
+SET(LIBRDKAFKA_LIBS librdkafkacpp librdkafka)
+SET(CSI_LIBS ${LIBRDKAFKA_LIBS} ${CSI_BOOST_LIBS} ${CSI_ROCKSDB_LIBS} libssl libcrypto ${ZLIB_LIBS} crypt32 Ws2_32 legacy_stdio_definitions)
 endif()
 
 if(__LINUX__)
