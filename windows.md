@@ -30,17 +30,11 @@ cd openssl
 git checkout OpenSSL_1_1_0c
 git submodule update
 
-#start /WAIT perl Configure VC-WIN64A --prefix=/OpenSSL-Win64
 perl Configure VC-WIN64A
 nmake
-#nmake test
+#must be run as administrator
 nmake install
 cd ..
-
-#echo COPYING headers
-#xcopy /e /s openssl\inc32\* include
-
-
 
 cd rocksdb 
 mkdir build & cd build 
