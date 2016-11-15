@@ -79,7 +79,7 @@ if(WIN32)
 SET(CSI_ROCKSDB_LIBS rocksdb rocksdblib Rpcrt4)
 SET(ZLIB_LIBS debug zlibstaticd optimized zlibstatic)
 SET(LIBRDKAFKA_LIBS librdkafkacpp librdkafka)
-SET(CSI_LIBS ${LIBRDKAFKA_LIBS} ${CSI_BOOST_LIBS} ${CSI_ROCKSDB_LIBS} libssl libcrypto ${ZLIB_LIBS} crypt32 Ws2_32 legacy_stdio_definitions)
+SET(CSI_LIBS kspp ${LIBRDKAFKA_LIBS} ${CSI_BOOST_LIBS} ${CSI_ROCKSDB_LIBS} libssl libcrypto ${ZLIB_LIBS} crypt32 Ws2_32 legacy_stdio_definitions)
 endif()
 
 if(__LINUX__)
@@ -111,5 +111,6 @@ add_definitions(-DLIBRDKAFKA_STATICLIB)
 add_library(librdkafka STATIC ${librdkafka_files})
 add_library(librdkafkacpp STATIC ${librdkafka_cpp_files})
 
+add_subdirectory(kspp)
 add_subdirectory(examples)
 

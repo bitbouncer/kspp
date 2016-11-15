@@ -2,3 +2,4 @@
 add_subdirectory(librdkafka)
 add_subdirectory(rocksdb)
 add_subdirectory(ex1)
+add_subdirectory(ex2)
