@@ -5,10 +5,26 @@
 
 #pragma once
 
-
-
-
 namespace csi {
+
+struct uuid
+{
+  char data[16];
+};
+
+struct rocksdb_inner_key
+{
+  uuid id;
+  uint32_t ts;
+  int64_t index;
+};
+
+/*
+namespace WindowStoreUtils {
+void toBinaryKey(const uuid* id, uint32_t ts,  int64_t index, rocksdb_inner_key* ik);
+}
+*/
+
 class kafka_consumer
 {
   public:

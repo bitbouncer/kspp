@@ -226,16 +226,12 @@ virtual ~rocksdb_message() {};
   RdKafka::ErrorCode _ec;
 };
 
-
-
 std::unique_ptr<RdKafka::Message> rockdb_impl::get(const void* key, size_t key_size) {
-  //std::string value;
   std::unique_ptr<rocksdb_message> p(new rocksdb_message(key, key_size));
   rocksdb::Status s = _db->Get(rocksdb::ReadOptions(), rocksdb::Slice((char*) key, key_size), &p->_playload);
   if (s.ok()) {
     return std::unique_ptr<RdKafka::Message>(p.release());
   }
-  //if (s.ok()) s = db->Put(rocksdb::WriteOptions(), key2, value);
   return NULL;
 }
 };
