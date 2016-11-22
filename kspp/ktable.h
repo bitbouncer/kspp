@@ -1,4 +1,5 @@
-#include "kspp.h"
+#include "kafka_consumer.h"
+#include "kafka_local_store.h"
 #pragma once
 
 namespace csi {
@@ -15,7 +16,7 @@ class ktable
     return _local_storage.get(key, key_size);
   }
   private:
-  kafka_consumer _consumer;
-  rockdb_impl    _local_storage;
+  kafka_consumer    _consumer;
+  kafka_local_store _local_storage;
 };
 };

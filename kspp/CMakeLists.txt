@@ -6,8 +6,8 @@ SET(LIB_SRCS
   kstream.cpp
   ktable.cpp
   join_processor.h
-  rocksdb_store.h
-  rocksdb_store.cpp
+  kafka_local_store.h
+  kafka_local_store.cpp
   kafka_producer.h
   kafka_producer.cpp
   kafka_consumer.h
