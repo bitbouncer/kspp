@@ -9,11 +9,11 @@ ktable::ktable(std::string brokers, std::string topic, int32_t partition, std::s
 
 ktable::~ktable() {}
 
-void ktable::consume() {
+std::unique_ptr<RdKafka::Message> ktable::consume() {
   auto msg = _consumer.consume();
   if (msg) {
     _local_storage.put(msg.get());
   }
-  //return msg;
+  return msg;
 }
 } // namespace

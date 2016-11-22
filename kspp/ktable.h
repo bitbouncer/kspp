@@ -7,7 +7,7 @@ class ktable
   public:
   ktable(std::string brokers, std::string topic, int32_t partition, std::string storage_path);
   ~ktable();
-  void consume();
+  std::unique_ptr<RdKafka::Message> consume();
   inline bool eof() const {
     return _consumer.eof();
   }
