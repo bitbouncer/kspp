@@ -72,7 +72,7 @@ endif()
 if(WIN32)
 SET(CSI_ROCKSDB_LIBS rocksdb rocksdblib Rpcrt4)
 SET(ZLIB_LIBS debug zlibstaticd optimized zlibstatic)
-SET(LIBRDKAFKA_LIBS librdkafkacpp librdkafka)
+SET(LIBRDKAFKA_LIBS librdkafkacpp librdkafka lz4)
 SET(CSI_LIBS kspp ${LIBRDKAFKA_LIBS} ${CSI_BOOST_LIBS} ${CSI_ROCKSDB_LIBS} libssl libcrypto ${ZLIB_LIBS} crypt32 Ws2_32 legacy_stdio_definitions)
 endif()
 
@@ -93,6 +93,11 @@ link_directories(${CSI_LIBRARY_PATH})
 
 #dirty fix to complile non supported static lib on windows...
 if(WIN32)
+file(GLOB liblz4_files
+  ${CMAKE_CURRENT_SOURCE_DIR}/../lz4/lib/*.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/../lz4/lib/*.h
+  )
+
 file(GLOB librdkafka_files
   ${CMAKE_CURRENT_SOURCE_DIR}/../librdkafka/src/*.c
   ${CMAKE_CURRENT_SOURCE_DIR}/../librdkafka/src/*.h
@@ -107,6 +112,7 @@ list(REMOVE_ITEM librdkafka_files ${CMAKE_CURRENT_SOURCE_DIR}/../librdkafka/src/
 
 add_library(librdkafka STATIC ${librdkafka_files})
 add_library(librdkafkacpp STATIC ${librdkafka_cpp_files})
+add_library(lz4 STATIC ${liblz4_files})
 endif()
 
 add_subdirectory(kspp)

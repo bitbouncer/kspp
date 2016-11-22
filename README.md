@@ -53,6 +53,7 @@ unzip boost_1_62_0.zip
 
 git clone https://github.com/facebook/rocksdb.git
 git clone https://github.com/madler/zlib.git
+git clone https://github.com/lz4/lz4.git
 git clone https://github.com/openssl/openssl.git
 git clone https://github.com/edenhill/librdkafka.git
 git clone https://github.com/bitbouncer/kspp.git
