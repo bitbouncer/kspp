@@ -45,6 +45,30 @@ class kafka_consumer
   bool     _eof;
 };
 
+
+class kafka_producer
+{
+  public:
+  kafka_producer(std::string brokers, std::string topic, int32_t partition);
+  ~kafka_producer();
+  void producer();
+  /*
+  inline bool eof() const {
+    return _eof;
+  }
+  */
+  private:
+  const std::string  _topic;
+  const int32_t      _partition;
+  RdKafka::Topic*    _rd_topic;
+  RdKafka::Consumer* _consumer;
+
+  uint64_t _msg_cnt;
+  uint64_t _msg_bytes;
+  //bool     _eof;
+};
+
+
 class rockdb_impl
 {
   public:
