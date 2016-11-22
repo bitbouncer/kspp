@@ -31,6 +31,8 @@ cd ..
 
 git clone https://github.com/bitbouncer/kspp.git
 cd kspp
-bash -e build_linux.sh
+mkdir build && cd build
+cmake -D__LINUX__=1 ..
+make
 cd ..
 ```
