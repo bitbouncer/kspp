@@ -10,21 +10,19 @@ SET(CSI_INCLUDE_PATH ${CSI_INCLUDE_PATH}
   ${CMAKE_SOURCE_DIR}/../zlib
   ${CMAKE_SOURCE_DIR}/../zlib/build
   ${CMAKE_SOURCE_DIR}/../openssl/include
+  ${CMAKE_SOURCE_DIR}/../boost_1_62_0
 )
 
 SET(CSI_LIBRARY_PATH        
-#	${CMAKE_SOURCE_DIR}/../lib/$(Platform)
 	${CMAKE_SOURCE_DIR}/../openssl
 	${CMAKE_SOURCE_DIR}/../zlib/build
-#  ${CMAKE_SOURCE_DIR}/../protobuf/cmake/build/solution
   ${CMAKE_SOURCE_DIR}/../rocksdb/build
-#	${CMAKE_SOURCE_DIR}/../boost/stage/lib/$(Platform)/lib
+	${CMAKE_SOURCE_DIR}/../boost_1_62_0/stage/lib/$(Platform)/lib
   ${CMAKE_SOURCE_DIR}/lib/$(Platform)
 )
 SET(LIBRARY_OUTPUT_PATH     ${CMAKE_SOURCE_DIR}/lib/$(Platform))
 SET(EXECUTABLE_OUTPUT_PATH  ${CMAKE_SOURCE_DIR}/bin/$(Platform))
 else()
-#SET(CSI_LIBRARY_PATH        ${CMAKE_SOURCE_DIR}/../boost/stage/lib)
 set(LIBRARY_OUTPUT_PATH     ${CMAKE_SOURCE_DIR}/lib)
 SET(EXECUTABLE_OUTPUT_PATH  ${CMAKE_SOURCE_DIR}/bin)
 endif() 
@@ -32,7 +30,6 @@ endif()
 #COMMON DEFINITIONS
 add_definitions(-D_FILE_OFFSET_BITS=64 -D_REENTRANT -DEXTERNAL_LOCKS -DMULTITHREAD)
 add_definitions(-DBOOST_ASIO_HAS_STD_CHRONO)
-add_definitions(-DBOOST_ALL_STATIC_LINK)
 
 if(WIN32)
 add_definitions(-DMARCH_x86_64) 
@@ -49,24 +46,20 @@ add_definitions(-DSECURITY_WIN32)
 add_definitions(/wd4996) #'strdup': The POSIX name for this item is deprecated
 add_definitions(/wd4197) # 'cf_atomic32' : top-level volatile in cast is ignored
 add_definitions(/wd4200) #nonstandard extension used : zero-sized array in struct/union 
-add_definitions(-DCURL_STATICLIB)
-add_definitions(-DCARES_STATICLIB)
-add_definitions(-DNGHTTP2_STATICLIB)
 add_definitions(-DLIBRDKAFKA_STATICLIB)
+add_definitions(-DBOOST_ALL_STATIC_LINK)
 endif()
 
 if(__LINUX__)
 add_definitions(-D__LINUX__)
 add_definitions(-fPIC)
-#if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.8.0")
 add_definitions(-std=c++11)
-#endif()
+add_definitions(-DBOOST_LOG_DYN_LINK)
 add_definitions(-DBOOST_LOG_USE_NATIVE_SYSLOG)
 add_definitions(-Wno-deprecated)
 endif()
 
 if(__DARWIN__)
-add_definitions(-DCURL_STATICLIB)
 add_definitions(-D__DARWIN__)
 add_definitions(-fPIC)
 add_definitions(-std=c++11)
@@ -83,18 +76,22 @@ SET(CSI_LIBS kspp ${LIBRDKAFKA_LIBS} ${CSI_BOOST_LIBS} ${CSI_ROCKSDB_LIBS} libss
 endif()
 
 if(__LINUX__)
-set(CSI_BOOST_LIBS ${BOOST_PATH}/stage/lib/libboost_log_setup.a ${BOOST_PATH}/stage/lib/libboost_log.a boost_date_time boost_timer boost_thread boost_system boost_program_options boost_filesystem boost_regex boost_chrono boost_iostreams pthread rt c)
-SET(CSI_HTTP_CLIENT_LIBS curl crypto ssl ${CSI_BOOST_LIBS})
+set(CSI_BOOST_LIBS boost_log_setup boost_log boost_date_time boost_timer boost_thread boost_system boost_program_options boost_filesystem boost_regex boost_chrono boost_iostreams pthread rt c)
+SET(CSI_ROCKSDB_LIBS rocksdb rocksdblib Rpcrt4)
+SET(LIBRDKAFKA_LIBS librdkafkacpp librdkafka)
+SET(CSI_LIBS kspp ${LIBRDKAFKA_LIBS} ${CSI_ROCKSDB_LIBS} ${CSI_BOOST_LIBS} crypto ssl)
 endif()
 
 #most likely wrong since I don't have a mac anymore...
-if(__DARWIN__)
-set(CSI_BOOST_LIBS boost_log_setup boost_log boost_date_time boost_timer boost_thread boost_system boost_program_options boost_filesystem boost_regex boost_chrono boost_iostreams pthread stdc++ c)
-endif()
+#if(__DARWIN__)
+#set(CSI_BOOST_LIBS boost_log_setup boost_log boost_date_time boost_timer boost_thread boost_system boost_program_options boost_filesystem boost_regex boost_chrono boost_iostreams pthread stdc++ c)
+#endif()
 
 include_directories(${CSI_INCLUDE_PATH} ${CMAKE_SOURCE_DIR})
 link_directories(${CSI_LIBRARY_PATH})
 
+#dirty fix to complile non supported static lib on windows...
+if(WIN32)
 file(GLOB librdkafka_files
   ${CMAKE_CURRENT_SOURCE_DIR}/../librdkafka/src/*.c
   ${CMAKE_CURRENT_SOURCE_DIR}/../librdkafka/src/*.h
@@ -107,9 +104,9 @@ file(GLOB librdkafka_cpp_files
 
 list(REMOVE_ITEM librdkafka_files ${CMAKE_CURRENT_SOURCE_DIR}/../librdkafka/src/rdkafka_sasl.c)
 
-add_definitions(-DLIBRDKAFKA_STATICLIB)
 add_library(librdkafka STATIC ${librdkafka_files})
 add_library(librdkafkacpp STATIC ${librdkafka_cpp_files})
+endif()
 
 add_subdirectory(kspp)
 add_subdirectory(examples)
