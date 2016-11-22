@@ -32,7 +32,7 @@ cd ..
 git clone https://github.com/bitbouncer/kspp.git
 cd kspp
 mkdir build && cd build
-cmake -D__LINUX__=1 ..
+cmake -D__LINUX__=1 -DCMAKE_BUILD_TYPE=Release ..
 make
 cd ..
 ```
