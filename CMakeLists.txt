@@ -25,6 +25,11 @@ SET(EXECUTABLE_OUTPUT_PATH  ${CMAKE_SOURCE_DIR}/bin/$(Platform))
 else()
 set(LIBRARY_OUTPUT_PATH     ${CMAKE_SOURCE_DIR}/lib)
 SET(EXECUTABLE_OUTPUT_PATH  ${CMAKE_SOURCE_DIR}/bin)
+SET(CSI_LIBRARY_PATH        
+  ${CMAKE_SOURCE_DIR}/../rocksdb
+#  ${CMAKE_SOURCE_DIR}/../librdkafa/src
+#  ${CMAKE_SOURCE_DIR}/../librdkafa/src-cpp
+)
 endif() 
 
 #COMMON DEFINITIONS
@@ -77,8 +82,8 @@ endif()
 
 if(__LINUX__)
 set(CSI_BOOST_LIBS boost_log_setup boost_log boost_date_time boost_timer boost_thread boost_system boost_program_options boost_filesystem boost_regex boost_chrono boost_iostreams pthread rt c)
-SET(CSI_ROCKSDB_LIBS rocksdb rocksdblib Rpcrt4)
-SET(LIBRDKAFKA_LIBS rdkafkacpp rdkafka)
+SET(CSI_ROCKSDB_LIBS rocksdb rocksdblib)
+SET(LIBRDKAFKA_LIBS rdkafka++ rdkafka)
 SET(CSI_LIBS kspp ${LIBRDKAFKA_LIBS} ${CSI_ROCKSDB_LIBS} ${CSI_BOOST_LIBS} crypto ssl)
 endif()
 
