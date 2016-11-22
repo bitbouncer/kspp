@@ -73,4 +73,13 @@ int kafka_producer::produce(int32_t partition, rdkafka_memory_management_mode mo
   _msg_bytes += valuesz;
   return 0;
 }
+
+void kafka_producer::close() {
+  while (_producer->outq_len() > 0) {
+    std::cerr << "Waiting for " << _producer->outq_len() << std::endl;
+    _producer->poll(1000);
+  }
+
+}
+
 }; // namespace

@@ -6,11 +6,20 @@
 #include <csignal>
 #include <cstring>
 #include <chrono>
-#include <kspp/ktable.h>
-#include <kspp/kstream.h>
-#include <kspp/join_processor.h>
+#include <kspp/kafka_producer.h>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
 
 static bool run = true;
+
+
+inline boost::uuids::uuid to_uuid(int64_t x) {
+  boost::uuids::uuid uuid;
+  memset(uuid.data, 0, 16);
+  memcpy(uuid.data, &x, 8);
+  return uuid;
+}
 
 static void sigterm(int sig) {
   run = false;
@@ -22,8 +31,30 @@ int main(int argc, char **argv) {
   signal(SIGINT, sigterm);
   signal(SIGTERM, sigterm);
 
-  csi::ktable  kt("localhost", "vast-playlist-B1", 0, "C:\\tmp\\ex2");
-  csi::kstream ks("localhost", "egress-reporting-queue-B1", 0, "C:\\tmp\\ex2");
+  csi::kafka_producer  table_stream("localhost", "kspp_test0_table");
+  csi::kafka_producer  event_stream("localhost", "kspp_test0_eventstream");
+
+  std::vector<boost::uuids::uuid> ids;
+
+  auto t0 = std::chrono::high_resolution_clock::now();
+
+  for (int i = 0; i != 1000000; ++i) {
+    ids.push_back(to_uuid(i));
+  }
+
+
+  for (int64_t update_nr = 0; update_nr != 100; ++update_nr) {
+    for (auto & i : ids) {
+      table_stream.produce(0, csi::kafka_producer::COPY, &i.data, 16, &update_nr, sizeof(update_nr));
+    }
+  }
+
+
+  for (int64_t event_nr = 0; event_nr != 10000; ++event_nr) {
+    for (auto & i : ids) {
+      event_stream.produce(0, csi::kafka_producer::COPY, &i.data, 16, &event_nr, sizeof(event_nr));
+    }
+  }
 
   /*while (run) {
     kt.consume();
@@ -31,9 +62,9 @@ int main(int argc, char **argv) {
       break;
   }*/
 
-  auto t0 = std::chrono::high_resolution_clock::now();
+
  
-  int64_t join_count = 0;
+ /* int64_t join_count = 0;
   int64_t found_count = 0;
   while (run) {
     auto msg = ks.consume();
@@ -45,14 +76,18 @@ int main(int argc, char **argv) {
     }
     if (ks.eof())
       break;
-  }
+  }*/
+
+
+  table_stream.close();
+  event_stream.close();
 
   auto t1 = std::chrono::high_resolution_clock::now();
   std::chrono::duration<float> fs = t1 - t0;
   std::chrono::milliseconds  d = std::chrono::duration_cast<std::chrono::milliseconds>(fs);
   std::cout << d.count()/1000 << "s\n";
 
-  std::cout << "lookups per sec : " << join_count / (d.count()/1000) << std::endl;
+  //std::cout << "lookups per sec : " << join_count / (d.count()/1000) << std::endl;
 
 
   /*
