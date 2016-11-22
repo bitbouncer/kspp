@@ -27,8 +27,6 @@ set(LIBRARY_OUTPUT_PATH     ${CMAKE_SOURCE_DIR}/lib)
 SET(EXECUTABLE_OUTPUT_PATH  ${CMAKE_SOURCE_DIR}/bin)
 SET(CSI_LIBRARY_PATH        
   ${CMAKE_SOURCE_DIR}/../rocksdb
-#  ${CMAKE_SOURCE_DIR}/../librdkafa/src
-#  ${CMAKE_SOURCE_DIR}/../librdkafa/src-cpp
 )
 endif() 
 
@@ -72,8 +70,6 @@ include_directories(/opt/X11/include)
 endif()
 
 if(WIN32)
-#SET(CSI_BOOST_LIBS)
-#SET(CSI_LIBS librdkafkacpp librdkafka ${CSI_BOOST_LIBS} debug libprotobufd optimized libprotobuf rocksdb libssl64MT libcrypto64MT debug zlibstaticd optimized zlibstatic crypt32 Ws2_32 legacy_stdio_definitions)
 SET(CSI_ROCKSDB_LIBS rocksdb rocksdblib Rpcrt4)
 SET(ZLIB_LIBS debug zlibstaticd optimized zlibstatic)
 SET(LIBRDKAFKA_LIBS librdkafkacpp librdkafka)
