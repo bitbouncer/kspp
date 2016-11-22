@@ -37,14 +37,14 @@ make
 cd ..
 ```
 
-## Ubuntu 16 x64:
+## Windows x64:
 
 Install build tools
 ```
-CMake
-Visual Studio 14
-
-
+- CMake (https://cmake.org/)
+- Visual Studio 14 (https://www.visualstudio.com/downloads/)
+- nasm (https://sourceforge.net/projects/nasm/)
+- perl (http://www.activestate.com/activeperl)
 ```
 Build
 ```
@@ -53,11 +53,20 @@ unzip boost_1_62_0.zip
 
 git clone https://github.com/facebook/rocksdb.git
 git clone https://github.com/madler/zlib.git
+git clone https://github.com/openssl/openssl.git
 git clone https://github.com/edenhill/librdkafka.git
 git clone https://github.com/bitbouncer/kspp.git
 
 set VISUALSTUDIO_VERSION_MAJOR=14
 call "C:\Program Files (x86)\Microsoft Visual Studio %VISUALSTUDIO_VERSION_MAJOR%.0\VC\vcvarsall.bat" amd64
+
+cd openssl
+#git checkout OpenSSL_1_1_0c
+perl Configure VC-WIN64A
+nmake
+#you need to be Administrator for the next step)
+nmake install 
+cd ..
 
 cd rocksdb
 mkdir build & cd build
