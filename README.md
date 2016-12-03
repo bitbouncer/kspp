@@ -21,6 +21,7 @@ Build
 git clone https://github.com/facebook/rocksdb.git
 cd rocksdb
 make static_lib
+cd ..
 
 git clone https://github.com/edenhill/librdkafka.git
 cd librdkafka
