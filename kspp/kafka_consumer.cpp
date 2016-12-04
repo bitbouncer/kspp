@@ -3,7 +3,7 @@
 #include <iostream>
 
 namespace csi {
-kafka_consumer::kafka_consumer(std::string brokers, std::string topic, int32_t partition) :
+  kafka_consumer::kafka_consumer(std::string brokers, std::string topic, int32_t partition) :
   _topic(topic),
   _consumer(NULL),
   _rd_topic(NULL),
@@ -63,7 +63,7 @@ kafka_consumer::kafka_consumer(std::string brokers, std::string topic, int32_t p
 }
 
 
-kafka_consumer::~kafka_consumer() {
+  kafka_consumer::~kafka_consumer() {
   /*
   * Stop consumer
   */

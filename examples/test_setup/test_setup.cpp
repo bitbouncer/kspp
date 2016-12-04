@@ -10,9 +10,9 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
+#include <kspp/encoder.h>
 
 static bool run = true;
-
 
 inline boost::uuids::uuid to_uuid(int64_t x) {
   boost::uuids::uuid uuid;
@@ -31,71 +31,57 @@ int main(int argc, char **argv) {
   signal(SIGINT, sigterm);
   signal(SIGTERM, sigterm);
 
-  csi::kafka_producer  table_stream("localhost", "kspp_test0_table");
-  csi::kafka_producer  event_stream("localhost", "kspp_test0_eventstream");
+  // boost::uuids::uuid, boost::uuids::uuid, binary_codec
+
+  auto codec = std::make_shared<csi::binary_codec>();
+  //auto partitioner = std::make_shared<csi::key_partitioner<>>
+
+  auto partitioner = [](const boost::uuids::uuid& key, const int64_t& value)->uint32_t { return value % 8; };
+
+  csi::kafka_producer2<boost::uuids::uuid, int64_t, csi::binary_codec>  table_stream("localhost", "kspp_test0_table", codec, partitioner);
+  csi::kafka_producer2<boost::uuids::uuid, int64_t, csi::binary_codec>  event_stream("localhost", "kspp_test0_eventstream", codec, partitioner);
 
   std::vector<boost::uuids::uuid> ids;
 
   auto t0 = std::chrono::high_resolution_clock::now();
 
-  for (int i = 0; i != 1000000; ++i) {
+  for (int i = 0; i != 100; ++i) {
     ids.push_back(to_uuid(i));
   }
 
-
   for (int64_t update_nr = 0; update_nr != 100; ++update_nr) {
     for (auto & i : ids) {
-      table_stream.produce(0, csi::kafka_producer::COPY, &i.data, 16, &update_nr, sizeof(update_nr));
+      table_stream.produce(i, update_nr);
+      table_stream.poll(0);
     }
   }
 
+  while (table_stream.queue_len())
+  {
+    table_stream.poll(0);
+  }
 
-  for (int64_t event_nr = 0; event_nr != 10000; ++event_nr) {
+  for (int64_t event_nr = 0; event_nr != 100; ++event_nr) {
     for (auto & i : ids) {
-      event_stream.produce(0, csi::kafka_producer::COPY, &i.data, 16, &event_nr, sizeof(event_nr));
+      event_stream.produce(i, event_nr);
+      event_stream.poll(0);
     }
   }
 
-  /*while (run) {
-    kt.consume();
-    if (kt.eof())
-      break;
-  }*/
-
-
- 
- /* int64_t join_count = 0;
-  int64_t found_count = 0;
-  while (run) {
-    auto msg = ks.consume();
-    if (msg) {
-      join_count++;
-      auto j = kt.find(msg->key_pointer(), msg->key()->size());
-      if (j)
-        found_count++;
-    }
-    if (ks.eof())
-      break;
-  }*/
-
+  while (event_stream.queue_len())
+  {
+    event_stream.poll(0);
+  }
 
   table_stream.close();
   event_stream.close();
 
+  /*
   auto t1 = std::chrono::high_resolution_clock::now();
   std::chrono::duration<float> fs = t1 - t0;
   std::chrono::milliseconds  d = std::chrono::duration_cast<std::chrono::milliseconds>(fs);
   std::cout << d.count()/1000 << "s\n";
-
-  //std::cout << "lookups per sec : " << join_count / (d.count()/1000) << std::endl;
-
-
-  /*
-  std::cerr << "% Consumed " << msg_cnt << " messages ("
-    << msg_bytes << " bytes)" << std::endl;
-    */
-
-  std::cerr << "join: " << join_count << " matched " << found_count << std::endl;
+  */
 
   RdKafka::wait_destroyed(5000);
   return 0;

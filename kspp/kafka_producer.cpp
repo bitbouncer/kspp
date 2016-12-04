@@ -57,8 +57,8 @@ kafka_producer::~kafka_producer() {
     std::cerr << "Waiting for " << _producer->outq_len() << std::endl;
     _producer->poll(1000);
   }
-  delete _producer;
   delete _rd_topic;
+  delete _producer;
   std::cerr << "% produced " << _msg_cnt << " messages (" << _msg_bytes << " bytes)" << std::endl;
 }
 
@@ -80,6 +80,14 @@ void kafka_producer::close() {
     _producer->poll(1000);
   }
 
+}
+
+size_t  kafka_producer::queue_len() {
+  return _producer->outq_len();
+}
+
+void kafka_producer::poll(int timeout) {
+  _producer->poll(timeout);
 }
 
 }; // namespace
