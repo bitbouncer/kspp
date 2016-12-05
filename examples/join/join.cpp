@@ -9,6 +9,7 @@
 #include <kspp/ktable.h>
 #include <kspp/kstream.h>
 #include <kspp/join_processor.h>
+#include <kspp/encoder.h>
 
 static bool run = true;
 
@@ -22,28 +23,42 @@ int main(int argc, char **argv) {
   signal(SIGINT, sigterm);
   signal(SIGTERM, sigterm);
 
-  csi::ktable  kt("localhost", "vast-playlist-B1", 0, "C:\\tmp\\ex2");
-  csi::kstream ks("localhost", "egress-reporting-queue-B1", 0, "C:\\tmp\\ex2");
+  auto codec = std::make_shared<csi::binary_codec>();
+  //auto partitioner = [](const boost::uuids::uuid& key, const int64_t& value)->uint32_t { return value % 8; };
 
-  /*while (run) {
-    kt.consume();
-    if (kt.eof())
+  csi::ktable2<boost::uuids::uuid, int64_t, csi::binary_codec>  table_source("localhost", "kspp_test0_table", 0, "C:\\tmp\\join", codec);
+  csi::kstream2<boost::uuids::uuid, int64_t, csi::binary_codec> event_source("localhost", "kspp_test0_eventstream", 0, "C:\\tmp\\join", codec);
+
+  //csi::kafka_producer2<boost::uuids::uuid, int64_t, csi::binary_codec>  event_stream("localhost", "kspp_test0_eventstream", codec, partitioner);
+  //csi::ktable  kt("localhost", "vast-playlist-B1", 0, "C:\\tmp\\ex2");
+  //csi::kstream ks("localhost", "egress-reporting-queue-B1", 0, "C:\\tmp\\ex2");
+
+  std::cerr << "initing table store" << std::endl;
+  while (run) {
+    table_source.consume();
+    if (table_source.eof())
       break;
-  }*/
+  }
+  std::cerr << "done - initing table store" << std::endl;
 
   auto t0 = std::chrono::high_resolution_clock::now();
  
   int64_t join_count = 0;
   int64_t found_count = 0;
   while (run) {
-    auto msg = ks.consume();
-    if (msg) {
+    auto ev = event_source.consume();
+    if (ev) {
       join_count++;
-      auto j = kt.find(msg->key_pointer(), msg->key()->size());
-      if (j)
+      auto row = table_source.find(ev->key_pointer(), ev->key()->size());
+      if (row)
+      {
         found_count++;
+        auto e = event_source.parse(ev);
+        auto r = table_source.parse(row);
+        //e->value->
+      }
     }
-    if (ks.eof())
+    if (table_source.eof())
       break;
   }
 
