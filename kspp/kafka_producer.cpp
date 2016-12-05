@@ -3,10 +3,33 @@
 #include <iostream>
 
 namespace csi {
+
+
+/* Use of this partitioner is pretty pointless since no key is provided
+* in the produce() call. */
+class MyHashPartitionerCb : public RdKafka::PartitionerCb
+{
+  public:
+  int32_t partitioner_cb(const RdKafka::Topic *topic, const std::string *key,
+                         int32_t partition_cnt, void *msg_opaque) {
+    return djb_hash(key->c_str(), key->size()) % partition_cnt;
+  }
+  private:
+
+  static inline unsigned int djb_hash(const char *str, size_t len) {
+    unsigned int hash = 5381;
+    for (size_t i = 0; i < len; i++)
+      hash = ((hash << 5) + hash) + str[i];
+    return hash;
+  }
+};
+
+
 kafka_producer::kafka_producer(std::string brokers, std::string topic) :
   _topic(topic),
   _producer(NULL),
   _rd_topic(NULL),
+  _nr_of_partitions(0),
   _msg_cnt(0),
   _msg_bytes(0) {
   /*
@@ -40,6 +63,8 @@ kafka_producer::kafka_producer(std::string brokers, std::string topic) :
   std::cout << "% Created producer " << _producer->name() << std::endl;
 
   RdKafka::Conf *tconf2 = RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC);
+
+  tconf2->set("partitioner_cb", )
   _rd_topic = RdKafka::Topic::create(_producer, _topic, tconf2, errstr);
   delete tconf2;
 
@@ -47,6 +72,8 @@ kafka_producer::kafka_producer(std::string brokers, std::string topic) :
     std::cerr << "Failed to create topic: " << errstr << std::endl;
     exit(1);
   }
+
+  _nr_of_partitions
 }
 
 kafka_producer::~kafka_producer() {

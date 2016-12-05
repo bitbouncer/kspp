@@ -21,6 +21,13 @@ inline boost::uuids::uuid to_uuid(int64_t x) {
   return uuid;
 }
 
+/* low order 32 bits? */
+inline uint32_t uuid_to_partition_hash(const boost::uuids::uuid& uuid) {
+  uint32_t hash;
+  memcpy(&hash, uuid.data, sizeof(uint32_t));
+  return hash;
+}
+
 static void sigterm(int sig) {
   run = false;
 }
@@ -45,14 +52,14 @@ int main(int argc, char **argv) {
 
   for (int64_t update_nr = 0; update_nr != 100; ++update_nr) {
     for (auto & i : ids) {
-      table_stream.produce(0, csi::kafka_producer::COPY, &i.data, 16, &update_nr, sizeof(update_nr));
+      table_stream.produce(uuid_to_partition_hash(i.data) % table_stream.nr_of_partitions(), csi::kafka_producer::COPY, &i.data, 16, &update_nr, sizeof(update_nr));
     }
   }
 
 
   for (int64_t event_nr = 0; event_nr != 10000; ++event_nr) {
     for (auto & i : ids) {
-      event_stream.produce(0, csi::kafka_producer::COPY, &i.data, 16, &event_nr, sizeof(event_nr));
+      event_stream.produce(uuid_to_partition_hash(i.data) % event_stream.nr_of_partitions(), csi::kafka_producer::COPY, &i.data, 16, &event_nr, sizeof(event_nr));
     }
   }
 
