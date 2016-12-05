@@ -7,6 +7,7 @@ namespace csi {
 
 /* Use of this partitioner is pretty pointless since no key is provided
 * in the produce() call. */
+/*
 class MyHashPartitionerCb : public RdKafka::PartitionerCb
 {
   public:
@@ -23,13 +24,14 @@ class MyHashPartitionerCb : public RdKafka::PartitionerCb
     return hash;
   }
 };
+*/
 
 
 kafka_producer::kafka_producer(std::string brokers, std::string topic) :
   _topic(topic),
   _producer(NULL),
   _rd_topic(NULL),
-  _nr_of_partitions(0),
+  //_nr_of_partitions(0),
   _msg_cnt(0),
   _msg_bytes(0) {
   /*
@@ -64,7 +66,7 @@ kafka_producer::kafka_producer(std::string brokers, std::string topic) :
 
   RdKafka::Conf *tconf2 = RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC);
 
-  tconf2->set("partitioner_cb", )
+  //tconf2->set("partitioner_cb", )
   _rd_topic = RdKafka::Topic::create(_producer, _topic, tconf2, errstr);
   delete tconf2;
 
@@ -73,7 +75,7 @@ kafka_producer::kafka_producer(std::string brokers, std::string topic) :
     exit(1);
   }
 
-  _nr_of_partitions
+  //_nr_of_partitions
 }
 
 kafka_producer::~kafka_producer() {

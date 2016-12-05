@@ -7,7 +7,7 @@ namespace csi {
   template<class T>
   inline size_t binary_encode(const T& a, std::ostream& dst) {
     dst.write((const char*)&a, sizeof(T));
-    return sizeof(dst);
+    return sizeof(T);
   }
 
   template<class T>

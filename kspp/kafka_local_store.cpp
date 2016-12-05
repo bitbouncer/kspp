@@ -29,7 +29,12 @@ kafka_local_store::kafka_local_store(std::string storage_path) :
 }
 
 kafka_local_store::~kafka_local_store() {
+  close();
+}
+
+void kafka_local_store::close() {
   delete _db;
+  _db = NULL;
 }
 
 void kafka_local_store::put(RdKafka::Message* msg) {

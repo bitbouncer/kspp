@@ -8,6 +8,8 @@ class kstream
   public:
   kstream(std::string brokers, std::string topic, int32_t partition, std::string storage_path);
   ~kstream();
+  void close();
+
   std::unique_ptr<RdKafka::Message> consume();
   inline bool eof() const {
     return _consumer.eof();
@@ -33,6 +35,8 @@ public:
 
   kstream2(std::string brokers, std::string topic, int32_t partition, std::string storage_path, std::shared_ptr<codec> codec) : _impl(brokers, topic, partition, storage_path), _codec(codec) {}
   ~kstream2() {}
+
+  inline void close() { _impl.close(); }
 
   inline bool eof() const {
     return _impl.eof();
@@ -62,15 +66,18 @@ public:
     }
 
     // NULL is ok in stream but not in storage???
-    if (ref->len())
+    size_t sz = ref->len();
+    if (sz)
     {
-      std::istrstream vs((const char*) ref->payload(), ref->len());
-      std::unique_ptr<V> vp(new V);
-      if (_codec->decode(vs, *vp) == 0)
+      std::istrstream vs((const char*) ref->payload(), sz);
+      res->value = std::unique_ptr<V>(new V);
+      size_t consumed = _codec->decode(vs, *res->value);
+      if (consumed==0)
       {
         std::cerr << "kstream2::parse, decode value failed" << std::endl;
         return NULL;
       }
+      assert(consumed == sz);
     }
     return res;
   }

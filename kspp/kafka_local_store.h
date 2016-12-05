@@ -17,6 +17,7 @@ class kafka_local_store
   public:
   kafka_local_store(std::string storage_path);
   ~kafka_local_store();
+  void close();
   void put(RdKafka::Message*);
   std::unique_ptr<RdKafka::Message> get(const void* key, size_t key_size);
   private:

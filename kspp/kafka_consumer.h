@@ -10,6 +10,7 @@ class kafka_consumer
   public:
     kafka_consumer(std::string brokers, std::string topic, int32_t partition);
   ~kafka_consumer();
+  void close();
   std::unique_ptr<RdKafka::Message> consume();
   inline bool eof() const {
     return _eof;

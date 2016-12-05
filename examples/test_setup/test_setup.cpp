@@ -45,33 +45,27 @@ int main(int argc, char **argv) {
 
   auto t0 = std::chrono::high_resolution_clock::now();
 
-  for (int i = 0; i != 100; ++i) {
+  for (int i = 0; i != 10000; ++i) {
     ids.push_back(to_uuid(i));
   }
 
   for (int64_t update_nr = 0; update_nr != 100; ++update_nr) {
     for (auto & i : ids) {
       table_stream.produce(i, update_nr);
-      table_stream.poll(0);
     }
-  }
-
-  while (table_stream.queue_len())
-  {
-    table_stream.poll(0);
+    while (table_stream.queue_len())
+      table_stream.poll(0);
   }
 
   for (int64_t event_nr = 0; event_nr != 100; ++event_nr) {
     for (auto & i : ids) {
       event_stream.produce(i, event_nr);
+    }
+    while (event_stream.queue_len()) {
       event_stream.poll(0);
     }
   }
 
-  while (event_stream.queue_len())
-  {
-    event_stream.poll(0);
-  }
 
   table_stream.close();
   event_stream.close();

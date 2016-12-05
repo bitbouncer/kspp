@@ -3,7 +3,7 @@
 #include <iostream>
 
 namespace csi {
-  kafka_consumer::kafka_consumer(std::string brokers, std::string topic, int32_t partition) :
+kafka_consumer::kafka_consumer(std::string brokers, std::string topic, int32_t partition) :
   _topic(topic),
   _consumer(NULL),
   _rd_topic(NULL),
@@ -55,25 +55,26 @@ namespace csi {
   /*
   * Subscribe to topics
   */
-  RdKafka::ErrorCode err = _consumer->start(_rd_topic, 0, RdKafka::Topic::OFFSET_BEGINNING);
+  RdKafka::ErrorCode err = _consumer->start(_rd_topic, _partition, RdKafka::Topic::OFFSET_BEGINNING);
   if (err) {
     std::cerr << "Failed to subscribe to " << _topic << ", " << RdKafka::err2str(err) << std::endl;
     exit(1);
   }
 }
 
+kafka_consumer::~kafka_consumer() {
+  close();
+}
 
-  kafka_consumer::~kafka_consumer() {
-  /*
-  * Stop consumer
-  */
-  _consumer->stop(_rd_topic, 0);
-  delete _consumer;
-
+void kafka_consumer::close() {
+  if (_consumer) {
+    _consumer->stop(_rd_topic, 0);
+    std::cerr << _topic << ":" << _partition << ", Consumed " << _msg_cnt << " messages (" << _msg_bytes << " bytes)" << std::endl;
+  }
   delete _rd_topic;
-
-  std::cerr << "% Consumed " << _msg_cnt << " messages ("
-    << _msg_bytes << " bytes)" << std::endl;
+  delete _consumer;
+  _rd_topic = NULL;
+  _consumer = NULL;
 }
 
 std::unique_ptr<RdKafka::Message> kafka_consumer::consume() {

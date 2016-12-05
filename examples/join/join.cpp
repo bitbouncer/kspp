@@ -13,6 +13,8 @@
 
 static bool run = true;
 
+#define PARTITION 0
+
 static void sigterm(int sig) {
   run = false;
 }
@@ -26,8 +28,8 @@ int main(int argc, char **argv) {
   auto codec = std::make_shared<csi::binary_codec>();
   //auto partitioner = [](const boost::uuids::uuid& key, const int64_t& value)->uint32_t { return value % 8; };
 
-  csi::ktable2<boost::uuids::uuid, int64_t, csi::binary_codec>  table_source("localhost", "kspp_test0_table", 0, "C:\\tmp\\join", codec);
-  csi::kstream2<boost::uuids::uuid, int64_t, csi::binary_codec> event_source("localhost", "kspp_test0_eventstream", 0, "C:\\tmp\\join", codec);
+  csi::ktable2<boost::uuids::uuid, int64_t, csi::binary_codec>  table_source("localhost", "kspp_test0_table", PARTITION, "C:\\tmp\\join", codec);
+  csi::kstream2<boost::uuids::uuid, int64_t, csi::binary_codec> event_source("localhost", "kspp_test0_eventstream", PARTITION, "C:\\tmp\\join", codec);
 
   //csi::kafka_producer2<boost::uuids::uuid, int64_t, csi::binary_codec>  event_stream("localhost", "kspp_test0_eventstream", codec, partitioner);
   //csi::ktable  kt("localhost", "vast-playlist-B1", 0, "C:\\tmp\\ex2");
@@ -49,7 +51,7 @@ int main(int argc, char **argv) {
     auto ev = event_source.consume();
     if (ev) {
       join_count++;
-      auto row = table_source.find(ev->key_pointer(), ev->key()->size());
+      auto row = table_source.find(ev->key_pointer(), ev->key_len());
       if (row)
       {
         found_count++;
@@ -58,7 +60,7 @@ int main(int argc, char **argv) {
         //e->value->
       }
     }
-    if (table_source.eof())
+    if (event_source.eof())
       break;
   }
 
@@ -67,7 +69,7 @@ int main(int argc, char **argv) {
   std::chrono::milliseconds  d = std::chrono::duration_cast<std::chrono::milliseconds>(fs);
   std::cout << d.count()/1000 << "s\n";
 
-  std::cout << "lookups per sec : " << join_count / (d.count()/1000) << std::endl;
+  std::cout << "lookups per sec : " << join_count / ((double) d.count()/1000) << std::endl;
 
 
   /*
@@ -77,6 +79,9 @@ int main(int argc, char **argv) {
 
   std::cerr << "join: " << join_count << " matched " << found_count << std::endl;
 
-  RdKafka::wait_destroyed(5000);
+  event_source.close();
+  table_source.close();
+
+  //RdKafka::wait_destroyed(5000);
   return 0;
 }

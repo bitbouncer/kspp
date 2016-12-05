@@ -7,7 +7,14 @@ ktable::ktable(std::string brokers, std::string topic, int32_t partition, std::s
   _consumer(brokers, topic, partition),
   _local_storage(storage_path + "\\ktable_" + topic + "_" + std::to_string(partition)) {}
 
-ktable::~ktable() {}
+ktable::~ktable() {
+  close();
+}
+
+void ktable::close() {
+  _consumer.close();
+  _local_storage.close();
+}
 
 std::unique_ptr<RdKafka::Message> ktable::consume() {
   auto msg = _consumer.consume();
