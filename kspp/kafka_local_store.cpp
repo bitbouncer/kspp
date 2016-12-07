@@ -1,6 +1,7 @@
 #include "kafka_local_store.h"
 
 #include <iostream>
+#include <boost/filesystem.hpp>
 
 namespace csi {
 
@@ -17,14 +18,12 @@ struct rocksdb_inner_key
   int64_t index;
 };
 
-
-kafka_local_store::kafka_local_store(std::string storage_path) :
+kafka_local_store::kafka_local_store(boost::filesystem::path storage_path) :
   _db(NULL) {
-  // open DB
+  boost::filesystem::create_directories(boost::filesystem::path(storage_path));
   rocksdb::Options options;
   options.create_if_missing = true;
-  auto s = rocksdb::DB::Open(options, storage_path, &_db);
-  std::cerr << s.ToString() << std::endl;
+  auto s = rocksdb::DB::Open(options, storage_path.generic_string(), &_db);
   assert(s.ok());
 }
 

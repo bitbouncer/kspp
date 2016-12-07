@@ -26,6 +26,25 @@ namespace csi {
     return src.good() ? 16 : 0;
   }
 
+  inline size_t binary_encode(const std::string& a, std::ostream& dst) {
+    uint32_t sz = (uint32_t) a.size();
+    dst.write((const char*) &sz, sizeof(uint32_t));
+    dst.write((const char*) a.data(), sz);
+    return sz + sizeof(uint32_t);
+  }
+
+  inline size_t binary_decode(std::istream& src, std::string& dst) {
+    uint32_t sz = 0;
+    src.read((char*) &sz, sizeof(uint32_t));
+    if (sz > 1048576) // sanity (not more that 1 MB)
+      return 0;
+
+    dst.resize(sz);
+    src.read((char*) dst.data(), sz);
+    return src.good() ? sz + sizeof(uint32_t) : 0;
+  }
+
+
   class binary_codec
   {
   public:

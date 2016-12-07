@@ -8,6 +8,8 @@ SET(LIB_SRCS
   join_processor.h
   kafka_local_store.h
   kafka_local_store.cpp
+  kprocessor.h
+  kprocessor.cpp
   kafka_producer.h
   kafka_producer.cpp
   kafka_consumer.h

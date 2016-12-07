@@ -17,6 +17,8 @@ class kafka_consumer
   }
   std::string topic() const { return _topic; }
 
+  void start(int64_t offset);
+
   private:
   const std::string  _topic;
   const int32_t      _partition;

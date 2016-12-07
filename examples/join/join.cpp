@@ -41,12 +41,15 @@ int main(int argc, char **argv) {
     if (table_source.eof())
       break;
   }
+  table_source.flush_offset(); 
   std::cerr << "done - initing table store" << std::endl;
 
   auto t0 = std::chrono::high_resolution_clock::now();
  
   int64_t join_count = 0;
   int64_t found_count = 0;
+  int flush_count = 0;
+
   while (run) {
     auto ev = event_source.consume();
     if (ev) {

@@ -51,15 +51,6 @@ kafka_consumer::kafka_consumer(std::string brokers, std::string topic, int32_t p
     std::cerr << "Failed to create topic: " << errstr << std::endl;
     exit(1);
   }
-
-  /*
-  * Subscribe to topics
-  */
-  RdKafka::ErrorCode err = _consumer->start(_rd_topic, _partition, RdKafka::Topic::OFFSET_BEGINNING);
-  if (err) {
-    std::cerr << "Failed to subscribe to " << _topic << ", " << RdKafka::err2str(err) << std::endl;
-    exit(1);
-  }
 }
 
 kafka_consumer::~kafka_consumer() {
@@ -75,6 +66,17 @@ void kafka_consumer::close() {
   delete _consumer;
   _rd_topic = NULL;
   _consumer = NULL;
+}
+
+void kafka_consumer::start(int64_t offset) {
+  /*
+  * Subscribe to topics
+  */
+  RdKafka::ErrorCode err = _consumer->start(_rd_topic, _partition, offset);
+  if (err) {
+    std::cerr << "Failed to subscribe to " << _topic << ", " << RdKafka::err2str(err) << std::endl;
+    exit(1);
+  }
 }
 
 std::unique_ptr<RdKafka::Message> kafka_consumer::consume() {
