@@ -34,12 +34,11 @@ int main(int argc, char **argv) {
   // boost::uuids::uuid, boost::uuids::uuid, binary_codec
 
   auto codec = std::make_shared<csi::binary_codec>();
-  //auto partitioner = std::make_shared<csi::key_partitioner<>>
 
   auto partitioner = [](const boost::uuids::uuid& key, const int64_t& value)->uint32_t { return value % 8; };
 
-  csi::kafka_producer2<boost::uuids::uuid, int64_t, csi::binary_codec>  table_stream("localhost", "kspp_test0_table", codec, partitioner);
-  csi::kafka_producer2<boost::uuids::uuid, int64_t, csi::binary_codec>  event_stream("localhost", "kspp_test0_eventstream", codec, partitioner);
+  csi::kafka_sink<boost::uuids::uuid, int64_t, csi::binary_codec>  table_stream("localhost", "kspp_test0_table", codec, partitioner);
+  csi::kafka_sink<boost::uuids::uuid, int64_t, csi::binary_codec>  event_stream("localhost", "kspp_test0_eventstream", codec, partitioner);
 
   std::vector<boost::uuids::uuid> ids;
 
@@ -65,7 +64,6 @@ int main(int argc, char **argv) {
       event_stream.poll(0);
     }
   }
-
 
   table_stream.close();
   event_stream.close();

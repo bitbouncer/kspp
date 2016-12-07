@@ -1,6 +1,7 @@
 #include "kstream.h"
 #include <assert.h>
 
+/*
 namespace csi {
 kstream::kstream(std::string brokers, std::string topic, int32_t partition, std::string storage_path) :
   _consumer(brokers, topic, partition),
@@ -25,3 +26,4 @@ std::unique_ptr<RdKafka::Message> kstream::consume() {
   return msg;
 }
 } // namespace
+*/

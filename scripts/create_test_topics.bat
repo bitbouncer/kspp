@@ -10,4 +10,5 @@ call C:\[KAFKA_DEV]\kafka_2.11-0.10.0.1\bin\windows\kafka-topics.bat --create --
 
 
 call C:\[KAFKA_DEV]\kafka_2.11-0.10.0.1\bin\windows\kafka-topics.bat --create --zookeeper localhost:2181 --replication-factor 1 --partitions 8 --topic kspp_PageCounts
+call C:\[KAFKA_DEV]\kafka_2.11-0.10.0.1\bin\windows\kafka-topics.bat --create --zookeeper localhost:2181 --replication-factor 1 --partitions 8 --topic kspp_PageViewsDecorated
 

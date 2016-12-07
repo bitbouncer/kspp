@@ -43,15 +43,14 @@ namespace csi {
     src.read((char*) dst.data(), sz);
     return src.good() ? sz + sizeof(uint32_t) : 0;
   }
-
-
+  
   class binary_codec
   {
   public:
     binary_codec() {}
 
     template<class T>
-    inline size_t encode(const T& src, std::ostream& dst) {
+    size_t encode(const T& src, std::ostream& dst) {
       return binary_encode(src, dst);
     }
 

@@ -1,4 +1,5 @@
 SET(LIB_SRCS
+  kspp_defs.h
   kspp.h
   kspp.cpp
   kstream.h
