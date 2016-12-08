@@ -118,4 +118,5 @@ endif()
 
 add_subdirectory(kspp)
 add_subdirectory(examples)
+add_subdirectory(tests)
 

@@ -4,7 +4,7 @@
 #pragma once
 
 namespace csi {
-  template<class K, class tableV, class streamV, class V, class codec>
+  template<class K, class tableV, class streamV, class V>
   class left_join : public ksource<K, V>
   {
   public:
@@ -87,4 +87,25 @@ namespace csi {
     std::shared_ptr<ksource<K, streamV>> _stream;
     assign_row_function                  _assign_row;
   };
+
+  /*
+  template<class codec>
+  class topology_builder
+  {
+    public:
+    topology_builder(std::string brokers, std::shared_ptr<codec> default_codec) : 
+      _brokers(brokers), 
+      _default_codec(default_codec) 
+    {}
+
+    template<class K, class tableV, class streamV, class V>
+    std::shared_ptr<left_join<K, tableV, streamV, V>> create_left_join(std::string tag, std::string table_name, std::string stream_name,  int32_t partition) {
+
+    }
+
+    private:
+    std::string             _brokers;
+    std::shared_ptr<codec>  _default_codec;
+  };
+  */
 }

@@ -3,37 +3,22 @@
 #include <strstream>
 #include <boost/filesystem.hpp>
 #include <rocksdb/db.h>
-#include <librdkafka/rdkafkacpp.h>
-#include "encoder.h"
-#include "kspp_defs.h"
 
 namespace csi {
-
-  /*
-  class kafka_local_store
-  {
-    public:
-    kafka_local_store(boost::filesystem::path storage_path);
-    ~kafka_local_store();
-    void close();
-    void put(RdKafka::Message*);
-    std::unique_ptr<RdKafka::Message> get(const void* key, size_t key_size);
-    private:
-    rocksdb::DB* _db;
-  };
-  */
-
   template<class K, class V, class codec>
   class kstate_store
   {
   public:
+  enum { MAX_KEY_SIZE = 10000, MAX_VALUE_SIZE= 100000 };
+
     kstate_store(boost::filesystem::path storage_path, std::shared_ptr<codec> codec) :
-      _db(NULL),
       _codec(codec) {
       boost::filesystem::create_directories(boost::filesystem::path(storage_path));
       rocksdb::Options options;
       options.create_if_missing = true;
-      auto s = rocksdb::DB::Open(options, storage_path.generic_string(), &_db);
+      rocksdb::DB* tmp = NULL;
+      auto s = rocksdb::DB::Open(options, storage_path.generic_string(), &tmp);
+      _db.reset(tmp);
       assert(s.ok());
     }
 
@@ -41,43 +26,41 @@ namespace csi {
       close();
     }
     void close() {
-      delete _db;
       _db = NULL;
     }
 
     void put(const K& key, const V& val) {
-      char key_buf[1000];
-      char val_buf[50000];
+      char key_buf[MAX_KEY_SIZE];
+      char val_buf[MAX_VALUE_SIZE];
 
       size_t ksize = 0;
       size_t vsize = 0;
       {
-        std::strstream s(key_buf, 1000);
+        std::strstream s(key_buf, MAX_KEY_SIZE);
         ksize = _codec->encode(key, s);
       }
       {
-        std::strstream s(val_buf, 50000);
+        std::strstream s(val_buf, MAX_VALUE_SIZE);
         vsize = _codec->encode(val, s);
       }
       rocksdb::Status s = _db->Put(rocksdb::WriteOptions(), rocksdb::Slice((char*)key_buf, ksize), rocksdb::Slice(val_buf, vsize));
     }
 
     void del(const K& key) {
-      char key_buf[1000];
+      char key_buf[MAX_KEY_SIZE];
       size_t ksize = 0;
       {
-        std::strstream s(key_buf, 1000);
+        std::strstream s(key_buf, MAX_KEY_SIZE);
         ksize = _codec->encode(key, s);
       }
       auto s = _db->Delete(rocksdb::WriteOptions(), rocksdb::Slice(key_buf, ksize));
     }
 
-
     std::unique_ptr<krecord<K, V>> get(const K& key) {
-      char key_buf[1000];
+      char key_buf[MAX_KEY_SIZE];
       size_t ksize = 0;
       {
-        std::ostrstream s(key_buf, 1000);
+        std::ostrstream s(key_buf, MAX_KEY_SIZE);
         ksize = _codec->encode(key, s);
       }
 
@@ -98,10 +81,9 @@ namespace csi {
       }
       return res;
     }
-
   private:
-    rocksdb::DB*           _db;
-    std::shared_ptr<codec> _codec;
+    std::unique_ptr<rocksdb::DB> _db;
+    std::shared_ptr<codec>       _codec;
   };
 }
 

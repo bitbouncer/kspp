@@ -44,7 +44,7 @@ namespace csi {
   {
   public:
     virtual std::unique_ptr<krecord<K, V>> consume() = 0;
-    std::unique_ptr<krecord<K, V>> get(const K& key) { return NULL; }
+    virtual std::unique_ptr<krecord<K, V>> get(const K& key) { return NULL; }
     virtual bool eof() const = 0;
     virtual void start() {}
     virtual void start(int64_t offset) {}

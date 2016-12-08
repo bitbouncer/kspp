@@ -5,8 +5,6 @@
 namespace csi {
 kafka_consumer::kafka_consumer(std::string brokers, std::string topic, int32_t partition) :
   _topic(topic),
-  _consumer(NULL),
-  _rd_topic(NULL),
   _partition(partition),
   _eof(false),
   _msg_cnt(0),
@@ -14,8 +12,8 @@ kafka_consumer::kafka_consumer(std::string brokers, std::string topic, int32_t p
   /*
   * Create configuration objects
   */
-  RdKafka::Conf *conf = RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL);
-  RdKafka::Conf *tconf = RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC);
+  std::unique_ptr<RdKafka::Conf> conf(RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL));
+  std::unique_ptr<RdKafka::Conf> tconf(RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC));
 
   /*
   * Set configuration properties
@@ -26,26 +24,20 @@ kafka_consumer::kafka_consumer(std::string brokers, std::string topic, int32_t p
   //ExampleEventCb ex_event_cb;
   //conf->set("event_cb", &ex_event_cb, errstr);
 
-  conf->set("default_topic_conf", tconf, errstr);
-  delete tconf;
+  conf->set("default_topic_conf", tconf.get(), errstr);
 
   /*
   * Create consumer using accumulated global configuration.
   */
-  _consumer = RdKafka::Consumer::create(conf, errstr);
+  _consumer = std::unique_ptr<RdKafka::Consumer>(RdKafka::Consumer::create(conf.get(), errstr));
   if (!_consumer) {
     std::cerr << "Failed to create consumer: " << errstr << std::endl;
     exit(1);
   }
-
-  delete conf;
-
   std::cout << "% Created consumer " << _consumer->name() << std::endl;
 
-
-  RdKafka::Conf *tconf2 = RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC);
-  _rd_topic = RdKafka::Topic::create(_consumer, _topic, tconf2, errstr);
-  delete tconf2;
+  std::unique_ptr<RdKafka::Conf> tconf2(RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC));
+  _rd_topic = std::unique_ptr<RdKafka::Topic>(RdKafka::Topic::create(_consumer.get(), _topic, tconf2.get(), errstr));
 
   if (!_rd_topic) {
     std::cerr << "Failed to create topic: " << errstr << std::endl;
@@ -59,11 +51,9 @@ kafka_consumer::~kafka_consumer() {
 
 void kafka_consumer::close() {
   if (_consumer) {
-    _consumer->stop(_rd_topic, 0);
+    _consumer->stop(_rd_topic.get(), 0);
     std::cerr << _topic << ":" << _partition << ", Consumed " << _msg_cnt << " messages (" << _msg_bytes << " bytes)" << std::endl;
   }
-  delete _rd_topic;
-  delete _consumer;
   _rd_topic = NULL;
   _consumer = NULL;
 }
@@ -72,7 +62,7 @@ void kafka_consumer::start(int64_t offset) {
   /*
   * Subscribe to topics
   */
-  RdKafka::ErrorCode err = _consumer->start(_rd_topic, _partition, offset);
+  RdKafka::ErrorCode err = _consumer->start(_rd_topic.get(), _partition, offset);
   if (err) {
     std::cerr << "Failed to subscribe to " << _topic << ", " << RdKafka::err2str(err) << std::endl;
     exit(1);
@@ -80,7 +70,7 @@ void kafka_consumer::start(int64_t offset) {
 }
 
 std::unique_ptr<RdKafka::Message> kafka_consumer::consume() {
-  std::unique_ptr<RdKafka::Message> msg(_consumer->consume(_rd_topic, _partition, 0));
+  std::unique_ptr<RdKafka::Message> msg(_consumer->consume(_rd_topic.get(), _partition, 0));
 
   switch (msg->err()) {
     case RdKafka::ERR_NO_ERROR:

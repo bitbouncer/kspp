@@ -1,21 +1,17 @@
 SET(LIB_SRCS
   kspp_defs.h
   kspp.h
-  kspp.cpp
   kstream.h
   ktable.h
-  kstream.cpp
-  ktable.cpp
-  join_processor.h
-  kafka_local_store.h
-  kafka_local_store.cpp
-  kprocessor.h
-  kprocessor.cpp
+  join.h
+  state_store.h
+  kafka_source.h
+  kafka_sink.h
   kafka_producer.h
   kafka_producer.cpp
   kafka_consumer.h
   kafka_consumer.cpp
-  encoder.h
+  binary_encoder.h
   )
 	
 add_library (kspp STATIC ${LIB_SRCS})

@@ -1,5 +1,5 @@
-#include "kafka_consumer.h"
-#include "kafka_local_store.h"
+#include "kafka_source.h"
+#include "state_store.h"
 #pragma once
 
 namespace csi {

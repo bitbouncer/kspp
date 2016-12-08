@@ -6,11 +6,11 @@
 #include <csignal>
 #include <cstring>
 #include <chrono>
-#include <kspp/kafka_producer.h>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
-#include <kspp/encoder.h>
+#include <kspp/kafka_sink.h>
+#include <kspp/binary_encoder.h>
 
 static bool run = true;
 

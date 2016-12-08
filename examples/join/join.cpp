@@ -8,8 +8,8 @@
 #include <chrono>
 #include <kspp/ktable.h>
 #include <kspp/kstream.h>
-#include <kspp/join_processor.h>
-#include <kspp/encoder.h>
+#include <kspp/join.h>
+#include <kspp/binary_encoder.h>
 
 static bool run = true;
 
