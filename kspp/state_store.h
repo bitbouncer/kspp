@@ -19,6 +19,9 @@ namespace csi {
       rocksdb::DB* tmp = NULL;
       auto s = rocksdb::DB::Open(options, storage_path.generic_string(), &tmp);
       _db.reset(tmp);
+      if (!s.ok()) {
+        std::cerr << "failed to open rocks db, path:" << storage_path.generic_string() << std::endl;
+      }
       assert(s.ok());
     }
 

@@ -4,18 +4,18 @@
 #pragma once
 
 namespace csi {
-  template<class K, class tableV, class streamV, class V>
-  class left_join : public ksource<K, V>
+  template<class K, class streamV, class tableV, class R>
+  class left_join : public ksource<K, R>
   {
   public:
     //typedef std::unique_ptr<krecord<K, V>> record_type;
     //typedef std::function<record_type(const K& key, const tableV& left, const streamV& right, V& value)> assign_row_function;
-    typedef std::function<void(const K& key, const tableV& left, const streamV& right, V& value)> assign_row_function;
+    typedef std::function<void(const K& key, const streamV& left, const tableV& right, R& result)> value_joiner;
 
-    left_join(std::shared_ptr<ksource<K, tableV>> table, std::shared_ptr<ksource<K, streamV>> stream, assign_row_function f) :
-      _table(table),
+    left_join(std::shared_ptr<ksource<K, streamV>> stream, std::shared_ptr<ksource<K, tableV>> table, value_joiner f) :
       _stream(stream),
-      _assign_row(f) {}
+      _table(table),
+      _value_joiner(f) {}
 
     ~left_join() {
       close();
@@ -36,7 +36,7 @@ namespace csi {
       _stream->close();
     }
 
-    virtual std::unique_ptr<krecord<K, V>> consume() {
+    virtual std::unique_ptr<krecord<K, R>> consume() {
       if (!_table->eof()) {
         // just eat it... no join since we only joins with events????
         _table->consume();
@@ -51,17 +51,15 @@ namespace csi {
       auto table_row = _table->get(e->key);
       if (table_row) {
         if (e->value) {
-          std::unique_ptr<csi::krecord<K, V>> p(new csi::krecord<K, V>());
-          p->value = std::unique_ptr<V>(new V());
+          std::unique_ptr<csi::krecord<K, R>> p(new csi::krecord<K, R>());
+          p->value = std::unique_ptr<R>(new R());
           p->key = e->key;
           p->event_time = e->event_time;
           p->offset = e->offset;
-          _assign_row(e->key, *table_row->value, *e->value, *p->value);
+          _value_joiner(e->key, *e->value, *table_row->value, *p->value);
           return p;
         } else {
-          // should null event generate a null event in join??? (likely???)
-          // we should forward NULL events here...
-          std::unique_ptr<csi::krecord<K, V>> p(new csi::krecord<K, V>());
+          std::unique_ptr<csi::krecord<K, R>> p(new csi::krecord<K, R>());
           p->key = e->key;
           p->event_time = e->event_time;
           p->offset = e->offset;
@@ -83,29 +81,8 @@ namespace csi {
     }
 
   private:
-    std::shared_ptr<ksource<K, tableV>>  _table;
     std::shared_ptr<ksource<K, streamV>> _stream;
-    assign_row_function                  _assign_row;
+    std::shared_ptr<ksource<K, tableV>>  _table;
+    value_joiner                         _value_joiner;
   };
-
-  /*
-  template<class codec>
-  class topology_builder
-  {
-    public:
-    topology_builder(std::string brokers, std::shared_ptr<codec> default_codec) : 
-      _brokers(brokers), 
-      _default_codec(default_codec) 
-    {}
-
-    template<class K, class tableV, class streamV, class V>
-    std::shared_ptr<left_join<K, tableV, streamV, V>> create_left_join(std::string tag, std::string table_name, std::string stream_name,  int32_t partition) {
-
-    }
-
-    private:
-    std::string             _brokers;
-    std::shared_ptr<codec>  _default_codec;
-  };
-  */
 }

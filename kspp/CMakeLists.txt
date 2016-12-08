@@ -12,6 +12,7 @@ SET(LIB_SRCS
   kafka_consumer.h
   kafka_consumer.cpp
   binary_encoder.h
+  topology_builder.h
   )
 	
 add_library (kspp STATIC ${LIB_SRCS})

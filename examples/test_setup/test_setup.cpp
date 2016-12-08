@@ -9,8 +9,10 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
+#include <boost/functional/hash.hpp>
 #include <kspp/kafka_sink.h>
 #include <kspp/binary_encoder.h>
+#include <kspp/topology_builder.h>
 
 static bool run = true;
 
@@ -33,48 +35,36 @@ int main(int argc, char **argv) {
 
   // boost::uuids::uuid, boost::uuids::uuid, binary_codec
 
-  auto codec = std::make_shared<csi::binary_codec>();
-
-  auto partitioner = [](const boost::uuids::uuid& key, const int64_t& value)->uint32_t { return value % 8; };
-
-  csi::kafka_sink<boost::uuids::uuid, int64_t, csi::binary_codec>  table_stream("localhost", "kspp_test0_table", codec, partitioner);
-  csi::kafka_sink<boost::uuids::uuid, int64_t, csi::binary_codec>  event_stream("localhost", "kspp_test0_eventstream", codec, partitioner);
+  auto codec       = std::make_shared<csi::binary_codec>();
+  auto builder     = csi::topology_builder<csi::binary_codec>("localhost", "C:\\tmp", codec);
+  auto partitioner = [](const boost::uuids::uuid& key)->uint32_t { return boost::hash<boost::uuids::uuid>()(key) % 8; };
+  auto table_stream = builder.create_kafka_sink<boost::uuids::uuid, int64_t>("kspp_test0_table", partitioner);
+  auto event_stream = builder.create_kafka_sink<boost::uuids::uuid, int64_t>("kspp_test0_eventstream", partitioner);
 
   std::vector<boost::uuids::uuid> ids;
-
-  auto t0 = std::chrono::high_resolution_clock::now();
 
   for (int i = 0; i != 10000; ++i) {
     ids.push_back(to_uuid(i));
   }
 
+  std::cerr << "creating kspp_test0_table" << std::endl;
   for (int64_t update_nr = 0; update_nr != 100; ++update_nr) {
     for (auto & i : ids) {
-      table_stream.produce(i, update_nr);
+      produce(*table_stream, i, update_nr);
     }
-    while (table_stream.queue_len())
-      table_stream.poll(0);
+    while (table_stream->queue_len()>10000)
+      table_stream->poll(0);
   }
 
+  std::cerr << "creating kspp_test0_eventstream" << std::endl;
   for (int64_t event_nr = 0; event_nr != 100; ++event_nr) {
     for (auto & i : ids) {
-      event_stream.produce(i, event_nr);
+      produce(*event_stream, i, event_nr);
     }
-    while (event_stream.queue_len()) {
-      event_stream.poll(0);
+    while (event_stream->queue_len()>10000) {
+      event_stream->poll(0);
     }
   }
 
-  table_stream.close();
-  event_stream.close();
-
-  /*
-  auto t1 = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<float> fs = t1 - t0;
-  std::chrono::milliseconds  d = std::chrono::duration_cast<std::chrono::milliseconds>(fs);
-  std::cout << d.count()/1000 << "s\n";
-  */
-
-  RdKafka::wait_destroyed(5000);
   return 0;
 }

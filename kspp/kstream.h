@@ -9,7 +9,7 @@ namespace csi {
   public:
     kstream(std::string nodeid, std::string brokers, std::string topic, int32_t partition, std::string storage_path, std::shared_ptr<codec> codec) :
       _offset_storage_path(storage_path),
-      _source(nodeid, brokers, topic, partition, storage_path, codec),
+      _source(brokers, topic, partition, codec),
       _state_store(storage_path + "\\" + nodeid + "\\" + topic + "_" + std::to_string(partition), codec),
       _current_offset(RdKafka::Topic::OFFSET_BEGINNING),
       _last_comitted_offset(RdKafka::Topic::OFFSET_BEGINNING),

@@ -10,6 +10,8 @@
 #include <kspp/join.h>
 #include <kspp/binary_encoder.h>
 #include <kspp/kafka_sink.h>
+#include <kspp/topology_builder.h>
+//#include <kspp_defs.h>
 
 static bool run = true;
 
@@ -124,8 +126,7 @@ int main(int argc, char **argv) {
   signal(SIGTERM, sigterm);
 
   auto codec = std::make_shared<csi::binary_codec>();
-
-  //auto partitioner = [](const boost::uuids::uuid& key, const int64_t& value)->uint32_t { return value % 8; };
+  auto builder = csi::topology_builder<csi::binary_codec>("localhost", "C:\\tmp", codec);
 
   /*
   kspp_PageViews
@@ -136,12 +137,12 @@ int main(int argc, char **argv) {
   */
 
   {
-    csi::kafka_sink<int64_t, page_view_data, csi::binary_codec> pageviews_sink("localhost", "kspp_PageViews", codec, [](const int64_t& key, const page_view_data& value)->uint32_t { return 0; });
-    pageviews_sink.produce(1, { 1440557383335, 1, "/home?user=1" });
-    pageviews_sink.produce(5, { 1440557383345, 5, "/home?user=5" });
-    pageviews_sink.produce(2, { 1440557383456, 2, "/profile?user=2" });
-    pageviews_sink.produce(1, { 1440557385365, 1, "/profile?user=1" });
-    pageviews_sink.produce(1, { 1440557385368, 1, "/profile?user=1" });
+    auto sink = builder.create_kafka_sink<int64_t, page_view_data>("kspp_PageViews", 0);
+    csi::produce<int64_t, page_view_data>(*sink, 1, {1440557383335, 1, "/home?user=1"});
+    csi::produce<int64_t, page_view_data>(*sink, 5, {1440557383345, 5, "/home?user=5"});
+    csi::produce<int64_t, page_view_data>(*sink, 2, {1440557383456, 2, "/profile?user=2"});
+    csi::produce<int64_t, page_view_data>(*sink, 1, {1440557385365, 1, "/profile?user=1"});
+    csi::produce<int64_t, page_view_data>(*sink, 1, {1440557385368, 1, "/profile?user=1"});
   }
 
   /*
@@ -154,11 +155,11 @@ int main(int argc, char **argv) {
   */
 
   {
-    csi::kafka_sink<int64_t, user_profile_data, csi::binary_codec> userprofiles_sink("localhost", "kspp_UserProfile", codec, [](const int64_t& key, const user_profile_data& value)->uint32_t { return 0; });
-    userprofiles_sink.produce(1, { 1440557383335, 1, "user1@aol.com" });
-    userprofiles_sink.produce(5, { 1440557383345, 5, "user5@gmail.com" });
-    userprofiles_sink.produce(2, { 1440557383456, 2, "user2@yahoo.com" });
-    userprofiles_sink.produce(1, { 1440557385365, 1, "user1-new-email-addr@comcast.com" });
+    auto sink = builder.create_kafka_sink<int64_t, user_profile_data>("kspp_UserProfile", 0);
+    csi::produce<int64_t, user_profile_data>(*sink, 1, {1440557383335, 1, "user1@aol.com"});
+    csi::produce<int64_t, user_profile_data>(*sink, 5, {1440557383345, 5, "user5@gmail.com"});
+    csi::produce<int64_t, user_profile_data>(*sink, 2, {1440557383456, 2, "user2@yahoo.com"});
+    csi::produce<int64_t, user_profile_data>(*sink, 1, {1440557385365, 1, "user1-new-email-addr@comcast.com"});
   }
 
   /*
@@ -170,87 +171,92 @@ int main(int argc, char **argv) {
   2 => {"last_modified_time":1440557385395, "user_id":2, "email":null}  <-- user has been deleted
   */
 
-  csi::kafka_source<int64_t, user_profile_data, csi::binary_codec> pageviews_source("example3-pageviews_source", "localhost", "kspp_PageViews", PARTITION, "C:\\tmp", codec);
-  csi::kafka_source<int64_t, user_profile_data, csi::binary_codec> userprofiles_source("example3-userprofiles_source", "localhost", "kspp_UserProfile", PARTITION, "C:\\tmp", codec);
-  
-
-  pageviews_source.start(-2);
-  userprofiles_source.start(-2);
-
-  while (!pageviews_source.eof())
   {
-    auto msg = pageviews_source.consume();
-    if (msg)
-    {
-      std::cerr << msg->event_time << ", " << msg->key << ", " << (msg->value ? to_string(*(msg->value)) : "NULL") << std::endl;
-    }
-  }
+    auto pageviews = builder.create_kafka_source<int64_t, page_view_data>("kspp_PageViews", 0);
+    auto userprofiles = builder.create_kafka_source<int64_t, user_profile_data>("kspp_UserProfile", 0);
 
-  while (!userprofiles_source.eof())
-  {
-    auto msg = userprofiles_source.consume();
-    if (msg)
-    {
-      std::cerr << msg->event_time << ", " << msg->key << ", " << (msg->value ? to_string(*(msg->value)) : "NULL") << std::endl;
-    }
-  }
-
-  //csi::kstream_builder builder = new csi::kstream_builder("localhost");
-  {
-  csi::kstream<int64_t, page_view_data, csi::binary_codec>  pageviews("example3-pageviews_tmp", "localhost", "kspp_PageViews", PARTITION, "C:\\tmp", codec);
-  pageviews.start();
-  while (!pageviews.eof())
-  {
-    auto msg = pageviews.consume();
-    if (msg)
-    {
-      std::cerr << msg->event_time << ", " << msg->key << ", " << (msg->value ? to_string(*(msg->value)) : "NULL") << std::endl;
-    }
-  }
-  pageviews.commit();
-  }
-
-
-  // verify that state store works...
-  {
-    auto userprofiles = std::make_shared<csi::ktable<int64_t, user_profile_data, csi::binary_codec>>("example3-verify-state-store", "localhost", "kspp_UserProfile", PARTITION, "C:\\tmp", codec);
-    userprofiles->start(-2);
-    while (!userprofiles->eof())
-    {
-      auto msg0 = userprofiles->consume();
-      if (msg0)
-      {
-        std::cerr << "consumed " << (msg0->value ? to_string(*(msg0->value)) : "NULL") << std::endl;
-        auto msg1 = userprofiles->get(msg0->key);
-        assert(msg1);
-        std::cerr << "expected " << (msg1->value ? to_string(*(msg1->value)) : "NULL") << std::endl;
-        //assert(*(msg0->value) == *(msg1->value));
+    pageviews->start(-2);
+    while (!pageviews->eof()) {
+      auto msg = pageviews->consume();
+      if (msg) {
+        std::cerr << msg->event_time << ", " << msg->key << ", " << (msg->value ? to_string(*(msg->value)) : "NULL") << std::endl;
       }
     }
-    userprofiles->commit();
-  }
 
-
-  auto userprofiles = std::make_shared<csi::ktable<int64_t, user_profile_data, csi::binary_codec>>("example3-pageviews", "localhost", "kspp_UserProfile", PARTITION, "C:\\tmp", codec);
-  auto pageviews    = std::make_shared<csi::kstream<int64_t, page_view_data, csi::binary_codec>>  ("example3-pageviews", "localhost", "kspp_PageViews",   PARTITION, "C:\\tmp", codec);
-  auto join         = std::make_shared<csi::left_join<int64_t, user_profile_data, page_view_data, page_view_decorated>>(userprofiles, pageviews, [](const int64_t& key, const user_profile_data& left, const page_view_data& right, page_view_decorated& row) {
-    row.user_id = key;
-    row.email = left.email;
-    row.time = right.time;
-    row.url = right.url;
-  });
-  join->start();
-  //auto page_decorated_views = std::make_shared<csi::kafka_sink<int64_t, page_view_decorated, csi::binary_codec>>("localhost", "kspp_PageViewsDecorated", codec, [](const int64_t& key, const page_view_decorated& value)->uint32_t { return 0; });
-
-  while (!join->eof())
-  {
-    auto row = join->consume();
-    if (row)
-    {
-      std::cerr << "join row : " << to_string(*row->value) << std::endl;
+    userprofiles->start(-2);
+    while (!userprofiles->eof()) {
+      auto msg = userprofiles->consume();
+      if (msg) {
+        std::cerr << msg->event_time << ", " << msg->key << ", " << (msg->value ? to_string(*(msg->value)) : "NULL") << std::endl;
+      }
     }
   }
-  join->commit(); // commits the event table
-  
+
+  {
+    auto pageviews = builder.create_kstream<int64_t, page_view_data>("example3-pageviews_tmp", "kspp_PageViews", 0);
+    pageviews->start();
+    while (!pageviews->eof()) {
+      auto msg = pageviews->consume();
+      if (msg) {
+        std::cerr << msg->event_time << ", " << msg->key << ", " << (msg->value ? to_string(*(msg->value)) : "NULL") << std::endl;
+      }
+    }
+    pageviews->commit();
+  }
+
+  //// verify that state store works...
+  //{
+  //  auto userprofiles = builder.create_ktable<int64_t, user_profile_data>("example3-verify-state-store", "kspp_UserProfile", 0);
+  //  userprofiles->start(-2);
+  //  while (!userprofiles->eof())
+  //  {
+  //    auto msg0 = userprofiles->consume();
+  //    if (msg0)
+  //    {
+  //      std::cerr << "consumed " << (msg0->value ? to_string(*(msg0->value)) : "NULL") << std::endl;
+  //      auto msg1 = userprofiles->get(msg0->key);
+  //      assert(msg1);
+  //      std::cerr << "expected " << (msg1->value ? to_string(*(msg1->value)) : "NULL") << std::endl;
+  //      //assert(*(msg0->value) == *(msg1->value));
+  //    }
+  //  }
+  //  userprofiles->commit();
+  //}
+
+  //{
+  //  auto userprofiles = builder.create_ktable<int64_t, user_profile_data>("example3-pageviews", "kspp_UserProfile", 0);
+  //  auto pageviews = builder.create_kstream<int64_t, page_view_data>("example3-pageviews", "kspp_PageViews", 0);
+  //  auto join = std::make_shared<csi::left_join<int64_t, user_profile_data, page_view_data, page_view_decorated>>(userprofiles, pageviews, [](const int64_t& key, const user_profile_data& left, const page_view_data& right, page_view_decorated& row) {
+  //    row.user_id = key;
+  //    row.email = left.email;
+  //    row.time = right.time;
+  //    row.url = right.url;
+  //  });
+  //  join->start();
+  //  while (!join->eof()) {
+  //    auto row = join->consume();
+  //    if (row) {
+  //      std::cerr << "join row : " << to_string(*row->value) << std::endl;
+  //    }
+  //  }
+  //  join->commit(); // commits the event table
+  //}
+
+  {
+    auto join = builder.create_left_join<int64_t, page_view_data, user_profile_data, page_view_decorated>("example3-join2",  "kspp_PageViews", "kspp_UserProfile", PARTITION, [](const int64_t& key, const page_view_data& left, const user_profile_data& right, page_view_decorated& row) {
+      row.user_id = key;
+      row.email = right.email;
+      row.time = left.time;
+      row.url = left.url;
+    });
+    auto sink = builder.create_kafka_sink<int64_t, page_view_decorated>("kspp_PageViewsDecorated", 0);
+
+    join->start();
+    while (!join->eof()) {
+      consume(*join, *sink);
+    }
+    join->commit();
+  }
+
   return 0;
 }

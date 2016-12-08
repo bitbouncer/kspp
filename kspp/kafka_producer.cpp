@@ -44,13 +44,13 @@ kafka_producer::kafka_producer(std::string brokers, std::string topic) :
 
 kafka_producer::~kafka_producer() {
   close();
-  std::cerr << "% produced " << _msg_cnt << " messages (" << _msg_bytes << " bytes)" << std::endl;
+  std::cerr << _topic << ", produced " << _msg_cnt << " messages (" << _msg_bytes << " bytes)" << std::endl;
 }
 
 int kafka_producer::produce(int32_t partition, rdkafka_memory_management_mode mode, void* key, size_t keysz, void* value, size_t valuesz) {
   RdKafka::ErrorCode resp = _producer->produce(_rd_topic.get(), partition, (int) mode, value, valuesz, key, keysz, NULL);
   if (resp != RdKafka::ERR_NO_ERROR) {
-    std::cerr << "% Produce failed: " << RdKafka::err2str(resp) << std::endl;
+    std::cerr << _topic  << ", % Produce failed: " << RdKafka::err2str(resp) << std::endl;
     return (int) resp;
   }
   _msg_cnt++;

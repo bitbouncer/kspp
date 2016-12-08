@@ -7,6 +7,10 @@ namespace csi {
   struct krecord
   {
     krecord() : event_time(-1), offset(-1) {}
+    krecord(const K& k) : event_time(-1), offset(-1), key(k) {}
+    krecord(const K& k, const V& v) : event_time(-1), offset(-1), key(k), value(new V(v)) {}
+    //krecord(const K& k, std::unique_ptr<V> v) : event_time(-1), offset(-1), key(k), value(std::move(v)) {}
+
     K                  key;
     std::unique_ptr<V> value;
     int64_t            event_time;
@@ -31,15 +35,6 @@ namespace csi {
   };
 
   template<class K, class V>
-  class sink : public knode
-  {
-  public:
-    sink() {}
-    virtual int produce(const K& key, const V& val) = 0;
-    virtual int produce(const K& key) = 0;
-  };
-
-  template<class K, class V>
   class ksource : public knode
   {
   public:
@@ -52,4 +47,46 @@ namespace csi {
     virtual void commit() {}
     virtual void flush_offset() {}
   };
+
+  template<class K, class V>
+  class sink : public knode
+  {
+    public:
+    sink() {}
+    virtual int         produce(std::unique_ptr<krecord<K, V>> r)=0;
+    virtual void        close() = 0;
+    virtual size_t      queue_len() = 0;
+    virtual std::string topic() const = 0;
+    virtual void        poll(int timeout) = 0; // ????
+  };
+
+  template<class K, class V>
+  std::unique_ptr<krecord<K, V>> create_krecord(const K& k, const V& v) {
+    return std::unique_ptr<krecord<K, V>>(new krecord<K, V>(k, v));
+  }
+
+  template<class K, class V>
+  std::unique_ptr<krecord<K, V>> create_krecord(const K& k) {
+    return std::unique_ptr<krecord<K, V>>(new krecord<K, V>(k));
+  }
+
+  template<class K, class V>
+  size_t consume(ksource<K, V>& src, sink<K, V>& dst) {
+    auto p = src.consume();
+    if (!p)
+      return 0;
+    dst.produce(std::move(p));
+    return 1;
+  }
+
+  template<class K, class V>
+  int produce(sink<K, V>& sink, const K& key, const V& val) {
+    return sink.produce(std::move<>(create_krecord<K, V>(key, val)));
+  }
+
+  template<class K, class V>
+  int produce(sink<K, V>& sink, const K& key) {
+    return sink.produce(std::move<>(create_krecord<K, V>(key)));
+  }
+
 }; // namespace
