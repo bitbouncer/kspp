@@ -1,13 +1,15 @@
+#include <boost/filesystem.hpp>
 #include "kafka_source.h"
 #include "state_store.h"
+#include "kspp_defs.h"
 #pragma once
 
 namespace csi {
   template<class K, class V, class codec>
-  class kstream : public ksource<K, V>
+  class kstream_impl : public kstream<K, V>
   {
   public:
-    kstream(std::string nodeid, std::string brokers, std::string topic, int32_t partition, std::string storage_path, std::shared_ptr<codec> codec) :
+  kstream_impl(std::string nodeid, std::string brokers, std::string topic, int32_t partition, std::string storage_path, std::shared_ptr<codec> codec) :
       _offset_storage_path(storage_path),
       _source(brokers, topic, partition, codec),
       _state_store(storage_path + "\\" + nodeid + "\\" + topic + "_" + std::to_string(partition), codec),
@@ -20,7 +22,7 @@ namespace csi {
       _offset_storage_path /= "\\kafka_offset.bin";
     }
 
-    virtual ~kstream() {
+    virtual ~kstream_impl() {
       close();
     }
 

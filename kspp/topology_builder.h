@@ -1,7 +1,7 @@
 #include <boost/filesystem.hpp>
 #include "join.h"
-#include "kstream.h"
-#include "ktable.h"
+#include "kstream_impl.h"
+#include "ktable_impl.h"
 #include "kafka_sink.h"
 #include "kafka_source.h"
 #pragma once
@@ -20,8 +20,8 @@ class topology_builder
 
   template<class K, class streamV, class tableV, class R>
   std::shared_ptr<left_join<K, streamV, tableV, R>> create_left_join(std::string tag, std::string stream_topic, std::string table_topic, int32_t partition, typename csi::left_join<K, streamV, tableV, R>::value_joiner value_joiner) {
-    auto stream = std::make_shared<csi::kstream<K, streamV, codec>>(tag, _brokers, stream_topic, partition, _storage_path, _default_codec);
-    auto table = std::make_shared<csi::ktable<K, tableV, codec>>(tag, _brokers, table_topic, partition, _storage_path, _default_codec);
+    auto stream = std::make_shared<csi::kstream_impl<K, streamV, codec>>(tag, _brokers, stream_topic, partition, _storage_path, _default_codec);
+    auto table = std::make_shared<csi::ktable_impl<K, tableV, codec>>(tag, _brokers, table_topic, partition, _storage_path, _default_codec);
     return std::make_shared<csi::left_join<K, streamV, tableV, R>>(stream, table, value_joiner);
   }
 
@@ -41,13 +41,13 @@ class topology_builder
   }
 
   template<class K, class V>
-  std::shared_ptr<csi::ksource<K, V>> create_kstream(std::string tag, std::string topic, int32_t partition) {
-    return std::make_shared<csi::kstream<K, V, codec>>(tag, _brokers, topic, partition, _storage_path, _default_codec);
+  std::shared_ptr<csi::kstream<K, V>> create_kstream(std::string tag, std::string topic, int32_t partition) {
+    return std::make_shared<csi::kstream_impl<K, V, codec>>(tag, _brokers, topic, partition, _storage_path, _default_codec);
   }
 
   template<class K, class V>
-  std::shared_ptr<csi::ksource<K, V>> create_ktable(std::string tag, std::string topic, int32_t partition) {
-    return std::make_shared<csi::ktable<K, V, codec>>(tag, _brokers, topic, partition, _storage_path, _default_codec);
+  std::shared_ptr<csi::ktable<K, V>> create_ktable(std::string tag, std::string topic, int32_t partition) {
+    return std::make_shared<csi::ktable_impl<K, V, codec>>(tag, _brokers, topic, partition, _storage_path, _default_codec);
   }
 
   private:

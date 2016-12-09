@@ -1,8 +1,8 @@
 SET(LIB_SRCS
   kspp_defs.h
   kspp.h
-  kstream.h
-  ktable.h
+  kstream_impl.h
+  ktable_impl.h
   join.h
   state_store.h
   kafka_source.h

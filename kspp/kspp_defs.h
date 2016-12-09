@@ -31,9 +31,9 @@ namespace csi {
   {
   public:
     virtual ~knode() {}
+    virtual void close() = 0;
   protected:
     knode() {}
-    virtual void close() = 0;
   };
 
   template<class K, class V>
@@ -41,7 +41,6 @@ namespace csi {
   {
   public:
     virtual std::unique_ptr<krecord<K, V>> consume() = 0;
-    virtual std::unique_ptr<krecord<K, V>> get(const K& key) { return NULL; }
     virtual bool eof() const = 0;
     virtual void start() {}
     virtual void start(int64_t offset) {}
@@ -50,15 +49,34 @@ namespace csi {
   };
 
   template<class K, class V>
+  class ksource_materialized: public ksource<K, V>
+  {
+    public:
+    virtual std::unique_ptr<krecord<K, V>> get(const K& key) = 0;
+  };
+  
+  template<class K, class V>
+  class kstream : public ksource_materialized<K,V>
+  {
+  };
+
+  template<class K, class V>
+  class ktable : public ksource_materialized<K, V>
+  {
+  };
+
+  template<class K, class V>
   class ksink : public knode
   {
     public:
     ksink() {}
-    virtual int         produce(std::unique_ptr<krecord<K, V>> r)=0;
+    virtual int         produce(std::unique_ptr<krecord<K, V>> r) = 0;
     virtual size_t      queue_len() = 0;
     virtual std::string topic() const = 0;
     virtual void        poll(int timeout) = 0; // ????
   };
+
+
 
   template<class K, class V>
   std::unique_ptr<krecord<K, V>> create_krecord(const K& k, const V& v) {

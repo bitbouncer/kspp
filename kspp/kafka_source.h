@@ -10,7 +10,6 @@ template<class K, class V, class codec>
 class kafka_source : public ksource<K, V>
 {
   public:
-  //kafka_source(std::string nodeid, std::string brokers, std::string topic, int32_t partition, std::string root_path, std::shared_ptr<codec> codec) :
   kafka_source(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<codec> codec) :
     _codec(codec),
     _consumer(brokers, topic, partition) {}

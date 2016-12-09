@@ -5,9 +5,6 @@
 #include <csignal>
 #include <cstring>
 #include <chrono>
-#include <kspp/ktable.h>
-#include <kspp/kstream.h>
-#include <kspp/join.h>
 #include <kspp/binary_encoder.h>
 #include <kspp/topology_builder.h>
 
