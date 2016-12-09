@@ -1,5 +1,6 @@
 #include <memory>
 #include <cstdint>
+#include <string>
 
 #pragma once
 namespace csi {
@@ -32,6 +33,7 @@ namespace csi {
     virtual ~knode() {}
   protected:
     knode() {}
+    virtual void close() = 0;
   };
 
   template<class K, class V>
@@ -43,18 +45,16 @@ namespace csi {
     virtual bool eof() const = 0;
     virtual void start() {}
     virtual void start(int64_t offset) {}
-    virtual void close() {}
     virtual void commit() {}
     virtual void flush_offset() {}
   };
 
   template<class K, class V>
-  class sink : public knode
+  class ksink : public knode
   {
     public:
-    sink() {}
+    ksink() {}
     virtual int         produce(std::unique_ptr<krecord<K, V>> r)=0;
-    virtual void        close() = 0;
     virtual size_t      queue_len() = 0;
     virtual std::string topic() const = 0;
     virtual void        poll(int timeout) = 0; // ????
@@ -71,7 +71,7 @@ namespace csi {
   }
 
   template<class K, class V>
-  size_t consume(ksource<K, V>& src, sink<K, V>& dst) {
+  size_t consume(ksource<K, V>& src, ksink<K, V>& dst) {
     auto p = src.consume();
     if (!p)
       return 0;
@@ -80,12 +80,12 @@ namespace csi {
   }
 
   template<class K, class V>
-  int produce(sink<K, V>& sink, const K& key, const V& val) {
+  int produce(ksink<K, V>& sink, const K& key, const V& val) {
     return sink.produce(std::move<>(create_krecord<K, V>(key, val)));
   }
 
   template<class K, class V>
-  int produce(sink<K, V>& sink, const K& key) {
+  int produce(ksink<K, V>& sink, const K& key) {
     return sink.produce(std::move<>(create_krecord<K, V>(key)));
   }
 

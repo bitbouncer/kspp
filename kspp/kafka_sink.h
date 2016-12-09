@@ -8,7 +8,7 @@
 
 namespace csi {
 template<class K, class V, class codec>
-class kafka_sink : public sink<K, V>
+class kafka_sink : public ksink<K, V>
 {
   public:
   //typedef std::function<uint32_t(const K& key, const V& val)> partitioner;

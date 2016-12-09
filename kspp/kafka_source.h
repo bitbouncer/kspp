@@ -2,6 +2,7 @@
 #include <boost/filesystem.hpp>
 #include "kspp_defs.h"
 #include "kafka_consumer.h"
+#include <iostream>
 #pragma once
 
 namespace csi {
