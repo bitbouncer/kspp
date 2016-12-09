@@ -36,6 +36,15 @@ class left_join : public ksource<K, R>
     _table->close();
     _stream->close();
   }
+  
+  bool consume_right() {
+    if (!_table->eof()) {
+      _table->consume();
+      _table->commit();
+      return true;
+    }
+    return false;
+  }
 
   virtual std::unique_ptr<krecord<K, R>> consume() {
     if (!_table->eof()) {

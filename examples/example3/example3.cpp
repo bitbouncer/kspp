@@ -1,20 +1,10 @@
 #include <iostream>
 #include <string>
-#include <cstdlib>
-#include <cstdio>
-#include <csignal>
-#include <cstring>
 #include <chrono>
 #include <kspp/binary_encoder.h>
 #include <kspp/topology_builder.h>
 
-static bool run = true;
-
 #define PARTITION 0
-
-static void sigterm(int sig) {
-  run = false;
-}
 
 struct page_view_data
 {
@@ -114,22 +104,15 @@ std::string to_string(const page_view_decorated& pd) {
   return std::string("time") + std::to_string(pd.time) + ", userid:" + std::to_string(pd.user_id) + ", url:" + pd.url + ", email:" + pd.email;
 }
 
+template<class T>
+std::string ksource_to_string(const T&  ksource) {
+  std::string res = std::to_string(ksource.event_time) + ", " + std::to_string(ksource.key) + ", " + (ksource.value ? to_string(*(ksource.value)) : "NULL");
+  return res;
+}
+
 int main(int argc, char **argv) {
-  std::string brokers = "localhost";
-
-  signal(SIGINT, sigterm);
-  signal(SIGTERM, sigterm);
-
   auto codec = std::make_shared<csi::binary_codec>();
   auto builder = csi::topology_builder<csi::binary_codec>("localhost", "C:\\tmp", codec);
-
-  /*
-  kspp_PageViews
-  1 = > {"time":1440557383335, "user_id" : 1, "url" : "/home?user=1"}
-  5 = > {"time":1440557383345, "user_id" : 5, "url" : "/home?user=5"}
-  2 = > {"time":1440557383456, "user_id" : 2, "url" : "/profile?user=2"}
-  1 = > {"time":1440557385365, "user_id" : 1, "url" : "/profile?user=1"}
-  */
 
   {
     auto sink = builder.create_kafka_sink<int64_t, page_view_data>("kspp_PageViews", 0);
@@ -140,15 +123,6 @@ int main(int argc, char **argv) {
     csi::produce<int64_t, page_view_data>(*sink, 1, {1440557385368, 1, "/profile?user=1"});
   }
 
-  /*
-  kspp_UserProfile
-  1 => {"last_modified_time":1440557383335, "user_id":1, "email":"user1@aol.com"}
-  5 => {"last_modified_time":1440557383345, "user_id":5, "email":"user5@gmail.com"}
-  2 => {"last_modified_time":1440557383456, "user_id":2, "email":"user2@yahoo.com"}
-  1 => {"last_modified_time":1440557385365, "user_id":1, "email":"user1-new-email-addr@comcast.com"}
-  2 => {"last_modified_time":1440557385395, "user_id":2, "email":null}  <-- user has been deleted
-  */
-
   {
     auto sink = builder.create_kafka_sink<int64_t, user_profile_data>("kspp_UserProfile", 0);
     csi::produce<int64_t, user_profile_data>(*sink, 1, {1440557383335, 1, "user1@aol.com"});
@@ -156,15 +130,6 @@ int main(int argc, char **argv) {
     csi::produce<int64_t, user_profile_data>(*sink, 2, {1440557383456, 2, "user2@yahoo.com"});
     csi::produce<int64_t, user_profile_data>(*sink, 1, {1440557385365, 1, "user1-new-email-addr@comcast.com"});
   }
-
-  /*
-  kspp_ViewCountsByUser
-  1 => {"last_modified_time":1440557383335, "user_id":1, "count":1"}
-  5 => {"last_modified_time":1440557383345, "user_id":5, "email":"user5@gmail.com"}
-  2 => {"last_modified_time":1440557383456, "user_id":2, "email":"user2@yahoo.com"}
-  1 => {"last_modified_time":1440557385365, "user_id":1, "email":"user1-new-email-addr@comcast.com"}
-  2 => {"last_modified_time":1440557385395, "user_id":2, "email":null}  <-- user has been deleted
-  */
 
   {
     auto pageviews = builder.create_kafka_source<int64_t, page_view_data>("kspp_PageViews", 0);
@@ -174,7 +139,8 @@ int main(int argc, char **argv) {
     while (!pageviews->eof()) {
       auto msg = pageviews->consume();
       if (msg) {
-        std::cerr << msg->event_time << ", " << msg->key << ", " << (msg->value ? to_string(*(msg->value)) : "NULL") << std::endl;
+        std::cerr << ksource_to_string(*msg) << std::endl;
+        //std::cerr << msg->event_time << ", " << msg->key << ", " << (msg->value ? to_string(*(msg->value)) : "NULL") << std::endl;
       }
     }
 
@@ -182,7 +148,8 @@ int main(int argc, char **argv) {
     while (!userprofiles->eof()) {
       auto msg = userprofiles->consume();
       if (msg) {
-        std::cerr << msg->event_time << ", " << msg->key << ", " << (msg->value ? to_string(*(msg->value)) : "NULL") << std::endl;
+        std::cerr << ksource_to_string(*msg) << std::endl;
+        //std::cerr << msg->event_time << ", " << msg->key << ", " << (msg->value ? to_string(*(msg->value)) : "NULL") << std::endl;
       }
     }
   }
@@ -193,7 +160,8 @@ int main(int argc, char **argv) {
     while (!pageviews->eof()) {
       auto msg = pageviews->consume();
       if (msg) {
-        std::cerr << msg->event_time << ", " << msg->key << ", " << (msg->value ? to_string(*(msg->value)) : "NULL") << std::endl;
+        std::cerr << ksource_to_string(*msg) << std::endl;
+        //std::cerr << msg->event_time << ", " << msg->key << ", " << (msg->value ? to_string(*(msg->value)) : "NULL") << std::endl;
       }
     }
     pageviews->commit();
@@ -246,7 +214,7 @@ int main(int argc, char **argv) {
     });
     auto sink = builder.create_kafka_sink<int64_t, page_view_decorated>("kspp_PageViewsDecorated", 0);
 
-    join->start();
+    join->start(-2); 
     while (!join->eof()) {
       consume(*join, *sink);
     }
