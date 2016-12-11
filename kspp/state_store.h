@@ -3,6 +3,7 @@
 #include <strstream>
 #include <boost/filesystem.hpp>
 #include <rocksdb/db.h>
+#include <kspp/kspp_defs.h>
 
 namespace csi {
   template<class K, class V, class codec>
@@ -10,6 +11,51 @@ namespace csi {
   {
   public:
   enum { MAX_KEY_SIZE = 10000, MAX_VALUE_SIZE= 100000 };
+  
+  class kstate_store_iterator : public ktable_iterator<K, V>
+  {
+  public:
+    kstate_store_iterator(rocksdb::DB* db, std::shared_ptr<codec> codec)
+      : _it(db->NewIterator(rocksdb::ReadOptions()))
+      , _codec(codec) {
+      _it->SeekToFirst();
+    }
+
+    virtual bool valid() const {
+      return _it->Valid();
+    }
+
+    virtual void next() {
+      if (!_it->Valid())
+        return;
+      _it->Next();
+    }
+
+    virtual std::unique_ptr<krecord<K, V>> item() const {
+      if (!_it->Valid())
+        return NULL;
+      rocksdb::Slice key   = _it->key();
+      rocksdb::Slice value = _it->value();
+
+      std::unique_ptr<krecord<K, V>> res(new krecord<K, V>());
+      res->offset = -1;
+      res->event_time = -1; // ????
+      res->value = std::unique_ptr<V>(new V());
+
+      std::istrstream isk(key.data(), key.size());
+      if (_codec->decode(isk, res->key) == 0)
+        return NULL;
+
+      std::istrstream isv(value.data(), value.size());
+      if (_codec->decode(isv, *res->value)==0)
+        return NULL;
+      return res;
+    }
+
+  private:
+    std::unique_ptr<rocksdb::Iterator> _it;
+    std::shared_ptr<codec>             _codec;
+  };
 
     kstate_store(boost::filesystem::path storage_path, std::shared_ptr<codec> codec) :
       _codec(codec) {
@@ -84,8 +130,13 @@ namespace csi {
       }
       return res;
     }
+
+    std::shared_ptr<csi::ktable_iterator<K,V>> iterator() {
+      return std::make_shared<kstate_store_iterator>(_db.get(), _codec);
+    }
+
   private:
-    std::unique_ptr<rocksdb::DB> _db;
+    std::unique_ptr<rocksdb::DB> _db; // maybee this should be a shared ptr since we're letting iterators out...
     std::shared_ptr<codec>       _codec;
   };
 }

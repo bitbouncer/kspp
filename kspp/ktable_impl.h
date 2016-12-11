@@ -103,6 +103,10 @@ class ktable_impl : public ktable<K, V>
     return _state_store.get(key);
   }
 
+  virtual std::shared_ptr<csi::ktable_iterator<K, V>> iterator() {
+    return _state_store.iterator();
+  }
+
   private:
   kafka_source<K, V, codec> _source;
   kstate_store<K, V, codec> _state_store;

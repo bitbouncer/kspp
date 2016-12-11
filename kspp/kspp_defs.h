@@ -49,6 +49,15 @@ namespace csi {
   };
 
   template<class K, class V>
+  class ktable_iterator
+  {
+  public:
+    virtual ~ktable_iterator() {}
+    virtual void next() = 0;
+    virtual std::unique_ptr<krecord<K, V>> item() const = 0;
+    virtual bool valid() const = 0;
+  };
+  template<class K, class V>
   class ksource_materialized: public ksource<K, V>
   {
     public:
@@ -63,6 +72,8 @@ namespace csi {
   template<class K, class V>
   class ktable : public ksource_materialized<K, V>
   {
+  public:
+    virtual std::shared_ptr<csi::ktable_iterator<K,V>> iterator() = 0;
   };
 
   template<class K, class V>
