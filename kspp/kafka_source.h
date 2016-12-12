@@ -43,17 +43,17 @@ class kafka_source : public ksource<K, V>
   virtual void flush_offset() {
   }
   
-  virtual  std::unique_ptr<krecord<K, V>> consume() {
+  virtual  std::shared_ptr<krecord<K, V>> consume() {
     auto p = _consumer.consume();
     return p ? parse(p) : NULL;
   }
 
   private:
-  std::unique_ptr<krecord<K, V>> parse(const std::unique_ptr<RdKafka::Message> & ref) {
+  std::shared_ptr<krecord<K, V>> parse(const std::unique_ptr<RdKafka::Message> & ref) {
     if (!ref)
       return NULL;
 
-    std::unique_ptr<krecord<K, V>> res(new krecord<K, V>);
+   auto res = std::make_shared<krecord<K, V>>();
 
     res->event_time = ref->timestamp().timestamp;
     res->offset = ref->offset();
@@ -68,7 +68,7 @@ class kafka_source : public ksource<K, V>
     size_t sz = ref->len();
     if (sz) {
       std::istrstream vs((const char*) ref->payload(), sz);
-      res->value = std::unique_ptr<V>(new V);
+      res->value = std::make_shared<V>();
       size_t consumed = _codec->decode(vs, *res->value);
       if (consumed == 0) {
         std::cerr << "ksource::parse, topic: " << _consumer.topic() << ", decode value failed, actual payload sz:" << sz <<std::endl;

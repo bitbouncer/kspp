@@ -228,14 +228,19 @@ int main(int argc, char **argv) {
     while (!table->eof()) {
       auto msg = table->consume();
     }
-    for (auto it = table->iterator(); it->valid(); it->next())       {
-      std::cerr << "item : " << ksource_to_string(*it->item()) << std::endl;
-    }
+    for (auto it = table->begin(), end = table->end(); it != end; ++it)
+      std::cerr << "item : " << ksource_to_string(**it) << std::endl;
   }
 
-
-
-
-
+  std::cerr << "using range iterators " << std::endl;
+  {
+    auto table = builder.create_ktable<int64_t, user_profile_data>("example3-kspp_UserProfile_tmp0", "kspp_UserProfile", 0);
+    table->start();
+    while (!table->eof()) {
+      auto msg = table->consume();
+    }
+    for (auto i : *table)
+      std::cerr << "item : " << ksource_to_string(*i) << std::endl;
+  }
   return 0;
 }

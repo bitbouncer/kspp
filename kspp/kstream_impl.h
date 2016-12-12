@@ -59,7 +59,7 @@ namespace csi {
       return _source.eof();
     }
 
-    virtual  std::unique_ptr<krecord<K, V>> consume() {
+    virtual  std::shared_ptr<krecord<K, V>> consume() {
       auto p = _source.consume();
       if (p) {
         _current_offset = p->offset;
@@ -84,7 +84,7 @@ namespace csi {
       return _current_offset;
     }
 
-    virtual std::unique_ptr<krecord<K, V>> get(const K& key) {
+    virtual std::shared_ptr<krecord<K, V>> get(const K& key) {
       return _state_store.get(key);
     }
 

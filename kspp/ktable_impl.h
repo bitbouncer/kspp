@@ -4,17 +4,6 @@
 #include "kspp_defs.h"
 #pragma once
 
-//namespace csi {
-//  template<class K, class V, class codec>
-//  class ktable_impl : public ktable<K, V>, public kstream_impl<K, V, codec>
-//  {
-//  public:
-//  ktable_impl(std::string nodeid, std::string brokers, std::string topic, int32_t partition, std::string storage_path, std::shared_ptr<codec> codec) :
-//      kstream_impl(nodeid, brokers, topic, partition, storage_path, codec) {}
-//  };
-//};
-
-
 #include "kafka_source.h"
 #include "state_store.h"
 #pragma once
@@ -74,7 +63,7 @@ class ktable_impl : public ktable<K, V>
     return _source.eof();
   }
 
-  virtual  std::unique_ptr<krecord<K, V>> consume() {
+  virtual  std::shared_ptr<krecord<K, V>> consume() {
     auto p = _source.consume();
     if (p) {
       _current_offset = p->offset;
@@ -99,21 +88,40 @@ class ktable_impl : public ktable<K, V>
     return _current_offset;
   }
 
-  virtual std::unique_ptr<krecord<K, V>> get(const K& key) {
+  virtual std::shared_ptr<krecord<K, V>> get(const K& key) {
     return _state_store.get(key);
   }
 
-  virtual std::shared_ptr<csi::ktable_iterator<K, V>> iterator() {
+  /*
+  virtual std::shared_ptr<csi::ktable_iterator<K, V>> iteratorX() {
     return _state_store.iterator();
   }
+  */
+
+  virtual csi::ktable<K, V>::iterator begin(void) {
+    return _state_store.begin();
+  }
+
+  virtual csi::ktable<K, V>::iterator end() {
+    return _state_store.end();
+  }
+
+  /*
+  virtual ktable_range_iterator<K, V> begin() {
+    return _state_store.begin();
+  }
+
+  virtual ktable_range_iterator<K, V> end() {
+    return _state_store.end();
+  }
+  */
 
   private:
   kafka_source<K, V, codec> _source;
   kstate_store<K, V, codec> _state_store;
-
-  boost::filesystem::path _offset_storage_path;
-  int64_t                 _current_offset;
-  int64_t                 _last_comitted_offset;
-  int64_t                 _last_flushed_offset;
+  boost::filesystem::path   _offset_storage_path;
+  int64_t                   _current_offset;
+  int64_t                   _last_comitted_offset;
+  int64_t                   _last_flushed_offset;
 };
 };

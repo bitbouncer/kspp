@@ -9,8 +9,6 @@ template<class K, class streamV, class tableV, class R>
 class left_join : public ksource<K, R>
 {
   public:
-    //typedef std::unique_ptr<krecord<K, V>> record_type;
-    //typedef std::function<record_type(const K& key, const tableV& left, const streamV& right, V& value)> assign_row_function;
   typedef std::function<void(const K& key, const streamV& left, const tableV& right, R& result)> value_joiner;
 
   left_join(std::shared_ptr<kstream<K, streamV>> stream, std::shared_ptr<ktable<K, tableV>> table, value_joiner f) :
@@ -46,7 +44,7 @@ class left_join : public ksource<K, R>
     return false;
   }
 
-  virtual std::unique_ptr<krecord<K, R>> consume() {
+  virtual std::shared_ptr<krecord<K, R>> consume() {
     if (!_table->eof()) {
       // just eat it... no join since we only joins with events????
       _table->consume();
@@ -61,16 +59,13 @@ class left_join : public ksource<K, R>
     auto table_row = _table->get(e->key);
     if (table_row) {
       if (e->value) {
-        std::unique_ptr<csi::krecord<K, R>> p(new csi::krecord<K, R>());
-        p->value = std::unique_ptr<R>(new R());
-        p->key = e->key;
+        auto p = std::make_shared<csi::krecord<K, R>>(e->key, std::make_shared<R>());
         p->event_time = e->event_time;
         p->offset = e->offset;
         _value_joiner(e->key, *e->value, *table_row->value, *p->value);
         return p;
       } else {
-        std::unique_ptr<csi::krecord<K, R>> p(new csi::krecord<K, R>());
-        p->key = e->key;
+        auto p = std::make_shared<csi::krecord<K, R>>(e->key);
         p->event_time = e->event_time;
         p->offset = e->offset;
         return p;

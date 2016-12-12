@@ -4,6 +4,7 @@
 #include <istream>
 
 namespace csi {
+  /*
   template<class T>
   inline size_t binary_encode(const T& a, std::ostream& dst) {
     dst.write((const char*)&a, sizeof(T));
@@ -14,6 +15,45 @@ namespace csi {
   inline size_t binary_decode(std::istream& src, T& dst) {
     src.read((char*)&dst, sizeof(T));
     return src.good() ? sizeof(T) : 0;
+  }
+  */
+
+  inline size_t binary_encode(const int64_t& a, std::ostream& dst) {
+  dst.write((const char*)&a, sizeof(int64_t));
+  return sizeof(int64_t);
+  }
+
+  inline size_t binary_decode(std::istream& src, int64_t& dst) {
+  src.read((char*)&dst, sizeof(int64_t));
+  return src.good() ? sizeof(int64_t) : 0;
+  }
+
+  inline size_t binary_encode(const int32_t& a, std::ostream& dst) {
+    dst.write((const char*) &a, sizeof(int32_t));
+    return sizeof(int32_t);
+  }
+
+  inline size_t binary_decode(std::istream& src, int32_t& dst) {
+    src.read((char*) &dst, sizeof(int32_t));
+    return src.good() ? sizeof(int32_t) : 0;
+  }
+
+  inline size_t binary_encode(bool a, std::ostream& dst) {
+    if (a) {
+      char one = 0x01;
+      dst.write((const char*) &one, 1);
+    } else {
+      char zero = 0x00;
+      dst.write((const char*) &zero, 1);
+    }
+    return sizeof(1);
+  }
+
+  inline size_t binary_decode(std::istream& src, bool& dst) {
+    char ch;
+    src.read((char*) &ch, 1);
+    dst = (ch == 0x00) ? false : true;
+    return src.good() ? 1 : 0;
   }
 
   inline size_t binary_encode(const boost::uuids::uuid& a, std::ostream& dst) {
@@ -43,7 +83,7 @@ namespace csi {
     src.read((char*) dst.data(), sz);
     return src.good() ? sz + sizeof(uint32_t) : 0;
   }
-  
+
   class binary_codec
   {
   public:

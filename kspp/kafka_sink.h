@@ -24,7 +24,7 @@ class kafka_sink : public ksink<K, V>
     close(); 
   }
  
-  virtual int produce(std::unique_ptr<krecord<K, V>> r) {
+  virtual int produce(std::shared_ptr<krecord<K, V>> r) {
     void* kp = NULL;
     void* vp = NULL;
     size_t ksize = 0;
