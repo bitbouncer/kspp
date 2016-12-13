@@ -91,5 +91,75 @@ class kafka_source : public ksource<K, V>
   kafka_consumer          _consumer;
   std::shared_ptr<codec>  _codec;
 };
+
+template<class V, class codec>
+class kafka_source<void, V, codec> : public ksource<void, V>
+{
+  public:
+  kafka_source(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<codec> codec) :
+    _codec(codec),
+    _consumer(brokers, topic, partition) {}
+
+  virtual ~kafka_source() {
+    close();
+  }
+
+  virtual void start(int64_t offset) {
+    _consumer.start(offset);
+  }
+
+  //TBD get offsets from kafka
+  virtual void start() {
+    _consumer.start(-2);
+  }
+
+  virtual void close() {
+    _consumer.close();
+  }
+
+  virtual inline bool eof() const {
+    return _consumer.eof();
+  }
+
+  // TBD lazy commit offsets to kafka
+  virtual void commit() {}
+
+  // TBD hard commit offsets to kafka
+  virtual void flush_offset() {}
+
+  virtual  std::shared_ptr<krecord<void, V>> consume() {
+    auto p = _consumer.consume();
+    return p ? parse(p) : NULL;
+  }
+
+  private:
+  std::shared_ptr<krecord<void, V>> parse(const std::unique_ptr<RdKafka::Message> & ref) {
+    if (!ref)
+      return NULL;
+
+    auto res = std::make_shared<krecord<void, V>>();
+
+    res->event_time = ref->timestamp().timestamp;
+    res->offset = ref->offset();
+    size_t sz = ref->len();
+    if (sz) {
+      std::istrstream vs((const char*) ref->payload(), sz);
+      res->value = std::make_shared<V>();
+      size_t consumed = _codec->decode(vs, *res->value);
+      if (consumed == 0) {
+        LOGPREFIX_ERROR << ", decode value failed, size:" << sz;
+        return NULL;
+      } else if (consumed != sz) {
+        LOGPREFIX_ERROR << ", decode value failed, consumed: " << consumed << ", actual: " << sz;
+        return NULL;
+      }
+    }
+    return res;
+  }
+
+  kafka_consumer          _consumer;
+  std::shared_ptr<codec>  _codec;
+};
+
 };
 

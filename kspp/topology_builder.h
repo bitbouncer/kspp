@@ -27,7 +27,7 @@ class topology_builder
 
   template<class K, class V>
   std::shared_ptr<csi::ksink<K, V>> create_kafka_sink(std::string topic, int32_t partition) {
-    return std::make_shared<csi::kafka_sink<K, V, codec>>(_brokers, topic, _default_codec, [partition](const K&) { return partition; });
+    return std::make_shared<csi::kafka_sink<K, V, codec>>(_brokers, topic, _default_codec, partition);
   }
 
   template<class K, class V>
