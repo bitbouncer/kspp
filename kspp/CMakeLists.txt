@@ -4,6 +4,7 @@ SET(LIB_SRCS
   kstream_impl.h
   ktable_impl.h
   join.h
+  group_by.h
   state_store.h
   kafka_source.h
   kafka_sink.h
