@@ -1,6 +1,8 @@
+#include <boost/log/trivial.hpp>
 #include "kafka_consumer.h"
 
-#include <iostream>
+#define LOGPREFIX_ERROR BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", topic:" << _topic << ": " << _partition
+#define LOGPREFIX_INFO  BOOST_LOG_TRIVIAL(info) << BOOST_CURRENT_FUNCTION << ", topic:" << _topic << ": " << _partition
 
 namespace csi {
 kafka_consumer::kafka_consumer(std::string brokers, std::string topic, int32_t partition) :
@@ -31,16 +33,16 @@ kafka_consumer::kafka_consumer(std::string brokers, std::string topic, int32_t p
   */
   _consumer = std::unique_ptr<RdKafka::Consumer>(RdKafka::Consumer::create(conf.get(), errstr));
   if (!_consumer) {
-    std::cerr << "Failed to create consumer: " << errstr << std::endl;
+    LOGPREFIX_ERROR << ", failed to create consumer, reason: " << errstr;
     exit(1);
   }
-  std::cout << "% Created consumer " << _consumer->name() << std::endl;
+  LOGPREFIX_INFO << ", created consumer " << _consumer->name();
 
   std::unique_ptr<RdKafka::Conf> tconf2(RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC));
   _rd_topic = std::unique_ptr<RdKafka::Topic>(RdKafka::Topic::create(_consumer.get(), _topic, tconf2.get(), errstr));
 
   if (!_rd_topic) {
-    std::cerr << "Failed to create topic: " << errstr << std::endl;
+    LOGPREFIX_ERROR << ", failed to create topic, reason: " << errstr;
     exit(1);
   }
 }
@@ -52,7 +54,7 @@ kafka_consumer::~kafka_consumer() {
 void kafka_consumer::close() {
   if (_consumer) {
     _consumer->stop(_rd_topic.get(), 0);
-    std::cerr << _topic << ":" << _partition << ", Consumed " << _msg_cnt << " messages (" << _msg_bytes << " bytes)" << std::endl;
+    LOGPREFIX_INFO << ", consumed " << _msg_cnt << " messages (" << _msg_bytes << " bytes)";
   }
   _rd_topic = NULL;
   _consumer = NULL;
@@ -64,7 +66,7 @@ void kafka_consumer::start(int64_t offset) {
   */
   RdKafka::ErrorCode err = _consumer->start(_rd_topic.get(), _partition, offset);
   if (err) {
-    std::cerr << "Failed to subscribe to " << _topic << ", " << RdKafka::err2str(err) << std::endl;
+    LOGPREFIX_ERROR << ", failed to subscribe, reason:" << RdKafka::err2str(err);
     exit(1);
   }
 }
@@ -89,14 +91,13 @@ std::unique_ptr<RdKafka::Message> kafka_consumer::consume() {
     case RdKafka::ERR__UNKNOWN_TOPIC:
     case RdKafka::ERR__UNKNOWN_PARTITION:
       _eof = true;
-      std::cerr << "Consume failed: " << msg->errstr() << std::endl;
-      //run = false;
+      LOGPREFIX_ERROR << ", consume failed: " << msg->errstr();
       break;
 
     default:
       /* Errors */
       _eof = true;
-      std::cerr << "Consume failed: " << msg->errstr() << std::endl;
+      LOGPREFIX_ERROR << ", consume failed: " << msg->errstr();
   }
   return NULL;
 }

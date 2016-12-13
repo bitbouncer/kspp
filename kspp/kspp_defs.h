@@ -9,7 +9,7 @@ namespace csi {
   {
     krecord() : event_time(-1), offset(-1) {}
     krecord(const K& k) : event_time(-1), offset(-1), key(k) {}
-    //krecord(const K& k, const V& v) : event_time(-1), offset(-1), key(k), value(std::make_shared<V>(v)) {}
+    krecord(const K& k, const V& v) : event_time(-1), offset(-1), key(k), value(std::make_shared<V>(v)) {}
     krecord(const K& k, std::shared_ptr<V> v) : event_time(-1), offset(-1), key(k), value(v) {}
 
     K                  key;

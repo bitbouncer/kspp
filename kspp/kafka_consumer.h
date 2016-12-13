@@ -18,8 +18,12 @@ namespace csi {
       return _eof; 
     }
     
-    std::string topic() const { 
+    inline std::string topic() const { 
       return _topic; 
+    }
+    
+    inline int32_t partition() const {
+      return _partition;
     }
 
     void start(int64_t offset);

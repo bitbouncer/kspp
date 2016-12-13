@@ -1,9 +1,12 @@
 #include <memory>
 #include <boost/filesystem.hpp>
+#include <boost/log/trivial.hpp>
 #include "kspp_defs.h"
 #include "kafka_consumer.h"
 #include <iostream>
 #pragma once
+
+#define LOGPREFIX_ERROR BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", topic:" << _consumer.topic() << ": " << _consumer.partition()
 
 namespace csi {
 template<class K, class V, class codec>
@@ -59,8 +62,12 @@ class kafka_source : public ksource<K, V>
     res->offset = ref->offset();
     {
       std::istrstream ks((const char*) ref->key_pointer(), ref->key_len());
-      if (_codec->decode(ks, res->key) == 0) {
-        std::cerr << "ksource::parse, topic: " << _consumer.topic() << ", decode key failed, actual key sz:" << ref->key_len() << std::endl;
+      size_t consumed = _codec->decode(ks, res->key);
+      if (consumed ==0) {
+        LOGPREFIX_ERROR << ", decode key failed, actual key sz:" << ref->key_len();
+        return NULL;
+      } else if (consumed != ref->key_len()) {
+        LOGPREFIX_ERROR << ", decode key failed, consumed: " << consumed << ", actual: " << ref->key_len();
         return NULL;
       }
     }
@@ -71,10 +78,12 @@ class kafka_source : public ksource<K, V>
       res->value = std::make_shared<V>();
       size_t consumed = _codec->decode(vs, *res->value);
       if (consumed == 0) {
-        std::cerr << "ksource::parse, topic: " << _consumer.topic() << ", decode value failed, actual payload sz:" << sz <<std::endl;
+        LOGPREFIX_ERROR << ", decode value failed, size:" << sz;
+        return NULL;
+      } else if (consumed != sz) {
+        LOGPREFIX_ERROR << ", decode value failed, consumed: " << consumed << ", actual: " << sz;
         return NULL;
       }
-      assert(consumed == sz);
     }
     return res;
   }

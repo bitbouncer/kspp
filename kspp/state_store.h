@@ -2,6 +2,7 @@
 #include <memory>
 #include <strstream>
 #include <boost/filesystem.hpp>
+#include <boost/log/trivial.hpp>
 #include <rocksdb/db.h>
 #include <kspp/kspp_defs.h>
 
@@ -77,8 +78,10 @@ class kstate_store
 
   };
 
-  kstate_store(boost::filesystem::path storage_path, std::shared_ptr<codec> codec) :
-    _codec(codec) {
+  kstate_store(std::string topic, int32_t partition, boost::filesystem::path storage_path, std::shared_ptr<codec> codec) 
+    : _codec(codec)
+    , _topic(topic)
+    , _partition(partition) {
     boost::filesystem::create_directories(boost::filesystem::path(storage_path));
     rocksdb::Options options;
     options.create_if_missing = true;
@@ -86,7 +89,7 @@ class kstate_store
     auto s = rocksdb::DB::Open(options, storage_path.generic_string(), &tmp);
     _db.reset(tmp);
     if (!s.ok()) {
-      std::cerr << "failed to open rocks db, path:" << storage_path.generic_string() << std::endl;
+      BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", " << _topic << ":" << _partition << ", failed to open rocks db, path:" << storage_path.generic_string();
     }
     assert(s.ok());
   }
@@ -96,6 +99,7 @@ class kstate_store
   }
   void close() {
     _db = NULL;
+    BOOST_LOG_TRIVIAL(info) << BOOST_CURRENT_FUNCTION << ", " << ", " << _topic << ":" << _partition;
   }
 
   void put(const K& key, const V& val) {
@@ -144,9 +148,14 @@ class kstate_store
     {
       std::istrstream is(payload.data(), payload.size());
       res->value = std::make_shared<V>();
-      size_t sz = _codec->decode(is, *res->value);
-      if (sz == 0)
+      size_t consumed = _codec->decode(is, *res->value);
+      if (consumed == 0) {
+        BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", " << _topic << ":" << _partition << ", decode payload failed, actual sz:" << payload.size();
         return NULL;
+      } else if (consumed != payload.size()) {
+        BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", " << _topic << ":" << _partition << ", decode payload failed, consumed:" << consumed << ", actual sz:" << payload.size();
+        return NULL;
+      }
     }
     return res;
   }
@@ -160,7 +169,9 @@ class kstate_store
   }
 
   private:
-  std::unique_ptr<rocksdb::DB>          _db; // maybee this should be a shared ptr since we're letting iterators out...
+  std::string                           _topic;     // only used for logging to make sense...
+  int32_t                               _partition; // only used for logging to make sense...
+  std::unique_ptr<rocksdb::DB>          _db;        // maybee this should be a shared ptr since we're letting iterators out...
   std::shared_ptr<codec>                _codec;
 };
 }
