@@ -6,6 +6,7 @@ SET(LIB_SRCS
   join.h
   group_by.h
   state_store.h
+  counter_store.h
   kafka_source.h
   kafka_sink.h
   kafka_producer.h

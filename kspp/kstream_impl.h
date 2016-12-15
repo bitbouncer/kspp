@@ -26,6 +26,8 @@ namespace csi {
       close();
     }
 
+    std::string name() const { return "kstream_impl-unnamed"; }
+
     virtual void start() {
       if (boost::filesystem::exists(_offset_storage_path)) {
         std::ifstream is(_offset_storage_path.generic_string(), std::ios::binary);

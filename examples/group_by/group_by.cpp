@@ -1,8 +1,10 @@
 #include <iostream>
 #include <string>
 #include <chrono>
+#include <regex>
 #include <kspp/binary_encoder.h>
 #include <kspp/topology_builder.h>
+#include <kspp/group_by.h>
 
 #define PARTITION 0
 
@@ -32,12 +34,12 @@ int main(int argc, char **argv) {
   auto builder = csi::topology_builder<csi::binary_codec>("localhost", "C:\\tmp", codec);
 
   {
-    auto sink = builder.create_kafka_sink<void, std::string>("kspp_TextInput", 0);
+    auto sink = builder.create_kafka_sink<void, std::string>("kspp_TextInput", PARTITION);
     csi::produce<void, std::string>(*sink, "hello kafka streams");
   }
 
   {
-    auto source = builder.create_kafka_source<void, std::string>("kspp_TextInput", 0);
+    auto source = builder.create_kafka_source<void, std::string>("kspp_TextInput", PARTITION);
     source->start(-2);
     while (!source->eof()) {
       auto msg = source->consume();
@@ -46,4 +48,55 @@ int main(int argc, char **argv) {
       }
     }
   }
+
+  //{
+  //  std::regex rgx("\\s+");
+  //  auto source = builder.create_kafka_source<void, std::string>("kspp_TextInput", PARTITION);
+  //  auto group_by = std::make_shared<csi::group_by_value<void, std::string, std::string>>(source, [&rgx](const std::string& val, csi::ksink<std::string, size_t>* sink) {
+  //    std::sregex_token_iterator iter(val.begin(),
+  //                                    val.end(),
+  //                                    rgx,
+  //                                    -1);
+  //    std::sregex_token_iterator end;
+  //    for (; iter != end; ++iter)
+  //      sink->produce(std::make_shared<csi::krecord<std::string, size_t>>(*iter, 1));
+  //  });
+
+  //  group_by->start(-2);
+  //  while (!group_by->eof()) {
+  //    auto msg = group_by->consume();
+  //    if (msg) {
+  //      std::cerr << *msg->value << std::endl;
+  //    }
+  //  }
+  //}
+
+  {
+    std::regex rgx("\\s+");
+    auto source = builder.create_kafka_source<void, std::string>("kspp_TextInput", PARTITION);
+    auto word_stream = std::make_shared<csi::transform_stream<void, std::string, std::string, void>>(source, [&rgx](std::shared_ptr<csi::krecord<void, std::string>> e, csi::ksink<std::string, void>* sink) {
+      std::sregex_token_iterator iter(e->value->begin(),
+                                      e->value->end(),
+                                      rgx,
+                                      -1);
+      std::sregex_token_iterator end;
+      for (; iter != end; ++iter)
+        sink->produce(std::make_shared<csi::krecord<std::string, void>>(*iter));
+    });
+
+
+
+
+    word_stream->start(-2);
+    while (!word_stream->eof()) {
+      auto msg = word_stream->consume();
+      if (msg) {
+        std::cerr << msg->key << std::endl;
+      }
+    }
+
+
+
+  }
+
 }

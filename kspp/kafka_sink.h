@@ -53,6 +53,10 @@ class kafka_sink : public ksink<K, V>
     close(); 
   }
 
+  virtual std::string name() const {
+    return "kafka_sink-" + _impl.topic();
+  }
+
   virtual void close() {
     return _impl.close();
   }
@@ -61,9 +65,6 @@ class kafka_sink : public ksink<K, V>
     return _impl.queue_len();
   }
 
-  virtual std::string topic() const {
-    return _impl.topic();
-  }
 
   virtual void poll(int timeout) {
     return _impl.poll(timeout);
@@ -114,6 +115,10 @@ class kafka_sink<void, V, codec> : public ksink<void, V>
     close();
   }
 
+  virtual std::string name() const {
+    return "kafka_sink-" + _impl.topic();
+  }
+
   virtual void close() {
     return _impl.close();
   }
@@ -122,9 +127,11 @@ class kafka_sink<void, V, codec> : public ksink<void, V>
     return _impl.queue_len();
   }
 
+  /*
   virtual std::string topic() const {
     return _impl.topic();
   }
+  */
 
   virtual void poll(int timeout) {
     return _impl.poll(timeout);

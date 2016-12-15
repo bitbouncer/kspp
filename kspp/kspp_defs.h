@@ -29,11 +29,21 @@ struct krecord<void, V>
   int64_t            offset;
 };
 
+template<class K>
+struct krecord<K, void>
+{
+  krecord() : event_time(-1), offset(-1) {}
+  krecord(const K& k) : event_time(-1), offset(-1), key(k) {}
+  K                  key;
+  int64_t            event_time;
+  int64_t            offset;
+};
 
 class knode
 {
   public:
   virtual ~knode() {}
+  virtual std::string name() const = 0;
   virtual void close() = 0;
   protected:
   knode() {}
@@ -106,7 +116,7 @@ class ksink : public knode
   ksink() {}
   virtual int         produce(std::shared_ptr<krecord<K, V>> r) = 0;
   virtual size_t      queue_len() = 0;
-  virtual std::string topic() const = 0;
+  //virtual std::string topic() const = 0;
   virtual void        poll(int timeout) = 0; // ????
 };
 

@@ -9,7 +9,7 @@ template<class K, class streamV, class tableV, class R>
 class left_join : public ksource<K, R>
 {
   public:
-  typedef std::function<void(const K& key, const streamV& left, const tableV& right, R& result)> value_joiner;
+  typedef std::function<void(const K& key, const streamV& left, const tableV& right, R& result)> value_joiner; // TBD replace with std::shared_ptr<const krecord<K, R>> left, std::shared_ptr<const krecord<K, R>> right, std::shared_ptr<krecord<K, R>> result;
 
   left_join(std::shared_ptr<kstream<K, streamV>> stream, std::shared_ptr<ktable<K, tableV>> table, value_joiner f) :
     _stream(stream),
@@ -19,6 +19,8 @@ class left_join : public ksource<K, R>
   ~left_join() {
     close();
   }
+
+  std::string name() const { return "left_join-" + _stream->name() + _table->name(); }
 
   virtual void start() {
     _table->start();

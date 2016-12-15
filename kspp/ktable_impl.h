@@ -30,6 +30,10 @@ class ktable_impl : public ktable<K, V>
     close();
   }
 
+  virtual std::string name() const {
+    return "ktable_impl-" + _source.name();
+  }
+
   virtual void start() {
     if (boost::filesystem::exists(_offset_storage_path)) {
       std::ifstream is(_offset_storage_path.generic_string(), std::ios::binary);

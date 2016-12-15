@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
     ids.push_back(to_uuid(i));
 
   
-  std::cerr << "creating " << table_stream->topic() << std::endl;
+  std::cerr << "creating " << table_stream->name() << std::endl;
   for (int64_t update_nr = 0; update_nr != 100; ++update_nr) {
     for (auto & i : ids) {
       produce(*table_stream, i, update_nr);
@@ -33,7 +33,7 @@ int main(int argc, char **argv) {
       table_stream->poll(0);
   }
 
-  std::cerr << "creating " << event_stream->topic() << std::endl;
+  std::cerr << "creating " << event_stream->name() << std::endl;
   for (int64_t event_nr = 0; event_nr != 100; ++event_nr) {
     for (auto & i : ids) {
       produce(*event_stream, i, event_nr);

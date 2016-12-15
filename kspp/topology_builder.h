@@ -1,5 +1,6 @@
 #include <boost/filesystem.hpp>
 #include "join.h"
+//#include "group_by.h"
 #include "kstream_impl.h"
 #include "ktable_impl.h"
 #include "kafka_sink.h"
@@ -24,6 +25,14 @@ class topology_builder
     auto table = std::make_shared<csi::ktable_impl<K, tableV, codec>>(tag, _brokers, table_topic, partition, _storage_path, _default_codec);
     return std::make_shared<csi::left_join<K, streamV, tableV, R>>(stream, table, value_joiner);
   }
+
+  /*
+  template<class K, class V, class RK>
+  std::shared_ptr<group_by<K, V, RK>> create_group_by(std::string tag, std::string topic, int32_t partition, typename csi::group_by<K, V, RK>::extractor extractor) {
+    auto stream = std::make_shared<csi::kafka_source<K, V, codec>>(_brokers, topic, partition, _default_codec);
+    return std::make_shared<csi::group_by<K, V, RK>>(stream, value_joiner);
+  }
+  */
 
   template<class K, class V>
   std::shared_ptr<csi::ksink<K, V>> create_kafka_sink(std::string topic, int32_t partition) {

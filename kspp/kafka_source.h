@@ -6,7 +6,7 @@
 #include <iostream>
 #pragma once
 
-#define LOGPREFIX_ERROR BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", topic:" << _consumer.topic() << ": " << _consumer.partition()
+#define LOGPREFIX_ERROR BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << name()
 
 namespace csi {
 template<class K, class V, class codec>
@@ -19,6 +19,10 @@ class kafka_source : public ksource<K, V>
 
   virtual ~kafka_source() {
     close();
+  }
+
+  virtual std::string name() const {
+    return "kafka_source-" + _consumer.topic() + "-" + std::to_string(_consumer.partition());
   }
 
   virtual void start(int64_t offset) {
@@ -102,6 +106,10 @@ class kafka_source<void, V, codec> : public ksource<void, V>
 
   virtual ~kafka_source() {
     close();
+  }
+
+  virtual std::string name() const {
+    return "kafka_source-" + _consumer.topic() + "-" + std::to_string(_consumer.partition());
   }
 
   virtual void start(int64_t offset) {
