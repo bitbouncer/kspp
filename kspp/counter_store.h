@@ -251,12 +251,12 @@ namespace csi {
   public:
       enum { MAX_KEY_SIZE = 10000 };
 
-      class iterator : public ktable_iterator_impl<K, size_t>
+      class iterator_impl : public kmaterialized_source_iterator_impl<K, size_t>
       {
         public:
         enum seek_pos_e { BEGIN, END };
 
-        iterator(rocksdb::DB* db, std::shared_ptr<CODEC> codec, seek_pos_e pos)
+        iterator_impl(rocksdb::DB* db, std::shared_ptr<CODEC> codec, seek_pos_e pos)
           : _it(db->NewIterator(rocksdb::ReadOptions()))
           , _codec(codec) {
           if (pos == BEGIN) {
@@ -301,14 +301,14 @@ namespace csi {
           return res;
         }
 
-        virtual bool operator==(const ktable_iterator_impl<K, size_t>& other) const {
+        virtual bool operator==(const kmaterialized_source_iterator_impl<K, size_t>& other) const {
           //fastpath...
           if (valid() && !other.valid())
             return false;
           if (!valid() && !other.valid())
             return true;
           if (valid() && other.valid())
-            return _it->key() == ((const iterator&) other)._it->key();
+            return _it->key() == ((const iterator_impl&) other)._it->key();
           return false;
         }
 
@@ -387,12 +387,12 @@ namespace csi {
         return count;
       }
 
-      typename csi::ktable<K, size_t>::iterator begin(void) {
-        return typename csi::ktable<K, size_t>::iterator(std::make_shared<iterator>(_db.get(), _codec, iterator::BEGIN));
+      typename csi::kmaterialized_source<K, size_t>::iterator begin(void) {
+        return typename csi::kmaterialized_source<K, size_t>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::BEGIN));
       }
 
-      typename csi::ktable<K, size_t>::iterator end() {
-        return typename csi::ktable<K, size_t>::iterator(std::make_shared<iterator>(_db.get(), _codec, iterator::END));
+      typename csi::kmaterialized_source<K, size_t>::iterator end() {
+        return typename csi::kmaterialized_source<K, size_t>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::END));
       }
     
       private:

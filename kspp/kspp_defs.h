@@ -62,30 +62,19 @@ class ksource : public knode
 };
 
 template<class K, class V>
-class ksource_materialized : public ksource<K, V>
+class kmaterialized_source_iterator_impl
 {
   public:
-  virtual std::shared_ptr<krecord<K, V>> get(const K& key) = 0;
-};
-
-template<class K, class V>
-class kstream : public ksource_materialized<K, V>
-{};
-
-template<class K, class V>
-class ktable_iterator_impl
-{
-  public:
-  virtual ~ktable_iterator_impl() {}
+  virtual ~kmaterialized_source_iterator_impl() {}
   virtual void next() = 0;
   virtual std::shared_ptr<krecord<K, V>> item() const = 0;
   virtual bool valid() const = 0;
-  virtual bool operator==(const ktable_iterator_impl& other) const = 0;
-  bool operator!=(const ktable_iterator_impl& other) const { return !(*this == other); }
+  virtual bool operator==(const kmaterialized_source_iterator_impl& other) const = 0;
+  bool operator!=(const kmaterialized_source_iterator_impl& other) const { return !(*this == other); }
 };
 
 template<class K, class V>
-class ktable : public ksource_materialized<K, V>
+class kmaterialized_source : public ksource<K, V>
 {
   public:
   class iterator : public std::iterator <
@@ -96,9 +85,9 @@ class ktable : public ksource_materialized<K, V>
     std::shared_ptr<krecord<K, V>>  // reference
   >
   {
-    std::shared_ptr<ktable_iterator_impl<K, V>> _impl;
+    std::shared_ptr<kmaterialized_source_iterator_impl<K, V>> _impl;
     public:
-    explicit iterator(std::shared_ptr<ktable_iterator_impl<K, V>> impl) : _impl(impl) {}
+    explicit iterator(std::shared_ptr<kmaterialized_source_iterator_impl<K, V>> impl) : _impl(impl) {}
     iterator& operator++() { _impl->next(); return *this; }
     iterator operator++(int) { iterator retval = *this; ++(*this); return retval; }
     bool operator==(const iterator& other) const { return *_impl == *other._impl; }
@@ -107,6 +96,17 @@ class ktable : public ksource_materialized<K, V>
   };
   virtual iterator begin() = 0;
   virtual iterator end() = 0;
+  virtual std::shared_ptr<krecord<K, V>> get(const K& key) = 0;
+};
+
+template<class K, class V>
+class kstream : public ksource<K, V>
+{};
+
+template<class K, class V>
+class ktable : public kmaterialized_source<K, V>
+{
+ 
 };
 
 template<class K, class V>

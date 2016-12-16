@@ -182,7 +182,7 @@ class transform_stream : public ksource<RK, RV>, private ksink<RK, RV>
 
 // COUNT KEYS
 template<class K, class CODEC>
-class count_keys : public ksource<K, size_t>
+class count_keys : public kmaterialized_source<K, size_t>
 {
   public:
   count_keys(std::shared_ptr<ksource<K, void>> source, std::string storage_path, std::shared_ptr<CODEC> codec) :
@@ -232,6 +232,23 @@ class count_keys : public ksource<K, size_t>
 
   virtual bool eof() const {
     return _queue.size() ==0 && _stream->eof();
+  }
+
+  // inherited from kmaterialized_source
+  virtual std::shared_ptr<krecord<K, size_t>> get(const K& key) {
+    auto count = _counter_store.get(key);
+    if (count)
+      return std::make_shared<krecord<K, size_t>>(key, count);
+    else
+      return NULL;
+  }
+
+  virtual typename csi::kmaterialized_source<K, size_t>::iterator begin(void) {
+    return _counter_store.begin();
+  }
+
+  virtual typename csi::kmaterialized_source<K, size_t>::iterator end() {
+    return _counter_store.end();
   }
 
   private:

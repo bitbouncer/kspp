@@ -92,33 +92,18 @@ class ktable_impl : public ktable<K, V>
     return _current_offset;
   }
 
+  // inherited from kmaterialized_source
   virtual std::shared_ptr<krecord<K, V>> get(const K& key) {
     return _state_store.get(key);
   }
 
-  /*
-  virtual std::shared_ptr<csi::ktable_iterator<K, V>> iteratorX() {
-    return _state_store.iterator();
-  }
-  */
-
-  virtual typename csi::ktable<K, V>::iterator begin(void) {
+  virtual typename csi::kmaterialized_source<K, V>::iterator begin(void) {
     return _state_store.begin();
   }
 
-  virtual typename csi::ktable<K, V>::iterator end() {
+  virtual typename csi::kmaterialized_source<K, V>::iterator end() {
     return _state_store.end();
   }
-
-  /*
-  virtual ktable_range_iterator<K, V> begin() {
-    return _state_store.begin();
-  }
-
-  virtual ktable_range_iterator<K, V> end() {
-    return _state_store.end();
-  }
-  */
 
   private:
   kafka_source<K, V, CODEC> _source;

@@ -13,12 +13,12 @@ class kstate_store
   public:
   enum { MAX_KEY_SIZE = 10000, MAX_VALUE_SIZE = 100000 };
 
-  class kstate_store_iterator : public ktable_iterator_impl<K, V>
+  class iterator_impl : public kmaterialized_source_iterator_impl<K, V>
   {
     public:
     enum seek_pos_e { BEGIN, END };
 
-    kstate_store_iterator(rocksdb::DB* db, std::shared_ptr<CODEC> codec, seek_pos_e pos)
+    iterator_impl(rocksdb::DB* db, std::shared_ptr<CODEC> codec, seek_pos_e pos)
       : _it(db->NewIterator(rocksdb::ReadOptions()))
       , _codec(codec) {
       if (pos == BEGIN) {
@@ -61,14 +61,14 @@ class kstate_store
       return res;
     }
 
-    virtual bool operator==(const ktable_iterator_impl<K, V>& other) const {
+    virtual bool operator==(const kmaterialized_source_iterator_impl<K, V>& other) const {
       //fastpath...
       if (valid() && !other.valid())
         return false;
       if (!valid() && !other.valid())
         return true;
       if (valid() && other.valid())
-        return _it->key() == ((const kstate_store_iterator&) other)._it->key();
+        return _it->key() == ((const iterator_impl&) other)._it->key();
       return false;
     }
 
@@ -160,12 +160,12 @@ class kstate_store
     return res;
   }
 
-  typename csi::ktable<K, V>::iterator begin(void) {
-    return typename csi::ktable<K, V>::iterator(std::make_shared<kstate_store_iterator>(_db.get(), _codec, kstate_store_iterator::BEGIN));
+  typename csi::kmaterialized_source<K, V>::iterator begin(void) {
+    return typename csi::kmaterialized_source<K, V>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::BEGIN));
   }
 
-  typename csi::ktable<K, V>::iterator end() {
-    return typename csi::ktable<K, V>::iterator(std::make_shared<kstate_store_iterator>(_db.get(), _codec, kstate_store_iterator::END));
+  typename csi::kmaterialized_source<K, V>::iterator end() {
+    return typename csi::kmaterialized_source<K, V>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::END));
   }
 
   private:

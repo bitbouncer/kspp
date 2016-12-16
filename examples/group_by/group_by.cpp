@@ -85,15 +85,13 @@ int main(int argc, char **argv) {
     
     auto word_counts = std::make_shared<csi::count_keys<std::string, csi::binary_codec>>(word_stream, "C:\\tmp", codec);
 
-
     word_counts->start(-2);
     while (!word_counts->eof()) {
       auto msg = word_counts->consume();
-      if (msg) {
-        std::cerr << msg->key << ":" << *msg->value <<std::endl;
-      }
     }
 
+    for (auto i : *word_counts)
+      std::cerr << i->key << " : " << *i->value << std::endl;
 
 
   }
