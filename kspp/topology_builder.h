@@ -11,7 +11,7 @@ template<class CODEC>
 class topology_builder
 {
   public:
-  topology_builder(std::string brokers, std::string storage_path, std::shared_ptr<CODEC> default_codec) :
+  topology_builder(std::string brokers, std::string storage_path, std::shared_ptr<CODEC> default_codec = std::make_shared<CODEC>()) :
     _brokers(brokers),
     _default_codec(default_codec),
     _storage_path(storage_path) {
@@ -35,12 +35,12 @@ class topology_builder
 
   template<class K, class V>
   std::shared_ptr<csi::ksink<K, V>> create_kafka_sink(std::string topic, int32_t partition) {
-    return std::make_shared<csi::kafka_sink<K, V, CODEC>>(_brokers, topic, _default_codec, partition);
+    return std::make_shared<csi::kafka_sink<K, V, CODEC>>(_brokers, topic, partition, _default_codec);
   }
 
   template<class K, class V>
   std::shared_ptr<csi::ksink<K, V>> create_kafka_sink(std::string topic, std::function<uint32_t(const K& key)> partitioner) {
-    return std::make_shared<csi::kafka_sink<K, V, CODEC>>(_brokers, topic, _default_codec, partitioner);
+    return std::make_shared<csi::kafka_sink<K, V, CODEC>>(_brokers, topic, partitioner, _default_codec);
   }
 
   template<class K, class V>

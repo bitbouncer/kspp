@@ -10,7 +10,7 @@ template<class K, class CODEC>
 class count_keys : public kmaterialized_source<K, size_t>
 {
   public:
-  count_keys(std::shared_ptr<ksource<K, void>> source, std::string storage_path, std::shared_ptr<CODEC> codec) :
+  count_keys(std::shared_ptr<ksource<K, void>> source, std::string storage_path, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) :
     _stream(source),
     _counter_store(name(), storage_path + "//" + name(), codec)
     {}

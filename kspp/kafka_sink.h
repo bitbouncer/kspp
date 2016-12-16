@@ -27,23 +27,15 @@ class kafka_sink : public ksink<K, V>
 {
   public:
   using partitioner = typename kafka_partitioner_base<K>::partitioner;
-  
-   /*
-  using partitioner = typename std::conditional< 
-    std::is_void<K>::value, 
-    std::function<uint32_t()>, 
-    std::function<uint32_t(const K& key)> 
-  >::type;
-  */
 
-  kafka_sink(std::string brokers, std::string topic, std::shared_ptr<CODEC> codec, partitioner p) :
+  kafka_sink(std::string brokers, std::string topic, partitioner p, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) :
     _impl(brokers, topic), 
     _codec(codec), 
     _partitioner(p),
     _fixed_partition(-1)
   {}
 
-  kafka_sink(std::string brokers, std::string topic, std::shared_ptr<CODEC> codec, int32_t partition) :
+  kafka_sink(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) :
     _impl(brokers, topic),
     _codec(codec),
     _fixed_partition(partition) 
@@ -106,7 +98,7 @@ template<class V, class CODEC>
 class kafka_sink<void, V, CODEC> : public ksink<void, V>
 {
   public:
-  kafka_sink(std::string brokers, std::string topic, std::shared_ptr<CODEC> codec, int32_t partition) :
+  kafka_sink(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) :
     _impl(brokers, topic),
     _codec(codec),
     _fixed_partition(partition) {}

@@ -75,6 +75,8 @@ namespace csi {
   public:
     binary_codec() {}
 
+    static std::string name() { return "binary"; }
+
     template<class T>
     size_t encode(const T& src, std::ostream& dst) {
       return binary_encode(src, dst);

@@ -1,14 +1,13 @@
 #include <iostream>
 #include <string>
 #include <chrono>
-#include <kspp/binary_encoder.h>
+#include <kspp/codecs/binary_codec.h>
 #include <kspp/topology_builder.h>
 
 #define PARTITION 0
 
 int main(int argc, char **argv) {
-  auto codec = std::make_shared<csi::binary_codec>();
-  auto builder = csi::topology_builder<csi::binary_codec>("localhost", "C:\\tmp", codec);
+  auto builder = csi::topology_builder<csi::binary_codec>("localhost", "C:\\tmp");
   auto join = builder.create_left_join<boost::uuids::uuid, int64_t, int64_t, int64_t>("join", "kspp_test0_eventstream", "kspp_test0_table", PARTITION, [](const boost::uuids::uuid& key, const int64_t& left, const int64_t& right, int64_t& row) {
     row = right;
   });

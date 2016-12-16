@@ -25,23 +25,6 @@ namespace csi {
     return src.good() ? sizeof(int32_t) : 0;
   }
 
-  inline size_t binary_encode(bool a, std::ostream& dst) {
-    if (a) {
-      char one = 0x01;
-      dst.write((const char*) &one, 1);
-    } else {
-      char zero = 0x00;
-      dst.write((const char*) &zero, 1);
-    }
-    return sizeof(1);
-  }
-
-  inline size_t binary_decode(std::istream& src, bool& dst) {
-    char ch;
-    src.read((char*) &ch, 1);
-    dst = (ch == 0x00) ? false : true;
-    return src.good() ? 1 : 0;
-  }
 
   inline size_t binary_encode(const boost::uuids::uuid& a, std::ostream& dst) {
     dst.write((const char*)a.data, 16);
@@ -65,6 +48,8 @@ class text_codec
   public:
   text_codec() {}
 
+  static std::string name() { return "text"; }
+
   template<class T>
   size_t encode(const T& src, std::ostream& dst) {
     return encode(this, src, dst);
@@ -75,34 +60,58 @@ class text_codec
     return decode(this, src, dst);
   }
 
-
   template<>
-  size_t encode(const std::string& src, std::ostream& dst) {
+  static size_t encode(const std::string& src, std::ostream& dst) {
     dst << src;
     return src.size();
   }
 
-
   template<>
-  size_t decode(std::istream& src, std::string& dst) {
+  static size_t decode(std::istream& src, std::string& dst) {
     std::getline(src, dst);
     return dst.size();
-    //return src.good() ? dst.size() : 0;
-    //return src.good() ? src.gcount() : 0;
   }
+
+  template<>
+  static size_t encode(const bool& src, std::ostream& dst) {
+    dst << src ? "true" : "false";
+    return src ? 4 : 5;
+  }
+
+  template<>
+  static size_t decode(std::istream& src, bool& dst) {
+    std::string s;
+    std::getline(src, s);
+    dst = (s == "true") ? true : false;
+    return s.size();
+  }
+
+ /* template<>
+  static size_t encode(const int64_t& src, std::ostream& dst) {
+    dst << src ? "true" : "false";
+    return src ? 4 : 5;
+  }
+
+  template<>
+  static size_t decode(std::istream& src, int64_t& dst) {
+    std::string s;
+    std::getline(src, s);
+    dst = atoi()
+    return s.size();
+  }*/
+
+  /* inline size_t binary_encode(const int64_t& a, std::ostream& dst) {
+  dst.write((const char*)&a, sizeof(int64_t));
+  std::to_string
+  return sizeof(int64_t);
+  }
+
+  inline size_t binary_decode(std::istream& src, int64_t& dst) {
+  src.read((char*)&dst, sizeof(int64_t));
+  return src.good() ? sizeof(int64_t) : 0;
+  }
+  */
+
 };
-
-
-/*
-inline size_t decode(text_codec* unused, std::istream& src, std::string& dst) {
-  std::getline(src, dst);
-  return src.good() ? src.gcount() : 0;
-}
-
-inline size_t encode(text_codec* unused, std::string& src, std::ostream& dst) {
-  dst << src;
-  return dst.good() ? src.size() : 0;
-}
-*/
 };
 

@@ -2,7 +2,7 @@
 #include <chrono>
 #include <boost/uuid/uuid.hpp>
 #include <boost/functional/hash.hpp>
-#include <kspp/binary_encoder.h>
+#include <kspp/codecs/binary_codec.h>
 #include <kspp/topology_builder.h>
 
 static boost::uuids::uuid to_uuid(int64_t x) {
@@ -13,8 +13,7 @@ static boost::uuids::uuid to_uuid(int64_t x) {
 }
 
 int main(int argc, char **argv) {
-  auto codec       = std::make_shared<csi::binary_codec>();
-  auto builder     = csi::topology_builder<csi::binary_codec>("localhost", "C:\\tmp", codec);
+  auto builder     = csi::topology_builder<csi::binary_codec>("localhost", "C:\\tmp");
   auto partitioner = [](const boost::uuids::uuid& key)->uint32_t { return boost::hash<boost::uuids::uuid>()(key) % 8; };
   auto table_stream = builder.create_kafka_sink<boost::uuids::uuid, int64_t>("kspp_test0_table", partitioner);
   auto event_stream = builder.create_kafka_sink<boost::uuids::uuid, int64_t>("kspp_test0_eventstream", partitioner);

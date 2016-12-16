@@ -14,7 +14,7 @@ template<class K, class V, class CODEC>
 class kafka_source : public ksource<K, V>
 {
   public:
-  kafka_source(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<CODEC> codec) :
+  kafka_source(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<CODEC> codec= std::make_shared<CODEC>()) :
     _codec(codec),
     _consumer(brokers, topic, partition) {}
 
@@ -101,7 +101,7 @@ template<class V, class CODEC>
 class kafka_source<void, V, CODEC> : public ksource<void, V>
 {
   public:
-  kafka_source(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<CODEC> codec) :
+  kafka_source(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) :
     _codec(codec),
     _consumer(brokers, topic, partition) {}
 

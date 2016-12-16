@@ -1,7 +1,7 @@
 #include <iostream>
 #include <string>
 #include <chrono>
-#include <kspp/binary_encoder.h>
+#include <kspp/codecs/binary_codec.h>
 #include <kspp/topology_builder.h>
 
 #define PARTITION 0
@@ -111,8 +111,7 @@ std::string ksource_to_string(const T&  ksource) {
 }
 
 int main(int argc, char **argv) {
-  auto codec = std::make_shared<csi::binary_codec>();
-  auto builder = csi::topology_builder<csi::binary_codec>("localhost", "C:\\tmp", codec);
+  auto builder = csi::topology_builder<csi::binary_codec>("localhost", "C:\\tmp");
 
   {
     auto sink = builder.create_kafka_sink<int64_t, page_view_data>("kspp_PageViews", 0);
@@ -212,7 +211,7 @@ int main(int argc, char **argv) {
       row.time = left.time;
       row.url = left.url;
     });
-    auto sink = builder.create_kafka_sink<int64_t, page_view_decorated>("kspp_PageViewsDecorated", 0);
+    auto sink = builder.create_kafka_sink<int64_t, page_view_decorated>("kspp_PageViewsDecorated", PARTITION);
 
     join->start(-2); 
     while (!join->eof()) {
@@ -223,7 +222,7 @@ int main(int argc, char **argv) {
 
   std::cerr << "using iterators " << std::endl;
   {
-    auto table = builder.create_ktable<int64_t, user_profile_data>("example3-kspp_UserProfile_tmp0", "kspp_UserProfile", 0);
+    auto table = builder.create_ktable<int64_t, user_profile_data>("example3-kspp_UserProfile_tmp0", "kspp_UserProfile", PARTITION);
     table->start();
     while (!table->eof()) {
       auto msg = table->consume();
@@ -234,7 +233,7 @@ int main(int argc, char **argv) {
 
   std::cerr << "using range iterators " << std::endl;
   {
-    auto table = builder.create_ktable<int64_t, user_profile_data>("example3-kspp_UserProfile_tmp0", "kspp_UserProfile", 0);
+    auto table = builder.create_ktable<int64_t, user_profile_data>("example3-kspp_UserProfile_tmp0", "kspp_UserProfile", PARTITION);
     table->start();
     while (!table->eof()) {
       auto msg = table->consume();
