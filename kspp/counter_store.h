@@ -251,6 +251,74 @@ namespace csi {
   public:
       enum { MAX_KEY_SIZE = 10000 };
 
+      class iterator : public ktable_iterator_impl<K, size_t>
+      {
+        public:
+        enum seek_pos_e { BEGIN, END };
+
+        iterator(rocksdb::DB* db, std::shared_ptr<CODEC> codec, seek_pos_e pos)
+          : _it(db->NewIterator(rocksdb::ReadOptions()))
+          , _codec(codec) {
+          if (pos == BEGIN) {
+            _it->SeekToFirst();
+          } else {
+            _it->SeekToLast(); // is there a better way to init to non valid??
+            if (_it->Valid()) // if not valid the Next() calls fails...
+              _it->Next(); // now it's invalid
+          }
+        }
+
+        virtual bool valid() const {
+          return _it->Valid();
+        }
+
+        virtual void next() {
+          if (!_it->Valid())
+            return;
+          _it->Next();
+        }
+
+        virtual std::shared_ptr<krecord<K, size_t>> item() const {
+          if (!_it->Valid())
+            return NULL;
+          rocksdb::Slice key = _it->key();
+          rocksdb::Slice value = _it->value();
+
+          std::shared_ptr<krecord<K, size_t>> res(std::make_shared<krecord<K, size_t>>());
+          res->offset = -1;
+          res->event_time = -1; // ????
+          res->value = std::make_shared<size_t>();
+
+          std::istrstream isk(key.data(), key.size());
+          if (_codec->decode(isk, res->key) == 0)
+            return NULL;
+
+          uint64_t count = 0;
+          if (!UInt64AddOperator::Deserialize(value, &count))             {
+            return NULL;
+          }
+          *res->value = count;
+          return res;
+        }
+
+        virtual bool operator==(const ktable_iterator_impl<K, size_t>& other) const {
+          //fastpath...
+          if (valid() && !other.valid())
+            return false;
+          if (!valid() && !other.valid())
+            return true;
+          if (valid() && other.valid())
+            return _it->key() == ((const iterator&) other)._it->key();
+          return false;
+        }
+
+        private:
+        std::unique_ptr<rocksdb::Iterator> _it;
+        std::shared_ptr<CODEC>             _codec;
+
+      };
+
+
       kkeycounter_store(std::string name, boost::filesystem::path storage_path, std::shared_ptr<CODEC> codec)
         : _codec(codec)
         , _name("keycounter_store-" + name) {
@@ -318,14 +386,14 @@ namespace csi {
         bool res = UInt64AddOperator::Deserialize(str, &count);
         return count;
       }
-    
-     /* typename csi::ktable<K, size_t>::iterator begin(void) {
-        return csi::ktable<K, size_t>::iterator(std::make_shared<kstate_store_iterator>(_db.get(), _codec, kstate_store_iterator::BEGIN));
+
+      typename csi::ktable<K, size_t>::iterator begin(void) {
+        return typename csi::ktable<K, size_t>::iterator(std::make_shared<iterator>(_db.get(), _codec, iterator::BEGIN));
       }
-    
+
       typename csi::ktable<K, size_t>::iterator end() {
-        return csi::ktable<K, size_t>::iterator(std::make_shared<kstate_store_iterator>(_db.get(), _codec, kstate_store_iterator::END));
-      }*/
+        return typename csi::ktable<K, size_t>::iterator(std::make_shared<iterator>(_db.get(), _codec, iterator::END));
+      }
     
       private:
       std::string                                   _name;     // only used for logging to make sense...
