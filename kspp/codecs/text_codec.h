@@ -89,26 +89,22 @@ class text_codec
 
 };
 
-template<>
-static size_t text_codec::encode(const std::string& src, std::ostream& dst) {
+template<> size_t text_codec::encode(const std::string& src, std::ostream& dst) {
   dst << src;
   return src.size();
 }
 
-template<>
-static size_t text_codec::decode(std::istream& src, std::string& dst) {
+template<> size_t text_codec::decode(std::istream& src, std::string& dst) {
   std::getline(src, dst);
   return dst.size();
 }
 
-template<>
-static size_t text_codec::encode(const bool& src, std::ostream& dst) {
+template<> size_t text_codec::encode(const bool& src, std::ostream& dst) {
   dst << src ? "true" : "false";
   return src ? 4 : 5;
 }
 
-template<>
-static size_t text_codec::decode(std::istream& src, bool& dst) {
+template<> size_t text_codec::decode(std::istream& src, bool& dst) {
   std::string s;
   std::getline(src, s);
   dst = (s == "true") ? true : false;
