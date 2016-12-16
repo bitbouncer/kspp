@@ -9,11 +9,11 @@
 #pragma once
 
 namespace csi {
-template<class K, class V, class codec>
+template<class K, class V, class CODEC>
 class ktable_impl : public ktable<K, V>
 {
   public:
-  ktable_impl(std::string nodeid, std::string brokers, std::string topic, int32_t partition, std::string storage_path, std::shared_ptr<codec> codec) :
+  ktable_impl(std::string nodeid, std::string brokers, std::string topic, int32_t partition, std::string storage_path, std::shared_ptr<CODEC> codec) :
     _offset_storage_path(storage_path),
     _source(brokers, topic, partition, codec),
     _state_store(topic, partition, storage_path + "\\" + nodeid + "\\" + topic + "_" + std::to_string(partition), codec),
@@ -121,8 +121,8 @@ class ktable_impl : public ktable<K, V>
   */
 
   private:
-  kafka_source<K, V, codec> _source;
-  kstate_store<K, V, codec> _state_store;
+  kafka_source<K, V, CODEC> _source;
+  kstate_store<K, V, CODEC> _state_store;
   boost::filesystem::path   _offset_storage_path;
   int64_t                   _current_offset;
   int64_t                   _last_comitted_offset;

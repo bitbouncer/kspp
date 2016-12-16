@@ -1,3 +1,4 @@
+#include <fstream>
 #include <boost/filesystem.hpp>
 #include "kafka_source.h"
 #include "state_store.h"
