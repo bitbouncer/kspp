@@ -7,7 +7,7 @@
 #include <kspp/kspp_defs.h>
 
 namespace csi {
-template<class K, class V, class codec>
+template<class K, class V, class CODEC>
 class kstate_store
 {
   public:
@@ -18,7 +18,7 @@ class kstate_store
     public:
     enum seek_pos_e { BEGIN, END };
 
-    kstate_store_iterator(rocksdb::DB* db, std::shared_ptr<codec> codec, seek_pos_e pos)
+    kstate_store_iterator(rocksdb::DB* db, std::shared_ptr<CODEC> codec, seek_pos_e pos)
       : _it(db->NewIterator(rocksdb::ReadOptions()))
       , _codec(codec) {
       if (pos == BEGIN) {
@@ -74,11 +74,11 @@ class kstate_store
 
     private:
     std::unique_ptr<rocksdb::Iterator> _it;
-    std::shared_ptr<codec>             _codec;
+    std::shared_ptr<CODEC>             _codec;
 
   };
 
-  kstate_store(std::string topic, int32_t partition, boost::filesystem::path storage_path, std::shared_ptr<codec> codec) 
+  kstate_store(std::string topic, int32_t partition, boost::filesystem::path storage_path, std::shared_ptr<CODEC> codec)
     : _codec(codec)
     , _topic(topic)
     , _partition(partition) {
@@ -172,7 +172,7 @@ class kstate_store
   std::string                           _topic;     // only used for logging to make sense...
   int32_t                               _partition; // only used for logging to make sense...
   std::unique_ptr<rocksdb::DB>          _db;        // maybee this should be a shared ptr since we're letting iterators out...
-  std::shared_ptr<codec>                _codec;
+  std::shared_ptr<CODEC>                _codec;
 };
 }
 

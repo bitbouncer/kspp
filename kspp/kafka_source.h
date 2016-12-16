@@ -9,11 +9,11 @@
 #define LOGPREFIX_ERROR BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << name()
 
 namespace csi {
-template<class K, class V, class codec>
+template<class K, class V, class CODEC>
 class kafka_source : public ksource<K, V>
 {
   public:
-  kafka_source(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<codec> codec) :
+  kafka_source(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<CODEC> codec) :
     _codec(codec),
     _consumer(brokers, topic, partition) {}
 
@@ -93,14 +93,14 @@ class kafka_source : public ksource<K, V>
   }
 
   kafka_consumer          _consumer;
-  std::shared_ptr<codec>  _codec;
+  std::shared_ptr<CODEC>  _codec;
 };
 
-template<class V, class codec>
-class kafka_source<void, V, codec> : public ksource<void, V>
+template<class V, class CODEC>
+class kafka_source<void, V, CODEC> : public ksource<void, V>
 {
   public:
-  kafka_source(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<codec> codec) :
+  kafka_source(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<CODEC> codec) :
     _codec(codec),
     _consumer(brokers, topic, partition) {}
 
@@ -166,7 +166,7 @@ class kafka_source<void, V, codec> : public ksource<void, V>
   }
 
   kafka_consumer          _consumer;
-  std::shared_ptr<codec>  _codec;
+  std::shared_ptr<CODEC>  _codec;
 };
 
 };

@@ -103,7 +103,7 @@ class ktable : public ksource_materialized<K, V>
     iterator operator++(int) { iterator retval = *this; ++(*this); return retval; }
     bool operator==(const iterator& other) const { return *_impl == *other._impl; }
     bool operator!=(const iterator& other) const { return !(*this == other); }
-    reference operator*() const { return _impl->item(); }
+    std::shared_ptr<krecord<K, V>> operator*() const { return _impl->item(); }
   };
   virtual iterator begin() = 0;
   virtual iterator end() = 0;
