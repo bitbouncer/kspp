@@ -75,23 +75,19 @@ int main(int argc, char **argv) {
     std::regex rgx("\\s+");
     auto source = builder.create_kafka_source<void, std::string>("kspp_TextInput", PARTITION);
     auto word_stream = std::make_shared<csi::transform_stream<void, std::string, std::string, void>>(source, [&rgx](std::shared_ptr<csi::krecord<void, std::string>> e, csi::ksink<std::string, void>* sink) {
-      std::sregex_token_iterator iter(e->value->begin(),
-                                      e->value->end(),
-                                      rgx,
-                                      -1);
+      std::sregex_token_iterator iter(e->value->begin(), e->value->end(), rgx, -1);
       std::sregex_token_iterator end;
       for (; iter != end; ++iter)
         sink->produce(std::make_shared<csi::krecord<std::string, void>>(*iter));
     });
+    auto word_counts = std::make_shared<csi::count_keys<std::string, csi::binary_codec>>(word_stream, "C:\\tmp", codec);
 
 
-
-
-    word_stream->start(-2);
-    while (!word_stream->eof()) {
-      auto msg = word_stream->consume();
+    word_counts->start(-2);
+    while (!word_counts->eof()) {
+      auto msg = word_counts->consume();
       if (msg) {
-        std::cerr << msg->key << std::endl;
+        std::cerr << msg->key << ":" << *msg->value <<std::endl;
       }
     }
 

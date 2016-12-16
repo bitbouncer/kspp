@@ -185,17 +185,18 @@ template<class K, class codec>
 class count_keys : public ksource<K, size_t>
 {
   public:
-  count_keys(std::string tag, std::shared_ptr<ksource<K, void>> source) :
+  count_keys(std::shared_ptr<ksource<K, void>> source, std::string storage_path, std::shared_ptr<codec> codec) :
     _stream(source),
-    _counter_store(source->name(), -1, )
-    _state_store(topic, partition, storage_path + "\\" + nodeid + "\\" + topic + "_" + std::to_string(partition), codec),
+    _counter_store(name(), storage_path + "//" + name(), codec)
     {}
 
   ~count_keys() {
     close();
   }
 
-  std::string name() const { "count_keys-unnamed"; }
+  std::string name() const {
+    return "count_keys-" + _stream->name();
+  }
 
   virtual void start() {
     _stream->start();
@@ -209,7 +210,7 @@ class count_keys : public ksource<K, size_t>
     _stream->close();
   }
 
-  virtual std::shared_ptr<krecord<K, void>> consume() {
+  virtual std::shared_ptr<krecord<K, size_t>> consume() {
     if (_queue.size()) {
       auto p = *_queue.begin();
       _queue.pop_front();
@@ -220,8 +221,9 @@ class count_keys : public ksource<K, size_t>
     if (!e)
       return NULL;
 
-   size_t count = _counter_store->put(e);
-   return std::make_shared<K, size_t>(e->key, count);
+   _counter_store.add(e->key, 1);
+   size_t count = _counter_store.get(e->key);
+   return std::make_shared<krecord<K, size_t>>(e->key, count);
   }
 
   virtual void commit() {
@@ -234,7 +236,7 @@ class count_keys : public ksource<K, size_t>
 
   private:
   std::shared_ptr<ksource<K, void>>               _stream;
-  kcounter_store<K, void, codec>                  _counter_store;
+  kkeycounter_store<K, codec>                     _counter_store;
   std::deque<std::shared_ptr<krecord<K, size_t>>> _queue;
 };
 
