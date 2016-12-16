@@ -161,11 +161,11 @@ class kstate_store
   }
 
   typename csi::ktable<K, V>::iterator begin(void) {
-    return csi::ktable<K, V>::iterator(std::make_shared<kstate_store_iterator>(_db.get(), _codec, kstate_store_iterator::BEGIN));
+    return typename csi::ktable<K, V>::iterator(std::make_shared<kstate_store_iterator>(_db.get(), _codec, kstate_store_iterator::BEGIN));
   }
 
   typename csi::ktable<K, V>::iterator end() {
-    return csi::ktable<K, V>::iterator(std::make_shared<kstate_store_iterator>(_db.get(), _codec, kstate_store_iterator::END));
+    return typename csi::ktable<K, V>::iterator(std::make_shared<kstate_store_iterator>(_db.get(), _codec, kstate_store_iterator::END));
   }
 
   private:
