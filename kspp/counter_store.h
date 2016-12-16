@@ -245,13 +245,13 @@ namespace csi {
     }
   };
 
-  template<class K, class codec>
+  template<class K, class CODEC>
   class kkeycounter_store
   {
   public:
       enum { MAX_KEY_SIZE = 10000 };
 
-      kkeycounter_store(std::string name, boost::filesystem::path storage_path, std::shared_ptr<codec> codec)
+      kkeycounter_store(std::string name, boost::filesystem::path storage_path, std::shared_ptr<CODEC> codec)
         : _codec(codec)
         , _name("keycounter_store-" + name) {
         boost::filesystem::create_directories(boost::filesystem::path(storage_path));
@@ -332,6 +332,6 @@ namespace csi {
       std::unique_ptr<rocksdb::DB>                  _db;        // maybee this should be a shared ptr since we're letting iterators out...
       //const std::shared_ptr<rocksdb::ReadOptions>   _read_options;
       //const std::shared_ptr<rocksdb::WriteOptions>  _write_options;
-      std::shared_ptr<codec>                        _codec;
+      std::shared_ptr<CODEC>                        _codec;
     };
 };

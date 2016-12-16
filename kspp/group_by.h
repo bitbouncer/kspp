@@ -181,11 +181,11 @@ class transform_stream : public ksource<RK, RV>, private ksink<RK, RV>
 };
 
 // COUNT KEYS
-template<class K, class codec>
+template<class K, class CODEC>
 class count_keys : public ksource<K, size_t>
 {
   public:
-  count_keys(std::shared_ptr<ksource<K, void>> source, std::string storage_path, std::shared_ptr<codec> codec) :
+  count_keys(std::shared_ptr<ksource<K, void>> source, std::string storage_path, std::shared_ptr<CODEC> codec) :
     _stream(source),
     _counter_store(name(), storage_path + "//" + name(), codec)
     {}
@@ -236,7 +236,7 @@ class count_keys : public ksource<K, size_t>
 
   private:
   std::shared_ptr<ksource<K, void>>               _stream;
-  kkeycounter_store<K, codec>                     _counter_store;
+  kkeycounter_store<K, CODEC>                     _counter_store;
   std::deque<std::shared_ptr<krecord<K, size_t>>> _queue;
 };
 
