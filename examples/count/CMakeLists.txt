@@ -1,8 +1,8 @@
-project(group_by)
+project(example_count)
 
 SET(SRCS
-group_by.cpp
+example_count.cpp
 )
 
-add_executable(group_by ${SRCS})
-target_link_libraries(group_by ${CSI_LIBS})
+add_executable(example_count ${SRCS})
+target_link_libraries(example_count ${CSI_LIBS})

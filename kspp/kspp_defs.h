@@ -22,8 +22,9 @@ struct krecord
 template<class V>
 struct krecord<void, V>
 {
-  krecord() : event_time(-1), offset(-1) {}
+  //krecord() : event_time(-1), offset(-1) {}
   krecord(const V& v) : event_time(-1), offset(-1), value(std::make_shared<V>(v)) {}
+  krecord(std::shared_ptr<V> v) : event_time(-1), offset(-1), value(v) {}
   std::shared_ptr<V> value;
   int64_t            event_time;
   int64_t            offset;

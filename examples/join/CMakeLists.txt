@@ -1,8 +1,8 @@
-project(join)
+project(example_join)
 
 SET(SRCS
-join.cpp
+example_join.cpp
 )
 
-add_executable(join ${SRCS})
-target_link_libraries(join ${CSI_LIBS})
+add_executable(example_join ${SRCS})
+target_link_libraries(example_join ${CSI_LIBS})

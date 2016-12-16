@@ -1,9 +1,8 @@
-// COUNT KEYS
 #include <functional>
-#include <boost/log/trivial.hpp>
-#include "kspp_defs.h"
 #include <deque>
-#include "counter_store.h"
+//#include <boost/log/trivial.hpp>
+#include <kspp/kspp_defs.h>
+#include <kspp/state_stores/counter_store.h>
 #pragma once
 
 namespace csi {

@@ -10,7 +10,9 @@ SET(LIB_SRCS
   kafka_consumer.h
   kafka_consumer.cpp
   binary_encoder.h
+  text_codec.h
   topology_builder.h
+  codec.h
   processors/count.h
   processors/transform.h
   processors/join.h

@@ -145,25 +145,27 @@ class kafka_source<void, V, CODEC> : public ksource<void, V>
   std::shared_ptr<krecord<void, V>> parse(const std::unique_ptr<RdKafka::Message> & ref) {
     if (!ref)
       return NULL;
-
-    auto res = std::make_shared<krecord<void, V>>();
-
-    res->event_time = ref->timestamp().timestamp;
-    res->offset = ref->offset();
     size_t sz = ref->len();
     if (sz) {
       std::istrstream vs((const char*) ref->payload(), sz);
-      res->value = std::make_shared<V>();
-      size_t consumed = _codec->decode(vs, *res->value);
+      auto v = std::make_shared<V>();
+      size_t consumed = _codec->decode(vs, *v);
+      if (consumed == sz) {
+        auto res = std::make_shared<krecord<void, V>>(v);
+        res->event_time = ref->timestamp().timestamp;
+        res->offset = ref->offset();
+        return res;
+      }
+
       if (consumed == 0) {
         LOGPREFIX_ERROR << ", decode value failed, size:" << sz;
         return NULL;
-      } else if (consumed != sz) {
-        LOGPREFIX_ERROR << ", decode value failed, consumed: " << consumed << ", actual: " << sz;
-        return NULL;
       }
+      
+      LOGPREFIX_ERROR << ", decode value failed, consumed: " << consumed << ", actual: " << sz;
+      return NULL;
     }
-    return res;
+    return NULL; // just parsed an empty message???
   }
 
   kafka_consumer          _consumer;

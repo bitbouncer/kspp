@@ -3,8 +3,10 @@
 #include <chrono>
 #include <regex>
 #include <kspp/binary_encoder.h>
+#include <kspp/text_codec.h>
 #include <kspp/topology_builder.h>
-#include <kspp/group_by.h>
+#include <kspp/processors/transform.h>
+#include <kspp/processors/count.h>
 
 #define PARTITION 0
 
@@ -49,28 +51,6 @@ int main(int argc, char **argv) {
     }
   }
 
-  //{
-  //  std::regex rgx("\\s+");
-  //  auto source = builder.create_kafka_source<void, std::string>("kspp_TextInput", PARTITION);
-  //  auto group_by = std::make_shared<csi::group_by_value<void, std::string, std::string>>(source, [&rgx](const std::string& val, csi::ksink<std::string, size_t>* sink) {
-  //    std::sregex_token_iterator iter(val.begin(),
-  //                                    val.end(),
-  //                                    rgx,
-  //                                    -1);
-  //    std::sregex_token_iterator end;
-  //    for (; iter != end; ++iter)
-  //      sink->produce(std::make_shared<csi::krecord<std::string, size_t>>(*iter, 1));
-  //  });
-
-  //  group_by->start(-2);
-  //  while (!group_by->eof()) {
-  //    auto msg = group_by->consume();
-  //    if (msg) {
-  //      std::cerr << *msg->value << std::endl;
-  //    }
-  //  }
-  //}
-
   {
     auto source = builder.create_kafka_source<void, std::string>("kspp_TextInput", PARTITION);
 
@@ -95,5 +75,37 @@ int main(int argc, char **argv) {
 
 
   }
+
+
+  {
+    auto text_codec = std::make_shared<csi::text_codec>();
+    auto text_builder = csi::topology_builder<csi::text_codec>("localhost", "C:\\tmp", text_codec);
+    auto source = text_builder.create_kafka_source<void, std::string>("kspp_bible", PARTITION);
+
+    std::regex rgx("\\s+");
+    //auto word_stream = std::make_shared<csi::transform_stream<void, std::string, std::string, void>>(source, [&rgx](std::shared_ptr<csi::krecord<void, std::string>> e, csi::ksink<std::string, void>* sink) {
+    auto word_stream = std::make_shared<csi::transform_stream<void, std::string, std::string, void>>(source, [&rgx](const auto e, auto sink) {
+      std::sregex_token_iterator iter(e->value->begin(), e->value->end(), rgx, -1); 
+      std::sregex_token_iterator end;
+      for (; iter != end; ++iter)
+        sink->produce(std::make_shared<csi::krecord<std::string, void>>(*iter));
+    });
+
+    auto word_counts = std::make_shared<csi::count_keys<std::string, csi::text_codec>>(word_stream, "C:\\tmp", text_codec);
+
+    word_counts->start(-2); // this does not reset the counts in the backing store.....
+    while (!word_counts->eof()) {
+      auto msg = word_counts->consume();
+      //if (msg) {
+      //  std::cerr << msg->key << ":" << *msg->value << std::endl;
+      //}
+    }
+
+    for (auto i : *word_counts)
+      std::cerr << i->key << " : " << *i->value << std::endl;
+
+
+  }
+
 
 }
