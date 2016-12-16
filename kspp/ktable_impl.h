@@ -102,11 +102,11 @@ class ktable_impl : public ktable<K, V>
   }
   */
 
-  virtual csi::ktable<K, V>::iterator begin(void) {
+  virtual typename csi::ktable<K, V>::iterator begin(void) {
     return _state_store.begin();
   }
 
-  virtual csi::ktable<K, V>::iterator end() {
+  virtual typename csi::ktable<K, V>::iterator end() {
     return _state_store.end();
   }
 
