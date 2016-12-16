@@ -1,6 +1,5 @@
 #include <boost/filesystem.hpp>
-#include "join.h"
-//#include "group_by.h"
+#include "processors/join.h"
 #include "kstream_impl.h"
 #include "ktable_impl.h"
 #include "kafka_sink.h"

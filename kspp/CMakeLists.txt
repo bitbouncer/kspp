@@ -3,10 +3,6 @@ SET(LIB_SRCS
   kspp.h
   kstream_impl.h
   ktable_impl.h
-  join.h
-  group_by.h
-  state_store.h
-  counter_store.h
   kafka_source.h
   kafka_sink.h
   kafka_producer.h
@@ -15,6 +11,12 @@ SET(LIB_SRCS
   kafka_consumer.cpp
   binary_encoder.h
   topology_builder.h
+  processors/count.h
+  processors/transform.h
+  processors/join.h
+  processors/group_by.h
+  state_stores/counter_store.h
+  state_stores/state_store.h
   )
 	
 add_library (kspp STATIC ${LIB_SRCS})

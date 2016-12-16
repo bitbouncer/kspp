@@ -1,11 +1,6 @@
 #include <boost/filesystem.hpp>
-#include "kafka_source.h"
-#include "state_store.h"
+#include "state_stores/state_store.h"
 #include "kspp_defs.h"
-#pragma once
-
-#include "kafka_source.h"
-#include "state_store.h"
 #pragma once
 
 namespace csi {
