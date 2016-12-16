@@ -1,9 +1,10 @@
 #include <memory>
+#include <strstream>
 #include <boost/filesystem.hpp>
 #include <boost/log/trivial.hpp>
 #include "kspp_defs.h"
 #include "kafka_consumer.h"
-#include <iostream>
+//#include <iostream>
 #pragma once
 
 #define LOGPREFIX_ERROR BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << name()

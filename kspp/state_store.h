@@ -61,7 +61,7 @@ class kstate_store
       return res;
     }
 
-    virtual bool operator==(const ktable_iterator_impl& other) const {
+    virtual bool operator==(const ktable_iterator_impl<K, V>& other) const {
       //fastpath...
       if (valid() && !other.valid())
         return false;
