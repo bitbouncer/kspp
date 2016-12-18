@@ -1,7 +1,7 @@
 #include <fstream>
 #include <boost/filesystem.hpp>
 #include "kafka_source.h"
-#include "state_stores/rocksb_store.h"
+#include "state_stores/rocksdb_store.h"
 #include "kspp_defs.h"
 #pragma once
 
@@ -93,7 +93,7 @@ namespace csi {
 
   private:
     kafka_source<K, V, CODEC> _source;
-    kstate_store<K, V, CODEC> _state_store;
+    rockdb_store<K, V, CODEC> _state_store;
 
     boost::filesystem::path _offset_storage_path;
     int64_t                 _current_offset;

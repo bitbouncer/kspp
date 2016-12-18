@@ -5,10 +5,11 @@
 #include <boost/log/trivial.hpp>
 #include <rocksdb/db.h>
 #include <kspp/kspp_defs.h>
+#include "kv_store.h"
 
 namespace csi {
 template<class K, class V, class CODEC>
-class kstate_store
+class rockdb_store : public kv_store<K,V>
 {
   public:
   enum { MAX_KEY_SIZE = 10000, MAX_VALUE_SIZE = 100000 };
@@ -78,7 +79,7 @@ class kstate_store
 
   };
 
-  kstate_store(std::string topic, int32_t partition, boost::filesystem::path storage_path, std::shared_ptr<CODEC> codec)
+  rockdb_store(std::string topic, int32_t partition, boost::filesystem::path storage_path, std::shared_ptr<CODEC> codec)
     : _codec(codec)
     , _topic(topic)
     , _partition(partition) {
@@ -94,9 +95,10 @@ class kstate_store
     assert(s.ok());
   }
 
-  ~kstate_store() {
+  ~rockdb_store() {
     close();
   }
+  
   void close() {
     _db = NULL;
     BOOST_LOG_TRIVIAL(info) << BOOST_CURRENT_FUNCTION << ", " << ", " << _topic << ":" << _partition;

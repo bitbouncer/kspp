@@ -1,6 +1,5 @@
 #include <functional>
 #include <deque>
-//#include <boost/log/trivial.hpp>
 #include <kspp/kspp_defs.h>
 #include <kspp/state_stores/rocksdb_counter_store.h>
 #pragma once
@@ -48,7 +47,7 @@ class count_keys : public kmaterialized_source<K, size_t>
 
    _counter_store.add(e->key, 1);
    //size_t count = _counter_store.get(e->key);
-   return std::make_shared<krecord<K, size_t>>(e->key, 1); // wrong
+   return std::make_shared<krecord<K, size_t>>(e->key, 1); // wrong but fast
   }
 
   virtual void commit() {
@@ -78,87 +77,7 @@ class count_keys : public kmaterialized_source<K, size_t>
 
   private:
   std::shared_ptr<ksource<K, void>>               _stream;
-  kkeycounter_store<K, CODEC>                     _counter_store;
+  rocksdb_counter_store<K, CODEC>                 _counter_store;
   std::deque<std::shared_ptr<krecord<K, size_t>>> _queue;
 };
-
-//
-//
-//template<class K, class CODEC>
-//class merge_counts : public kmaterialized_source<K, size_t>
-//{
-//public:
-//  merge_counts(std::vector<std::shared_ptr<ksource<K, void>>> sources, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) :
-//    _sources(sources),
-//    {}
-//
-//  ~merge_counts() {
-//    close();
-//  }
-//
-//  std::string name() const {
-//    return "merge_counts"; // TBD this is not unique...
-//  }
-//
-//  virtual void start() {
-//    _stream->start();
-//  }
-//
-//  virtual void start(int64_t offset) {
-//    _stream->start(offset);
-//  }
-//
-//  virtual void close() {
-//    _stream->close();
-//  }
-//
-//  virtual std::shared_ptr<krecord<K, size_t>> consume() {
-//    if (_queue.size()) {
-//      auto p = *_queue.begin();
-//      _queue.pop_front();
-//      return p;
-//    }
-//
-//    auto e = _stream->consume();
-//    if (!e)
-//      return NULL;
-//
-//    _counter_store.add(e->key, 1);
-//    size_t count = _counter_store.get(e->key);
-//    return std::make_shared<krecord<K, size_t>>(e->key, count);
-//  }
-//
-//  virtual void commit() {
-//    _stream->commit();
-//  }
-//
-//  virtual bool eof() const {
-//    return _queue.size() == 0 && _stream->eof();
-//  }
-//
-//  // inherited from kmaterialized_source
-//  virtual std::shared_ptr<krecord<K, size_t>> get(const K& key) {
-//    auto count = _counter_store.get(key);
-//    if (count)
-//      return std::make_shared<krecord<K, size_t>>(key, count);
-//    else
-//      return NULL;
-//  }
-//
-//  virtual typename csi::kmaterialized_source<K, size_t>::iterator begin(void) {
-//    return _counter_store.begin();
-//  }
-//
-//  virtual typename csi::kmaterialized_source<K, size_t>::iterator end() {
-//    return _counter_store.end();
-//  }
-//
-//private:
-//  std::vector<std::shared_ptr<ksource<K, void>>>  _sources;
-//  std::map<K, size_t>                             _values;
-//  std::vector<std::map<K, size_t>>                _source_values;
-//  std::deque<std::shared_ptr<krecord<K, size_t>>> _queue;
-//};
-
-
 }

@@ -1,5 +1,5 @@
 #include <boost/filesystem.hpp>
-#include "state_stores/rocksb_store.h"
+#include "state_stores/rocksdb_store.h"
 #include "kspp_defs.h"
 #pragma once
 
@@ -26,7 +26,7 @@ class ktable_impl : public ktable<K, V>
   }
 
   virtual std::string name() const {
-    return "ktable_impl-" + _source.name();
+    return _source.name() + "-(ktable)";
   }
 
   virtual void start() {
@@ -102,7 +102,7 @@ class ktable_impl : public ktable<K, V>
 
   private:
   kafka_source<K, V, CODEC> _source;
-  kstate_store<K, V, CODEC> _state_store;
+  rockdb_store<K, V, CODEC> _state_store;
   boost::filesystem::path   _offset_storage_path;
   int64_t                   _current_offset;
   int64_t                   _last_comitted_offset;
