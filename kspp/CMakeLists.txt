@@ -16,8 +16,10 @@ SET(LIB_SRCS
   processors/transform.h
   processors/join.h
   processors/group_by.h
-  state_stores/counter_store.h
-  state_stores/state_store.h
+  state_stores/rocksdb_counter_store.h
+  state_stores/rocksdb_windowed_counter_store.h
+  state_stores/rocksb_store.h
+  state_stores/rocksdb_windowed_store.h
   )
 	
 add_library (kspp STATIC ${LIB_SRCS})

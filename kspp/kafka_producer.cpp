@@ -5,6 +5,17 @@
 #define LOGPREFIX_INFO  BOOST_LOG_TRIVIAL(info) << BOOST_CURRENT_FUNCTION << ", topic:" << _topic
 
 namespace csi {
+  static inline unsigned int djb_hash(const char *str, size_t len) {
+    unsigned int hash = 5381;
+    for (size_t i = 0; i < len; i++)
+      hash = ((hash << 5) + hash) + str[i];
+    return hash;
+  }
+
+  int32_t kafka_producer::MyHashPartitionerCb::partitioner_cb(const RdKafka::Topic *topic, const std::string *key, int32_t partition_cnt, void *msg_opaque) {
+    return djb_hash(key->data(), key->size()) % partition_cnt;
+  }
+
 kafka_producer::kafka_producer(std::string brokers, std::string topic) :
   _topic(topic),
   _msg_cnt(0),
@@ -37,6 +48,13 @@ kafka_producer::kafka_producer(std::string brokers, std::string topic) :
   LOGPREFIX_INFO << ", created producer " << _producer->name();
 
   std::unique_ptr<RdKafka::Conf> tconf2(RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC));
+
+  if (tconf2->set("partitioner_cb", &_default_partitioner, errstr) !=
+    RdKafka::Conf::CONF_OK) {
+    LOGPREFIX_ERROR << ", failed to create partitioner: " << errstr;
+    exit(1);
+  }
+
   _rd_topic = std::unique_ptr<RdKafka::Topic>(RdKafka::Topic::create(_producer.get(), _topic, tconf2.get(), errstr));
 
   if (!_rd_topic) {

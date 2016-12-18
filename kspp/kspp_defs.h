@@ -113,12 +113,15 @@ class ktable : public kmaterialized_source<K, V>
 template<class K, class V>
 class ksink : public knode
 {
-  public:
+public:
+  typedef K key_type;
+  typedef V value_type;
+  typedef csi::krecord<K, V> record_type;
+
   ksink() {}
-  virtual int         produce(std::shared_ptr<krecord<K, V>> r) = 0;
-  virtual size_t      queue_len() = 0;
-  //virtual std::string topic() const = 0;
-  virtual void        poll(int timeout) = 0; // ????
+  virtual int    produce(std::shared_ptr<krecord<K, V>> r) = 0;
+  virtual size_t queue_len() = 0;
+  virtual void   poll(int timeout) = 0; // ????
 };
 
 template<class K, class V>
@@ -139,6 +142,46 @@ size_t consume(ksource<K, V>& src, ksink<K, V>& dst) {
   dst.produce(std::move(p));
   return 1;
 }
+
+template<class K, class V>
+void consume(std::vector<std::shared_ptr<ksource<K, V>>>& sources, ksink<K, V>& dst) {
+  for (auto i : sources)     {
+    consume(*i, dst);
+  }
+}
+
+template<class K, class V>
+void consume(const std::vector<std::shared_ptr<kmaterialized_source<K, V>>>& sources) {
+  for (auto i : sources) {
+    i->consume();
+  }
+}
+
+template<class K, class V>
+bool eof(std::vector<std::shared_ptr<ksource<K, V>>>& sources) {
+  for (auto i : sources) {
+    if (!i->eof())
+      return false;
+  }
+  return true;
+}
+
+
+template<class K, class V>
+bool eof(std::vector<std::shared_ptr<kmaterialized_source<K, V>>>& sources) {
+  for (auto i : sources) {
+    if (!i->eof())
+      return false;
+  }
+  return true;
+}
+
+template<class KSINK>
+int produce(KSINK* sink, const typename KSINK::key_type& key) {
+  return sink->produce(std::make_shared<KSINK::record_type>(key));
+}
+
+// TBD bestämm vilket api som är bäst...
 
 template<class K, class V>
 int produce(ksink<K, V>& sink, const K& key, const V& val) {

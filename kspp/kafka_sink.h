@@ -93,7 +93,7 @@ class kafka_sink : public ksink<K, V>
   int32_t                 _fixed_partition;
 };
 
-
+//<null, VALUE>
 template<class V, class CODEC>
 class kafka_sink<void, V, CODEC> : public ksink<void, V>
 {
@@ -108,7 +108,7 @@ class kafka_sink<void, V, CODEC> : public ksink<void, V>
   }
 
   virtual std::string name() const {
-    return "kafka_sink-" + _impl.topic();
+    return _impl.topic() + "-kafka_sink";
   }
 
   virtual void close() {
@@ -146,4 +146,66 @@ class kafka_sink<void, V, CODEC> : public ksink<void, V>
   std::shared_ptr<CODEC>  _codec;
   int32_t                 _fixed_partition;
 };
+
+// <key, NULL>
+template<class K, class CODEC>
+class kafka_sink<K, void, CODEC> : public ksink<K, void>
+{
+public:
+  using partitioner = typename kafka_partitioner_base<K>::partitioner;
+
+  kafka_sink(std::string brokers, std::string topic, partitioner p, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) :
+    _impl(brokers, topic),
+    _codec(codec),
+    _partitioner(p),
+    _fixed_partition(-1) {}
+
+  kafka_sink(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) :
+    _impl(brokers, topic),
+    _codec(codec),
+    _fixed_partition(partition) {}
+
+  virtual ~kafka_sink() {
+    close();
+  }
+
+  virtual std::string name() const {
+    return "kafka_sink-" + _impl.topic();
+  }
+
+  virtual void close() {
+    return _impl.close();
+  }
+
+  virtual size_t queue_len() {
+    return _impl.queue_len();
+  }
+
+
+  virtual void poll(int timeout) {
+    return _impl.poll(timeout);
+  }
+
+  virtual int produce(std::shared_ptr<krecord<K, void>> r) {
+    void* kp = NULL;
+    size_t ksize = 0;
+
+    std::stringstream ks;
+    ksize = _codec->encode(r->key, ks);
+    kp = malloc(ksize);
+    ks.read((char*)kp, ksize);
+
+    if (_partitioner)
+      return _impl.produce(_partitioner(r->key), kafka_producer::FREE, kp, ksize, NULL, 0);
+    else
+      return _impl.produce(_fixed_partition, kafka_producer::FREE, kp, ksize, NULL, 0);
+  }
+
+private:
+  kafka_producer          _impl;
+  std::shared_ptr<CODEC>  _codec;
+  partitioner             _partitioner;
+  int32_t                 _fixed_partition;
+};
+
 };

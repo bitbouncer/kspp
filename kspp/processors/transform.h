@@ -20,7 +20,26 @@ class transform_stream : public ksource<RK, RV>, private ksink<RK, RV>
     close();
   }
 
-  std::string name() const { return "transform_stream-" + _stream->name(); }
+  /*
+  static std::vector<std::shared_ptr<transform_stream<SK, SV, RK, RV>>> create(std::vector<std::shared_ptr<ksource<SK, SV>>>& streams, extractor f) {
+    std::vector< std::shared_ptr<transform_stream<RK, RV>> res;
+    for (auto i : streams)
+      res.push_back(std::make_shared<transform_stream<RK, RV>>(i, f));
+    return res;
+  }
+  */
+
+  static std::vector<std::shared_ptr<ksource<RK, RV>>> create(std::vector<std::shared_ptr<ksource<SK, SV>>>& streams, extractor f) {
+    std::vector<std::shared_ptr<ksource<RK, RV>>> res;
+    for (auto i : streams)
+      res.push_back(std::make_shared<transform_stream<SK, SV, RK, RV>>(i, f));
+    return res;
+  }
+
+
+  std::string name() const {
+    return _stream->name() + "-transform_stream";
+  }
 
   virtual void start() {
     _stream->start();

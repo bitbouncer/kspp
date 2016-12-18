@@ -95,6 +95,7 @@ template<> size_t text_codec::encode(const std::string& src, std::ostream& dst) 
 }
 
 template<> size_t text_codec::decode(std::istream& src, std::string& dst) {
+  dst.clear();
   std::getline(src, dst);
   return dst.size();
 }

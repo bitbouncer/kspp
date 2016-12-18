@@ -27,11 +27,17 @@ class kafka_producer
   }
 
   private:
+    class MyHashPartitionerCb : public RdKafka::PartitionerCb {
+    public:
+      int32_t partitioner_cb(const RdKafka::Topic *topic, const std::string *key, int32_t partition_cnt, void *msg_opaque);
+    };
+
   const std::string                  _topic;
   std::unique_ptr<RdKafka::Topic>    _rd_topic;
   std::unique_ptr<RdKafka::Producer> _producer;
   uint64_t                           _msg_cnt;
   uint64_t                           _msg_bytes;
+  MyHashPartitionerCb                _default_partitioner;
 };
 }; // namespace
 

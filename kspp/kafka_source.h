@@ -97,6 +97,7 @@ class kafka_source : public ksource<K, V>
   std::shared_ptr<CODEC>  _codec;
 };
 
+// <void, VALUE>
 template<class V, class CODEC>
 class kafka_source<void, V, CODEC> : public ksource<void, V>
 {
@@ -171,6 +172,77 @@ class kafka_source<void, V, CODEC> : public ksource<void, V>
   kafka_consumer          _consumer;
   std::shared_ptr<CODEC>  _codec;
 };
+
+//<KEY, NULL>
+template<class K, class CODEC>
+class kafka_source<K, void, CODEC> : public ksource<K, void>
+{
+public:
+  kafka_source(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) :
+    _codec(codec),
+    _consumer(brokers, topic, partition) {}
+
+  virtual ~kafka_source() {
+    close();
+  }
+
+  virtual std::string name() const {
+    return "kafka_source-" + _consumer.topic() + "-" + std::to_string(_consumer.partition());
+  }
+
+  virtual void start(int64_t offset) {
+    _consumer.start(offset);
+  }
+
+  //TBD get offsets from kafka
+  virtual void start() {
+    _consumer.start(-2);
+  }
+
+  virtual void close() {
+    _consumer.close();
+  }
+
+  virtual inline bool eof() const {
+    return _consumer.eof();
+  }
+
+  // TBD lazy commit offsets to kafka
+  virtual void commit() {}
+
+  // TBD hard commit offsets to kafka
+  virtual void flush_offset() {}
+
+  virtual  std::shared_ptr<krecord<K, void>> consume() {
+    auto p = _consumer.consume();
+    return p ? parse(p) : NULL;
+  }
+
+private:
+  std::shared_ptr<krecord<K, void>> parse(const std::unique_ptr<RdKafka::Message> & ref) {
+    if (!ref || ref->key_len()==0)
+      return NULL;
+
+    auto res = std::make_shared<krecord<K, void>>();
+
+    res->event_time = ref->timestamp().timestamp;
+    res->offset = ref->offset();
+    std::istrstream ks((const char*)ref->key_pointer(), ref->key_len());
+    size_t consumed = _codec->decode(ks, res->key);
+    if (consumed == 0) {
+      LOGPREFIX_ERROR << ", decode key failed, actual key sz:" << ref->key_len();
+      return NULL;
+    } else if (consumed != ref->key_len()) {
+      LOGPREFIX_ERROR << ", decode key failed, consumed: " << consumed << ", actual: " << ref->key_len();
+      return NULL;
+    }
+    return res;
+  }
+
+  kafka_consumer          _consumer;
+  std::shared_ptr<CODEC>  _codec;
+};
+
 
 };
 

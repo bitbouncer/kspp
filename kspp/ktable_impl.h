@@ -1,5 +1,5 @@
 #include <boost/filesystem.hpp>
-#include "state_stores/state_store.h"
+#include "state_stores/rocksb_store.h"
 #include "kspp_defs.h"
 #pragma once
 
