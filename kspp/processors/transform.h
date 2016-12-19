@@ -13,7 +13,7 @@ class transform_stream : public ksource<RK, RV>, private ksink<RK, RV>
   //typedef std::function<void(const K& key, const V& value, ksink<RK, size_t> self)> value_extractor;
 
   transform_stream(std::shared_ptr<ksource<SK, SV>> source, extractor f) :
-    _stream(source),
+    _source(source),
     _extractor(f) {}
 
   ~transform_stream() {
@@ -36,21 +36,24 @@ class transform_stream : public ksource<RK, RV>, private ksink<RK, RV>
     return res;
   }
 
+  static std::shared_ptr<ksource<RK, RV>> create(std::shared_ptr<ksource<SK, SV>> source, extractor f) {
+    return std::make_shared<transform_stream<SK, SV, RK, RV>>(source, f);
+  }
 
   std::string name() const {
-    return _stream->name() + "-transform_stream";
+    return _source->name() + "-transform_stream";
   }
 
   virtual void start() {
-    _stream->start();
+    _source->start();
   }
 
   virtual void start(int64_t offset) {
-    _stream->start(offset);
+    _source->start(offset);
   }
 
   virtual void close() {
-    _stream->close();
+    _source->close();
   }
 
   virtual std::shared_ptr<krecord<RK, RV>> consume() {
@@ -60,7 +63,7 @@ class transform_stream : public ksource<RK, RV>, private ksink<RK, RV>
       return p;
     }
     
-    auto e = _stream->consume();
+    auto e = _source->consume();
     if (e)
       _extractor(e, this);
 
@@ -74,11 +77,11 @@ class transform_stream : public ksource<RK, RV>, private ksink<RK, RV>
   }
 
   virtual void commit() {
-    _stream->commit();
+    _source->commit();
   }
 
   virtual bool eof() const {
-    return _stream->eof() && (_queue.size() == 0);
+    return _source->eof() && (_queue.size() == 0);
   }
 
   // PRIVATE INTERFACE SINK
@@ -100,7 +103,7 @@ class transform_stream : public ksource<RK, RV>, private ksink<RK, RV>
   }
 
   private:
-  std::shared_ptr<ksource<SK, SV>>             _stream;
+  std::shared_ptr<ksource<SK, SV>>             _source;
   extractor                                    _extractor;
   std::deque<std::shared_ptr<krecord<RK, RV>>> _queue;
 };

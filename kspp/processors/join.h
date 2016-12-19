@@ -61,9 +61,7 @@ class left_join : public ksource<K, R>
     auto table_row = _table->get(e->key);
     if (table_row) {
       if (e->value) {
-        auto p = std::make_shared<csi::krecord<K, R>>(e->key, std::make_shared<R>());
-        p->event_time = e->event_time;
-        p->offset = e->offset;
+        auto p = std::make_shared<csi::krecord<K, R>>(e->key, std::make_shared<R>(), e->event_time);
         _value_joiner(e->key, *e->value, *table_row->value, *p->value);
         return p;
       } else {

@@ -1,17 +1,31 @@
 #include <type_traits>
+#include <chrono>
 #include <memory>
 #include <cstdint>
 #include <string>
 
 #pragma once
 namespace csi {
+inline int64_t milliseconds_since_epoch() {
+  return std::chrono::duration_cast<std::chrono::milliseconds>
+    (std::chrono::system_clock::now().time_since_epoch()).count();
+}
+
+/*
+inline int64_t seconds_since_epoch() {
+  return std::chrono::duration_cast<std::chrono::milliseconds>
+    (std::chrono::system_clock::now().time_since_epoch()).count();
+}
+*/
+
 template<class K, class V>
 struct krecord
 {
   krecord() : event_time(-1), offset(-1) {}
-  krecord(const K& k) : event_time(-1), offset(-1), key(k) {}
-  krecord(const K& k, const V& v) : event_time(-1), offset(-1), key(k), value(std::make_shared<V>(v)) {}
-  krecord(const K& k, std::shared_ptr<V> v) : event_time(-1), offset(-1), key(k), value(v) {}
+  krecord(const K& k) : event_time(milliseconds_since_epoch()), offset(-1), key(k) {}
+  krecord(const K& k, const V& v) : event_time(milliseconds_since_epoch()), offset(-1), key(k), value(std::make_shared<V>(v)) {}
+  krecord(const K& k, std::shared_ptr<V> v) : event_time(milliseconds_since_epoch()), offset(-1), key(k), value(v) {}
+  krecord(const K& k, std::shared_ptr<V> v, int64_t ts) : event_time(ts), offset(-1), key(k), value(v) {}
 
   K                  key;
   std::shared_ptr<V> value;
@@ -23,8 +37,9 @@ template<class V>
 struct krecord<void, V>
 {
   //krecord() : event_time(-1), offset(-1) {}
-  krecord(const V& v) : event_time(-1), offset(-1), value(std::make_shared<V>(v)) {}
-  krecord(std::shared_ptr<V> v) : event_time(-1), offset(-1), value(v) {}
+  krecord(const V& v) : event_time(milliseconds_since_epoch()), offset(-1), value(std::make_shared<V>(v)) {}
+  krecord(std::shared_ptr<V> v) : event_time(milliseconds_since_epoch()), offset(-1), value(v) {}
+  krecord(std::shared_ptr<V> v, int64_t ts) : event_time(ts), offset(-1), value(v) {}
   std::shared_ptr<V> value;
   int64_t            event_time;
   int64_t            offset;
@@ -34,7 +49,8 @@ template<class K>
 struct krecord<K, void>
 {
   krecord() : event_time(-1), offset(-1) {}
-  krecord(const K& k) : event_time(-1), offset(-1), key(k) {}
+  krecord(const K& k) : event_time(milliseconds_since_epoch()), offset(-1), key(k) {}
+  krecord(const K& k, int64_t ts) : event_time(ts), offset(-1), key(k) {}
   K                  key;
   int64_t            event_time;
   int64_t            offset;
