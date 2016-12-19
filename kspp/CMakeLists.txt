@@ -16,6 +16,7 @@ SET(LIB_SRCS
   processors/transform.h
   processors/join.h
   processors/group_by.h
+  processors/repartition.h
   state_stores/kv_store.h
   state_stores/counter_store.h
   state_stores/rocksdb_counter_store.h

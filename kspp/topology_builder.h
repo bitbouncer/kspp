@@ -1,6 +1,7 @@
 #include <boost/filesystem.hpp>
 #include "processors/join.h"
 #include "processors/count.h"
+#include "processors/repartition.h"
 #include "kstream_impl.h"
 #include "ktable_impl.h"
 #include "kafka_sink.h"
@@ -24,6 +25,16 @@ class topology_builder
     auto stream = std::make_shared<csi::kstream_impl<K, streamV, CODEC>>(tag, _brokers, stream_topic, partition, _storage_path, _default_codec);
     auto table = std::make_shared<csi::ktable_impl<K, tableV, CODEC>>(tag, _brokers, table_topic, partition, _storage_path, _default_codec);
     return std::make_shared<csi::left_join<K, streamV, tableV, R>>(stream, table, value_joiner);
+  }
+
+  template<class K, class streamV, class tableV, class R>
+  std::shared_ptr<left_join<K, streamV, tableV, R>> create_left_join(std::shared_ptr<csi::kstream<K, streamV>> right, std::shared_ptr<csi::ktable<K, tableV>> left, typename csi::left_join<K, streamV, tableV, R>::value_joiner value_joiner) {
+    return std::make_shared<csi::left_join<K, streamV, tableV, R>>(right, left, value_joiner);
+  }
+
+  template<class K, class V, class tableV>
+  std::shared_ptr<repartition_stream<K, V, tableV>> create_repartition(std::string tag, std::shared_ptr<csi::ksource<K, V>> right, std::shared_ptr<csi::ktable<K, tableV>> left, typename csi::repartition_stream<K, V, tableV>::repartitioner repartitioner) {
+    return std::make_shared<csi::repartition_stream<K, rightV, leftV>>(right, left, repartitioner);
   }
 
   //TBD we shouyld get rid of void value - we do not require that but how do we tell compiler that????
@@ -67,6 +78,11 @@ class topology_builder
   */
 
   template<class K, class V>
+  std::shared_ptr<csi::ksink<K, V>> create_global_kafka_sink(std::string topic) {
+    return std::make_shared<csi::kafka_sink<K, V, CODEC>>(_brokers, topic, 0, _default_codec);
+  }
+  
+  template<class K, class V>
   std::shared_ptr<csi::ksink<K, V>> create_kafka_sink(std::string topic, int32_t partition) {
     return std::make_shared<csi::kafka_sink<K, V, CODEC>>(_brokers, topic, partition, _default_codec);
   }
@@ -97,6 +113,11 @@ class topology_builder
   template<class K, class V>
   std::shared_ptr<csi::ktable<K, V>> create_ktable(std::string tag, std::string topic, int32_t partition) {
     return std::make_shared<csi::ktable_impl<K, V, CODEC>>(tag, _brokers, topic, partition, _storage_path, _default_codec);
+  }
+
+  template<class K, class V>
+  std::shared_ptr<csi::ktable<K, V>> create_global_ktable(std::string tag, std::string topic) {
+    return std::make_shared<csi::ktable_impl<K, V, CODEC>>(tag, _brokers, topic, 0, _storage_path, _default_codec);
   }
 
   private:
