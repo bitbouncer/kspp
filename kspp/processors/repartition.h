@@ -3,70 +3,65 @@
 #pragma once
 
 namespace csi {
-  template<class K, class V, class tableV>
-  class repartition_stream : public ksource<K, V>
+  template<class K, class V>
+  class repartition_by_table : public ksource<K, V>
   {
   public:
-    typedef std::function<int32_t(const tableV& right)> partitioner;
+  repartition_by_table(std::shared_ptr<ksource<K, V>> source, std::shared_ptr<ktable<K, K>> routing_table)
+    : _source(source)
+    , _routing_table(routing_table) {}
 
-    repartition_stream(std::shared_ptr<ksource<K, V>> source, std::shared_ptr<ktable<K, tableV>> table, partitioner f)
-      : _source(source)
-      , _table(table)
-      , _sink(sink)
-      , _partitioner(f) {}
-
-    ~repartition_stream() {
+    ~repartition_by_table() {
       close();
     }
 
-    std::string name() const { return _source->name() + "-repartition_stream-on(" + _table->name() +")"; }
+    std::string name() const { return _source->name() + "-repartition_by_value(" + _routing_table->name() +")"; }
 
-    void add_sink(std::shared_ptr<ksink<K, V>> sink) {
+    void add_sink(std::shared_ptr<kpartitionable_sink<K, V>> sink) {
       _sinks.push_back(sink);
     }
 
     virtual void start() {
-      _table->start();
-      _stream->start();
+      _routing_table->start();
+      _source->start();
     }
 
     virtual void start(int64_t offset) {
-      _table->start();
-      _stream->start(offset);
+      _routing_table->start();
+      _source->start(offset);
     }
 
     virtual void close() {
-      _table->close();
-      _stream->close();
+      _routing_table->close();
+      _source->close();
     }
 
     bool consume_right() {
-      if (!_table->eof()) {
-        _table->consume();
-        _table->commit();
+      if (!_routing_table->eof()) {
+        _routing_table->consume();
+        _routing_table->commit();
         return true;
       }
       return false;
     }
 
     virtual std::shared_ptr<krecord<K, V>> consume() {
-      if (!_table->eof()) {
+      if (!_routing_table->eof()) {
         // just eat it... no join since we only joins with events????
-        _table->consume();
-        _table->commit();
+        _routing_table->consume();
+        _routing_table->commit();
         return NULL;
       }
 
-      auto e = _stream->consume();
+      auto e = _source->consume();
       if (!e)
         return NULL;
 
-      auto table_row = _table->get(e->key);
+      auto table_row = _routing_table->get(e->key);
       if (table_row) {
-        if (e->value) {
-          int32_t p = _partitioner(*table_row->value);
+        if (table_row->value) {
           for (auto s : _sinks)
-            s->produce(p, e);
+            s->produce(*table_row->value, e);
         }
       } else {
         // join failed
@@ -75,19 +70,83 @@ namespace csi {
     }
 
     virtual void commit() {
-      _table->commit();
-      _stream->commit();
+      _routing_table->commit();
+      _source->commit();
     }
 
     virtual bool eof() const {
-      return _table->eof() && _stream->eof();
+      return _routing_table->eof() && _source->eof();
     }
 
   private:
-    std::shared_ptr<ksource<K, V>>            _source;
-    // kv store K, size_t (partition)
-    std::shared_ptr<ktable<K, tableV>>        _table;
-    partitioner                               _partitioner;
-    std::vector<std::shared_ptr<ksink<K, V>>> _sinks;
+    std::shared_ptr<ksource<K, V>>                          _source;
+    std::shared_ptr<ktable<K, K>>                           _routing_table;
+    std::vector<std::shared_ptr<kpartitionable_sink<K, V>>> _sinks;
   };
+
+
+
+
+  //template<class K, class V>
+  //class repartition_table : public ksource<K, V>
+  //{
+  //  public:
+  //  repartition_table(std::shared_ptr<ktable<K, V>> source)
+  //    : _source(source) {}
+
+  //  ~repartition_table() {
+  //    close();
+  //  }
+
+  //  std::string name() const { return _source->name() + "-repartition_table"; }
+
+  //  void add_sink(std::shared_ptr<kpartitionable_sink<K, V>> sink) {
+  //    _sinks.push_back(sink);
+  //  }
+
+  //  virtual void start() {
+  //    _source->start();
+  //  }
+
+  //  virtual void start(int64_t offset) {
+  //    _source->start(offset);
+  //  }
+
+  //  virtual void close() {
+  //    _source->close();
+  //  }
+
+  //  virtual std::shared_ptr<krecord<K, V>> consume() {
+  //    auto e = _source->consume();
+  //    if (!e)
+  //      return NULL;
+
+  //    auto table_row = _routing_table->get(e->key);
+  //    if (table_row) {
+  //      if (table_row->value) {
+  //        for (auto s : _sinks)
+  //          s->produce(*table_row->value, e);
+  //      }
+  //    } else {
+  //      // join failed
+  //    }
+  //    return NULL;
+  //  }
+
+  //  virtual void commit() {
+  //    _routing_table->commit();
+  //    _source->commit();
+  //  }
+
+  //  virtual bool eof() const {
+  //    return _routing_table->eof() && _source->eof();
+  //  }
+
+  //  private:
+  //  std::shared_ptr<ksource<K, V>>                          _source;
+  //  std::shared_ptr<ktable<K, K>>                           _routing_table;
+  //  std::vector<std::shared_ptr<kpartitionable_sink<K, V>>> _sinks;
+  //};
+  //
 }
+

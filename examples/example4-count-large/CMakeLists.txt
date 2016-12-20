@@ -1,8 +1,8 @@
-project(example_count_large)
+project(example4-count-large)
 
 SET(SRCS
-example_count_large.cpp
+example4-count-large.cpp
 )
 
-add_executable(example_count_large ${SRCS})
-target_link_libraries(example_count_large ${CSI_LIBS})
+add_executable(example4-count-large ${SRCS})
+target_link_libraries(example4-count-large ${CSI_LIBS})

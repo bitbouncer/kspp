@@ -1,8 +1,8 @@
-project(example_count)
+project(example3-count)
 
 SET(SRCS
-example_count.cpp
+example3-count.cpp
 )
 
-add_executable(example_count ${SRCS})
-target_link_libraries(example_count ${CSI_LIBS})
+add_executable(example3-count ${SRCS})
+target_link_libraries(example3-count ${CSI_LIBS})

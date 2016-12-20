@@ -6,6 +6,8 @@
 #include "ktable_impl.h"
 #include "kafka_sink.h"
 #include "kafka_source.h"
+#include "stream_sink.h"
+
 #pragma once
 
 namespace csi {
@@ -32,11 +34,18 @@ class topology_builder
     return std::make_shared<csi::left_join<K, streamV, tableV, R>>(right, left, value_joiner);
   }
 
-  template<class K, class V, class tableV>
-  std::shared_ptr<repartition_stream<K, V, tableV>> create_repartition(std::string tag, std::shared_ptr<csi::ksource<K, V>> right, std::shared_ptr<csi::ktable<K, tableV>> left, typename csi::repartition_stream<K, V, tableV>::repartitioner repartitioner) {
-    return std::make_shared<csi::repartition_stream<K, rightV, leftV>>(right, left, repartitioner);
+  template<class K, class V>
+  std::shared_ptr<repartition_by_table<K, V>> create_repartition(std::shared_ptr<csi::ksource<K, V>> right, std::shared_ptr<csi::ktable<K, V>> left) {
+    return std::make_shared<csi::repartition_by_table<K, V>>(right, left);
   }
 
+  /*
+  template<class K, class V>
+  std::shared_ptr<repartition_table<K, V>> create_repartition(std::shared_ptr<csi::ktable<K, V>> table) {
+    return std::make_shared<csi::repartition_table<K, V>>(table);
+  }
+  */
+  
   //TBD we shouyld get rid of void value - we do not require that but how do we tell compiler that????
   template<class K>
   std::shared_ptr<csi::kmaterialized_source<K, size_t>> create_count_keys(std::shared_ptr<ksource<K, void>> source) {
@@ -81,12 +90,26 @@ class topology_builder
   std::shared_ptr<csi::ksink<K, V>> create_global_kafka_sink(std::string topic) {
     return std::make_shared<csi::kafka_sink<K, V, CODEC>>(_brokers, topic, 0, _default_codec);
   }
-  
+
+  /**
+  creates a kafka sink using default partitioner (hash on key)
+  */
+  template<class K, class V>
+  std::shared_ptr<csi::kpartitionable_sink<K, V>> create_kafka_sink(std::string topic) {
+    return std::make_shared<csi::kafka_sink<K, V, CODEC>>(_brokers, topic, -1, _default_codec);
+  }
+
+  /**
+  creates a kafka sink using explicit partition
+  */
   template<class K, class V>
   std::shared_ptr<csi::ksink<K, V>> create_kafka_sink(std::string topic, int32_t partition) {
     return std::make_shared<csi::kafka_sink<K, V, CODEC>>(_brokers, topic, partition, _default_codec);
   }
 
+  /**
+  creates a kafka sink using explicit partitioner
+  */
   template<class K, class V>
   std::shared_ptr<csi::ksink<K, V>> create_kafka_sink(std::string topic, std::function<uint32_t(const K& key)> partitioner) {
     return std::make_shared<csi::kafka_sink<K, V, CODEC>>(_brokers, topic, partitioner, _default_codec);
@@ -118,6 +141,11 @@ class topology_builder
   template<class K, class V>
   std::shared_ptr<csi::ktable<K, V>> create_global_ktable(std::string tag, std::string topic) {
     return std::make_shared<csi::ktable_impl<K, V, CODEC>>(tag, _brokers, topic, 0, _storage_path, _default_codec);
+  }
+
+  template<class K, class V>
+  std::shared_ptr<csi::ksink<K, V>> create_stream_sink(std::ostream& os) {
+    return std::make_shared<csi::stream_sink<K, V>>(os);
   }
 
   private:

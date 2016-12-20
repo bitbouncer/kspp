@@ -1,8 +1,8 @@
-project(example3)
+project(example1-basic)
 
 SET(SRCS
-example3.cpp
+example1-basic.cpp
 )
 
-add_executable(example3 ${SRCS})
-target_link_libraries(example3 ${CSI_LIBS})
+add_executable(example1-basic ${SRCS})
+target_link_libraries(example1-basic ${CSI_LIBS})

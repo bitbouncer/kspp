@@ -112,6 +112,17 @@ template<> size_t text_codec::decode(std::istream& src, bool& dst) {
   return s.size();
 }
 
+template<> size_t text_codec::encode(const int& src, std::ostream& dst) {
+  auto s = std::to_string(src);
+  dst << s;
+  return s.size();
+}
 
+template<> size_t text_codec::decode(std::istream& src, int& dst) {
+  std::string s;
+  std::getline(src, s);
+  dst = std::atoi(s.c_str());
+  return s.size();
+}
 };
 

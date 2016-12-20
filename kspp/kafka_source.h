@@ -53,7 +53,11 @@ class kafka_source : public ksource<K, V>
   
   virtual  std::shared_ptr<krecord<K, V>> consume() {
     auto p = _consumer.consume();
-    return p ? parse(p) : NULL;
+    if (!p)
+      return NULL;
+    auto res = parse(p);
+    send(res);
+    return res;
   }
 
   private:

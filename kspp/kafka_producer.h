@@ -11,7 +11,10 @@ class kafka_producer
   kafka_producer(std::string brokers, std::string topic);
   ~kafka_producer();
 
-  int produce(int32_t partition, rdkafka_memory_management_mode mode, void* key, size_t keysz, void* value, size_t valuesz);
+  /**
+  produce a message to partition -> (partition_hash % partition_cnt)
+  */
+  int produce(uint32_t partition_hash, rdkafka_memory_management_mode mode, void* key, size_t keysz, void* value, size_t valuesz);
   void close();
   
   inline std::string topic() const { 

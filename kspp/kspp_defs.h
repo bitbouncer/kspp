@@ -67,15 +67,40 @@ class knode
 };
 
 template<class K, class V>
+class ksink : public knode
+{
+  public:
+  typedef K key_type;
+  typedef V value_type;
+  typedef csi::krecord<K, V> record_type;
+
+  ksink() {}
+  virtual int    produce(std::shared_ptr<krecord<K, V>> r) = 0;
+  virtual size_t queue_len() = 0;
+  virtual void   poll(int timeout) = 0; // ????
+};
+
+template<class K, class V>
 class ksource : public knode
 {
   public:
+  
+  virtual void add_sink(std::shared_ptr<ksink<K,V>> sink) {
+    _sinks.push_back(sink);
+  }
+
   virtual std::shared_ptr<krecord<K, V>> consume() = 0;
   virtual bool eof() const = 0;
   virtual void start() {}
   virtual void start(int64_t offset) {}
   virtual void commit() {}
   virtual void flush_offset() {}
+  protected:
+  virtual void send(std::shared_ptr<krecord<K, V>> p) {
+    for (auto sink : _sinks)
+      sink->produce(p);
+  }
+  std::vector<std::shared_ptr<ksink<K, V>>> _sinks;
 };
 
 template<class K, class V>
@@ -127,17 +152,10 @@ class ktable : public kmaterialized_source<K, V>
 };
 
 template<class K, class V>
-class ksink : public knode
+class kpartitionable_sink : public ksink<K,V>
 {
-public:
-  typedef K key_type;
-  typedef V value_type;
-  typedef csi::krecord<K, V> record_type;
-
-  ksink() {}
-  virtual int    produce(std::shared_ptr<krecord<K, V>> r) = 0;
-  virtual size_t queue_len() = 0;
-  virtual void   poll(int timeout) = 0; // ????
+  public:
+  virtual int produce(const K& partition_key, std::shared_ptr<krecord<K, V>> r) = 0;
 };
 
 template<class K, class V>

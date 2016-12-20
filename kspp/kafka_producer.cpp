@@ -5,19 +5,18 @@
 #define LOGPREFIX_INFO  BOOST_LOG_TRIVIAL(info) << BOOST_CURRENT_FUNCTION << ", topic:" << _topic
 
 namespace csi {
+  /*
   static inline unsigned int djb_hash(const char *str, size_t len) {
     unsigned int hash = 5381;
     for (size_t i = 0; i < len; i++)
       hash = ((hash << 5) + hash) + str[i];
     return hash;
   }
+  */
 
   int32_t kafka_producer::MyHashPartitionerCb::partitioner_cb(const RdKafka::Topic *topic, const std::string *key, int32_t partition_cnt, void *msg_opaque) {
-    intptr_t partition = (intptr_t) msg_opaque;
-    if (partition == -1)
-      return djb_hash(key->data(), key->size()) % partition_cnt;
-    else
-      return partition % partition_cnt;
+    uintptr_t partition_hash = (uintptr_t) msg_opaque;
+    return partition_hash % partition_cnt;
   }
 
 kafka_producer::kafka_producer(std::string brokers, std::string topic) :
@@ -71,9 +70,8 @@ kafka_producer::~kafka_producer() {
   close();
 }
 
-int kafka_producer::produce(int32_t partition, rdkafka_memory_management_mode mode, void* key, size_t keysz, void* value, size_t valuesz) {
-  //RdKafka::ErrorCode resp = _producer->produce(_rd_topic.get(), partition, (int)mode, value, valuesz, key, keysz, NULL);
-  RdKafka::ErrorCode resp = _producer->produce(_rd_topic.get(), -1, (int) mode, value, valuesz, key, keysz, (void*) (intptr_t) partition);
+int kafka_producer::produce(uint32_t partition_hash, rdkafka_memory_management_mode mode, void* key, size_t keysz, void* value, size_t valuesz) {
+  RdKafka::ErrorCode resp = _producer->produce(_rd_topic.get(), -1, (int) mode, value, valuesz, key, keysz, (void*) (uintptr_t) partition_hash);
   if (resp != RdKafka::ERR_NO_ERROR) {
     LOGPREFIX_ERROR << ", Produce failed: " << RdKafka::err2str(resp);
     return (int) resp;
