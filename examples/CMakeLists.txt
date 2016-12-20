@@ -1,6 +1,7 @@
-add_subdirectory(join)
 add_subdirectory(test_setup)
-add_subdirectory(example3)
-add_subdirectory(count)
-add_subdirectory(count-large)
+add_subdirectory(example1-basic)
+add_subdirectory(example2-join)
+add_subdirectory(example3-count)
+add_subdirectory(example4-count-large)
+add_subdirectory(example5-repartition)
 
