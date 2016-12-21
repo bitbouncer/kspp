@@ -162,7 +162,7 @@ int main(int argc, char **argv) {
         std::cerr << ksource_to_string(*msg) << std::endl;
         //std::cerr << msg->event_time << ", " << msg->key << ", " << (msg->value ? to_string(*(msg->value)) : "NULL") << std::endl;
       }
-    }
+    } 
     pageviews->commit();
   }
 
