@@ -196,12 +196,12 @@ namespace csi {
         return count;
       }
 
-      typename csi::kmaterialized_source<K, size_t>::iterator begin(void) {
-        return typename csi::kmaterialized_source<K, size_t>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::BEGIN));
+      typename csi::materialized_partition_source<K, size_t>::iterator begin(void) {
+        return typename csi::materialized_partition_source<K, size_t>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::BEGIN));
       }
 
-      typename csi::kmaterialized_source<K, size_t>::iterator end() {
-        return typename csi::kmaterialized_source<K, size_t>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::END));
+      typename csi::materialized_partition_source<K, size_t>::iterator end() {
+        return typename csi::materialized_partition_source<K, size_t>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::END));
       }
     
       private:

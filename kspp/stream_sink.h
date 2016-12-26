@@ -9,13 +9,14 @@
 namespace csi {
 
 template<class K, class V>
-class stream_sink : public ksink<K, V>
+class stream_sink : public partition_sink<K, V>
 {
   public:
   enum { MAX_KEY_SIZE = 1000 };
 
-  stream_sink(std::ostream& os) 
-  : _os(os) 
+  stream_sink(std::ostream& os, uint32_t partition)
+  : partition_sink(partition)
+  , _os(os) 
   , _codec(std::make_shared<csi::text_codec>()){
   }
   
@@ -56,7 +57,7 @@ class stream_sink : public ksink<K, V>
 
 //<null, VALUE>
 template<class V>
-class stream_sink<void, V> : public ksink<void, V>
+class stream_sink<void, V> : public partition_sink<void, V>
 {
   public:
   stream_sink(std::ostream& os)
@@ -98,7 +99,7 @@ class stream_sink<void, V> : public ksink<void, V>
 
 // <key, NULL>
 template<class K>
-class stream_sink<K, void> : public ksink<K, void>
+class stream_sink<K, void> : public partition_sink<K, void>
 {
   public:
   stream_sink(std::ostream& os)

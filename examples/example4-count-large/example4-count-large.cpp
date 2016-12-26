@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
     std::sregex_token_iterator iter(e->value->begin(), e->value->end(), rgx, -1);
     std::sregex_token_iterator end;
     for (; iter != end; ++iter)
-      csi::produce(sink, *iter);
+      csi::produce(*sink, *iter);
   });
 
   //std::regex rgx("\\s+");

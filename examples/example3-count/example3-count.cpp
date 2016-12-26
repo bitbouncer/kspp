@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
         sink->produce(std::make_shared<csi::krecord<std::string, void>>(*iter));
     });
     
-    auto word_counts = std::make_shared<csi::count_keys<std::string, csi::text_codec>>(word_stream, "C:\\tmp");
+    auto word_counts = std::make_shared<csi::count_partition_keys<std::string, csi::text_codec>>(word_stream, "C:\\tmp");
 
     word_counts->start(-2);
     while (!word_counts->eof()) {

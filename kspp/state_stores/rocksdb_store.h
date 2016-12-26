@@ -162,12 +162,12 @@ class rockdb_store : public kv_store<K,V>
     return res;
   }
 
-  typename csi::kmaterialized_source<K, V>::iterator begin(void) {
-    return typename csi::kmaterialized_source<K, V>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::BEGIN));
+  typename csi::materialized_partition_source<K, V>::iterator begin(void) {
+    return typename csi::materialized_partition_source<K, V>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::BEGIN));
   }
 
-  typename csi::kmaterialized_source<K, V>::iterator end() {
-    return typename csi::kmaterialized_source<K, V>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::END));
+  typename csi::materialized_partition_source<K, V>::iterator end() {
+    return typename csi::materialized_partition_source<K, V>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::END));
   }
 
   private:

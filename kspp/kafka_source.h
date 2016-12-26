@@ -4,19 +4,20 @@
 #include <boost/log/trivial.hpp>
 #include "kspp_defs.h"
 #include "kafka_consumer.h"
-//#include <iostream>
 #pragma once
 
 #define LOGPREFIX_ERROR BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << name()
 
 namespace csi {
 template<class K, class V, class CODEC>
-class kafka_source : public ksource<K, V>
+class kafka_source : public partition_source<K, V>
 {
   public:
-  kafka_source(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<CODEC> codec= std::make_shared<CODEC>()) :
-    _codec(codec),
-    _consumer(brokers, topic, partition) {}
+  kafka_source(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<CODEC> codec= std::make_shared<CODEC>()) 
+    : partition_source(partition)
+    , _codec(codec)
+    , _consumer(brokers, topic, partition) {
+  }
 
   virtual ~kafka_source() {
     close();
@@ -103,12 +104,14 @@ class kafka_source : public ksource<K, V>
 
 // <void, VALUE>
 template<class V, class CODEC>
-class kafka_source<void, V, CODEC> : public ksource<void, V>
+class kafka_source<void, V, CODEC> : public partition_source<void, V>
 {
   public:
-  kafka_source(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) :
-    _codec(codec),
-    _consumer(brokers, topic, partition) {}
+  kafka_source(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) 
+    : partition_source(partition)
+    , _codec(codec)
+    , _consumer(brokers, topic, partition) {
+  }
 
   virtual ~kafka_source() {
     close();
@@ -179,12 +182,14 @@ class kafka_source<void, V, CODEC> : public ksource<void, V>
 
 //<KEY, NULL>
 template<class K, class CODEC>
-class kafka_source<K, void, CODEC> : public ksource<K, void>
+class kafka_source<K, void, CODEC> : public partition_source<K, void>
 {
 public:
-  kafka_source(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) :
-    _codec(codec),
-    _consumer(brokers, topic, partition) {}
+  kafka_source(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) 
+    : partition_source(partition)
+    , _codec(codec)
+    , _consumer(brokers, topic, partition) {
+  }
 
   virtual ~kafka_source() {
     close();

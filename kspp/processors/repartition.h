@@ -3,21 +3,22 @@
 #pragma once
 
 namespace csi {
-  template<class K, class V>
-  class repartition_by_table : public ksource<K, V>
+  template<class K, class V, class CODEC>
+  class repartition_by_table : public partition_source<K, V>
   {
   public:
-  repartition_by_table(std::shared_ptr<ksource<K, V>> source, std::shared_ptr<ktable<K, K>> routing_table)
-    : _source(source)
-    , _routing_table(routing_table) {}
+    repartition_by_table(std::shared_ptr<partition_source<K, V>> source, std::shared_ptr<ktable_partition<K, K>> routing_table)
+      : partition_source(source->partition())
+      , _source(source)
+      , _routing_table(routing_table) {}
 
     ~repartition_by_table() {
       close();
     }
 
-    std::string name() const { return _source->name() + "-repartition_by_value(" + _routing_table->name() +")"; }
+    std::string name() const { return _source->name() + "-repartition_by_value(" + _routing_table->name() + ")"; }
 
-    void add_sink(std::shared_ptr<kpartitionable_sink<K, V>> sink) {
+    void add_sink(std::shared_ptr<topic_sink<K, V, CODEC>> sink) {
       _sinks.push_back(sink);
     }
 
@@ -79,13 +80,10 @@ namespace csi {
     }
 
   private:
-    std::shared_ptr<ksource<K, V>>                          _source;
-    std::shared_ptr<ktable<K, K>>                           _routing_table;
-    std::vector<std::shared_ptr<kpartitionable_sink<K, V>>> _sinks;
+    std::shared_ptr<partition_source<K, V>>               _source;
+    std::shared_ptr<ktable_partition<K, K>>               _routing_table;
+    std::vector<std::shared_ptr<topic_sink<K, V, CODEC>>> _sinks;
   };
-
-
-
 
   //template<class K, class V>
   //class repartition_table : public ksource<K, V>

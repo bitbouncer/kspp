@@ -12,13 +12,6 @@ inline int64_t milliseconds_since_epoch() {
     (std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
-/*
-inline int64_t seconds_since_epoch() {
-  return std::chrono::duration_cast<std::chrono::milliseconds>
-    (std::chrono::system_clock::now().time_since_epoch()).count();
-}
-*/
-
 template<class K, class V>
 struct krecord
 {
@@ -37,7 +30,6 @@ struct krecord
 template<class V>
 struct krecord<void, V>
 {
-  //krecord() : event_time(-1), offset(-1) {}
   krecord(const V& v) : event_time(milliseconds_since_epoch()), offset(-1), value(std::make_shared<V>(v)) {}
   krecord(std::shared_ptr<V> v) : event_time(milliseconds_since_epoch()), offset(-1), value(v) {}
   krecord(std::shared_ptr<V> v, int64_t ts) : event_time(ts), offset(-1), value(v) {}
@@ -57,36 +49,96 @@ struct krecord<K, void>
   int64_t            offset;
 };
 
-class knode
+class topic_processor
 {
-  public:
-  virtual ~knode() {}
+public:
+  virtual ~topic_processor() {}
   virtual std::string name() const = 0;
   virtual void close() = 0;
-  protected:
-  knode() {}
+protected:
+};
+
+class partition_processor
+{
+  public:
+  virtual ~partition_processor() {}
+  virtual std::string name() const = 0;
+  virtual void close() = 0;
+  inline uint32_t partition() const {
+    return _partition;
+  }
+protected:
+  partition_processor(uint32_t partition)
+    : _partition(partition) {
+  }
+  const uint32_t _partition;
 };
 
 template<class K, class V>
-class ksink : public knode
+class partition_sink : public partition_processor
 {
-  public:
+public:
   typedef K key_type;
   typedef V value_type;
   typedef csi::krecord<K, V> record_type;
 
-  ksink() {}
   virtual int    produce(std::shared_ptr<krecord<K, V>> r) = 0;
   virtual size_t queue_len() = 0;
   virtual void   poll(int timeout) = 0; // ????
+protected:
+  partition_sink(uint32_t partition)
+    : partition_processor(partition) {}
+};
+
+template<class K, class V, class CODEC>
+class topic_sink : public topic_processor
+{
+public:
+  typedef K key_type;
+  typedef V value_type;
+  typedef csi::krecord<K, V> record_type;
+
+  enum { MAX_KEY_SIZE = 1000 };
+
+  virtual int    produce(std::shared_ptr<krecord<K, V>> r) = 0;
+  virtual size_t queue_len() = 0;
+  virtual void   poll(int timeout) = 0; // ????
+
+  template<class PK>
+  uint32_t get_partition_hash_for_key(const PK& partition_key) {
+    uint32_t partition_hash = 0;
+    char key_buf[MAX_KEY_SIZE];
+    size_t ksize = 0;
+    std::strstream s(key_buf, MAX_KEY_SIZE);
+    ksize = _codec->encode(partition_key, s);
+    partition_hash = djb_hash(key_buf, ksize);
+    return partition_hash;
+  }
+  virtual int produce(uint32_t partition_hash, std::shared_ptr<krecord<K, V>> r) = 0;
+protected:
+  static inline uint32_t djb_hash(const char *str, size_t len) {
+    uint32_t hash = 5381;
+    for (size_t i = 0; i < len; i++)
+      hash = ((hash << 5) + hash) + str[i];
+    return hash;
+  }
+
+  topic_sink(std::shared_ptr<CODEC> codec)
+    :_codec(codec) {}
+
+  std::shared_ptr<CODEC> _codec;
 };
 
 template<class K, class V>
-class ksource : public knode
+class partition_source : public partition_processor
 {
   public:
-  
-  virtual void add_sink(std::shared_ptr<ksink<K,V>> sink) {
+    partition_source(uint32_t partition)
+      :partition_processor(partition){
+    }
+
+
+  virtual void add_sink(std::shared_ptr<partition_sink<K,V>> sink) {
     _sinks.push_back(sink);
   }
 
@@ -101,7 +153,7 @@ class ksource : public knode
     for (auto sink : _sinks)
       sink->produce(p);
   }
-  std::vector<std::shared_ptr<ksink<K, V>>> _sinks;
+  std::vector<std::shared_ptr<partition_sink<K, V>>> _sinks;
 };
 
 template<class K, class V>
@@ -117,7 +169,7 @@ class kmaterialized_source_iterator_impl
 };
 
 template<class K, class V>
-class kmaterialized_source : public ksource<K, V>
+class materialized_partition_source : public partition_source<K, V>
 {
   public:
   class iterator : public std::iterator <
@@ -140,23 +192,28 @@ class kmaterialized_source : public ksource<K, V>
   virtual iterator begin() = 0;
   virtual iterator end() = 0;
   virtual std::shared_ptr<krecord<K, V>> get(const K& key) = 0;
+
+  materialized_partition_source(uint32_t partition)
+    :partition_source(partition) {
+  }
 };
 
 template<class K, class V>
-class kstream : public ksource<K, V>
-{};
-
-template<class K, class V>
-class ktable : public kmaterialized_source<K, V>
+class kstream_partition : public partition_source<K, V>
 {
- 
+public:
+  kstream_partition(uint32_t partition)
+    : partition_source(partition) {
+  }
 };
 
 template<class K, class V>
-class kpartitionable_sink : public ksink<K,V>
+class ktable_partition : public materialized_partition_source<K, V>
 {
-  public:
-  virtual int produce(const K& partition_key, std::shared_ptr<krecord<K, V>> r) = 0;
+public:
+  ktable_partition(uint32_t partition)
+    : materialized_partition_source(partition) {
+  }
 };
 
 template<class K, class V>
@@ -170,7 +227,7 @@ std::shared_ptr<krecord<K, V>> create_krecord(const K& k) {
 }
 
 template<class K, class V>
-size_t consume(ksource<K, V>& src, ksink<K, V>& dst) {
+size_t consume(partition_source<K, V>& src, partition_sink<K, V>& dst) {
   auto p = src.consume();
   if (!p)
     return 0;
@@ -179,21 +236,21 @@ size_t consume(ksource<K, V>& src, ksink<K, V>& dst) {
 }
 
 template<class K, class V>
-void consume(std::vector<std::shared_ptr<ksource<K, V>>>& sources, ksink<K, V>& dst) {
+void consume(std::vector<std::shared_ptr<partition_source<K, V>>>& sources, partition_sink<K, V>& dst) {
   for (auto i : sources)     {
     consume(*i, dst);
   }
 }
 
 template<class K, class V>
-void consume(const std::vector<std::shared_ptr<kmaterialized_source<K, V>>>& sources) {
+void consume(const std::vector<std::shared_ptr<materialized_partition_source<K, V>>>& sources) {
   for (auto i : sources) {
     i->consume();
   }
 }
 
 template<class K, class V>
-bool eof(std::vector<std::shared_ptr<ksource<K, V>>>& sources) {
+bool eof(std::vector<std::shared_ptr<partition_source<K, V>>>& sources) {
   for (auto i : sources) {
     if (!i->eof())
       return false;
@@ -203,7 +260,7 @@ bool eof(std::vector<std::shared_ptr<ksource<K, V>>>& sources) {
 
 
 template<class K, class V>
-bool eof(std::vector<std::shared_ptr<kmaterialized_source<K, V>>>& sources) {
+bool eof(std::vector<std::shared_ptr<materialized_partition_source<K, V>>>& sources) {
   for (auto i : sources) {
     if (!i->eof())
       return false;
@@ -212,24 +269,34 @@ bool eof(std::vector<std::shared_ptr<kmaterialized_source<K, V>>>& sources) {
 }
 
 template<class KSINK>
-int produce(KSINK* sink, const typename KSINK::key_type& key) {
-  return sink->produce(std::make_shared<KSINK::record_type>(key));
+int produce(KSINK& sink, const typename KSINK::key_type& key) {
+  return sink.produce(std::make_shared<KSINK::record_type>(key));
+}
+
+template<class KSINK>
+int produce(KSINK& sink, const typename KSINK::key_type& key, const typename KSINK::value_type& value) {
+  return sink.produce(std::make_shared<KSINK::record_type>(key, value));
+}
+
+template<class KSINK>
+int produce(KSINK& sink, const typename KSINK::value_type& value) {
+  return sink.produce(std::make_shared<KSINK::record_type>(void, value));
 }
 
 // TBD bestämm vilket api som är bäst...
 
 template<class K, class V>
-int produce(ksink<K, V>& sink, const K& key, const V& val) {
+int produce(partition_sink<K, V>& sink, const K& key, const V& val) {
   return sink.produce(std::move<>(create_krecord<K, V>(key, val)));
 }
 
 template<class K, class V>
-int produce(ksink<void, V>& sink, const V& val) {
+int produce(partition_sink<void, V>& sink, const V& val) {
   return sink.produce(std::move<>(std::make_shared<krecord<void, V>>(val)));
 }
 
 template<class K, class V>
-int produce(ksink<K, V>& sink, const K& key) {
+int produce(partition_sink<K, V>& sink, const K& key) {
   return sink.produce(std::move<>(create_krecord<K, V>(key)));
 }
 }; // namespace

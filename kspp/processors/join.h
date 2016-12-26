@@ -6,15 +6,16 @@ namespace csi {
 //maybe we should materilize the join so we can do get...  
 //then we can change type to kstream
 template<class K, class streamV, class tableV, class R>
-class left_join : public ksource<K, R>
+class left_join : public partition_source<K, R>
 {
   public:
   typedef std::function<void(const K& key, const streamV& left, const tableV& right, R& result)> value_joiner; // TBD replace with std::shared_ptr<const krecord<K, R>> left, std::shared_ptr<const krecord<K, R>> right, std::shared_ptr<krecord<K, R>> result;
 
-  left_join(std::shared_ptr<kstream<K, streamV>> stream, std::shared_ptr<ktable<K, tableV>> table, value_joiner f) :
-    _stream(stream),
-    _table(table),
-    _value_joiner(f) {}
+  left_join(std::shared_ptr<kstream_partition<K, streamV>> stream, std::shared_ptr<ktable_partition<K, tableV>> table, value_joiner f)
+    : partition_source(stream->partition())
+    , _stream(stream)
+    , _table(table)
+    , _value_joiner(f) {}
 
   ~left_join() {
     close();
@@ -86,8 +87,8 @@ class left_join : public ksource<K, R>
   }
 
   private:
-  std::shared_ptr<kstream<K, streamV>> _stream;
-  std::shared_ptr<ktable<K, tableV>>   _table;
-  value_joiner                         _value_joiner;
+  std::shared_ptr<kstream_partition<K, streamV>> _stream;
+  std::shared_ptr<ktable_partition<K, tableV>>   _table;
+  value_joiner                                   _value_joiner;
 };
 }

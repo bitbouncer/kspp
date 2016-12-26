@@ -87,7 +87,7 @@ int main(int argc, char **argv) {
   {
     auto source = builder.create_kafka_source<int, std::string>("kspp_example5_usernames", i);
     auto routing_table = builder.create_ktable<int, int>("example5", "kspp_example5_user_channel", i);
-    auto repartition = std::make_shared<csi::repartition_by_table<int, std::string>>(source, routing_table);
+    auto repartition = std::make_shared<csi::repartition_by_table<int, std::string, csi::text_codec>>(source, routing_table);
     repartition->add_sink(sink);
     repartition->start(-2);
     while (!repartition->eof()) {
@@ -111,7 +111,7 @@ int main(int argc, char **argv) {
   }
   
   {
-    auto sink = builder.create_stream_sink<int, std::string>(std::cerr);
+    auto sink = builder.create_stream_sink<int, std::string>(std::cerr, 0);
     {
       auto sources = builder.create_kafka_sources<int, std::string>("kspp_example5_usernames.per-channel", 8);
       for (auto s : sources) {

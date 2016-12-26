@@ -19,7 +19,7 @@ namespace csi {
     * Returns a key-value pair with the given key
     */
     //virtual std::shared_ptr<krecord<K, size_t>> get(const K& key) = 0;
-    virtual typename csi::kmaterialized_source<K, size_t>::iterator begin(void) = 0;
-    virtual typename csi::kmaterialized_source<K, size_t>::iterator end() = 0;
+    virtual typename csi::materialized_partition_source<K, size_t>::iterator begin(void) = 0;
+    virtual typename csi::materialized_partition_source<K, size_t>::iterator end() = 0;
   };
 }; 

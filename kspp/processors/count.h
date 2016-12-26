@@ -6,20 +6,21 @@
 
 namespace csi {
 template<class K, class CODEC>
-class count_keys : public kmaterialized_source<K, size_t>
+class count_partition_keys : public materialized_partition_source<K, size_t>
 {
   public:
-  count_keys(std::shared_ptr<ksource<K, void>> source, std::string storage_path, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) :
-    _stream(source),
-    _counter_store(name(), storage_path + "//" + name(), codec)
-    {}
+    count_partition_keys(std::shared_ptr<partition_source<K, void>> source, std::string storage_path, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
+    : materialized_partition_source(source->partition())
+    , _stream(source)
+    , _counter_store(name(), storage_path + "//" + name(), codec) {
+  }
 
-  ~count_keys() {
+  ~count_partition_keys() {
     close();
   }
 
   std::string name() const {
-    return _stream->name() + "(count_keys)";
+    return _stream->name() + "(count_partition_keys)_" + std::to_string(partition());
   }
 
   virtual void start() {
@@ -67,16 +68,16 @@ class count_keys : public kmaterialized_source<K, size_t>
       return NULL;
   }
 
-  virtual typename csi::kmaterialized_source<K, size_t>::iterator begin(void) {
+  virtual typename csi::materialized_partition_source<K, size_t>::iterator begin(void) {
     return _counter_store.begin();
   }
 
-  virtual typename csi::kmaterialized_source<K, size_t>::iterator end() {
+  virtual typename csi::materialized_partition_source<K, size_t>::iterator end() {
     return _counter_store.end();
   }
 
   private:
-  std::shared_ptr<ksource<K, void>>               _stream;
+  std::shared_ptr<partition_source<K, void>>      _stream;
   rocksdb_counter_store<K, CODEC>                 _counter_store;
   std::deque<std::shared_ptr<krecord<K, size_t>>> _queue;
 };

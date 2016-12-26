@@ -7,27 +7,29 @@
 
 namespace csi {
   template<class K, class V, class CODEC>
-  class kstream_impl : public kstream<K, V>
+  class kstream_partition_impl : public kstream_partition<K, V>
   {
   public:
-  kstream_impl(std::string nodeid, std::string brokers, std::string topic, int32_t partition, std::string storage_path, std::shared_ptr<CODEC> codec) :
-      _offset_storage_path(storage_path),
-      _source(brokers, topic, partition, codec),
-      _state_store(topic, partition, storage_path + "\\" + nodeid + "\\" + topic + "_" + std::to_string(partition), codec),
-      _current_offset(RdKafka::Topic::OFFSET_BEGINNING),
-      _last_comitted_offset(RdKafka::Topic::OFFSET_BEGINNING),
-      _last_flushed_offset(RdKafka::Topic::OFFSET_BEGINNING) {
+    kstream_partition_impl(std::string nodeid, std::string brokers, std::string topic, int32_t partition, std::string storage_path, std::shared_ptr<CODEC> codec)
+    : kstream_partition(partition)
+      , _offset_storage_path(storage_path)
+      , _source(brokers, topic, partition, codec)
+      , _state_store(topic, partition, storage_path + "\\" + nodeid + "\\" + topic + "_" + std::to_string(partition), codec)
+      , _current_offset(RdKafka::Topic::OFFSET_BEGINNING)
+      , _last_comitted_offset(RdKafka::Topic::OFFSET_BEGINNING)
+      , _last_flushed_offset(RdKafka::Topic::OFFSET_BEGINNING) {
       _offset_storage_path /= nodeid;
       _offset_storage_path /= topic + "_" + std::to_string(partition);
       boost::filesystem::create_directories(_offset_storage_path);
       _offset_storage_path /= "\\kafka_offset.bin";
     }
 
-    virtual ~kstream_impl() {
+    virtual ~kstream_partition_impl() {
       close();
     }
 
-    std::string name() const { return "kstream_impl-unnamed"; }
+    //std::string name() const { return "kstream_partition_impl_" + _source.topic() + "_" + std::to_string(partition()); }
+    std::string name() const { return "kstream_partition_impl_" + std::to_string(partition()); }
 
     virtual void start() {
       if (boost::filesystem::exists(_offset_storage_path)) {

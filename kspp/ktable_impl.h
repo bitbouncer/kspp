@@ -5,28 +5,29 @@
 
 namespace csi {
 template<class K, class V, class CODEC>
-class ktable_impl : public ktable<K, V>
+class ktable_partition_impl : public ktable_partition<K, V>
 {
   public:
-  ktable_impl(std::string nodeid, std::string brokers, std::string topic, int32_t partition, std::string storage_path, std::shared_ptr<CODEC> codec) :
-    _offset_storage_path(storage_path),
-    _source(brokers, topic, partition, codec),
-    _state_store(topic, partition, storage_path + "\\" + nodeid + "\\" + topic + "_" + std::to_string(partition), codec),
-    _current_offset(RdKafka::Topic::OFFSET_BEGINNING),
-    _last_comitted_offset(RdKafka::Topic::OFFSET_BEGINNING),
-    _last_flushed_offset(RdKafka::Topic::OFFSET_BEGINNING) {
+    ktable_partition_impl(std::string nodeid, std::string brokers, std::string topic, int32_t partition, std::string storage_path, std::shared_ptr<CODEC> codec)
+    : ktable_partition(partition)
+    , _offset_storage_path(storage_path)
+    , _source(brokers, topic, partition, codec)
+    , _state_store(topic, partition, storage_path + "\\" + nodeid + "\\" + topic + "_" + std::to_string(partition), codec)
+    , _current_offset(RdKafka::Topic::OFFSET_BEGINNING)
+    , _last_comitted_offset(RdKafka::Topic::OFFSET_BEGINNING)
+    , _last_flushed_offset(RdKafka::Topic::OFFSET_BEGINNING) {
     _offset_storage_path /= nodeid;
     _offset_storage_path /= topic + "_" + std::to_string(partition);
     boost::filesystem::create_directories(_offset_storage_path);
     _offset_storage_path /= "\\kafka_offset.bin";
   }
 
-  virtual ~ktable_impl() {
+  virtual ~ktable_partition_impl() {
     close();
   }
 
   virtual std::string name() const {
-    return _source.name() + "-(ktable)";
+    return   _source.name() + "(ktable_partition_impl)";
   }
 
   virtual void start() {
@@ -92,11 +93,11 @@ class ktable_impl : public ktable<K, V>
     return _state_store.get(key);
   }
 
-  virtual typename csi::kmaterialized_source<K, V>::iterator begin(void) {
+  virtual typename csi::materialized_partition_source<K, V>::iterator begin(void) {
     return _state_store.begin();
   }
 
-  virtual typename csi::kmaterialized_source<K, V>::iterator end() {
+  virtual typename csi::materialized_partition_source<K, V>::iterator end() {
     return _state_store.end();
   }
 

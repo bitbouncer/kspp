@@ -6,15 +6,17 @@
 
 namespace csi {
 template<class SK, class SV, class RK, class RV>
-class transform_stream : public ksource<RK, RV>, private ksink<RK, RV>
+class transform_stream : public partition_source<RK, RV>, private partition_sink<RK, RV>
 {
   public:
-  typedef std::function<void(std::shared_ptr<krecord<SK, SV>> record, ksink<RK, RV>* self)> extractor;
+  typedef std::function<void(std::shared_ptr<krecord<SK, SV>> record, partition_sink<RK, RV>* self)> extractor;
   //typedef std::function<void(const K& key, const V& value, ksink<RK, size_t> self)> value_extractor;
 
-  transform_stream(std::shared_ptr<ksource<SK, SV>> source, extractor f) :
-    _source(source),
-    _extractor(f) {}
+  transform_stream(std::shared_ptr<partition_source<SK, SV>> source, extractor f)
+    : partition_source(source->partition())
+    , partition_sink(source->partition())
+    , _source(source)
+    , _extractor(f) {}
 
   ~transform_stream() {
     close();
@@ -29,14 +31,14 @@ class transform_stream : public ksource<RK, RV>, private ksink<RK, RV>
   }
   */
 
-  static std::vector<std::shared_ptr<ksource<RK, RV>>> create(std::vector<std::shared_ptr<ksource<SK, SV>>>& streams, extractor f) {
-    std::vector<std::shared_ptr<ksource<RK, RV>>> res;
+  static std::vector<std::shared_ptr<partition_source<RK, RV>>> create(std::vector<std::shared_ptr<partition_source<SK, SV>>>& streams, extractor f) {
+    std::vector<std::shared_ptr<partition_source<RK, RV>>> res;
     for (auto i : streams)
       res.push_back(std::make_shared<transform_stream<SK, SV, RK, RV>>(i, f));
     return res;
   }
 
-  static std::shared_ptr<ksource<RK, RV>> create(std::shared_ptr<ksource<SK, SV>> source, extractor f) {
+  static std::shared_ptr<partition_source<RK, RV>> create(std::shared_ptr<partition_source<SK, SV>> source, extractor f) {
     return std::make_shared<transform_stream<SK, SV, RK, RV>>(source, f);
   }
 
@@ -103,7 +105,7 @@ class transform_stream : public ksource<RK, RV>, private ksink<RK, RV>
   }
 
   private:
-  std::shared_ptr<ksource<SK, SV>>             _source;
+  std::shared_ptr<partition_source<SK, SV>>    _source;
   extractor                                    _extractor;
   std::deque<std::shared_ptr<krecord<RK, RV>>> _queue;
 };
