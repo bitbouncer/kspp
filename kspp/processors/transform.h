@@ -6,17 +6,19 @@
 
 namespace csi {
 template<class SK, class SV, class RK, class RV>
-class transform_stream : public partition_source<RK, RV>, private partition_sink<RK, RV>
+class transform_stream : public partition_source<RK, RV>
 {
   public:
-  typedef std::function<void(std::shared_ptr<krecord<SK, SV>> record, partition_sink<RK, RV>* self)> extractor;
-  //typedef std::function<void(const K& key, const V& value, ksink<RK, size_t> self)> value_extractor;
+  typedef std::function<void(std::shared_ptr<krecord<SK, SV>> record, transform_stream* self)> extractor; // maybee better to pass this and send() directrly
 
   transform_stream(std::shared_ptr<partition_source<SK, SV>> source, extractor f)
     : partition_source(source->partition())
-    , partition_sink(source->partition())
     , _source(source)
-    , _extractor(f) {}
+    , _extractor(f) {
+    _source->add_sink([this](auto r) {
+      _queue.push_back(r);
+    });
+  }
 
   ~transform_stream() {
     close();
@@ -58,24 +60,19 @@ class transform_stream : public partition_source<RK, RV>, private partition_sink
     _source->close();
   }
 
-  virtual std::shared_ptr<krecord<RK, RV>> consume() {
-    if (_queue.size()) {
-      auto p = *_queue.begin();
+  virtual bool process_one() {
+    _source->process_one();
+    bool processed = (_queue.size() > 0);
+    while (_queue.size()) {
+      auto e = _queue.front();
       _queue.pop_front();
-      return p;
-    }
-    
-    auto e = _source->consume();
-    if (e)
       _extractor(e, this);
-
-    if (_queue.size()) {
-      auto p = *_queue.begin();
-      _queue.pop_front();
-      return p;
     }
+    return processed;
+  }
 
-    return NULL;
+  void push_back(std::shared_ptr<krecord<RK, RV>> r) {
+    send_to_sinks(r);
   }
 
   virtual void commit() {
@@ -84,13 +81,6 @@ class transform_stream : public partition_source<RK, RV>, private partition_sink
 
   virtual bool eof() const {
     return _source->eof() && (_queue.size() == 0);
-  }
-
-  // PRIVATE INTERFACE SINK
-  private:
-  virtual int produce(std::shared_ptr<krecord<RK, RV>> r) {
-    _queue.push_back(r);
-    return 0;
   }
 
   virtual size_t queue_len() {
@@ -107,7 +97,7 @@ class transform_stream : public partition_source<RK, RV>, private partition_sink
   private:
   std::shared_ptr<partition_source<SK, SV>>    _source;
   extractor                                    _extractor;
-  std::deque<std::shared_ptr<krecord<RK, RV>>> _queue;
+  std::deque<std::shared_ptr<krecord<SK, SV>>> _queue;
 };
 }
 

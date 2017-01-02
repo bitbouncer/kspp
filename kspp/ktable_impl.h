@@ -20,6 +20,14 @@ class ktable_partition_impl : public ktable_partition<K, V>
     _offset_storage_path /= topic + "_" + std::to_string(partition);
     boost::filesystem::create_directories(_offset_storage_path);
     _offset_storage_path /= "\\kafka_offset.bin";
+    _source.add_sink([this](auto r) {
+        _current_offset = r->offset;
+        if (r->value)
+          _state_store.put(r->key, *r->value);
+        else
+          _state_store.del(r->key);
+        send_to_sinks(r);
+    });
   }
 
   virtual ~ktable_partition_impl() {
@@ -63,16 +71,8 @@ class ktable_partition_impl : public ktable_partition<K, V>
     return _source.eof();
   }
 
-  virtual  std::shared_ptr<krecord<K, V>> consume() {
-    auto p = _source.consume();
-    if (p) {
-      _current_offset = p->offset;
-      if (p->value)
-        _state_store.put(p->key, *p->value);
-      else
-        _state_store.del(p->key);
-    }
-    return p;
+  virtual bool process_one() {
+    return _source.process_one();
   }
 
   virtual void flush_offset() {

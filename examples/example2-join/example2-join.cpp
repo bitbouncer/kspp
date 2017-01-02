@@ -12,7 +12,7 @@ int main(int argc, char **argv) {
     row = right;
   });
   auto sink = builder.create_kafka_sink<boost::uuids::uuid, int64_t>("kspp_test0_eventstream_out", 0);
-  join->start();
+  join->start(-2);
 
   // first sync table
   while (join->consume_right()) {
@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
   // now join stream with loaded table
   size_t join_count = 0;
   while (!join->eof())
-    join_count += consume(*join, *sink);
+    join->process_one();
   
   join->commit();
  

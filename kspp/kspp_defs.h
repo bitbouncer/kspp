@@ -49,11 +49,82 @@ struct krecord<K, void>
   int64_t            offset;
 };
 
-class topic_processor
+class processor_context
+{
+public:
+  processor_context();
+  /**
+  * Returns the application id
+  *
+  * @return the application id
+  */
+  std::string application_id();
+  /**
+  * Returns the state directory for the partition.
+  *
+  * @return the state directory
+  */
+  std::string state_dir();
+  /**
+  * Returns the task id
+  *
+  * @return the task id
+  */
+  int32_t task_id();
+  /**
+  * Schedules a periodic operation for processors. A processor may call this method during
+  * {@link Processor#init(ProcessorContext) initialization} to
+  * schedule a periodic call called a punctuation to {@link Processor#punctuate(long)}.
+  *
+  * @param interval the time interval between punctuations
+  */
+  void schedule(int32_t interval);
+  /**
+  * Requests a commit
+  */
+  void commit();
+  /**
+  * Returns the partition id of the current input record; could be -1 if it is not
+  * available (for example, if this method is invoked from the punctuate call)
+  *
+  * @return the partition id
+  */
+  int32_t partition();
+  /**
+  * Returns the offset of the current input record; could be -1 if it is not
+  * available (for example, if this method is invoked from the punctuate call)
+  *
+  * @return the offset
+  */
+  int64_t offset();
+  /**
+  * Returns the current timestamp.
+  *
+  * If it is triggered while processing a record streamed from the source processor, timestamp is defined as the timestamp of the current input record; the timestamp is extracted from
+  * {@link org.apache.kafka.clients.consumer.ConsumerRecord ConsumerRecord} by {@link TimestampExtractor}.
+  *
+  * If it is triggered while processing a record generated not from the source processor (for example,
+  * if this method is invoked from the punctuate call), timestamp is defined as the current
+  * task's stream time, which is defined as the smallest among all its input stream partition timestamps.
+  *
+  * @return the timestamp
+  */
+  int64_t timestamp();
+};
+
+class topic_processor 
 {
 public:
   virtual ~topic_processor() {}
+  virtual void init(processor_context*) {}
   virtual std::string name() const = 0;
+
+  /**
+  * Process an input record
+  */
+  virtual bool process_one() = 0;
+
+  virtual void punctuate(int64_t timestamp) {}
   virtual void close() = 0;
 protected:
 };
@@ -62,7 +133,15 @@ class partition_processor
 {
   public:
   virtual ~partition_processor() {}
+  virtual void init(processor_context*) {}
+
   virtual std::string name() const = 0;
+
+  /**
+  * Process an input record
+  */
+  virtual bool process_one() = 0;
+  virtual void punctuate(int64_t timestamp) {}
   virtual void close() = 0;
   inline uint32_t partition() const {
     return _partition;
@@ -133,27 +212,35 @@ template<class K, class V>
 class partition_source : public partition_processor
 {
   public:
+    using sink_function = typename std::function<void(std::shared_ptr<krecord<K, V>>)>;
+
     partition_source(uint32_t partition)
       :partition_processor(partition){
     }
 
-
   virtual void add_sink(std::shared_ptr<partition_sink<K,V>> sink) {
+    add_sink([sink](auto e) {
+      sink->produce(e);
+    });
+  }
+
+  virtual void add_sink(sink_function sink) {
     _sinks.push_back(sink);
   }
 
-  virtual std::shared_ptr<krecord<K, V>> consume() = 0;
   virtual bool eof() const = 0;
   virtual void start() {}
   virtual void start(int64_t offset) {}
   virtual void commit() {}
   virtual void flush_offset() {}
-  protected:
-  virtual void send(std::shared_ptr<krecord<K, V>> p) {
-    for (auto sink : _sinks)
-      sink->produce(p);
+protected:
+
+  virtual void send_to_sinks(std::shared_ptr<krecord<K, V>> p) {
+    for (auto f : _sinks)
+      f(p);
   }
-  std::vector<std::shared_ptr<partition_sink<K, V>>> _sinks;
+
+  std::vector<sink_function> _sinks;
 };
 
 template<class K, class V>
@@ -227,25 +314,9 @@ std::shared_ptr<krecord<K, V>> create_krecord(const K& k) {
 }
 
 template<class K, class V>
-size_t consume(partition_source<K, V>& src, partition_sink<K, V>& dst) {
-  auto p = src.consume();
-  if (!p)
-    return 0;
-  dst.produce(std::move(p));
-  return 1;
-}
-
-template<class K, class V>
-void consume(std::vector<std::shared_ptr<partition_source<K, V>>>& sources, partition_sink<K, V>& dst) {
-  for (auto i : sources)     {
-    consume(*i, dst);
-  }
-}
-
-template<class K, class V>
-void consume(const std::vector<std::shared_ptr<materialized_partition_source<K, V>>>& sources) {
+void process_one(const std::vector<std::shared_ptr<partition_source<K, V>>>& sources) {
   for (auto i : sources) {
-    i->consume();
+    i->process_one();
   }
 }
 
@@ -257,7 +328,6 @@ bool eof(std::vector<std::shared_ptr<partition_source<K, V>>>& sources) {
   }
   return true;
 }
-
 
 template<class K, class V>
 bool eof(std::vector<std::shared_ptr<materialized_partition_source<K, V>>>& sources) {

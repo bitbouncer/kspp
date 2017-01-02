@@ -49,7 +49,8 @@ class topology_builder
   //TBD we shouyld get rid of void value - we do not require that but how do we tell compiler that????
   template<class K>
   std::shared_ptr<csi::materialized_partition_source<K, size_t>> create_count_keys(std::shared_ptr<partition_source<K, void>> source) {
-    return std::make_shared<csi::count_partition_keys<K, CODEC>>(source, _storage_path, _default_codec);
+    //return std::make_shared<csi::count_partition_keys<K, CODEC>>(source, _storage_path, _default_codec);
+    return std::make_shared<csi::count_partition_keys<K, CODEC>>(source, _storage_path);
   }
 
   /*
@@ -96,7 +97,7 @@ class topology_builder
   */
   template<class K, class V>
   std::shared_ptr<csi::topic_sink<K, V, CODEC>> create_kafka_sink(std::string topic) {
-    return std::make_shared<csi::kafka_sink<K, V, CODEC>>(_brokers, topic, -1, _default_codec);
+    return std::make_shared<csi::kafka_sink<K, V, CODEC>>(_brokers, topic, _default_codec);
   }
 
   /**
@@ -144,8 +145,18 @@ class topology_builder
   }
 
   template<class K, class V>
-  std::shared_ptr<csi::partition_sink<K, V>> create_stream_sink(std::ostream& os, uint32_t partition) {
-    return std::make_shared<csi::stream_sink<K, V>>(os, partition);
+  std::shared_ptr<csi::stream_sink<K, V>> create_stream_sink(std::shared_ptr<csi::partition_source<K, V>>source, std::ostream& os) {
+    return std::make_shared<csi::stream_sink<K, V>>(source, os);
+  }
+
+  // not useful for anything excepts cout ord cerr... since everything is bundeled into same stream???
+  // maybee we should have a topicstreamsink that takes a vector intead...
+  template<class K, class V>
+  std::vector<std::shared_ptr<csi::stream_sink<K, V>>> create_stream_sinks(std::vector<std::shared_ptr<csi::partition_source<K, V>>> sources, std::ostream& os) {
+    std::vector<std::shared_ptr<csi::stream_sink<K, V>>> v;
+    for (auto s : sources)
+      v.push_back(create_stream_sink<K, V>(s, os));
+    return v;
   }
 
   private:

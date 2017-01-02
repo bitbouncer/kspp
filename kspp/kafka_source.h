@@ -9,59 +9,72 @@
 #define LOGPREFIX_ERROR BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << name()
 
 namespace csi {
+
+  template<class K, class V, class CODEC>
+  class kafka_source_base : public partition_source<K, V>
+  {
+  public:
+    virtual ~kafka_source_base() {
+      close();
+    }
+
+    virtual std::string name() const {
+      return "kafka_source-" + _consumer.topic() + "-" + std::to_string(_consumer.partition());
+    }
+
+    virtual void start(int64_t offset) {
+      _consumer.start(offset);
+    }
+
+    //TBD get offsets from kafka
+    virtual void start() {
+      _consumer.start(-2);
+    }
+
+    virtual void close() {
+      _consumer.close();
+    }
+
+    virtual inline bool eof() const {
+      return _consumer.eof();
+    }
+
+    // TBD lazy commit offsets to kafka
+    virtual void commit() {}
+
+    // TBD hard commit offsets to kafka
+    virtual void flush_offset() {}
+      
+    virtual bool process_one() {
+      auto p = _consumer.consume();
+      if (!p)
+        return false;
+      send_to_sinks(parse(p));
+      return true;
+    }
+
+  protected:
+    kafka_source_base(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<CODEC> codec)
+      : partition_source(partition)
+      , _codec(codec)
+      , _consumer(brokers, topic, partition) {
+    }
+
+    virtual std::shared_ptr<krecord<K, V>> parse(const std::unique_ptr<RdKafka::Message> & ref) = 0;
+
+    kafka_consumer          _consumer;
+    std::shared_ptr<CODEC>  _codec;
+  };
+
 template<class K, class V, class CODEC>
-class kafka_source : public partition_source<K, V>
+class kafka_source : public kafka_source_base<K, V, CODEC>
 {
   public:
   kafka_source(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<CODEC> codec= std::make_shared<CODEC>()) 
-    : partition_source(partition)
-    , _codec(codec)
-    , _consumer(brokers, topic, partition) {
+    : kafka_source_base(brokers, topic, partition, codec) {
   }
 
-  virtual ~kafka_source() {
-    close();
-  }
-
-  virtual std::string name() const {
-    return "kafka_source-" + _consumer.topic() + "-" + std::to_string(_consumer.partition());
-  }
-
-  virtual void start(int64_t offset) {
-    _consumer.start(offset);
-  }
-
-  //TBD get offsets from kafka
-  virtual void start() {
-    _consumer.start(-2);
-  }
-
-  virtual void close() {
-    _consumer.close();
-  }
-
-  virtual inline bool eof() const {
-    return _consumer.eof();
-  }
-
-  // TBD lazy commit offsets to kafka
-  virtual void commit() {
-  }
-  
-  // TBD hard commit offsets to kafka
-  virtual void flush_offset() {
-  }
-  
-  virtual  std::shared_ptr<krecord<K, V>> consume() {
-    auto p = _consumer.consume();
-    if (!p)
-      return NULL;
-    auto res = parse(p);
-    send(res);
-    return res;
-  }
-
-  private:
+protected:
   std::shared_ptr<krecord<K, V>> parse(const std::unique_ptr<RdKafka::Message> & ref) {
     if (!ref)
       return NULL;
@@ -97,65 +110,24 @@ class kafka_source : public partition_source<K, V>
     }
     return res;
   }
-
-  kafka_consumer          _consumer;
-  std::shared_ptr<CODEC>  _codec;
 };
 
 // <void, VALUE>
 template<class V, class CODEC>
-class kafka_source<void, V, CODEC> : public partition_source<void, V>
+class kafka_source<void, V, CODEC> : public kafka_source_base<void, V, CODEC>
 {
-  public:
-  kafka_source(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) 
-    : partition_source(partition)
-    , _codec(codec)
-    , _consumer(brokers, topic, partition) {
+public:
+  kafka_source(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
+    : kafka_source_base(brokers, topic, partition, codec) {
   }
-
-  virtual ~kafka_source() {
-    close();
-  }
-
-  virtual std::string name() const {
-    return "kafka_source-" + _consumer.topic() + "-" + std::to_string(_consumer.partition());
-  }
-
-  virtual void start(int64_t offset) {
-    _consumer.start(offset);
-  }
-
-  //TBD get offsets from kafka
-  virtual void start() {
-    _consumer.start(-2);
-  }
-
-  virtual void close() {
-    _consumer.close();
-  }
-
-  virtual inline bool eof() const {
-    return _consumer.eof();
-  }
-
-  // TBD lazy commit offsets to kafka
-  virtual void commit() {}
-
-  // TBD hard commit offsets to kafka
-  virtual void flush_offset() {}
-
-  virtual  std::shared_ptr<krecord<void, V>> consume() {
-    auto p = _consumer.consume();
-    return p ? parse(p) : NULL;
-  }
-
-  private:
+  
+protected:
   std::shared_ptr<krecord<void, V>> parse(const std::unique_ptr<RdKafka::Message> & ref) {
     if (!ref)
       return NULL;
     size_t sz = ref->len();
     if (sz) {
-      std::istrstream vs((const char*) ref->payload(), sz);
+      std::istrstream vs((const char*)ref->payload(), sz);
       auto v = std::make_shared<V>();
       size_t consumed = _codec->decode(vs, *v);
       if (consumed == sz) {
@@ -169,65 +141,27 @@ class kafka_source<void, V, CODEC> : public partition_source<void, V>
         LOGPREFIX_ERROR << ", decode value failed, size:" << sz;
         return NULL;
       }
-      
+
       LOGPREFIX_ERROR << ", decode value failed, consumed: " << consumed << ", actual: " << sz;
       return NULL;
     }
     return NULL; // just parsed an empty message???
   }
 
-  kafka_consumer          _consumer;
-  std::shared_ptr<CODEC>  _codec;
 };
+
 
 //<KEY, NULL>
 template<class K, class CODEC>
-class kafka_source<K, void, CODEC> : public partition_source<K, void>
+class kafka_source<K, void, CODEC> : public kafka_source_base<K, void, CODEC>
 {
 public:
-  kafka_source(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) 
-    : partition_source(partition)
-    , _codec(codec)
-    , _consumer(brokers, topic, partition) {
+public:
+  kafka_source(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
+    : kafka_source_base(brokers, topic, partition, codec) {
   }
 
-  virtual ~kafka_source() {
-    close();
-  }
-
-  virtual std::string name() const {
-    return "kafka_source-" + _consumer.topic() + "-" + std::to_string(_consumer.partition());
-  }
-
-  virtual void start(int64_t offset) {
-    _consumer.start(offset);
-  }
-
-  //TBD get offsets from kafka
-  virtual void start() {
-    _consumer.start(-2);
-  }
-
-  virtual void close() {
-    _consumer.close();
-  }
-
-  virtual inline bool eof() const {
-    return _consumer.eof();
-  }
-
-  // TBD lazy commit offsets to kafka
-  virtual void commit() {}
-
-  // TBD hard commit offsets to kafka
-  virtual void flush_offset() {}
-
-  virtual  std::shared_ptr<krecord<K, void>> consume() {
-    auto p = _consumer.consume();
-    return p ? parse(p) : NULL;
-  }
-
-private:
+protected:
   std::shared_ptr<krecord<K, void>> parse(const std::unique_ptr<RdKafka::Message> & ref) {
     if (!ref || ref->key_len()==0)
       return NULL;
@@ -247,11 +181,6 @@ private:
     }
     return res;
   }
-
-  kafka_consumer          _consumer;
-  std::shared_ptr<CODEC>  _codec;
 };
-
-
 };
 

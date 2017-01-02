@@ -18,12 +18,10 @@ int main(int argc, char **argv) {
 
   {
     auto source = builder.create_kafka_source<void, std::string>("kspp_TextInput", PARTITION);
+    auto sink =   builder.create_stream_sink<void, std::string>(source, std::cerr);
     source->start(-2);
     while (!source->eof()) {
-      auto msg = source->consume();
-      if (msg) {
-        std::cerr << *msg->value << std::endl;
-      }
+      source->process_one();
     }
   }
 
@@ -31,23 +29,21 @@ int main(int argc, char **argv) {
     auto source = builder.create_kafka_source<void, std::string>("kspp_TextInput", PARTITION);
 
     std::regex rgx("\\s+");
-    auto word_stream = std::make_shared<csi::transform_stream<void, std::string, std::string, void>>(source, [&rgx](const auto e, auto sink) {
+    auto word_stream = std::make_shared<csi::transform_stream<void, std::string, std::string, void>>(source, [&rgx](const auto e, auto transform) {
       std::sregex_token_iterator iter(e->value->begin(), e->value->end(), rgx, -1);
       std::sregex_token_iterator end;
       for (; iter != end; ++iter)
-        sink->produce(std::make_shared<csi::krecord<std::string, void>>(*iter));
+        transform->push_back(std::make_shared<csi::krecord<std::string, void>>(*iter));
     });
     
     auto word_counts = std::make_shared<csi::count_partition_keys<std::string, csi::text_codec>>(word_stream, "C:\\tmp");
 
     word_counts->start(-2);
     while (!word_counts->eof()) {
-      auto msg = word_counts->consume();
+      word_counts->process_one();
     }
 
     for (auto i : *word_counts)
       std::cerr << i->key << " : " << *i->value << std::endl;
-
-
   }
 }

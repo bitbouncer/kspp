@@ -6,13 +6,18 @@
 
 namespace csi {
 template<class K, class CODEC>
+//class count_partition_keys : public partition_sink<K, void>, materialized_partition_source<K, size_t>
 class count_partition_keys : public materialized_partition_source<K, size_t>
 {
   public:
     count_partition_keys(std::shared_ptr<partition_source<K, void>> source, std::string storage_path, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
     : materialized_partition_source(source->partition())
+    //, partition_sink(source->partition())
     , _stream(source)
     , _counter_store(name(), storage_path + "//" + name(), codec) {
+      source->add_sink([this](auto e) {
+        _queue.push_back(e);
+      });
   }
 
   ~count_partition_keys() {
@@ -20,7 +25,7 @@ class count_partition_keys : public materialized_partition_source<K, size_t>
   }
 
   std::string name() const {
-    return _stream->name() + "(count_partition_keys)_" + std::to_string(partition());
+    return _stream->name() + "(count_partition_keys)_" + std::to_string(materialized_partition_source::partition());
   }
 
   virtual void start() {
@@ -35,20 +40,27 @@ class count_partition_keys : public materialized_partition_source<K, size_t>
     _stream->close();
   }
 
-  virtual std::shared_ptr<krecord<K, size_t>> consume() {
-    if (_queue.size()) {
-      auto p = *_queue.begin();
+  virtual int produce(std::shared_ptr<krecord<K, void>> r) {
+    _queue.push_back(r);
+    return 0;
+  }
+
+  virtual size_t queue_len() {
+    return _queue.size();
+  }
+
+  virtual void poll(int timeout) {
+  }
+
+  virtual bool process_one() {
+    _stream->process_one();
+    bool processed = (_queue.size() > 0);
+    while (_queue.size()) {
+      auto e = _queue.front();
       _queue.pop_front();
-      return p;
+      _counter_store.add(e->key, 1);
     }
-
-    auto e = _stream->consume();
-    if (!e)
-      return NULL;
-
-   _counter_store.add(e->key, 1);
-   //size_t count = _counter_store.get(e->key);
-   return std::make_shared<krecord<K, size_t>>(e->key, 1); // wrong but fast
+    return processed;
   }
 
   virtual void commit() {
@@ -79,6 +91,6 @@ class count_partition_keys : public materialized_partition_source<K, size_t>
   private:
   std::shared_ptr<partition_source<K, void>>      _stream;
   rocksdb_counter_store<K, CODEC>                 _counter_store;
-  std::deque<std::shared_ptr<krecord<K, size_t>>> _queue;
+  std::deque<std::shared_ptr<krecord<K, void>>>   _queue;
 };
 }
