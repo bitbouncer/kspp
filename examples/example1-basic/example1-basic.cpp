@@ -134,25 +134,25 @@ int main(int argc, char **argv) {
 
   {
     auto sink = builder.create_kafka_sink<int64_t, page_view_data>("kspp_PageViews", 0);
-    csi::produce<int64_t, page_view_data>(*sink, 1, {1440557383335, 1, "/home?user=1"});
-    csi::produce<int64_t, page_view_data>(*sink, 5, {1440557383345, 5, "/home?user=5"});
-    csi::produce<int64_t, page_view_data>(*sink, 2, {1440557383456, 2, "/profile?user=2"});
-    csi::produce<int64_t, page_view_data>(*sink, 1, {1440557385365, 1, "/profile?user=1"});
-    csi::produce<int64_t, page_view_data>(*sink, 1, {1440557385368, 1, "/profile?user=1"});
+    csi::produce<int64_t, page_view_data>(*sink, 1, { 1440557383335, 1, "/home?user=1" });
+    csi::produce<int64_t, page_view_data>(*sink, 5, { 1440557383345, 5, "/home?user=5" });
+    csi::produce<int64_t, page_view_data>(*sink, 2, { 1440557383456, 2, "/profile?user=2" });
+    csi::produce<int64_t, page_view_data>(*sink, 1, { 1440557385365, 1, "/profile?user=1" });
+    csi::produce<int64_t, page_view_data>(*sink, 1, { 1440557385368, 1, "/profile?user=1" });
   }
 
   {
     auto sink = builder.create_kafka_sink<int64_t, user_profile_data>("kspp_UserProfile", 0);
-    csi::produce<int64_t, user_profile_data>(*sink, 1, {1440557383335, 1, "user1@aol.com"});
-    csi::produce<int64_t, user_profile_data>(*sink, 5, {1440557383345, 5, "user5@gmail.com"});
-    csi::produce<int64_t, user_profile_data>(*sink, 2, {1440557383456, 2, "user2@yahoo.com"});
-    csi::produce<int64_t, user_profile_data>(*sink, 1, {1440557385365, 1, "user1-new-email-addr@comcast.com"});
+    csi::produce<int64_t, user_profile_data>(*sink, 1, { 1440557383335, 1, "user1@aol.com" });
+    csi::produce<int64_t, user_profile_data>(*sink, 5, { 1440557383345, 5, "user5@gmail.com" });
+    csi::produce<int64_t, user_profile_data>(*sink, 2, { 1440557383456, 2, "user2@yahoo.com" });
+    csi::produce<int64_t, user_profile_data>(*sink, 1, { 1440557385365, 1, "user1-new-email-addr@comcast.com" });
   }
 
   {
     auto pageviews = builder.create_kafka_source<int64_t, page_view_data>("kspp_PageViews", 0);
     auto userprofiles = builder.create_kafka_source<int64_t, user_profile_data>("kspp_UserProfile", 0);
-    
+
     auto pw_sink = builder.create_stream_sink<int64_t, page_view_data>(pageviews, std::cerr);
     auto up_sink = builder.create_stream_sink<int64_t, user_profile_data>(userprofiles, std::cerr);
 
@@ -173,12 +173,12 @@ int main(int argc, char **argv) {
     pageviews->start();
     while (!pageviews->eof()) {
       pageviews->process_one();
-    } 
+    }
     pageviews->commit();
   }
 
   {
-    auto join = builder.create_left_join<int64_t, page_view_data, user_profile_data, page_view_decorated>("example3-join2",  "kspp_PageViews", "kspp_UserProfile", PARTITION, [](const int64_t& key, const page_view_data& left, const user_profile_data& right, page_view_decorated& row) {
+    auto join = builder.create_left_join<int64_t, page_view_data, user_profile_data, page_view_decorated>("example3-join2", "kspp_PageViews", "kspp_UserProfile", PARTITION, [](const int64_t& key, const page_view_data& left, const user_profile_data& right, page_view_decorated& row) {
       row.user_id = key;
       row.email = right.email;
       row.time = left.time;
@@ -186,7 +186,7 @@ int main(int argc, char **argv) {
     });
     auto sink = builder.create_kafka_sink<int64_t, page_view_decorated>("kspp_PageViewsDecorated", PARTITION);
 
-    join->start(-2); 
+    join->start(-2);
     join->add_sink(sink);
     while (!join->eof()) {
       join->process_one();

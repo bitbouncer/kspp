@@ -7,21 +7,21 @@ namespace csi {
   {
   public:
     kafka_consumer(std::string brokers, std::string topic, int32_t partition);
-    
+
     ~kafka_consumer();
-    
+
     void close();
-    
+
     std::unique_ptr<RdKafka::Message> consume();
-    
-    inline bool eof() const { 
-      return _eof; 
+
+    inline bool eof() const {
+      return _eof;
     }
-    
-    inline std::string topic() const { 
-      return _topic; 
+
+    inline std::string topic() const {
+      return _topic;
     }
-    
+
     inline int32_t partition() const {
       return _partition;
     }

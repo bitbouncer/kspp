@@ -11,7 +11,7 @@ namespace csi {
   {
   public:
     kstream_partition_impl(std::string nodeid, std::string brokers, std::string topic, int32_t partition, std::string storage_path, std::shared_ptr<CODEC> codec)
-    : kstream_partition(partition)
+      : kstream_partition(partition)
       , _offset_storage_path(storage_path)
       , _source(brokers, topic, partition, codec)
       , _state_store(topic, partition, storage_path + "\\" + nodeid + "\\" + topic + "_" + std::to_string(partition), codec)
@@ -22,7 +22,7 @@ namespace csi {
       _offset_storage_path /= topic + "_" + std::to_string(partition);
       boost::filesystem::create_directories(_offset_storage_path);
       _offset_storage_path /= "\\kafka_offset.bin";
-      
+
       // this is probably wrong since why should we delete the row in a kstream??? TBD
       // for now this is just a copy from ktable...
       _source.add_sink([this](auto r) {

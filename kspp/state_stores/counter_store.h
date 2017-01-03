@@ -8,18 +8,23 @@ namespace csi {
 
     virtual void close() = 0;
     /**
-    * Put a key-value pair
+    * Adds count to a counter
     */
     virtual void add(const K& key, size_t count) = 0;
     /**
-    * Deletes a key-value pair with the given key
+    * Deletes a counter
     */
     virtual void del(const K& key) = 0;
     /**
-    * Returns a key-value pair with the given key
+    * Returns the counter for the given key
     */
-    //virtual std::shared_ptr<krecord<K, size_t>> get(const K& key) = 0;
+
+    /**
+    * erases all counters
+    */
+    virtual void erase() = 0;
+
     virtual typename csi::materialized_partition_source<K, size_t>::iterator begin(void) = 0;
     virtual typename csi::materialized_partition_source<K, size_t>::iterator end() = 0;
   };
-}; 
+};

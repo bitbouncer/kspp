@@ -46,7 +46,6 @@ namespace csi {
       return _impl.queue_len();
     }
 
-
     virtual void poll(int timeout) {
       return _impl.poll(timeout);
     }
@@ -55,19 +54,15 @@ namespace csi {
     virtual bool process_one() {
       return false;
     }
-
-
   protected:
     kafka_sink_base(std::string brokers, std::string topic, partitioner p, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
       : topic_sink(codec)
       , _impl(brokers, topic)
-      , _partitioner(p) {
-    }
+      , _partitioner(p) {}
 
     kafka_sink_base(std::string brokers, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
       : topic_sink(codec)
-      , _impl(brokers, topic) {
-    }
+      , _impl(brokers, topic) {}
 
     kafka_producer          _impl;
     partitioner             _partitioner;
@@ -83,13 +78,11 @@ namespace csi {
     using partitioner = typename kafka_partitioner_base<K>::partitioner;
 
     kafka_sink(std::string brokers, std::string topic, partitioner p, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-      : kafka_sink_base(brokers, topic, p, codec) {
-    }
+      : kafka_sink_base(brokers, topic, p, codec) {}
 
     kafka_sink(std::string brokers, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-      : kafka_sink_base(brokers, topic, codec) {
-    }
-    
+      : kafka_sink_base(brokers, topic, codec) {}
+
     virtual int produce(std::shared_ptr<krecord<K, V>> r) {
       if (_partitioner)
         return produce(_partitioner(r->key), r);
@@ -123,9 +116,8 @@ namespace csi {
   class kafka_sink<void, V, CODEC> : public kafka_sink_base<void, V, CODEC>
   {
   public:
-    kafka_sink(std::string brokers, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) 
-      : kafka_sink_base(brokers, topic, partition, codec){
-    }
+    kafka_sink(std::string brokers, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
+      : kafka_sink_base(brokers, topic, partition, codec) {}
 
     virtual int produce(uint32_t partition, std::shared_ptr<krecord<void, V>> r) {
       void* vp = NULL;
@@ -149,12 +141,10 @@ namespace csi {
     using partitioner = typename kafka_partitioner_base<K>::partitioner;
 
     kafka_sink(std::string brokers, std::string topic, partitioner p, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) :
-      : kafka_sink_base(brokers, topic, p, codec) {
-    }
+      : kafka_sink_base(brokers, topic, p, codec) {}
 
     kafka_sink(std::string brokers, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) :
-      : kafka_sink_base(brokers, topic, codec) {
-    }
+      : kafka_sink_base(brokers, topic, codec) {}
 
     virtual int produce(std::shared_ptr<krecord<K, void>> r) {
       void* kp = NULL;
@@ -195,8 +185,7 @@ namespace csi {
       : partition_sink(partition)
       , _codec(codec)
       , _impl(brokers, topic)
-      , _fixed_partition(partition) {
-    }
+      , _fixed_partition(partition) {}
 
     virtual ~kafka_single_partition_sink_base() {
       close();
@@ -234,8 +223,7 @@ namespace csi {
   {
   public:
     kafka_single_partition_sink(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-      : kafka_single_partition_sink_base(brokers, topic, partition, codec) {
-    }
+      : kafka_single_partition_sink_base(brokers, topic, partition, codec) {}
 
     virtual int produce(std::shared_ptr<krecord<K, V>> r) {
       void* kp = NULL;
@@ -267,8 +255,8 @@ namespace csi {
       : kafka_single_partition_sink_base(brokers, topic, partition, codec) {}
 
     virtual int produce(std::shared_ptr<krecord<void, V>> r) {
-        void* vp = NULL;
-        size_t vsize = 0;
+      void* vp = NULL;
+      size_t vsize = 0;
 
       if (r->value) {
         std::stringstream vs;

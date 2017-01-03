@@ -9,7 +9,6 @@
 #define LOGPREFIX_ERROR BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << name()
 
 namespace csi {
-
   template<class K, class V, class CODEC>
   class kafka_source_base : public partition_source<K, V>
   {
@@ -44,7 +43,7 @@ namespace csi {
 
     // TBD hard commit offsets to kafka
     virtual void flush_offset() {}
-      
+
     virtual bool process_one() {
       auto p = _consumer.consume();
       if (!p)
@@ -57,8 +56,7 @@ namespace csi {
     kafka_source_base(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<CODEC> codec)
       : partition_source(partition)
       , _codec(codec)
-      , _consumer(brokers, topic, partition) {
-    }
+      , _consumer(brokers, topic, partition) {}
 
     virtual std::shared_ptr<krecord<K, V>> parse(const std::unique_ptr<RdKafka::Message> & ref) = 0;
 
@@ -66,121 +64,118 @@ namespace csi {
     std::shared_ptr<CODEC>  _codec;
   };
 
-template<class K, class V, class CODEC>
-class kafka_source : public kafka_source_base<K, V, CODEC>
-{
+  template<class K, class V, class CODEC>
+  class kafka_source : public kafka_source_base<K, V, CODEC>
+  {
   public:
-  kafka_source(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<CODEC> codec= std::make_shared<CODEC>()) 
-    : kafka_source_base(brokers, topic, partition, codec) {
-  }
+    kafka_source(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
+      : kafka_source_base(brokers, topic, partition, codec) {}
 
-protected:
-  std::shared_ptr<krecord<K, V>> parse(const std::unique_ptr<RdKafka::Message> & ref) {
-    if (!ref)
-      return NULL;
+  protected:
+    std::shared_ptr<krecord<K, V>> parse(const std::unique_ptr<RdKafka::Message> & ref) {
+      if (!ref)
+        return NULL;
 
-   auto res = std::make_shared<krecord<K, V>>();
+      auto res = std::make_shared<krecord<K, V>>();
 
-    res->event_time = ref->timestamp().timestamp;
-    res->offset = ref->offset();
-    {
-      std::istrstream ks((const char*) ref->key_pointer(), ref->key_len());
+      res->event_time = ref->timestamp().timestamp;
+      res->offset = ref->offset();
+      {
+        std::istrstream ks((const char*)ref->key_pointer(), ref->key_len());
+        size_t consumed = _codec->decode(ks, res->key);
+        if (consumed == 0) {
+          LOGPREFIX_ERROR << ", decode key failed, actual key sz:" << ref->key_len();
+          return NULL;
+        } else if (consumed != ref->key_len()) {
+          LOGPREFIX_ERROR << ", decode key failed, consumed: " << consumed << ", actual: " << ref->key_len();
+          return NULL;
+        }
+      }
+
+      size_t sz = ref->len();
+      if (sz) {
+        std::istrstream vs((const char*)ref->payload(), sz);
+        res->value = std::make_shared<V>();
+        size_t consumed = _codec->decode(vs, *res->value);
+        if (consumed == 0) {
+          LOGPREFIX_ERROR << ", decode value failed, size:" << sz;
+          return NULL;
+        } else if (consumed != sz) {
+          LOGPREFIX_ERROR << ", decode value failed, consumed: " << consumed << ", actual: " << sz;
+          return NULL;
+        }
+      }
+      return res;
+    }
+  };
+
+  // <void, VALUE>
+  template<class V, class CODEC>
+  class kafka_source<void, V, CODEC> : public kafka_source_base<void, V, CODEC>
+  {
+  public:
+    kafka_source(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
+      : kafka_source_base(brokers, topic, partition, codec) {}
+
+  protected:
+    std::shared_ptr<krecord<void, V>> parse(const std::unique_ptr<RdKafka::Message> & ref) {
+      if (!ref)
+        return NULL;
+      size_t sz = ref->len();
+      if (sz) {
+        std::istrstream vs((const char*)ref->payload(), sz);
+        auto v = std::make_shared<V>();
+        size_t consumed = _codec->decode(vs, *v);
+        if (consumed == sz) {
+          auto res = std::make_shared<krecord<void, V>>(v);
+          res->event_time = ref->timestamp().timestamp;
+          res->offset = ref->offset();
+          return res;
+        }
+
+        if (consumed == 0) {
+          LOGPREFIX_ERROR << ", decode value failed, size:" << sz;
+          return NULL;
+        }
+
+        LOGPREFIX_ERROR << ", decode value failed, consumed: " << consumed << ", actual: " << sz;
+        return NULL;
+      }
+      return NULL; // just parsed an empty message???
+    }
+
+  };
+
+
+  //<KEY, NULL>
+  template<class K, class CODEC>
+  class kafka_source<K, void, CODEC> : public kafka_source_base<K, void, CODEC>
+  {
+  public:
+  public:
+    kafka_source(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
+      : kafka_source_base(brokers, topic, partition, codec) {}
+
+  protected:
+    std::shared_ptr<krecord<K, void>> parse(const std::unique_ptr<RdKafka::Message> & ref) {
+      if (!ref || ref->key_len() == 0)
+        return NULL;
+
+      auto res = std::make_shared<krecord<K, void>>();
+
+      res->event_time = ref->timestamp().timestamp;
+      res->offset = ref->offset();
+      std::istrstream ks((const char*)ref->key_pointer(), ref->key_len());
       size_t consumed = _codec->decode(ks, res->key);
-      if (consumed ==0) {
+      if (consumed == 0) {
         LOGPREFIX_ERROR << ", decode key failed, actual key sz:" << ref->key_len();
         return NULL;
       } else if (consumed != ref->key_len()) {
         LOGPREFIX_ERROR << ", decode key failed, consumed: " << consumed << ", actual: " << ref->key_len();
         return NULL;
       }
+      return res;
     }
-
-    size_t sz = ref->len();
-    if (sz) {
-      std::istrstream vs((const char*) ref->payload(), sz);
-      res->value = std::make_shared<V>();
-      size_t consumed = _codec->decode(vs, *res->value);
-      if (consumed == 0) {
-        LOGPREFIX_ERROR << ", decode value failed, size:" << sz;
-        return NULL;
-      } else if (consumed != sz) {
-        LOGPREFIX_ERROR << ", decode value failed, consumed: " << consumed << ", actual: " << sz;
-        return NULL;
-      }
-    }
-    return res;
-  }
-};
-
-// <void, VALUE>
-template<class V, class CODEC>
-class kafka_source<void, V, CODEC> : public kafka_source_base<void, V, CODEC>
-{
-public:
-  kafka_source(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-    : kafka_source_base(brokers, topic, partition, codec) {
-  }
-  
-protected:
-  std::shared_ptr<krecord<void, V>> parse(const std::unique_ptr<RdKafka::Message> & ref) {
-    if (!ref)
-      return NULL;
-    size_t sz = ref->len();
-    if (sz) {
-      std::istrstream vs((const char*)ref->payload(), sz);
-      auto v = std::make_shared<V>();
-      size_t consumed = _codec->decode(vs, *v);
-      if (consumed == sz) {
-        auto res = std::make_shared<krecord<void, V>>(v);
-        res->event_time = ref->timestamp().timestamp;
-        res->offset = ref->offset();
-        return res;
-      }
-
-      if (consumed == 0) {
-        LOGPREFIX_ERROR << ", decode value failed, size:" << sz;
-        return NULL;
-      }
-
-      LOGPREFIX_ERROR << ", decode value failed, consumed: " << consumed << ", actual: " << sz;
-      return NULL;
-    }
-    return NULL; // just parsed an empty message???
-  }
-
-};
-
-
-//<KEY, NULL>
-template<class K, class CODEC>
-class kafka_source<K, void, CODEC> : public kafka_source_base<K, void, CODEC>
-{
-public:
-public:
-  kafka_source(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-    : kafka_source_base(brokers, topic, partition, codec) {
-  }
-
-protected:
-  std::shared_ptr<krecord<K, void>> parse(const std::unique_ptr<RdKafka::Message> & ref) {
-    if (!ref || ref->key_len()==0)
-      return NULL;
-
-    auto res = std::make_shared<krecord<K, void>>();
-
-    res->event_time = ref->timestamp().timestamp;
-    res->offset = ref->offset();
-    std::istrstream ks((const char*)ref->key_pointer(), ref->key_len());
-    size_t consumed = _codec->decode(ks, res->key);
-    if (consumed == 0) {
-      LOGPREFIX_ERROR << ", decode key failed, actual key sz:" << ref->key_len();
-      return NULL;
-    } else if (consumed != ref->key_len()) {
-      LOGPREFIX_ERROR << ", decode key failed, consumed: " << consumed << ", actual: " << ref->key_len();
-      return NULL;
-    }
-    return res;
-  }
-};
+  };
 };
 

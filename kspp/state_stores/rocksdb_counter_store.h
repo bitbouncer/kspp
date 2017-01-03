@@ -15,7 +15,7 @@ namespace csi {
     static bool Deserialize(const rocksdb::Slice& slice, uint64_t* value) {
       if (slice.size() != sizeof(int64_t))
         return false;
-      memcpy((void*) value, slice.data(), sizeof(int64_t));
+      memcpy((void*)value, slice.data(), sizeof(int64_t));
       return true;
     }
 
@@ -70,145 +70,170 @@ namespace csi {
   class rocksdb_counter_store : public counter_store<K>
   {
   public:
-      enum { MAX_KEY_SIZE = 10000 };
+    enum { MAX_KEY_SIZE = 10000 };
 
-      class iterator_impl : public kmaterialized_source_iterator_impl<K, size_t>
-      {
-        public:
-        enum seek_pos_e { BEGIN, END };
+    class iterator_impl : public kmaterialized_source_iterator_impl<K, size_t>
+    {
+    public:
+      enum seek_pos_e { BEGIN, END };
 
-        iterator_impl(rocksdb::DB* db, std::shared_ptr<CODEC> codec, seek_pos_e pos)
-          : _it(db->NewIterator(rocksdb::ReadOptions()))
-          , _codec(codec) {
-          if (pos == BEGIN) {
-            _it->SeekToFirst();
-          } else {
-            _it->SeekToLast(); // is there a better way to init to non valid??
-            if (_it->Valid()) // if not valid the Next() calls fails...
-              _it->Next(); // now it's invalid
-          }
+      iterator_impl(rocksdb::DB* db, std::shared_ptr<CODEC> codec, seek_pos_e pos)
+        : _it(db->NewIterator(rocksdb::ReadOptions()))
+        , _codec(codec) {
+        if (pos == BEGIN) {
+          _it->SeekToFirst();
+        } else {
+          _it->SeekToLast(); // is there a better way to init to non valid??
+          if (_it->Valid()) // if not valid the Next() calls fails...
+            _it->Next(); // now it's invalid
         }
+      }
 
-        virtual bool valid() const {
-          return _it->Valid();
+      virtual bool valid() const {
+        return _it->Valid();
+      }
+
+      virtual void next() {
+        if (!_it->Valid())
+          return;
+        _it->Next();
+      }
+
+      virtual std::shared_ptr<krecord<K, size_t>> item() const {
+        if (!_it->Valid())
+          return NULL;
+        rocksdb::Slice key = _it->key();
+        rocksdb::Slice value = _it->value();
+
+        std::shared_ptr<krecord<K, size_t>> res(std::make_shared<krecord<K, size_t>>());
+        res->offset = -1;
+        res->event_time = -1; // ????
+        res->value = std::make_shared<size_t>();
+
+        std::istrstream isk(key.data(), key.size());
+        if (_codec->decode(isk, res->key) == 0)
+          return NULL;
+
+        uint64_t count = 0;
+        if (!UInt64AddOperator::Deserialize(value, &count)) {
+          return NULL;
         }
+        *res->value = count;
+        return res;
+      }
 
-        virtual void next() {
-          if (!_it->Valid())
-            return;
-          _it->Next();
-        }
-
-        virtual std::shared_ptr<krecord<K, size_t>> item() const {
-          if (!_it->Valid())
-            return NULL;
-          rocksdb::Slice key = _it->key();
-          rocksdb::Slice value = _it->value();
-
-          std::shared_ptr<krecord<K, size_t>> res(std::make_shared<krecord<K, size_t>>());
-          res->offset = -1;
-          res->event_time = -1; // ????
-          res->value = std::make_shared<size_t>();
-
-          std::istrstream isk(key.data(), key.size());
-          if (_codec->decode(isk, res->key) == 0)
-            return NULL;
-
-          uint64_t count = 0;
-          if (!UInt64AddOperator::Deserialize(value, &count))             {
-            return NULL;
-          }
-          *res->value = count;
-          return res;
-        }
-
-        virtual bool operator==(const kmaterialized_source_iterator_impl<K, size_t>& other) const {
-          //fastpath...
-          if (valid() && !other.valid())
-            return false;
-          if (!valid() && !other.valid())
-            return true;
-          if (valid() && other.valid())
-            return _it->key() == ((const iterator_impl&) other)._it->key();
+      virtual bool operator==(const kmaterialized_source_iterator_impl<K, size_t>& other) const {
+        //fastpath...
+        if (valid() && !other.valid())
           return false;
-        }
-
-        private:
-        std::unique_ptr<rocksdb::Iterator> _it;
-        std::shared_ptr<CODEC>             _codec;
-
-      };
-
-      rocksdb_counter_store(std::string name, boost::filesystem::path storage_path, std::shared_ptr<CODEC> codec)
-        : _codec(codec)
-        , _name(name+ "-(rocksdb_counter_store)") {
-        boost::filesystem::create_directories(boost::filesystem::path(storage_path));
-        rocksdb::Options options;
-        options.merge_operator.reset(new UInt64AddOperator);
-        options.create_if_missing = true;
-        rocksdb::DB* tmp = NULL;
-        auto s = rocksdb::DB::Open(options, storage_path.generic_string(), &tmp);
-        _db.reset(tmp);
-        if (!s.ok()) {
-          BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", " << _name << ", failed to open rocks db, path:" << storage_path.generic_string();
-        }
-        assert(s.ok());
-      }
-    
-      ~rocksdb_counter_store() {
-        close();
+        if (!valid() && !other.valid())
+          return true;
+        if (valid() && other.valid())
+          return _it->key() == ((const iterator_impl&)other)._it->key();
+        return false;
       }
 
-      void close() {
-        _db = NULL;
-        BOOST_LOG_TRIVIAL(info) << BOOST_CURRENT_FUNCTION << ", " << _name << " close()";
+      inline rocksdb::Slice _key_slice() const {
+        return _it->key();
       }
-    
-      void add(const K& key, size_t val) {
-        char key_buf[MAX_KEY_SIZE];
-        size_t ksize = 0;
+
+    private:
+      std::unique_ptr<rocksdb::Iterator> _it;
+      std::shared_ptr<CODEC>             _codec;
+
+    };
+
+    rocksdb_counter_store(std::string name, boost::filesystem::path storage_path, std::shared_ptr<CODEC> codec)
+      : _name(name + "-(rocksdb_counter_store)")
+      , _storage_path(storage_path)
+      , _codec(codec) {
+      auto res = _create_db();
+      assert(res);
+    }
+
+    ~rocksdb_counter_store() {
+      close();
+    }
+
+    bool _create_db() {
+      boost::filesystem::create_directories(boost::filesystem::path(_storage_path));
+      rocksdb::Options options;
+      options.merge_operator.reset(new UInt64AddOperator);
+      options.create_if_missing = true;
+      rocksdb::DB* tmp = NULL;
+      auto s = rocksdb::DB::Open(options, _storage_path.generic_string(), &tmp);
+      _db.reset(tmp);
+      if (!s.ok()) {
+        BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", " << _name << ", failed to open rocks db, path:" << _storage_path.generic_string();
+      }
+      return s.ok();
+    }
+
+    void close() {
+      _db = NULL;
+      BOOST_LOG_TRIVIAL(info) << BOOST_CURRENT_FUNCTION << ", " << _name << " close()";
+    }
+
+    void add(const K& key, size_t val) {
+      char key_buf[MAX_KEY_SIZE];
+      size_t ksize = 0;
+      std::strstream s(key_buf, MAX_KEY_SIZE);
+      ksize = _codec->encode(key, s);
+      std::string serialized;
+      UInt64AddOperator::Serialize(val, &serialized);
+      auto status = _db->Merge(rocksdb::WriteOptions(), rocksdb::Slice(key_buf, ksize), serialized);
+    }
+
+    void del(const K& key) {
+      char key_buf[MAX_KEY_SIZE];
+      size_t ksize = 0;
+      {
         std::strstream s(key_buf, MAX_KEY_SIZE);
         ksize = _codec->encode(key, s);
-        std::string serialized;
-        UInt64AddOperator::Serialize(val, &serialized);
-        auto status = _db->Merge(rocksdb::WriteOptions(), rocksdb::Slice(key_buf, ksize), serialized);
       }
-    
-      void del(const K& key) {
-        char key_buf[MAX_KEY_SIZE];
-        size_t ksize = 0;
-        {
-          std::strstream s(key_buf, MAX_KEY_SIZE);
-          ksize = _codec->encode(key, s);
-        }
-        auto s = _db->Delete(rocksdb::WriteOptions(), rocksdb::Slice(key_buf, ksize));
-      }
+      auto s = _db->Delete(rocksdb::WriteOptions(), rocksdb::Slice(key_buf, ksize));
+    }
 
-      size_t get(const K& key) {
-        char key_buf[MAX_KEY_SIZE];
-        size_t ksize = 0;
-        std::ostrstream os(key_buf, MAX_KEY_SIZE);
-        ksize = _codec->encode(key, os);
-        std::string str;
-        auto status = _db->Get(rocksdb::ReadOptions(), rocksdb::Slice(key_buf, ksize), &str);
-        uint64_t count = 0;
-        bool res = UInt64AddOperator::Deserialize(str, &count);
-        return count;
-      }
+    size_t get(const K& key) {
+      char key_buf[MAX_KEY_SIZE];
+      size_t ksize = 0;
+      std::ostrstream os(key_buf, MAX_KEY_SIZE);
+      ksize = _codec->encode(key, os);
+      std::string str;
+      auto status = _db->Get(rocksdb::ReadOptions(), rocksdb::Slice(key_buf, ksize), &str);
+      uint64_t count = 0;
+      bool res = UInt64AddOperator::Deserialize(str, &count);
+      return count;
+    }
 
-      typename csi::materialized_partition_source<K, size_t>::iterator begin(void) {
-        return typename csi::materialized_partition_source<K, size_t>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::BEGIN));
+    /*
+    virtual void erase() {
+      for (auto it = begin(), end_ = end(); it != end_; ++it)         {
+        auto s = _db->Delete(rocksdb::WriteOptions(), it._it->key());
       }
+    }
+    */
 
-      typename csi::materialized_partition_source<K, size_t>::iterator end() {
-        return typename csi::materialized_partition_source<K, size_t>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::END));
+    virtual void erase() {
+      for (auto it = iterator_impl(_db.get(), _codec, iterator_impl::BEGIN), end_ = iterator_impl(_db.get(), _codec, iterator_impl::END); it!= end_; it.next()) {
+        auto s = _db->Delete(rocksdb::WriteOptions(), it._key_slice());
       }
-    
-      private:
-      std::string                                   _name;     // only used for logging to make sense...
-      std::unique_ptr<rocksdb::DB>                  _db;        // maybee this should be a shared ptr since we're letting iterators out...
-      //const std::shared_ptr<rocksdb::ReadOptions>   _read_options;
-      //const std::shared_ptr<rocksdb::WriteOptions>  _write_options;
-      std::shared_ptr<CODEC>                        _codec;
-    };
+    }
+
+    typename csi::materialized_partition_source<K, size_t>::iterator begin(void) {
+      return typename csi::materialized_partition_source<K, size_t>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::BEGIN));
+    }
+
+    typename csi::materialized_partition_source<K, size_t>::iterator end() {
+      return typename csi::materialized_partition_source<K, size_t>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::END));
+    }
+
+  private:
+    std::string                                   _name;     // only used for logging to make sense...
+    boost::filesystem::path                       _storage_path;
+    std::unique_ptr<rocksdb::DB>                  _db;        // maybee this should be a shared ptr since we're letting iterators out...
+    //const std::shared_ptr<rocksdb::ReadOptions>   _read_options;
+    //const std::shared_ptr<rocksdb::WriteOptions>  _write_options;
+    std::shared_ptr<CODEC>                        _codec;
+  };
 };

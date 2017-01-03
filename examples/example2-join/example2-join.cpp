@@ -17,20 +17,20 @@ int main(int argc, char **argv) {
   // first sync table
   while (join->consume_right()) {
   }
-  
+
   auto t0 = std::chrono::high_resolution_clock::now();
-  
+
   // now join stream with loaded table
   size_t join_count = 0;
   while (!join->eof())
     join->process_one();
-  
+
   join->commit();
- 
+
   auto t1 = std::chrono::high_resolution_clock::now();
   auto fs = t1 - t0;
   auto d = std::chrono::duration_cast<std::chrono::milliseconds>(fs);
   std::cout << d.count() / 1000 << "s\n";
-  std::cout << "lookups per sec : " << join_count / ((double) d.count() / 1000) << std::endl;
+  std::cout << "lookups per sec : " << join_count / ((double)d.count() / 1000) << std::endl;
   return 0;
 }

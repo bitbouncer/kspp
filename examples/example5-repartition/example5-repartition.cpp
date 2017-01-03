@@ -20,9 +20,9 @@ int main(int argc, char **argv) {
     csi::produce(*sink, 7, "user_7");
     csi::produce(*sink, 8, "user_8");
     csi::produce(*sink, 9, "user_9");
-    csi::produce(*sink, 10,"user_10");
+    csi::produce(*sink, 10, "user_10");
   }
- 
+
   {
     auto sink = builder.create_kafka_sink<int, int>("kspp_example5_user_channel"); // <user_id, channel_id>
     csi::produce(*sink, 1, 1);
@@ -42,7 +42,7 @@ int main(int argc, char **argv) {
     csi::produce(*sink, 1, "channel1");
     csi::produce(*sink, 2, "channel2");
   }
- 
+
   {
     auto sources = builder.create_kafka_sources<int, std::string>("kspp_example5_usernames", 8);
     auto sink = builder.create_stream_sinks<int, std::string>(sources, std::cerr);
@@ -57,8 +57,7 @@ int main(int argc, char **argv) {
 
 
   auto topic_sink = builder.create_kafka_sink<int, std::string>("kspp_example5_usernames.per-channel");
-  for (int i=0; i!=8; ++i)
-  {
+  for (int i = 0; i != 8; ++i) {
     auto partition_source = builder.create_kafka_source<int, std::string>("kspp_example5_usernames", i);
     auto partition_routing_table = builder.create_ktable<int, int>("example5", "kspp_example5_user_channel", i);
     auto partition_repartition = std::make_shared<csi::repartition_by_table<int, std::string, csi::text_codec>>(partition_source, partition_routing_table, topic_sink);

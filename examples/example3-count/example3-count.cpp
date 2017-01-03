@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
 
   {
     auto source = builder.create_kafka_source<void, std::string>("kspp_TextInput", PARTITION);
-    auto sink =   builder.create_stream_sink<void, std::string>(source, std::cerr);
+    auto sink = builder.create_stream_sink<void, std::string>(source, std::cerr);
     source->start(-2);
     while (!source->eof()) {
       source->process_one();
@@ -35,15 +35,18 @@ int main(int argc, char **argv) {
       for (; iter != end; ++iter)
         transform->push_back(std::make_shared<csi::krecord<std::string, void>>(*iter));
     });
-    
+
     auto word_counts = std::make_shared<csi::count_partition_keys<std::string, csi::text_codec>>(word_stream, "C:\\tmp");
+    auto sink = builder.create_stream_sink<std::string, size_t>(word_counts, std::cerr);
 
     word_counts->start(-2);
     while (!word_counts->eof()) {
       word_counts->process_one();
     }
 
-    for (auto i : *word_counts)
-      std::cerr << i->key << " : " << *i->value << std::endl;
+    word_counts->punctuate(csi::milliseconds_since_epoch());
+
+    //for (auto i : *word_counts)
+    //std::cerr << i->key << " : " << *i->value << std::endl;
   }
 }

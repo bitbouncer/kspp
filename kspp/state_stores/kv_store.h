@@ -23,9 +23,8 @@ namespace csi {
     virtual typename csi::materialized_partition_source<K, V>::iterator end() = 0;
   };
 
-
   template<class K, class V>
-    class kv_windowed_store
+  class kv_windowed_store
   {
   public:
     virtual ~kv_windowed_store() {}
