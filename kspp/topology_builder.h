@@ -24,18 +24,26 @@ namespace csi {
     template<class K, class streamV, class tableV, class R>
     std::shared_ptr<left_join<K, streamV, tableV, R>> create_left_join(std::string tag, std::string stream_topic, std::string table_topic, int32_t partition, typename csi::left_join<K, streamV, tableV, R>::value_joiner value_joiner) {
       auto stream = std::make_shared<csi::kstream_partition_impl<K, streamV, CODEC>>(tag, _brokers, stream_topic, partition, _storage_path, _default_codec);
+      _topology.add(stream);
       auto table = std::make_shared<csi::ktable_partition_impl<K, tableV, CODEC>>(tag, _brokers, table_topic, partition, _storage_path, _default_codec);
-      return std::make_shared<csi::left_join<K, streamV, tableV, R>>(stream, table, value_joiner);
+      _topology.add(table);
+      auto p = std::make_shared<csi::left_join<K, streamV, tableV, R>>(stream, table, value_joiner);
+      _topology.add(p);
+      return p;
     }
 
     template<class K, class streamV, class tableV, class R>
     std::shared_ptr<left_join<K, streamV, tableV, R>> create_left_join(std::shared_ptr<csi::kstream_partition<K, streamV>> right, std::shared_ptr<csi::ktable_partition<K, tableV>> left, typename csi::left_join<K, streamV, tableV, R>::value_joiner value_joiner) {
-      return std::make_shared<csi::left_join<K, streamV, tableV, R>>(right, left, value_joiner);
+      autp p = std::make_shared<csi::left_join<K, streamV, tableV, R>>(right, left, value_joiner);
+      _topology.add(p);
+      return p;
     }
 
     template<class K, class V>
     std::shared_ptr<repartition_by_table<K, V, CODEC>> create_repartition(std::shared_ptr<csi::partition_source<K, V>> right, std::shared_ptr<csi::ktable_partition<K, V>> left) {
-      return std::make_shared<csi::repartition_by_table<K, V, CODEC>>(right, left);
+      auto p = std::make_shared<csi::repartition_by_table<K, V, CODEC>>(right, left);
+      _topology.add(p);
+      return p;
     }
 
     /*
@@ -49,7 +57,9 @@ namespace csi {
     template<class K>
     std::shared_ptr<csi::materialized_partition_source<K, size_t>> create_count_keys(std::shared_ptr<partition_source<K, void>> source) {
       //return std::make_shared<csi::count_partition_keys<K, CODEC>>(source, _storage_path, _default_codec);
-      return std::make_shared<csi::count_partition_keys<K, CODEC>>(source, _storage_path);
+      auto p = std::make_shared<csi::count_partition_keys<K, CODEC>>(source, _storage_path);
+      _topology.add(p);
+      return p;
     }
 
     /*
@@ -88,7 +98,9 @@ namespace csi {
 
     template<class K, class V>
     std::shared_ptr<csi::partition_sink<K, V>> create_global_kafka_sink(std::string topic) {
-      return std::make_shared<csi::kafka_sink<K, V, CODEC>>(_brokers, topic, 0, _default_codec);
+      auto p = std::make_shared<csi::kafka_sink<K, V, CODEC>>(_brokers, topic, 0, _default_codec);
+      _topology.add(p);
+      return p;
     }
 
     /**
@@ -96,7 +108,9 @@ namespace csi {
     */
     template<class K, class V>
     std::shared_ptr<csi::topic_sink<K, V, CODEC>> create_kafka_sink(std::string topic) {
-      return std::make_shared<csi::kafka_sink<K, V, CODEC>>(_brokers, topic, _default_codec);
+      auto p = std::make_shared<csi::kafka_sink<K, V, CODEC>>(_brokers, topic, _default_codec);
+      _topology.add(p);
+      return p;
     }
 
     /**
@@ -104,7 +118,9 @@ namespace csi {
     */
     template<class K, class V>
     std::shared_ptr<csi::partition_sink<K, V>> create_kafka_sink(std::string topic, int32_t partition) {
-      return std::make_shared<csi::kafka_single_partition_sink<K, V, CODEC>>(_brokers, topic, partition, _default_codec);
+      auto p = std::make_shared<csi::kafka_single_partition_sink<K, V, CODEC>>(_brokers, topic, partition, _default_codec);
+      _topology.add(p);
+      return p;
     }
 
     /**
@@ -112,12 +128,16 @@ namespace csi {
     */
     template<class K, class V>
     std::shared_ptr<csi::topic_sink<K, V, CODEC>> create_kafka_sink(std::string topic, std::function<uint32_t(const K& key)> partitioner) {
-      return std::make_shared<csi::kafka_sink<K, V, CODEC>>(_brokers, topic, partitioner, _default_codec);
+      auto p = std::make_shared<csi::kafka_sink<K, V, CODEC>>(_brokers, topic, partitioner, _default_codec);
+      _topology.add(p);
+      return p;
     }
 
     template<class K, class V>
     std::shared_ptr<csi::partition_source<K, V>> create_kafka_source(std::string topic, int32_t partition) {
-      return std::make_shared<csi::kafka_source<K, V, CODEC>>(_brokers, topic, partition, _default_codec);
+      auto p = std::make_shared<csi::kafka_source<K, V, CODEC>>(_brokers, topic, partition, _default_codec);
+      _topology.add(p);
+      return p;
     }
 
     template<class K, class V>
@@ -130,22 +150,30 @@ namespace csi {
 
     template<class K, class V>
     std::shared_ptr<csi::kstream_partition<K, V>> create_kstream(std::string tag, std::string topic, int32_t partition) {
-      return std::make_shared<csi::kstream_partition_impl<K, V, CODEC>>(tag, _brokers, topic, partition, _storage_path, _default_codec);
+      auto p = std::make_shared<csi::kstream_partition_impl<K, V, CODEC>>(tag, _brokers, topic, partition, _storage_path, _default_codec);
+      _topology.add(p);
+      return p;
     }
 
     template<class K, class V>
     std::shared_ptr<csi::ktable_partition<K, V>> create_ktable(std::string tag, std::string topic, int32_t partition) {
-      return std::make_shared<csi::ktable_partition_impl<K, V, CODEC>>(tag, _brokers, topic, partition, _storage_path, _default_codec);
+      auto p = std::make_shared<csi::ktable_partition_impl<K, V, CODEC>>(tag, _brokers, topic, partition, _storage_path, _default_codec);
+      _topology.add(p);
+      return p;
     }
 
     template<class K, class V>
     std::shared_ptr<csi::ktable_partition<K, V>> create_global_ktable(std::string tag, std::string topic) {
-      return std::make_shared<csi::ktable_partition_impl<K, V, CODEC>>(tag, _brokers, topic, 0, _storage_path, _default_codec);
+      auto p = std::make_shared<csi::ktable_partition_impl<K, V, CODEC>>(tag, _brokers, topic, 0, _storage_path, _default_codec);
+      _topology.add(p);
+      return p;
     }
 
     template<class K, class V>
     std::shared_ptr<csi::stream_sink<K, V>> create_stream_sink(std::shared_ptr<csi::partition_source<K, V>>source, std::ostream& os) {
-      return std::make_shared<csi::stream_sink<K, V>>(source, os);
+      auto p = std::make_shared<csi::stream_sink<K, V>>(source, os);
+      //_topology.add(p);
+      return p;
     }
 
     // not useful for anything excepts cout ord cerr... since everything is bundeled into same stream???
@@ -158,10 +186,16 @@ namespace csi {
       return v;
     }
 
+    topoplogy* topology() {
+      return &_topology;
+    }
+
   private:
     std::string             _brokers;
+    processor_context       _context;
     std::shared_ptr<CODEC>  _default_codec;
     std::string             _storage_path;
+    topoplogy               _topology;
   };
 
 

@@ -52,25 +52,26 @@ namespace csi {
   class processor_context
   {
   public:
-    processor_context();
+    processor_context() {
+    }
     /**
     * Returns the application id
     *
     * @return the application id
     */
-    std::string application_id();
+    std::string application_id() { return "xxx";  }
     /**
     * Returns the state directory for the partition.
     *
     * @return the state directory
     */
-    std::string state_dir();
+    std::string state_dir() { return "";  }
     /**
     * Returns the task id
     *
     * @return the task id
     */
-    int32_t task_id();
+    int32_t task_id() { return 0;  }
     /**
     * Schedules a periodic operation for processors. A processor may call this method during
     * {@link Processor#init(ProcessorContext) initialization} to
@@ -78,25 +79,28 @@ namespace csi {
     *
     * @param interval the time interval between punctuations
     */
-    void schedule(int32_t interval);
+    void schedule(int32_t interval) {
+    }
     /**
     * Requests a commit
     */
-    void commit();
+    void commit() {
+
+    }
     /**
     * Returns the partition id of the current input record; could be -1 if it is not
     * available (for example, if this method is invoked from the punctuate call)
     *
     * @return the partition id
     */
-    int32_t partition();
+    int32_t partition() { return -1; }
     /**
     * Returns the offset of the current input record; could be -1 if it is not
     * available (for example, if this method is invoked from the punctuate call)
     *
     * @return the offset
     */
-    int64_t offset();
+    int64_t offset() { return -1; }
     /**
     * Returns the current timestamp.
     *
@@ -109,7 +113,7 @@ namespace csi {
     *
     * @return the timestamp
     */
-    int64_t timestamp();
+    int64_t timestamp() { return 0;  }
   };
 
   class topic_processor
@@ -159,7 +163,8 @@ namespace csi {
   class topoplogy
   {
   public:
-    topoplogy();
+    topoplogy() {
+    }
 
     void add(std::shared_ptr<partition_processor> p) {
       _partition_processors.push_back(p);
@@ -169,10 +174,11 @@ namespace csi {
       _topic_processors.push_back(p);
     }
 
-    bool start();
-    bool process_init();
-    bool eof();
-    bool process();
+    bool start(){}
+    bool process_init_eof () { return true; }
+    bool process_init() { return false;  }
+    bool eof() { return true; }
+    bool process() { return false;  }
   protected:
     std::vector<std::shared_ptr<partition_processor>> _partition_processors;
     std::vector<std::shared_ptr<topic_processor>>     _topic_processors;
