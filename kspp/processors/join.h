@@ -14,7 +14,7 @@ namespace csi {
   public:
     typedef std::function<void(const K& key, const streamV& left, const tableV& right, R& result)> value_joiner; // TBD replace with std::shared_ptr<const krecord<K, R>> left, std::shared_ptr<const krecord<K, R>> right, std::shared_ptr<krecord<K, R>> result;
 
-    left_join(std::shared_ptr<kstream_partition<K, streamV>> stream, std::shared_ptr<ktable_partition<K, tableV>> table, value_joiner f)
+    left_join(std::shared_ptr<partition_source<K, streamV>> stream, std::shared_ptr<ktable_partition<K, tableV>> table, value_joiner f)
       : partition_source(stream->partition())
       , _stream(stream)
       , _table(table)
@@ -110,7 +110,7 @@ namespace csi {
     }
 
   private:
-    std::shared_ptr<kstream_partition<K, streamV>>   _stream;
+    std::shared_ptr<partition_source<K, streamV>>    _stream;
     std::shared_ptr<ktable_partition<K, tableV>>     _table; // ska denna vara här överhuvudtaget - räcker det inte med att addera den som sink?
     std::deque<std::shared_ptr<krecord<K, streamV>>> _queue;
     value_joiner                                     _value_joiner;

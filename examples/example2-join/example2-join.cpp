@@ -8,7 +8,9 @@
 
 int main(int argc, char **argv) {
   auto builder = csi::topology_builder<csi::binary_codec>("localhost", "C:\\tmp");
-  auto join = builder.create_left_join<boost::uuids::uuid, int64_t, int64_t, int64_t>("join", "kspp_test0_eventstream", "kspp_test0_table", PARTITION, [](const boost::uuids::uuid& key, const int64_t& left, const int64_t& right, int64_t& row) {
+  auto stream = builder.create_kafka_source<boost::uuids::uuid, int64_t>("kspp_test0_eventstream", PARTITION);
+  auto table = builder.create_ktable<boost::uuids::uuid, int64_t>("join", "kspp_test0_table", PARTITION);
+  auto join = std::make_shared<csi::left_join<boost::uuids::uuid, int64_t, int64_t, int64_t>>(stream, table, [](const boost::uuids::uuid& key, const int64_t& left, const int64_t& right, int64_t& row) {
     row = right;
   });
   auto sink = builder.create_kafka_sink<boost::uuids::uuid, int64_t>("kspp_test0_eventstream_out", 0);
