@@ -70,10 +70,11 @@ namespace csi {
       while (_queue.size()) {
         auto e = _queue.front();
         _queue.pop_front();
-        auto table_row = _routing_table->get(e->key);
-        if (table_row) {
-          if (table_row->value) {
-            _topic_sink->produce(*table_row->value, e);
+        auto routing_row = _routing_table->get(e->key);
+        if (routing_row) {
+          if (routing_row->value) {
+            uint32_t hash = _topic_sink->get_partition_hash_for_key(*routing_row->value);
+            _topic_sink->produce(hash, e);
           }
         } else {
           // join failed
