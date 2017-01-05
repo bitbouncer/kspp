@@ -192,8 +192,8 @@ namespace csi {
     typedef V value_type;
     typedef csi::krecord<K, V> record_type;
 
-    virtual int    produce(std::shared_ptr<krecord<K, V>> r) = 0;
-    inline  int    produce(const K& key, const V& value) {
+    virtual int produce(std::shared_ptr<krecord<K, V>> r) = 0;
+    inline int produce(const K& key, const V& value) {
       return produce(std::make_shared<krecord<K, V>>(key, value));
     }
 
@@ -202,6 +202,27 @@ namespace csi {
     partition_sink(uint32_t partition)
       : partition_processor(partition) {}
   };
+
+  // specialisation for void key
+  template<class V>
+  class partition_sink<void, V> : public partition_processor
+  {
+    public:
+    typedef void key_type;
+    typedef V value_type;
+    typedef csi::krecord<void, V> record_type;
+
+    virtual int produce(std::shared_ptr<krecord<void, V>> r) = 0;
+    inline int produce(const V& value) {
+      return produce(std::make_shared<krecord<void, V>>(value));
+    }
+
+    virtual size_t queue_len() = 0;
+    protected:
+    partition_sink(uint32_t partition)
+      : partition_processor(partition) {}
+  };
+
 
    inline uint32_t djb_hash(const char *str, size_t len) {
     uint32_t hash = 5381;
@@ -236,26 +257,9 @@ namespace csi {
     typedef V value_type;
     typedef csi::krecord<K, V> record_type;
 
-    enum { MAX_KEY_SIZE = 1000 };
-
     virtual int    produce(std::shared_ptr<krecord<K, V>> r) = 0;
     virtual size_t queue_len() = 0;
-
-    /*
-    template<class PK>
-    uint32_t get_partition_hash_for_key(const PK& partition_key) {
-      uint32_t partition_hash = 0;
-      char key_buf[MAX_KEY_SIZE];
-      size_t ksize = 0;
-      std::strstream s(key_buf, MAX_KEY_SIZE);
-      ksize = _codec->encode(partition_key, s);
-      partition_hash = djb_hash(key_buf, ksize);
-      return partition_hash;
-    }
-    */
-
     virtual int produce(uint32_t partition_hash, std::shared_ptr<krecord<K, V>> r) = 0;
-
     inline  int produce(uint32_t partition_hash, const K& key, const V& value) {
       return produce(partition_hash, std::make_shared<krecord<K, V>>(key, value));
     }
@@ -263,15 +267,41 @@ namespace csi {
     inline std::shared_ptr<CODEC> codec() {
       return _codec;
     }
-
   protected:
-  
-
     topic_sink(std::shared_ptr<CODEC> codec)
       :_codec(codec) {}
 
     std::shared_ptr<CODEC> _codec;
   };
+
+  // specialisation for void key
+  template<class V, class CODEC>
+  class topic_sink<void, V, CODEC> : public topic_processor
+  {
+    public:
+    typedef void key_type;
+    typedef V value_type;
+    typedef csi::krecord<void, V> record_type;
+
+    virtual int produce(std::shared_ptr<krecord<void, V>> r) = 0;
+    virtual size_t queue_len() = 0;
+    virtual int produce(uint32_t partition_hash, std::shared_ptr<krecord<void, V>> r) = 0;
+    inline  int produce(uint32_t partition_hash, const V& value) {
+      return produce(partition_hash, std::make_shared<krecord<void, V>>(value));
+    }
+
+    inline std::shared_ptr<CODEC> codec() {
+      return _codec;
+    }
+
+    protected:
+    topic_sink(std::shared_ptr<CODEC> codec)
+      :_codec(codec) {}
+
+    std::shared_ptr<CODEC> _codec;
+  };
+
+
 
   template<class K, class V>
   class partition_source : public partition_processor
