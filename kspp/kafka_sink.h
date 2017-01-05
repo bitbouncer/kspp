@@ -87,7 +87,7 @@ namespace csi {
       if (_partitioner)
         return produce(_partitioner(r->key), r);
       else
-        return produce(get_partition_hash_for_key(r->key), r);
+        return produce(get_partition_hash(r->key, codec()), r);
     }
 
     virtual int produce(uint32_t partition, std::shared_ptr<krecord<K, V>> r) {
@@ -158,7 +158,7 @@ namespace csi {
       if (_partitioner)
         return produce(_partitioner(r->key), r);
       else
-        return produce(get_partition_hash_for_key(r->key), r);
+        return produce(get_partition_hash(r->key, codec()), r);
     }
 
     virtual int produce(uint32_t partition, std::shared_ptr<krecord<K, void>> r) {

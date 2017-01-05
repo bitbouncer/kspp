@@ -73,7 +73,8 @@ namespace csi {
         auto routing_row = _routing_table->get(e->key);
         if (routing_row) {
           if (routing_row->value) {
-            uint32_t hash = _topic_sink->get_partition_hash_for_key(*routing_row->value);
+            //uint32_t hash = _topic_sink->get_partition_hash_for_key(*routing_row->value);
+            uint32_t hash = get_partition_hash<K, CODEC>(*routing_row->value);
             _topic_sink->produce(hash, e);
           }
         } else {

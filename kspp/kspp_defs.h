@@ -193,11 +193,40 @@ namespace csi {
     typedef csi::krecord<K, V> record_type;
 
     virtual int    produce(std::shared_ptr<krecord<K, V>> r) = 0;
+    inline  int    produce(const K& key, const V& value) {
+      return produce(std::make_shared<krecord<K, V>>(key, value));
+    }
+
     virtual size_t queue_len() = 0;
   protected:
     partition_sink(uint32_t partition)
       : partition_processor(partition) {}
   };
+
+   inline uint32_t djb_hash(const char *str, size_t len) {
+    uint32_t hash = 5381;
+    for (size_t i = 0; i < len; i++)
+      hash = ((hash << 5) + hash) + str[i];
+    return hash;
+  }
+
+  template<class PK, class CODEC>
+  inline uint32_t get_partition_hash(const PK& key, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) {
+    enum { MAX_KEY_SIZE = 1000 };
+    uint32_t partition_hash = 0;
+    char key_buf[MAX_KEY_SIZE];
+    size_t ksize = 0;
+    std::strstream s(key_buf, MAX_KEY_SIZE);
+    ksize = codec->encode(key, s);
+    partition_hash = djb_hash(key_buf, ksize);
+    return partition_hash;
+  }
+  
+  template<class PK, class CODEC>
+  inline uint32_t get_partition(const PK& key, size_t nr_of_partitions, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) {
+    auto hash = get_partition_hash <PK, CODEC>(key, codec);
+    return hash % nr_of_partitions;
+  }
 
   template<class K, class V, class CODEC>
   class topic_sink : public topic_processor
@@ -212,6 +241,7 @@ namespace csi {
     virtual int    produce(std::shared_ptr<krecord<K, V>> r) = 0;
     virtual size_t queue_len() = 0;
 
+    /*
     template<class PK>
     uint32_t get_partition_hash_for_key(const PK& partition_key) {
       uint32_t partition_hash = 0;
@@ -222,14 +252,20 @@ namespace csi {
       partition_hash = djb_hash(key_buf, ksize);
       return partition_hash;
     }
+    */
+
     virtual int produce(uint32_t partition_hash, std::shared_ptr<krecord<K, V>> r) = 0;
-  protected:
-    static inline uint32_t djb_hash(const char *str, size_t len) {
-      uint32_t hash = 5381;
-      for (size_t i = 0; i < len; i++)
-        hash = ((hash << 5) + hash) + str[i];
-      return hash;
+
+    inline  int produce(uint32_t partition_hash, const K& key, const V& value) {
+      return produce(partition_hash, std::make_shared<krecord<K, V>>(key, value));
     }
+
+    inline std::shared_ptr<CODEC> codec() {
+      return _codec;
+    }
+
+  protected:
+  
 
     topic_sink(std::shared_ptr<CODEC> codec)
       :_codec(codec) {}
