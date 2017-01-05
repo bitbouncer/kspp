@@ -53,7 +53,7 @@ namespace csi {
     }
 
   protected:
-    kafka_source_base(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<CODEC> codec)
+    kafka_source_base(std::string brokers, std::string topic, size_t partition, std::shared_ptr<CODEC> codec)
       : partition_source(partition)
       , _codec(codec)
       , _consumer(brokers, topic, partition) {}
@@ -68,7 +68,7 @@ namespace csi {
   class kafka_source : public kafka_source_base<K, V, CODEC>
   {
   public:
-    kafka_source(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
+    kafka_source(std::string brokers, std::string topic, size_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
       : kafka_source_base(brokers, topic, partition, codec) {}
 
   protected:
@@ -114,7 +114,7 @@ namespace csi {
   class kafka_source<void, V, CODEC> : public kafka_source_base<void, V, CODEC>
   {
   public:
-    kafka_source(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
+    kafka_source(std::string brokers, std::string topic, size_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
       : kafka_source_base(brokers, topic, partition, codec) {}
 
   protected:
@@ -153,7 +153,7 @@ namespace csi {
   {
   public:
   public:
-    kafka_source(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
+    kafka_source(std::string brokers, std::string topic, size_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
       : kafka_source_base(brokers, topic, partition, codec) {}
 
   protected:

@@ -6,7 +6,7 @@ namespace csi {
   class kafka_consumer
   {
   public:
-    kafka_consumer(std::string brokers, std::string topic, int32_t partition);
+    kafka_consumer(std::string brokers, std::string topic, size_t partition);
 
     ~kafka_consumer();
 
@@ -22,15 +22,15 @@ namespace csi {
       return _topic;
     }
 
-    inline int32_t partition() const {
-      return _partition;
+    inline uint32_t partition() const {
+      return (uint32_t) _partition;
     }
 
     void start(int64_t offset);
 
   private:
     const std::string                  _topic;
-    const int32_t                      _partition;
+    const size_t                       _partition;
     std::unique_ptr<RdKafka::Topic>    _rd_topic;
     std::unique_ptr<RdKafka::Consumer> _consumer;
     uint64_t                           _msg_cnt;

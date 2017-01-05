@@ -309,7 +309,7 @@ namespace csi {
   public:
     using sink_function = typename std::function<void(std::shared_ptr<krecord<K, V>>)>;
 
-    partition_source(uint32_t partition)
+    partition_source(size_t partition)
       :partition_processor(partition) {}
 
     virtual void add_sink(std::shared_ptr<partition_sink<K, V>> sink) {
@@ -374,7 +374,7 @@ namespace csi {
     virtual iterator end() = 0;
     virtual std::shared_ptr<krecord<K, V>> get(const K& key) = 0;
 
-    materialized_partition_source(uint32_t partition)
+    materialized_partition_source(size_t partition)
       :partition_source(partition) {}
   };
 
@@ -382,7 +382,7 @@ namespace csi {
   class kstream_partition : public partition_source<K, V>
   {
   public:
-    kstream_partition(uint32_t partition)
+    kstream_partition(size_t partition)
       : partition_source(partition) {}
   };
 
@@ -390,7 +390,7 @@ namespace csi {
   class ktable_partition : public materialized_partition_source<K, V>
   {
   public:
-    ktable_partition(uint32_t partition)
+    ktable_partition(size_t partition)
       : materialized_partition_source(partition) {}
   };
 

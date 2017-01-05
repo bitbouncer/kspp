@@ -5,7 +5,7 @@
 #define LOGPREFIX_INFO  BOOST_LOG_TRIVIAL(info) << BOOST_CURRENT_FUNCTION << ", topic:" << _topic << ": " << _partition
 
 namespace csi {
-kafka_consumer::kafka_consumer(std::string brokers, std::string topic, int32_t partition) :
+kafka_consumer::kafka_consumer(std::string brokers, std::string topic, size_t partition) :
   _topic(topic),
   _partition(partition),
   _eof(false),
@@ -64,7 +64,7 @@ void kafka_consumer::start(int64_t offset) {
   /*
   * Subscribe to topics
   */
-  RdKafka::ErrorCode err = _consumer->start(_rd_topic.get(), _partition, offset);
+  RdKafka::ErrorCode err = _consumer->start(_rd_topic.get(), (int32_t) _partition, offset);
   if (err) {
     LOGPREFIX_ERROR << ", failed to subscribe, reason:" << RdKafka::err2str(err);
     exit(1);
@@ -72,7 +72,7 @@ void kafka_consumer::start(int64_t offset) {
 }
 
 std::unique_ptr<RdKafka::Message> kafka_consumer::consume() {
-  std::unique_ptr<RdKafka::Message> msg(_consumer->consume(_rd_topic.get(), _partition, 0));
+  std::unique_ptr<RdKafka::Message> msg(_consumer->consume(_rd_topic.get(), (int32_t) _partition, 0));
 
   switch (msg->err()) {
     case RdKafka::ERR_NO_ERROR:

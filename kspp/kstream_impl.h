@@ -10,7 +10,7 @@ namespace csi {
   class kstream_partition_impl : public kstream_partition<K, V>
   {
   public:
-    kstream_partition_impl(std::string nodeid, std::string brokers, std::string topic, int32_t partition, std::string storage_path, std::shared_ptr<CODEC> codec)
+    kstream_partition_impl(std::string nodeid, std::string brokers, std::string topic, size_t partition, std::string storage_path, std::shared_ptr<CODEC> codec)
       : kstream_partition(partition)
       , _offset_storage_path(storage_path)
       , _source(brokers, topic, partition, codec)

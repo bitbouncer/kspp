@@ -79,7 +79,7 @@ namespace csi {
 
     };
 
-    rockdb_store(std::string topic, int32_t partition, boost::filesystem::path storage_path, std::shared_ptr<CODEC> codec)
+    rockdb_store(std::string topic, size_t partition, boost::filesystem::path storage_path, std::shared_ptr<CODEC> codec)
       : _codec(codec)
       , _topic(topic)
       , _partition(partition) {
@@ -172,7 +172,7 @@ namespace csi {
 
   private:
     std::string                           _topic;     // only used for logging to make sense...
-    int32_t                               _partition; // only used for logging to make sense...
+    size_t                                _partition; // only used for logging to make sense...
     std::unique_ptr<rocksdb::DB>          _db;        // maybee this should be a shared ptr since we're letting iterators out...
     std::shared_ptr<CODEC>                _codec;
   };

@@ -134,29 +134,29 @@ namespace csi {
     }
 
     template<class K, class V>
-    std::shared_ptr<csi::partition_source<K, V>> create_kafka_source(std::string topic, int32_t partition) {
+    std::shared_ptr<csi::partition_source<K, V>> create_kafka_source(std::string topic, size_t partition) {
       auto p = std::make_shared<csi::kafka_source<K, V, CODEC>>(_brokers, topic, partition, _default_codec);
       _topology.add(p);
       return p;
     }
 
     template<class K, class V>
-    std::vector<std::shared_ptr<csi::partition_source<K, V>>> create_kafka_sources(std::string topic, int32_t nr_of_partitions) {
+    std::vector<std::shared_ptr<csi::partition_source<K, V>>> create_kafka_sources(std::string topic, size_t nr_of_partitions) {
       std::vector<std::shared_ptr<csi::partition_source<K, V>>> v;
-      for (int i = 0; i != nr_of_partitions; ++i)
+      for (size_t i = 0; i != nr_of_partitions; ++i)
         v.push_back(create_kafka_source<K, V>(topic, i));
       return v;
     }
 
     template<class K, class V>
-    std::shared_ptr<csi::kstream_partition<K, V>> create_kstream(std::string tag, std::string topic, int32_t partition) {
+    std::shared_ptr<csi::kstream_partition<K, V>> create_kstream(std::string tag, std::string topic, size_t partition) {
       auto p = std::make_shared<csi::kstream_partition_impl<K, V, CODEC>>(tag, _brokers, topic, partition, _storage_path, _default_codec);
       _topology.add(p);
       return p;
     }
 
     template<class K, class V>
-    std::shared_ptr<csi::ktable_partition<K, V>> create_ktable(std::string tag, std::string topic, int32_t partition) {
+    std::shared_ptr<csi::ktable_partition<K, V>> create_ktable(std::string tag, std::string topic, size_t partition) {
       auto p = std::make_shared<csi::ktable_partition_impl<K, V, CODEC>>(tag, _brokers, topic, partition, _storage_path, _default_codec);
       _topology.add(p);
       return p;

@@ -8,7 +8,7 @@ namespace csi {
   class ktable_partition_impl : public ktable_partition<K, V>
   {
   public:
-    ktable_partition_impl(std::string nodeid, std::string brokers, std::string topic, int32_t partition, std::string storage_path, std::shared_ptr<CODEC> codec)
+    ktable_partition_impl(std::string nodeid, std::string brokers, std::string topic, size_t partition, std::string storage_path, std::shared_ptr<CODEC> codec)
       : ktable_partition(partition)
       , _offset_storage_path(storage_path)
       , _source(brokers, topic, partition, codec)
