@@ -117,7 +117,7 @@ namespace csi {
     creates a kafka sink using explicit partition
     */
     template<class K, class V>
-    std::shared_ptr<csi::partition_sink<K, V>> create_kafka_sink(std::string topic, int32_t partition) {
+    std::shared_ptr<csi::partition_sink<K, V>> create_kafka_sink(std::string topic, size_t partition) {
       auto p = std::make_shared<csi::kafka_single_partition_sink<K, V, CODEC>>(_brokers, topic, partition, _default_codec);
       _topology.add(p);
       return p;

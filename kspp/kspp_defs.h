@@ -151,12 +151,12 @@ namespace csi {
     virtual void punctuate(int64_t timestamp) {}
     virtual void close() = 0;
     inline uint32_t partition() const {
-      return _partition;
+      return (uint32_t) _partition;
     }
   protected:
-    partition_processor(uint32_t partition)
+    partition_processor(size_t partition)
       : _partition(partition) {}
-    const uint32_t _partition;
+    const size_t _partition;
   };
 
 
@@ -199,7 +199,7 @@ namespace csi {
 
     virtual size_t queue_len() = 0;
   protected:
-    partition_sink(uint32_t partition)
+    partition_sink(size_t partition)
       : partition_processor(partition) {}
   };
 
@@ -219,7 +219,7 @@ namespace csi {
 
     virtual size_t queue_len() = 0;
     protected:
-    partition_sink(uint32_t partition)
+    partition_sink(size_t partition)
       : partition_processor(partition) {}
   };
 
