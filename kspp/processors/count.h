@@ -6,13 +6,11 @@
 
 namespace csi {
   template<class K, class CODEC>
-  //class count_partition_keys : public partition_sink<K, void>, materialized_partition_source<K, size_t>
-  class count_partition_keys : public materialized_partition_source<K, size_t>
+  class count_by_key : public materialized_partition_source<K, size_t>
   {
   public:
-    count_partition_keys(std::shared_ptr<partition_source<K, void>> source, std::string storage_path, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
+    count_by_key(std::shared_ptr<partition_source<K, void>> source, std::string storage_path, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
       : materialized_partition_source(source->partition())
-      //, partition_sink(source->partition())
       , _stream(source)
       , _counter_store(name(), storage_path + "//" + name(), codec) {
       source->add_sink([this](auto e) {
@@ -20,12 +18,16 @@ namespace csi {
       });
     }
 
-    ~count_partition_keys() {
+    ~count_by_key() {
       close();
     }
 
+    static std::shared_ptr<materialized_partition_source<K, size_t>> create(std::shared_ptr<partition_source<K, void>> source, std::string storage_path, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) {
+      return std::make_shared<count_by_key<K, CODEC>>(source, storage_path, codec);
+    }
+
     std::string name() const {
-      return _stream->name() + "(count_partition_keys)_" + std::to_string(materialized_partition_source::partition());
+      return _stream->name() + "(count_by_key)_" + std::to_string(materialized_partition_source::partition());
     }
 
     virtual void start() {
@@ -78,7 +80,6 @@ namespace csi {
         send_to_sinks(i);
       }
     }
-
 
     // inherited from kmaterialized_source
     virtual std::shared_ptr<krecord<K, size_t>> get(const K& key) {

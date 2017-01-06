@@ -21,7 +21,7 @@ namespace csi {
       boost::filesystem::create_directories(boost::filesystem::path(storage_path));
     }
 
-    template<class K, class streamV, class tableV, class R>
+    /*template<class K, class streamV, class tableV, class R>
     std::shared_ptr<left_join<K, streamV, tableV, R>> create_left_join(std::string tag, std::string stream_topic, std::string table_topic, int32_t partition, typename csi::left_join<K, streamV, tableV, R>::value_joiner value_joiner) {
       auto stream = std::make_shared<csi::kstream_partition_impl<K, streamV, CODEC>>(tag, _brokers, stream_topic, partition, _storage_path, _default_codec);
       _topology.add(stream);
@@ -31,10 +31,11 @@ namespace csi {
       _topology.add(p);
       return p;
     }
+    */
 
     template<class K, class streamV, class tableV, class R>
-    std::shared_ptr<left_join<K, streamV, tableV, R>> create_left_join(std::shared_ptr<csi::kstream_partition<K, streamV>> right, std::shared_ptr<csi::ktable_partition<K, tableV>> left, typename csi::left_join<K, streamV, tableV, R>::value_joiner value_joiner) {
-      autp p = std::make_shared<csi::left_join<K, streamV, tableV, R>>(right, left, value_joiner);
+    std::shared_ptr<left_join<K, streamV, tableV, R>> create_left_join(std::shared_ptr<csi::partition_source<K, streamV>> right, std::shared_ptr<csi::ktable_partition<K, tableV>> left, typename csi::left_join<K, streamV, tableV, R>::value_joiner value_joiner) {
+      auto p = std::make_shared<csi::left_join<K, streamV, tableV, R>>(right, left, value_joiner);
       _topology.add(p);
       return p;
     }
@@ -55,9 +56,9 @@ namespace csi {
 
     //TBD we shouyld get rid of void value - we do not require that but how do we tell compiler that????
     template<class K>
-    std::shared_ptr<csi::materialized_partition_source<K, size_t>> create_count_keys(std::shared_ptr<partition_source<K, void>> source) {
+    std::shared_ptr<csi::materialized_partition_source<K, size_t>> create_count_by_key(std::shared_ptr<partition_source<K, void>> source) {
       //return std::make_shared<csi::count_partition_keys<K, CODEC>>(source, _storage_path, _default_codec);
-      auto p = std::make_shared<csi::count_partition_keys<K, CODEC>>(source, _storage_path);
+      auto p = std::make_shared<csi::count_by_key<K, CODEC>>(source, _storage_path);
       _topology.add(p);
       return p;
     }
@@ -80,10 +81,10 @@ namespace csi {
     */
 
     template<class K>
-    std::vector<std::shared_ptr<csi::materialized_partition_source<K, size_t>>> create_count_keys(std::vector<std::shared_ptr<partition_source<K, void>>>& sources) {
+    std::vector<std::shared_ptr<csi::materialized_partition_source<K, size_t>>> create_count_by_key(std::vector<std::shared_ptr<partition_source<K, void>>>& sources) {
       std::vector<std::shared_ptr<csi::materialized_partition_source<K, size_t>>> res;
       for (auto i : sources)
-        res.push_back(create_count_keys(i));
+        res.push_back(create_count_by_key(i));
       return res;
     }
 
@@ -175,6 +176,16 @@ namespace csi {
       //_topology.add(p);
       return p;
     }
+
+    /* ask DAG!!!
+    template<class PARTITION_SOURCE>
+    std::shared_ptr<csi::stream_sink<typename PARTITION_SOURCE::key_type, typename PARTITION_SOURCE::value_type>> create_stream_sink(std::shared_ptr<PARTITION_SOURCE> source, std::ostream& os) {
+      auto p = std::make_shared<csi::stream_sink<typename PARTITION_SOURCE::key_type, typename PARTITION_SOURCE::value_type>>(source, os);
+      //_topology.add(p);
+      return p;
+    }
+    */
+
 
     // not useful for anything excepts cout ord cerr... since everything is bundeled into same stream???
     // maybee we should have a topicstreamsink that takes a vector intead...

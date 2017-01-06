@@ -178,14 +178,15 @@ int main(int argc, char **argv) {
   }
 
   {
-    auto join = builder.create_left_join<int64_t, page_view_data, user_profile_data, page_view_decorated>("example3-join2", "kspp_PageViews", "kspp_UserProfile", PARTITION, [](const int64_t& key, const page_view_data& left, const user_profile_data& right, page_view_decorated& row) {
+    auto stream = builder.create_kafka_source<int64_t, page_view_data>("kspp_PageViews", 0);
+    auto table = builder.create_ktable<int64_t, user_profile_data>("example3-join2", "kspp_UserProfile", 0);
+    auto join = builder.create_left_join<int64_t, page_view_data, user_profile_data, page_view_decorated>(stream, table, [](const int64_t& key, const page_view_data& left, const user_profile_data& right, page_view_decorated& row) {
       row.user_id = key;
       row.email = right.email;
       row.time = left.time;
       row.url = left.url;
     });
     auto sink = builder.create_kafka_sink<int64_t, page_view_decorated>("kspp_PageViewsDecorated", PARTITION);
-
     join->start(-2);
     join->add_sink(sink);
     while (!join->eof()) {
