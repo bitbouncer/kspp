@@ -2,6 +2,8 @@
 #include "processors/join.h"
 #include "processors/count.h"
 #include "processors/repartition.h"
+#include "processors/filter.h"
+#include "processors/transform.h"
 #include "kstream_impl.h"
 #include "ktable_impl.h"
 #include "kafka_sink.h"
@@ -195,6 +197,20 @@ namespace csi {
       for (auto s : sources)
         v.push_back(create_stream_sink<K, V>(s, os));
       return v;
+    }
+
+    template<class K, class V>
+    std::shared_ptr<csi::partition_source<K, V>> create_filter(std::shared_ptr<csi::partition_source<K, V>> source, typename csi::filter<K, V>::filter_fkn f) {
+      auto p = std::make_shared<csi::filter<K, V>>(source, f);
+      _topology.add(p);
+      return p;
+    }
+
+    template<class SK, class SV, class RK, class RV>
+    std::shared_ptr<csi::partition_source<RK, RV>> create_flat_map(std::shared_ptr<csi::partition_source<SK, SV>> source, typename csi::flat_map<SK, SV, RK, RV>::extractor f) {
+      auto p = std::make_shared<csi::flat_map<SK, SV, RK, RV>>(source, f);
+      _topology.add(p);
+      return p;
     }
 
     topoplogy* topology() {

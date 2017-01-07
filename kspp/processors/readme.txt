@@ -1,20 +1,17 @@
 filter  
-	filter_by_key   <K, V>          ->     <K, V>					TBD
-	filter_by_value <K, V>          ->     <K, V>                   TBD
-	a > 10?
+	filter   <K, V>          ->     <K, V>					        OK
 	deduplicate_by_key                                              TBD
-	
+     	windowed!!
+		
 transform
 	??? transform       <K, V>      ->     <K1,V1>                  ???
 	transform_by_value  <K, V>      ->     <K, V1>                  OK  
     flat_map            <K, V>      ->     {<K1,V1>, ..., <K1,V1>} 	OK
 
-
 repartition
 	repartition <K, V> is this by foreign key??                     OK
 	group by???
 
-	
 aggregate 
 	count_by_key  <K>            ->     <K, size_t>  OK
 	sum_by_key    <K, numeric>   ->     <K, numeric>               TBD
