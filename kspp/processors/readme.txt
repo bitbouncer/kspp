@@ -2,6 +2,7 @@ filter
 	filter_by_key   <K, V>          ->     <K, V>					TBD
 	filter_by_value <K, V>          ->     <K, V>                   TBD
 	a > 10?
+	deduplicate_by_key                                              TBD
 	
 transform
 	??? transform       <K, V>      ->     <K1,V1>                  ???
