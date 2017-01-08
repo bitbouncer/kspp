@@ -200,7 +200,7 @@ namespace csi {
     }
 
     template<class K, class V>
-    std::shared_ptr<csi::partition_source<K, V>> create_filter(std::shared_ptr<csi::partition_source<K, V>> source, typename csi::filter<K, V>::filter_fkn f) {
+    std::shared_ptr<csi::partition_source<K, V>> create_filter(std::shared_ptr<csi::partition_source<K, V>> source, typename csi::filter<K, V>::predicate f) {
       auto p = std::make_shared<csi::filter<K, V>>(source, f);
       _topology.add(p);
       return p;

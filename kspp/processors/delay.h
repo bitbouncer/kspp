@@ -1,37 +1,37 @@
 #pragma once
 namespace csi {
   template<class K, class V>
-  class filter : public partition_source<K, V>
+  class delay : public partition_source<K, V>
   {
   public:
     typedef std::function<bool(std::shared_ptr<krecord<K, V>> record)> predicate; // return true to keep
 
-    filter(std::shared_ptr<partition_source<K, V>> source, predicate f)
+    delay(std::shared_ptr<partition_source<K, V>> source, int ms)
       : partition_source(source->partition())
       , _source(source)
-      , _predicate(f) {
+      , _delay(ms) {
       _source->add_sink([this](auto r) {
         _queue.push_back(r);
       });
     }
 
-    ~filter() {
+    ~delay() {
       close();
     }
 
-    static std::vector<std::shared_ptr<partition_source<K, V>>> create(std::vector<std::shared_ptr<partition_source<K, V>>>& streams, predicate f) {
+    static std::vector<std::shared_ptr<partition_source<K, V>>> create(std::vector<std::shared_ptr<partition_source<K, V>>>& streams, int ms) {
       std::vector<std::shared_ptr<partition_source<K, V>>> res;
       for (auto i : streams)
-        res.push_back(std::make_shared<filter<K, V>>(i, f));
+        res.push_back(std::make_shared<delay<K, V>>(i, ms));
       return res;
     }
 
-    static std::shared_ptr<partition_source<K, V>> create(std::shared_ptr<partition_source<K, V>> source, predicate f) {
-      return std::make_shared<filter<K, V>>(source, f);
+    static std::shared_ptr<partition_source<K, V>> create(std::shared_ptr<partition_source<K, V>> source, int ms) {
+      return std::make_shared<delay<K, V>>(source, f);
     }
 
     std::string name() const {
-      return _source->name() + "-filter";
+      return _source->name() + "-delay";
     }
 
     virtual void start() {
@@ -47,15 +47,20 @@ namespace csi {
     }
 
     virtual bool process_one() {
-      _source->process_one();
-      bool processed = (_queue.size() > 0);
-      while (_queue.size()) {
-        auto r = _queue.front();
+      if (_queue.size()==0)
+        _source->process_one();
+
+      if (_queue.size() == 0)
+        return false;
+
+      auto r = _queue.front();
+      if (r->event_time + _delay > milliseconds_since_epoch()) {
         _queue.pop_front();
-        if (_predicate(r))
-          send_to_sinks(r);
+        send_to_sinks(r);
+        return true;
       }
-      return processed;
+
+      return false;
     }
 
     virtual void commit() {
@@ -63,7 +68,7 @@ namespace csi {
     }
 
     virtual bool eof() const {
-      return _source->eof() && (_queue.size() == 0);
+      return (_queue.size()==0) && _source->eof());
     }
 
     virtual size_t queue_len() {
@@ -76,7 +81,7 @@ namespace csi {
 
   private:
     std::shared_ptr<partition_source<K, V>>    _source;
-    predicate                                  _predicate;
+    int                                        _delay;
     std::deque<std::shared_ptr<krecord<K, V>>> _queue;
   };
 } // namespace

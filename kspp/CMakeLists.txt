@@ -13,8 +13,10 @@ SET(LIB_SRCS
   codecs/text_codec.h
   codecs/binary_codec.h
   processors/count.h
+  processors/delay.h
   processors/filter.h
   processors/join.h  
+  processors/rate_limiter.h
   processors/transform.h
   processors/group_by.h
   processors/repartition.h
