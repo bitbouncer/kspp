@@ -5,7 +5,7 @@
 #include <boost/log/trivial.hpp>
 #include <rocksdb/db.h>
 #include <rocksdb/merge_operator.h>
-#include <kspp/kspp_defs.h>
+#include <kspp/kspp.h>
 #include "counter_store.h"
 
 namespace csi {

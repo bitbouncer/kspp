@@ -4,7 +4,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/log/trivial.hpp>
 #include <rocksdb/db.h>
-#include <kspp/kspp_defs.h>
+#include <kspp/kspp.h>
 #include "kv_store.h"
 
 namespace csi {

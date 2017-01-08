@@ -1,6 +1,6 @@
 #include <functional>
 #include <boost/log/trivial.hpp>
-#include <kspp/kspp_defs.h>
+#include <kspp/kspp.h>
 #include <deque>
 #pragma once
 

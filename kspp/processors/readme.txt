@@ -38,7 +38,22 @@ external_transform_ordered with retry
 external_transform_unordered with retry
 		windowed
 		
+delay
+	eventtime + delay > now()
+	
+rate limiter
+	events per ms
+		
+http processor
+	uri -> response ?
+	retry queue
+
 
 	
+
+
+	
+
+		
 	
 	

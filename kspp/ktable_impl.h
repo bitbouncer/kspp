@@ -1,6 +1,6 @@
 #include <boost/filesystem.hpp>
 #include "state_stores/rocksdb_store.h"
-#include "kspp_defs.h"
+#include "kspp.h"
 #pragma once
 
 namespace csi {

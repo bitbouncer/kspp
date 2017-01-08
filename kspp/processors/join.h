@@ -1,5 +1,5 @@
 #include <functional>
-#include <kspp/kspp_defs.h>
+#include <kspp/kspp.h>
 #pragma once
 
 namespace csi {

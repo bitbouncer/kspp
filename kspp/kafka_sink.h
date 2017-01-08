@@ -2,7 +2,7 @@
 #include <memory>
 #include <functional>
 #include <sstream>
-#include "kspp_defs.h"
+#include "kspp.h"
 #include "kafka_producer.h"
 #pragma once
 

@@ -2,7 +2,7 @@
 #include <memory>
 #include <functional>
 #include <sstream>
-#include "kspp_defs.h"
+#include "kspp.h"
 #include <kspp/codecs/text_codec.h>
 #pragma once
 

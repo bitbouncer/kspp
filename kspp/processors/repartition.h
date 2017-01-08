@@ -1,5 +1,5 @@
 #include <functional>
-#include <kspp/kspp_defs.h>
+#include <kspp/kspp.h>
 #pragma once
 
 // should this be a partition_sink, topic_source or partition_processor????

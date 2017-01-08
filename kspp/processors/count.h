@@ -1,6 +1,6 @@
 #include <functional>
 #include <deque>
-#include <kspp/kspp_defs.h>
+#include <kspp/kspp.h>
 #include <kspp/state_stores/rocksdb_counter_store.h>
 #pragma once
 
