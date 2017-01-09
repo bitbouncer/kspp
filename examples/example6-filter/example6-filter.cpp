@@ -18,14 +18,16 @@ int main(int argc, char **argv) {
     kspp::produce<void, std::string>(*sink, "hello kafka streams");
   }
 
-  {
+ /*
+ // print to cerr...
+ {
     auto source = builder.create_kafka_source<void, std::string>("kspp_TextInput", PARTITION);
     auto sink = builder.create_stream_sink<void, std::string>(source, std::cerr);
     source->start(-2);
     while (!source->eof()) {
       source->process_one();
     }
-  }
+  }*/
 
   {
     auto source = builder.create_kafka_source<void, std::string>("kspp_TextInput", PARTITION);
@@ -39,9 +41,9 @@ int main(int argc, char **argv) {
     });
 
     auto filtered_stream = builder.create_filter<std::string, void>(word_stream, [](const auto e)->bool {
-      return true;
+      return (e->key != "hello");
     });
-    
+
     auto sink = builder.create_stream_sink<std::string, void>(filtered_stream, std::cerr);
 
     filtered_stream->start(-2);
