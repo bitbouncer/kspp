@@ -4,11 +4,11 @@
 #include "processors/repartition.h"
 #include "processors/filter.h"
 #include "processors/transform.h"
-#include "kstream_impl.h"
-#include "ktable_impl.h"
-#include "kafka_sink.h"
-#include "kafka_source.h"
-#include "stream_sink.h"
+#include "impl/kstream_impl.h"
+#include "impl/ktable_impl.h"
+#include "sinks/kafka_sink.h"
+#include "sinks/stream_sink.h"
+#include "sources/kafka_source.h"
 #pragma once
 
 namespace kspp {

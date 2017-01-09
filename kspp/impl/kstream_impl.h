@@ -1,15 +1,17 @@
+#include <fstream>
 #include <boost/filesystem.hpp>
-#include "state_stores/rocksdb_store.h"
-#include "kspp.h"
+#include <kspp/sources/kafka_source.h>
+#include <kspp/state_stores/rocksdb_store.h>
+#include <kspp/kspp.h>
 #pragma once
 
 namespace kspp {
   template<class K, class V, class CODEC>
-  class ktable_partition_impl : public ktable_partition<K, V>
+  class kstream_partition_impl : public kstream_partition<K, V>
   {
   public:
-    ktable_partition_impl(std::string nodeid, std::string brokers, std::string topic, size_t partition, std::string storage_path, std::shared_ptr<CODEC> codec)
-      : ktable_partition(partition)
+    kstream_partition_impl(std::string nodeid, std::string brokers, std::string topic, size_t partition, std::string storage_path, std::shared_ptr<CODEC> codec)
+      : kstream_partition(partition)
       , _offset_storage_path(storage_path)
       , _source(brokers, topic, partition, codec)
       , _state_store(topic, partition, storage_path + "\\" + nodeid + "\\" + topic + "_" + std::to_string(partition), codec)
@@ -20,6 +22,9 @@ namespace kspp {
       _offset_storage_path /= topic + "_" + std::to_string(partition);
       boost::filesystem::create_directories(_offset_storage_path);
       _offset_storage_path /= "\\kafka_offset.bin";
+
+      // this is probably wrong since why should we delete the row in a kstream??? TBD
+      // for now this is just a copy from ktable...
       _source.add_sink([this](auto r) {
         _current_offset = r->offset;
         if (r->value)
@@ -28,15 +33,15 @@ namespace kspp {
           _state_store.del(r->key);
         send_to_sinks(r);
       });
+
     }
 
-    virtual ~ktable_partition_impl() {
+    virtual ~kstream_partition_impl() {
       close();
     }
 
-    virtual std::string name() const {
-      return   _source.name() + "(ktable_partition_impl)";
-    }
+    //std::string name() const { return "kstream_partition_impl_" + _source.topic() + "_" + std::to_string(partition()); }
+    std::string name() const { return "kstream_partition_impl_" + std::to_string(partition()); }
 
     virtual void start() {
       if (boost::filesystem::exists(_offset_storage_path)) {
@@ -88,25 +93,17 @@ namespace kspp {
       return _current_offset;
     }
 
-    // inherited from kmaterialized_source
     virtual std::shared_ptr<krecord<K, V>> get(const K& key) {
       return _state_store.get(key);
     }
 
-    virtual typename kspp::materialized_partition_source<K, V>::iterator begin(void) {
-      return _state_store.begin();
-    }
-
-    virtual typename kspp::materialized_partition_source<K, V>::iterator end() {
-      return _state_store.end();
-    }
-
   private:
-    kafka_source<K, V, CODEC> _source;
+    kafka_source<K, V, CODEC> _source; // TBD this should be a stream-source....
     rockdb_store<K, V, CODEC> _state_store;
-    boost::filesystem::path   _offset_storage_path;
-    int64_t                   _current_offset;
-    int64_t                   _last_comitted_offset;
-    int64_t                   _last_flushed_offset;
+
+    boost::filesystem::path _offset_storage_path;
+    int64_t                 _current_offset;
+    int64_t                 _last_comitted_offset;
+    int64_t                 _last_flushed_offset;
   };
 };

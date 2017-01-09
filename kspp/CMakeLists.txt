@@ -1,18 +1,11 @@
 SET(LIB_SRCS
   kspp.h
   algorithm.h
-  kstream_impl.h
-  ktable_impl.h
-  kafka_source.h
-  kafka_sink.h
-  kafka_producer.h
-  kafka_producer.cpp
-  kafka_consumer.h
-  kafka_consumer.cpp
   topology_builder.h
-  stream_sink.h
   codecs/text_codec.h
   codecs/binary_codec.h
+  impl/kstream_impl.h
+  impl/ktable_impl.h
   processors/count.h
   processors/delay.h
   processors/filter.h
@@ -21,6 +14,13 @@ SET(LIB_SRCS
   processors/transform.h
   processors/group_by.h
   processors/repartition.h
+  sinks/kafka_sink.h
+  sinks/stream_sink.h
+  sinks/kafka_producer.h
+  sinks/kafka_producer.cpp
+  sources/kafka_source.h
+  sources/kafka_consumer.h
+  sources/kafka_consumer.cpp
   state_stores/kv_store.h
   state_stores/counter_store.h
   state_stores/rocksdb_counter_store.h
