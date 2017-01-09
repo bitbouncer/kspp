@@ -38,14 +38,14 @@ namespace kspp {
     template<class K, class streamV, class tableV, class R>
     std::shared_ptr<left_join<K, streamV, tableV, R>> create_left_join(std::shared_ptr<kspp::partition_source<K, streamV>> right, std::shared_ptr<kspp::ktable_partition<K, tableV>> left, typename kspp::left_join<K, streamV, tableV, R>::value_joiner value_joiner) {
       auto p = std::make_shared<kspp::left_join<K, streamV, tableV, R>>(right, left, value_joiner);
-      _topology.add(p);
+      //_topology.add(p);
       return p;
     }
 
     template<class K, class V>
     std::shared_ptr<repartition_by_table<K, V, CODEC>> create_repartition(std::shared_ptr<kspp::partition_source<K, V>> right, std::shared_ptr<kspp::ktable_partition<K, V>> left) {
       auto p = std::make_shared<kspp::repartition_by_table<K, V, CODEC>>(right, left);
-      _topology.add(p);
+      //_topology.add(p);
       return p;
     }
 
@@ -61,7 +61,7 @@ namespace kspp {
     std::shared_ptr<kspp::materialized_partition_source<K, size_t>> create_count_by_key(std::shared_ptr<partition_source<K, void>> source) {
       //return std::make_shared<kspp::count_partition_keys<K, CODEC>>(source, _storage_path, _default_codec);
       auto p = std::make_shared<kspp::count_by_key<K, CODEC>>(source, _storage_path);
-      _topology.add(p);
+      //_topology.add(p);
       return p;
     }
 
@@ -102,7 +102,7 @@ namespace kspp {
     template<class K, class V>
     std::shared_ptr<kspp::partition_sink<K, V>> create_global_kafka_sink(std::string topic) {
       auto p = std::make_shared<kspp::kafka_sink<K, V, CODEC>>(_brokers, topic, 0, _default_codec);
-      _topology.add(p);
+      //_topology.add(p);
       return p;
     }
 
@@ -112,7 +112,7 @@ namespace kspp {
     template<class K, class V>
     std::shared_ptr<kspp::topic_sink<K, V, CODEC>> create_kafka_sink(std::string topic) {
       auto p = std::make_shared<kspp::kafka_sink<K, V, CODEC>>(_brokers, topic, _default_codec);
-      _topology.add(p);
+      //_topology.add(p);
       return p;
     }
 
@@ -122,7 +122,7 @@ namespace kspp {
     template<class K, class V>
     std::shared_ptr<kspp::partition_sink<K, V>> create_kafka_sink(std::string topic, size_t partition) {
       auto p = std::make_shared<kspp::kafka_single_partition_sink<K, V, CODEC>>(_brokers, topic, partition, _default_codec);
-      _topology.add(p);
+      //_topology.add(p);
       return p;
     }
 
@@ -132,14 +132,14 @@ namespace kspp {
     template<class K, class V>
     std::shared_ptr<kspp::topic_sink<K, V, CODEC>> create_kafka_sink(std::string topic, std::function<uint32_t(const K& key)> partitioner) {
       auto p = std::make_shared<kspp::kafka_sink<K, V, CODEC>>(_brokers, topic, partitioner, _default_codec);
-      _topology.add(p);
+      //_topology.add(p);
       return p;
     }
 
     template<class K, class V>
     std::shared_ptr<kspp::partition_source<K, V>> create_kafka_source(std::string topic, size_t partition) {
       auto p = std::make_shared<kspp::kafka_source<K, V, CODEC>>(_brokers, topic, partition, _default_codec);
-      _topology.add(p);
+      //_topology.add(p);
       return p;
     }
 
@@ -154,21 +154,21 @@ namespace kspp {
     template<class K, class V>
     std::shared_ptr<kspp::kstream_partition<K, V>> create_kstream(std::string tag, std::string topic, size_t partition) {
       auto p = std::make_shared<kspp::kstream_partition_impl<K, V, CODEC>>(tag, _brokers, topic, partition, _storage_path, _default_codec);
-      _topology.add(p);
+      //_topology.add(p);
       return p;
     }
 
     template<class K, class V>
     std::shared_ptr<kspp::ktable_partition<K, V>> create_ktable(std::string tag, std::string topic, size_t partition) {
       auto p = std::make_shared<kspp::ktable_partition_impl<K, V, CODEC>>(tag, _brokers, topic, partition, _storage_path, _default_codec);
-      _topology.add(p);
+      //_topology.add(p);
       return p;
     }
 
     template<class K, class V>
     std::shared_ptr<kspp::ktable_partition<K, V>> create_global_ktable(std::string tag, std::string topic) {
       auto p = std::make_shared<kspp::ktable_partition_impl<K, V, CODEC>>(tag, _brokers, topic, 0, _storage_path, _default_codec);
-      _topology.add(p);
+      //_topology.add(p);
       return p;
     }
 
@@ -202,27 +202,29 @@ namespace kspp {
     template<class K, class V>
     std::shared_ptr<kspp::partition_source<K, V>> create_filter(std::shared_ptr<kspp::partition_source<K, V>> source, typename kspp::filter<K, V>::predicate f) {
       auto p = std::make_shared<kspp::filter<K, V>>(source, f);
-      _topology.add(p);
+      //_topology.add(p);
       return p;
     }
 
     template<class SK, class SV, class RK, class RV>
     std::shared_ptr<kspp::partition_source<RK, RV>> create_flat_map(std::shared_ptr<kspp::partition_source<SK, SV>> source, typename kspp::flat_map<SK, SV, RK, RV>::extractor f) {
       auto p = std::make_shared<kspp::flat_map<SK, SV, RK, RV>>(source, f);
-      _topology.add(p);
+      //_topology.add(p);
       return p;
     }
 
+    /*
     topoplogy* topology() {
       return &_topology;
     }
+    */
 
   private:
     std::string             _brokers;
     processor_context       _context;
     std::shared_ptr<CODEC>  _default_codec;
     std::string             _storage_path;
-    topoplogy               _topology;
+    //topoplogy               _topology;
   };
 
 
