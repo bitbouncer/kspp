@@ -32,7 +32,7 @@ namespace kspp {
       char zero = 0x00;
       dst.write((const char*)&zero, 1);
     }
-    return sizeof(1);
+    return 1;
   }
 
   inline size_t binary_decode(std::istream& src, bool& dst) {
