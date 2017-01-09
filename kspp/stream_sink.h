@@ -6,7 +6,7 @@
 #include <kspp/codecs/text_codec.h>
 #pragma once
 
-namespace csi {
+namespace kspp {
 
   template<class K, class V>
   class stream_sink
@@ -17,7 +17,7 @@ namespace csi {
     stream_sink(std::shared_ptr<partition_source<K, V>> source, std::ostream& os)
       : _source(source)
       , _os(os)
-      , _codec(std::make_shared<csi::text_codec>()) {
+      , _codec(std::make_shared<kspp::text_codec>()) {
       _source->add_sink([this](auto r) {
         _os << "ts: " << r->event_time << "  ";
         _codec->encode(r->key, _os);
@@ -37,7 +37,7 @@ namespace csi {
   private:
     std::shared_ptr<partition_source<K, V>> _source;
     std::ostream&                             _os;
-    std::shared_ptr<csi::text_codec>          _codec;
+    std::shared_ptr<kspp::text_codec>          _codec;
   };
 
   //<null, VALUE>
@@ -48,7 +48,7 @@ namespace csi {
     stream_sink(std::shared_ptr<partition_source<void, V>> source, std::ostream& os)
       : _source(source)
       , _os(os)
-      , _codec(std::make_shared<csi::text_codec>()) {
+      , _codec(std::make_shared<kspp::text_codec>()) {
       _source->add_sink([this](auto r) {
         _os << "ts: " << r->event_time << "  ";
         _codec->encode(*r->value, _os);
@@ -64,7 +64,7 @@ namespace csi {
   private:
     std::shared_ptr<partition_source<void, V>> _source;
     std::ostream&                              _os;
-    std::shared_ptr<csi::text_codec>           _codec;
+    std::shared_ptr<kspp::text_codec>           _codec;
   };
 
   // <key, NULL>
@@ -75,7 +75,7 @@ namespace csi {
     stream_sink(std::shared_ptr<partition_source<K, void>> source, std::ostream& os)
       : _source(source)
       , _os(os)
-      , _codec(std::make_shared<csi::text_codec>()) {
+      , _codec(std::make_shared<kspp::text_codec>()) {
       _source->add_sink([this](auto r) {
         _os << "ts: " << r->event_time << "  ";
         _codec->encode(r->key, _os);
@@ -90,7 +90,7 @@ namespace csi {
   private:
     std::shared_ptr<partition_source<K, void>> _source;
     std::ostream&                              _os;
-    std::shared_ptr<csi::text_codec>           _codec;
+    std::shared_ptr<kspp::text_codec>           _codec;
   };
 
 };

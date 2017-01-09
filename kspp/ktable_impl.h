@@ -3,7 +3,7 @@
 #include "kspp.h"
 #pragma once
 
-namespace csi {
+namespace kspp {
   template<class K, class V, class CODEC>
   class ktable_partition_impl : public ktable_partition<K, V>
   {
@@ -93,11 +93,11 @@ namespace csi {
       return _state_store.get(key);
     }
 
-    virtual typename csi::materialized_partition_source<K, V>::iterator begin(void) {
+    virtual typename kspp::materialized_partition_source<K, V>::iterator begin(void) {
       return _state_store.begin();
     }
 
-    virtual typename csi::materialized_partition_source<K, V>::iterator end() {
+    virtual typename kspp::materialized_partition_source<K, V>::iterator end() {
       return _state_store.end();
     }
 

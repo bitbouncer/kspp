@@ -4,7 +4,7 @@
 #define LOGPREFIX_ERROR BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", topic:" << _topic << ": " << _partition
 #define LOGPREFIX_INFO  BOOST_LOG_TRIVIAL(info) << BOOST_CURRENT_FUNCTION << ", topic:" << _topic << ": " << _partition
 
-namespace csi {
+namespace kspp {
 kafka_consumer::kafka_consumer(std::string brokers, std::string topic, size_t partition) :
   _topic(topic),
   _partition(partition),

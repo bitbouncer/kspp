@@ -3,7 +3,7 @@
 #include <ostream>
 #include <istream>
 
-namespace csi {
+namespace kspp {
   inline size_t binary_encode(const int64_t& a, std::ostream& dst) {
     dst.write((const char*)&a, sizeof(int64_t));
     return sizeof(int64_t);

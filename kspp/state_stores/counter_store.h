@@ -1,5 +1,5 @@
 #pragma once
-namespace csi {
+namespace kspp {
   template<class K>
   class counter_store
   {
@@ -24,7 +24,7 @@ namespace csi {
     */
     virtual void erase() = 0;
 
-    virtual typename csi::materialized_partition_source<K, size_t>::iterator begin(void) = 0;
-    virtual typename csi::materialized_partition_source<K, size_t>::iterator end() = 0;
+    virtual typename kspp::materialized_partition_source<K, size_t>::iterator begin(void) = 0;
+    virtual typename kspp::materialized_partition_source<K, size_t>::iterator end() = 0;
   };
 };

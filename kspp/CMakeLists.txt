@@ -1,5 +1,6 @@
 SET(LIB_SRCS
   kspp.h
+  algorithm.h
   kstream_impl.h
   ktable_impl.h
   kafka_source.h

@@ -4,7 +4,7 @@
 #include <kspp/state_stores/rocksdb_counter_store.h>
 #pragma once
 
-namespace csi {
+namespace kspp {
   template<class K, class CODEC>
   class count_by_key : public materialized_partition_source<K, size_t>
   {
@@ -90,11 +90,11 @@ namespace csi {
         return NULL;
     }
 
-    virtual typename csi::materialized_partition_source<K, size_t>::iterator begin(void) {
+    virtual typename kspp::materialized_partition_source<K, size_t>::iterator begin(void) {
       return _counter_store.begin();
     }
 
-    virtual typename csi::materialized_partition_source<K, size_t>::iterator end() {
+    virtual typename kspp::materialized_partition_source<K, size_t>::iterator end() {
       return _counter_store.end();
     }
 

@@ -4,6 +4,7 @@
 #include <boost/functional/hash.hpp>
 #include <kspp/codecs/binary_codec.h>
 #include <kspp/topology_builder.h>
+#include <kspp/algorithm.h>
 
 static boost::uuids::uuid to_uuid(int64_t x) {
   boost::uuids::uuid uuid;
@@ -13,7 +14,7 @@ static boost::uuids::uuid to_uuid(int64_t x) {
 }
 
 int main(int argc, char **argv) {
-  auto builder     = csi::topology_builder<csi::binary_codec>("localhost", "C:\\tmp");
+  auto builder     = kspp::topology_builder<kspp::binary_codec>("localhost", "C:\\tmp");
   auto partitioner = [](const boost::uuids::uuid& key)->uint32_t { return boost::hash<boost::uuids::uuid>()(key) % 8; };
   auto table_stream = builder.create_kafka_sink<boost::uuids::uuid, int64_t>("kspp_test0_table", partitioner);
   auto event_stream = builder.create_kafka_sink<boost::uuids::uuid, int64_t>("kspp_test0_eventstream", partitioner);

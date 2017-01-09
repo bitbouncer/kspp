@@ -6,7 +6,7 @@
 #include "kafka_producer.h"
 #pragma once
 
-namespace csi {
+namespace kspp {
 
   template<class K>
   class kafka_partitioner_base

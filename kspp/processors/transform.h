@@ -4,7 +4,7 @@
 #include <deque>
 #pragma once
 
-namespace csi {
+namespace kspp {
   template<class SK, class SV, class RK, class RV>
   class flat_map : public partition_source<RK, RV>
   {

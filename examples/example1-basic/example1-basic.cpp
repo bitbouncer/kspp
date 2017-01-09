@@ -3,6 +3,7 @@
 #include <chrono>
 #include <kspp/codecs/binary_codec.h>
 #include <kspp/topology_builder.h>
+#include <kspp/algorithm.h>
 
 #define PARTITION 0
 
@@ -15,17 +16,17 @@ struct page_view_data
 
 inline size_t binary_encode(const page_view_data& obj, std::ostream& dst) {
   size_t sz = 0;
-  sz += csi::binary_encode(obj.time, dst);
-  sz += csi::binary_encode(obj.user_id, dst);
-  sz += csi::binary_encode(obj.url, dst);
+  sz += kspp::binary_encode(obj.time, dst);
+  sz += kspp::binary_encode(obj.user_id, dst);
+  sz += kspp::binary_encode(obj.url, dst);
   return dst.good() ? sz : 0;
 }
 
 inline size_t binary_decode(std::istream& src, page_view_data& obj) {
   size_t sz = 0;
-  sz += csi::binary_decode(src, obj.time);
-  sz += csi::binary_decode(src, obj.user_id);
-  sz += csi::binary_decode(src, obj.url);
+  sz += kspp::binary_decode(src, obj.time);
+  sz += kspp::binary_decode(src, obj.user_id);
+  sz += kspp::binary_decode(src, obj.url);
   return src.good() ? sz : 0;
 }
 
@@ -38,31 +39,31 @@ struct user_profile_data
 
 inline size_t binary_encode(const user_profile_data& obj, std::ostream& dst) {
   size_t sz = 0;
-  sz += csi::binary_encode(obj.last_modified_time, dst);
-  sz += csi::binary_encode(obj.user_id, dst);
-  sz += csi::binary_encode(obj.email, dst);
+  sz += kspp::binary_encode(obj.last_modified_time, dst);
+  sz += kspp::binary_encode(obj.user_id, dst);
+  sz += kspp::binary_encode(obj.email, dst);
   return dst.good() ? sz : 0;
 }
 
 inline size_t binary_decode(std::istream& src, user_profile_data& obj) {
   size_t sz = 0;
-  sz += csi::binary_decode(src, obj.last_modified_time);
-  sz += csi::binary_decode(src, obj.user_id);
-  sz += csi::binary_decode(src, obj.email);
+  sz += kspp::binary_decode(src, obj.last_modified_time);
+  sz += kspp::binary_decode(src, obj.user_id);
+  sz += kspp::binary_decode(src, obj.email);
   return src.good() ? sz : 0;
 }
 
 inline size_t binary_encode(const std::pair<int64_t, int64_t>& obj, std::ostream& dst) {
   size_t sz = 0;
-  sz += csi::binary_encode(obj.first, dst);
-  sz += csi::binary_encode(obj.second, dst);
+  sz += kspp::binary_encode(obj.first, dst);
+  sz += kspp::binary_encode(obj.second, dst);
   return dst.good() ? sz : 0;
 }
 
 inline size_t binary_decode(std::istream& src, std::pair<int64_t, int64_t>& obj) {
   size_t sz = 0;
-  sz += csi::binary_decode(src, obj.first);
-  sz += csi::binary_decode(src, obj.second);
+  sz += kspp::binary_decode(src, obj.first);
+  sz += kspp::binary_decode(src, obj.second);
   return src.good() ? sz : 0;
 }
 
@@ -76,19 +77,19 @@ struct page_view_decorated
 
 inline size_t binary_encode(const page_view_decorated& obj, std::ostream& dst) {
   size_t sz = 0;
-  sz += csi::binary_encode(obj.time, dst);
-  sz += csi::binary_encode(obj.user_id, dst);
-  sz += csi::binary_encode(obj.url, dst);
-  sz += csi::binary_encode(obj.email, dst);
+  sz += kspp::binary_encode(obj.time, dst);
+  sz += kspp::binary_encode(obj.user_id, dst);
+  sz += kspp::binary_encode(obj.url, dst);
+  sz += kspp::binary_encode(obj.email, dst);
   return dst.good() ? sz : 0;
 }
 
 inline size_t binary_decode(std::istream& src, page_view_decorated& obj) {
   size_t sz = 0;
-  sz += csi::binary_decode(src, obj.time);
-  sz += csi::binary_decode(src, obj.user_id);
-  sz += csi::binary_decode(src, obj.url);
-  sz += csi::binary_decode(src, obj.email);
+  sz += kspp::binary_decode(src, obj.time);
+  sz += kspp::binary_decode(src, obj.user_id);
+  sz += kspp::binary_decode(src, obj.url);
+  sz += kspp::binary_decode(src, obj.email);
   return src.good() ? sz : 0;
 }
 
@@ -105,19 +106,19 @@ std::string to_string(const page_view_decorated& pd) {
 }
 
 
-template<> size_t csi::text_codec::encode(const page_view_data& src, std::ostream& dst) {
+template<> size_t kspp::text_codec::encode(const page_view_data& src, std::ostream& dst) {
   auto s = to_string(src);
   dst << s;
   return s.size();
 }
 
-template<> size_t csi::text_codec::encode(const user_profile_data& src, std::ostream& dst) {
+template<> size_t kspp::text_codec::encode(const user_profile_data& src, std::ostream& dst) {
   auto s = to_string(src);
   dst << s;
   return s.size();
 }
 
-template<> size_t csi::text_codec::encode(const page_view_decorated& src, std::ostream& dst) {
+template<> size_t kspp::text_codec::encode(const page_view_decorated& src, std::ostream& dst) {
   auto s = to_string(src);
   dst << s;
   return s.size();
@@ -130,23 +131,23 @@ std::string ksource_to_string(const T&  ksource) {
 }
 
 int main(int argc, char **argv) {
-  auto builder = csi::topology_builder<csi::binary_codec>("localhost", "C:\\tmp");
+  auto builder = kspp::topology_builder<kspp::binary_codec>("localhost", "C:\\tmp");
 
   {
     auto sink = builder.create_kafka_sink<int64_t, page_view_data>("kspp_PageViews", 0);
-    csi::produce<int64_t, page_view_data>(*sink, 1, { 1440557383335, 1, "/home?user=1" });
-    csi::produce<int64_t, page_view_data>(*sink, 5, { 1440557383345, 5, "/home?user=5" });
-    csi::produce<int64_t, page_view_data>(*sink, 2, { 1440557383456, 2, "/profile?user=2" });
-    csi::produce<int64_t, page_view_data>(*sink, 1, { 1440557385365, 1, "/profile?user=1" });
-    csi::produce<int64_t, page_view_data>(*sink, 1, { 1440557385368, 1, "/profile?user=1" });
+    kspp::produce<int64_t, page_view_data>(*sink, 1, { 1440557383335, 1, "/home?user=1" });
+    kspp::produce<int64_t, page_view_data>(*sink, 5, { 1440557383345, 5, "/home?user=5" });
+    kspp::produce<int64_t, page_view_data>(*sink, 2, { 1440557383456, 2, "/profile?user=2" });
+    kspp::produce<int64_t, page_view_data>(*sink, 1, { 1440557385365, 1, "/profile?user=1" });
+    kspp::produce<int64_t, page_view_data>(*sink, 1, { 1440557385368, 1, "/profile?user=1" });
   }
 
   {
     auto sink = builder.create_kafka_sink<int64_t, user_profile_data>("kspp_UserProfile", 0);
-    csi::produce<int64_t, user_profile_data>(*sink, 1, { 1440557383335, 1, "user1@aol.com" });
-    csi::produce<int64_t, user_profile_data>(*sink, 5, { 1440557383345, 5, "user5@gmail.com" });
-    csi::produce<int64_t, user_profile_data>(*sink, 2, { 1440557383456, 2, "user2@yahoo.com" });
-    csi::produce<int64_t, user_profile_data>(*sink, 1, { 1440557385365, 1, "user1-new-email-addr@comcast.com" });
+    kspp::produce<int64_t, user_profile_data>(*sink, 1, { 1440557383335, 1, "user1@aol.com" });
+    kspp::produce<int64_t, user_profile_data>(*sink, 5, { 1440557383345, 5, "user5@gmail.com" });
+    kspp::produce<int64_t, user_profile_data>(*sink, 2, { 1440557383456, 2, "user2@yahoo.com" });
+    kspp::produce<int64_t, user_profile_data>(*sink, 1, { 1440557385365, 1, "user1-new-email-addr@comcast.com" });
   }
 
   {

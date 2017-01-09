@@ -2,7 +2,7 @@
 #include <librdkafka/rdkafkacpp.h>
 #pragma once
 
-namespace csi {
+namespace kspp {
   class kafka_producer
   {
   public:

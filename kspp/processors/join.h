@@ -2,7 +2,7 @@
 #include <kspp/kspp.h>
 #pragma once
 
-namespace csi {
+namespace kspp {
   //maybe we should materilize the join so we can do get...  
   //then we can change type to kstream
   // maybee we should remove partition_sink and just add a callback... like in transform TBD
@@ -88,11 +88,11 @@ namespace csi {
         auto table_row = _table->get(e->key);
         if (table_row) {
           if (e->value) {
-            auto p = std::make_shared<csi::krecord<K, R>>(e->key, std::make_shared<R>(), e->event_time);
+            auto p = std::make_shared<kspp::krecord<K, R>>(e->key, std::make_shared<R>(), e->event_time);
             _value_joiner(e->key, *e->value, *table_row->value, *p->value);
             send_to_sinks(p);
           } else {
-            auto p = std::make_shared<csi::krecord<K, R>>(e->key);
+            auto p = std::make_shared<kspp::krecord<K, R>>(e->key);
             p->event_time = e->event_time;
             p->offset = e->offset;
             send_to_sinks(p);

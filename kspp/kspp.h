@@ -6,7 +6,7 @@
 #include <vector>
 
 #pragma once
-namespace csi {
+namespace kspp {
   inline int64_t milliseconds_since_epoch() {
     return std::chrono::duration_cast<std::chrono::milliseconds>
       (std::chrono::system_clock::now().time_since_epoch()).count();
@@ -187,7 +187,7 @@ namespace csi {
   public:
     typedef K key_type;
     typedef V value_type;
-    typedef csi::krecord<K, V> record_type;
+    typedef kspp::krecord<K, V> record_type;
 
     virtual int produce(std::shared_ptr<krecord<K, V>> r) = 0;
     inline int produce(const K& key, const V& value) {
@@ -207,7 +207,7 @@ namespace csi {
   public:
     typedef void key_type;
     typedef V value_type;
-    typedef csi::krecord<void, V> record_type;
+    typedef kspp::krecord<void, V> record_type;
 
     virtual int produce(std::shared_ptr<krecord<void, V>> r) = 0;
     inline int produce(const V& value) {
@@ -252,7 +252,7 @@ namespace csi {
   public:
     typedef K key_type;
     typedef V value_type;
-    typedef csi::krecord<K, V> record_type;
+    typedef kspp::krecord<K, V> record_type;
 
     virtual int    produce(std::shared_ptr<krecord<K, V>> r) = 0;
     virtual size_t queue_len() = 0;
@@ -278,7 +278,7 @@ namespace csi {
   public:
     typedef void key_type;
     typedef V value_type;
-    typedef csi::krecord<void, V> record_type;
+    typedef kspp::krecord<void, V> record_type;
 
     virtual int produce(std::shared_ptr<krecord<void, V>> r) = 0;
     virtual size_t queue_len() = 0;
@@ -391,70 +391,5 @@ namespace csi {
       : materialized_partition_source(partition) {}
   };
 
-  template<class K, class V>
-  std::shared_ptr<krecord<K, V>> create_krecord(const K& k, const V& v) {
-    return std::make_shared<krecord<K, V>>(k, std::make_shared<V>(v));
-  }
-
-  template<class K, class V>
-  std::shared_ptr<krecord<K, V>> create_krecord(const K& k) {
-    return std::make_shared<krecord<K, V>>(k);
-  }
-
-  template<class K, class V>
-  void process_one(const std::vector<std::shared_ptr<partition_source<K, V>>>& sources) {
-    for (auto i : sources) {
-      i->process_one();
-    }
-  }
-
-  template<class K, class V>
-  bool eof(std::vector<std::shared_ptr<partition_source<K, V>>>& sources) {
-    for (auto i : sources) {
-      if (!i->eof())
-        return false;
-    }
-    return true;
-  }
-
-  template<class K, class V>
-  bool eof(std::vector<std::shared_ptr<materialized_partition_source<K, V>>>& sources) {
-    for (auto i : sources) {
-      if (!i->eof())
-        return false;
-    }
-    return true;
-  }
-
-  template<class KSINK>
-  int produce(KSINK& sink, const typename KSINK::key_type& key) {
-    return sink.produce(std::make_shared<KSINK::record_type>(key));
-  }
-
-  template<class KSINK>
-  int produce(KSINK& sink, const typename KSINK::key_type& key, const typename KSINK::value_type& value) {
-    return sink.produce(std::make_shared<KSINK::record_type>(key, value));
-  }
-
-  template<class KSINK>
-  int produce(KSINK& sink, const typename KSINK::value_type& value) {
-    return sink.produce(std::make_shared<KSINK::record_type>(void, value));
-  }
-
-  // TBD bestämm vilket api som är bäst...
-
-  template<class K, class V>
-  int produce(partition_sink<K, V>& sink, const K& key, const V& val) {
-    return sink.produce(std::move<>(create_krecord<K, V>(key, val)));
-  }
-
-  template<class K, class V>
-  int produce(partition_sink<void, V>& sink, const V& val) {
-    return sink.produce(std::move<>(std::make_shared<krecord<void, V>>(val)));
-  }
-
-  template<class K, class V>
-  int produce(partition_sink<K, V>& sink, const K& key) {
-    return sink.produce(std::move<>(create_krecord<K, V>(key)));
-  }
+  
 }; // namespace

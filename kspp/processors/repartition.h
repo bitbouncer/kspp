@@ -6,7 +6,7 @@
 // nothing is nessessary but check what's best...
 // std::shared_ptr<ktable_partition<K, K>> routing_table could be a external partition-source and an internal ktable_partition that uses an internal kv-store...
 
-namespace csi {
+namespace kspp {
   template<class K, class V, class CODEC>
   class repartition_by_table : partition_processor
   {

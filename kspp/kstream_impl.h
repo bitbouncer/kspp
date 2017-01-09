@@ -5,7 +5,7 @@
 #include "kspp.h"
 #pragma once
 
-namespace csi {
+namespace kspp {
   template<class K, class V, class CODEC>
   class kstream_partition_impl : public kstream_partition<K, V>
   {

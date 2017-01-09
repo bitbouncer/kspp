@@ -8,7 +8,7 @@
 
 #define LOGPREFIX_ERROR BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << name()
 
-namespace csi {
+namespace kspp {
   template<class K, class V, class CODEC>
   class kafka_source_base : public partition_source<K, V>
   {

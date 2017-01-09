@@ -7,7 +7,7 @@
 #define PARTITION 0
 
 int main(int argc, char **argv) {
-  auto builder = csi::topology_builder<csi::binary_codec>("localhost", "C:\\tmp");
+  auto builder = kspp::topology_builder<kspp::binary_codec>("localhost", "C:\\tmp");
   auto stream = builder.create_kafka_source<boost::uuids::uuid, int64_t>("kspp_test0_eventstream", PARTITION);
   auto table = builder.create_ktable<boost::uuids::uuid, int64_t>("join", "kspp_test0_table", PARTITION);
 
@@ -16,7 +16,7 @@ int main(int argc, char **argv) {
   });
   
   /*
-  auto join = std::make_shared<csi::left_join<boost::uuids::uuid, int64_t, int64_t, int64_t>>(stream, table, [](const boost::uuids::uuid& key, const int64_t& left, const int64_t& right, int64_t& row) {
+  auto join = std::make_shared<kspp::left_join<boost::uuids::uuid, int64_t, int64_t, int64_t>>(stream, table, [](const boost::uuids::uuid& key, const int64_t& left, const int64_t& right, int64_t& row) {
     row = right;
   });
   */

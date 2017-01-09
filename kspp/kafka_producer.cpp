@@ -4,7 +4,7 @@
 #define LOGPREFIX_ERROR BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", topic:" << _topic
 #define LOGPREFIX_INFO  BOOST_LOG_TRIVIAL(info) << BOOST_CURRENT_FUNCTION << ", topic:" << _topic
 
-namespace csi {
+namespace kspp {
   /*
   static inline unsigned int djb_hash(const char *str, size_t len) {
     unsigned int hash = 5381;

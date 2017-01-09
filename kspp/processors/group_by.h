@@ -4,7 +4,7 @@
 #include <deque>
 #pragma once
 
-namespace csi {
+namespace kspp {
   //template<class K, class V, class RK>
   //class group_by_value : public ksource<RK, size_t>, private ksink<RK, size_t>
   //{
@@ -48,13 +48,13 @@ namespace csi {
   //    auto table_row = _table->get(e->key);
   //    if (table_row) {
   //      if (e->value) {
-  //        auto p = std::make_shared<csi::krecord<K, R>>(e->key, std::make_shared<R>());
+  //        auto p = std::make_shared<kspp::krecord<K, R>>(e->key, std::make_shared<R>());
   //        p->event_time = e->event_time;
   //        p->offset = e->offset;
   //        _value_joiner(e->key, *e->value, *table_row->value, *p->value);
   //        return p;
   //      } else {
-  //        auto p = std::make_shared<csi::krecord<K, R>>(e->key);
+  //        auto p = std::make_shared<kspp::krecord<K, R>>(e->key);
   //        p->event_time = e->event_time;
   //        p->offset = e->offset;
   //        return p;

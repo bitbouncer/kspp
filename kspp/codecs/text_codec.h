@@ -4,7 +4,7 @@
 #include <boost/uuid/uuid.hpp>
 #pragma once
 
-namespace csi {
+namespace kspp {
   class text_codec
   {
   public:

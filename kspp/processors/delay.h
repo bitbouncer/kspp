@@ -1,5 +1,5 @@
 #pragma once
-namespace csi {
+namespace kspp {
   template<class K, class V>
   class delay : public partition_source<K, V>
   {

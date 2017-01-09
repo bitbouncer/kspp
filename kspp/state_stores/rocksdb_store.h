@@ -7,7 +7,7 @@
 #include <kspp/kspp.h>
 #include "kv_store.h"
 
-namespace csi {
+namespace kspp {
   template<class K, class V, class CODEC>
   class rockdb_store : public kv_store<K, V>
   {
@@ -162,12 +162,12 @@ namespace csi {
       return res;
     }
 
-    typename csi::materialized_partition_source<K, V>::iterator begin(void) {
-      return typename csi::materialized_partition_source<K, V>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::BEGIN));
+    typename kspp::materialized_partition_source<K, V>::iterator begin(void) {
+      return typename kspp::materialized_partition_source<K, V>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::BEGIN));
     }
 
-    typename csi::materialized_partition_source<K, V>::iterator end() {
-      return typename csi::materialized_partition_source<K, V>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::END));
+    typename kspp::materialized_partition_source<K, V>::iterator end() {
+      return typename kspp::materialized_partition_source<K, V>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::END));
     }
 
   private:

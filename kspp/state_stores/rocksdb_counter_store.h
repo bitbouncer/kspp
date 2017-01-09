@@ -8,7 +8,7 @@
 #include <kspp/kspp.h>
 #include "counter_store.h"
 
-namespace csi {
+namespace kspp {
   class UInt64AddOperator : public rocksdb::AssociativeMergeOperator {
 
   public:
@@ -220,12 +220,12 @@ namespace csi {
       }
     }
 
-    typename csi::materialized_partition_source<K, size_t>::iterator begin(void) {
-      return typename csi::materialized_partition_source<K, size_t>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::BEGIN));
+    typename kspp::materialized_partition_source<K, size_t>::iterator begin(void) {
+      return typename kspp::materialized_partition_source<K, size_t>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::BEGIN));
     }
 
-    typename csi::materialized_partition_source<K, size_t>::iterator end() {
-      return typename csi::materialized_partition_source<K, size_t>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::END));
+    typename kspp::materialized_partition_source<K, size_t>::iterator end() {
+      return typename kspp::materialized_partition_source<K, size_t>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::END));
     }
 
   private:
