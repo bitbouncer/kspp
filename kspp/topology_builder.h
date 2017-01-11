@@ -59,9 +59,9 @@ namespace kspp {
 
     //TBD we shouyld get rid of void value - we do not require that but how do we tell compiler that????
     template<class K>
-    std::shared_ptr<kspp::materialized_partition_source<K, size_t>> create_count_by_key(std::shared_ptr<partition_source<K, void>> source) {
+    std::shared_ptr<kspp::materialized_partition_source<K, size_t>> create_count_by_key(std::shared_ptr<partition_source<K, void>> source, int64_t punctuate_intervall) {
       //return std::make_shared<kspp::count_partition_keys<K, CODEC>>(source, _storage_path, _default_codec);
-      auto p = std::make_shared<kspp::count_by_key<K, CODEC>>(source, _storage_path);
+      auto p = std::make_shared<kspp::count_by_key<K, CODEC>>(source, _storage_path, punctuate_intervall);
       //_topology.add(p);
       return p;
     }
@@ -84,10 +84,10 @@ namespace kspp {
     */
 
     template<class K>
-    std::vector<std::shared_ptr<kspp::materialized_partition_source<K, size_t>>> create_count_by_key(std::vector<std::shared_ptr<partition_source<K, void>>>& sources) {
+    std::vector<std::shared_ptr<kspp::materialized_partition_source<K, size_t>>> create_count_by_key(std::vector<std::shared_ptr<partition_source<K, void>>>& sources, int64_t punctuate_intervall) {
       std::vector<std::shared_ptr<kspp::materialized_partition_source<K, size_t>>> res;
       for (auto i : sources)
-        res.push_back(create_count_by_key(i));
+        res.push_back(create_count_by_key(i, punctuate_intervall));
       return res;
     }
 
@@ -217,6 +217,11 @@ namespace kspp {
     template<class K, class V>
     std::shared_ptr<kspp::partition_source<K, V>> create_rate_limiter(std::shared_ptr<kspp::partition_source<K, V>> source, int64_t agetime, size_t capacity) {
       return rate_limiter<K, V>::create(source, agetime, capacity);
+    }
+
+    template<class K, class V>
+    std::shared_ptr<kspp::partition_source<K, V>> create_thoughput_limiter(std::shared_ptr<kspp::partition_source<K, V>> source, double messages_per_sec) {
+      return thoughput_limiter<K, V>::create(source, messages_per_sec);
     }
 
     /*

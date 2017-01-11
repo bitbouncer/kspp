@@ -76,6 +76,18 @@ class rate_limiter : public partition_source<K, V>
     return _source->eof() && (_queue.size() == 0);
   }
 
+  virtual bool is_dirty() {
+    return (_queue.size() > 0) || _source->is_dirty();
+  }
+
+  virtual void flush() {
+    while (!eof())
+      process_one();
+    _source->flush();
+    while (!eof())
+      process_one();
+  }
+
   virtual size_t queue_len() {
     return _queue.size();
   }
@@ -89,4 +101,101 @@ class rate_limiter : public partition_source<K, V>
   std::deque<std::shared_ptr<krecord<K, V>>> _queue;
   std::shared_ptr<token_bucket<K>>           _token_bucket;
 };
+
+template<class K, class V>
+class thoughput_limiter : public partition_source<K, V>
+{
+  public:
+  thoughput_limiter(std::shared_ptr<partition_source<K, V>> source, double messages_per_sec)
+    : partition_source(source->partition())
+    , _source(source)
+    , _token_bucket(std::make_shared<mem_token_bucket<int>>((int64_t) (1000.0/messages_per_sec), 1)) {
+    _source->add_sink([this](auto r) {
+      _queue.push_back(r);
+    });
+  }
+
+  ~thoughput_limiter() {
+    close();
+  }
+
+  static std::vector<std::shared_ptr<partition_source<K, V>>> create(std::vector<std::shared_ptr<partition_source<K, V>>>& streams, double messages_per_sec) {
+    std::vector<std::shared_ptr<partition_source<K, V>>> res;
+    for (auto i : streams)
+      res.push_back(std::make_shared<thoughput_limiter<K, V>>(i, messages_per_sec));
+    return res;
+  }
+
+  static std::shared_ptr<partition_source<K, V>> create(std::shared_ptr<partition_source<K, V>> source, double messages_per_sec) {
+    return std::make_shared<thoughput_limiter<K, V>>(source, messages_per_sec);
+  }
+
+  std::string name() const {
+    return _source->name() + "-thoughput_limiter";
+  }
+
+  virtual void start() {
+    _source->start();
+  }
+
+  virtual void start(int64_t offset) {
+    _source->start(offset);
+
+    if (offset == -2)
+      _token_bucket->erase();
+  }
+
+  virtual void close() {
+    _source->close();
+  }
+
+  virtual bool process_one() {
+    if (_queue.size() == 0)
+      _source->process_one();
+
+    if (_queue.size()) {
+      auto r = _queue.front();
+      if (_token_bucket->consume(0, milliseconds_since_epoch())) {
+        _queue.pop_front();
+        send_to_sinks(r);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  virtual void commit() {
+    _source->commit();
+  }
+
+  virtual bool eof() const {
+    return _source->eof() && (_queue.size() == 0);
+  }
+
+  virtual bool is_dirty() {
+    return (_queue.size() > 0) || _source->is_dirty();
+  }
+
+  virtual void flush() {
+    while (!eof())
+      process_one();
+    _source->flush();
+    while (!eof())
+      process_one();
+  }
+
+  virtual size_t queue_len() {
+    return _queue.size();
+  }
+
+  virtual std::string topic() const {
+    return "internal-deque";
+  }
+
+  private:
+  std::shared_ptr<partition_source<K, V>>    _source;
+  std::deque<std::shared_ptr<krecord<K, V>>> _queue;
+  std::shared_ptr<token_bucket<int>>         _token_bucket;
+};
+
 } // namespace

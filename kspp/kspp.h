@@ -128,7 +128,6 @@ class topic_processor
   * Process an input record
   */
   virtual bool process_one() = 0;
-
   virtual void punctuate(int64_t timestamp) {}
   virtual void close() = 0;
   protected:
@@ -328,6 +327,20 @@ class partition_source : public partition_processor
   virtual void start(int64_t offset) {}
   virtual void commit() {}
   virtual void flush_offset() {}
+
+  virtual bool is_dirty() = 0;
+
+  virtual void flush() = 0;
+
+  /*
+  virtual void flush() {
+    //_source->flush();
+    while (!eof())
+      process_one();
+    punctuate(milliseconds_since_epoch());
+  }
+  */
+
   protected:
 
   virtual void send_to_sinks(std::shared_ptr<krecord<K, V>> p) {

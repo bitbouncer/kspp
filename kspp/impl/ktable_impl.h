@@ -72,6 +72,18 @@ namespace kspp {
       return _source.eof();
     }
 
+    virtual bool is_dirty() {
+      return _source.is_dirty();
+    }
+
+    virtual void flush() {
+      while (!eof())
+        process_one();
+      _source.flush();
+      while (!eof())
+        process_one();
+    }
+
     virtual bool process_one() {
       return _source.process_one();
     }

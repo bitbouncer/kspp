@@ -66,6 +66,18 @@ namespace kspp {
       return _source->eof() && (_queue.size() == 0);
     }
 
+    virtual bool is_dirty() {
+      return _source->is_dirty() || _queue.size()>0;
+    }
+
+    virtual void flush() {
+      while (!eof())
+        process_one();
+      _source->flush();
+      while (!eof())
+        process_one();
+    }
+
     virtual size_t queue_len() {
       return _queue.size();
     }

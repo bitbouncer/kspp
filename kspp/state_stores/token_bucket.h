@@ -23,6 +23,8 @@ class token_bucket
   */
   virtual void del(const K& key) = 0;
 
+  virtual size_t token(const K& key) = 0;
+
   /**
   * erases all counters
   */
@@ -70,6 +72,10 @@ class mem_token_bucket : public token_bucket<K>
   /**
   * Returns the counter for the given key
   */
+  virtual size_t token(const K& key) {
+    std::map<K, std::shared_ptr<bucket>>::iterator item = _buckets.find(key);
+    return (item == _buckets.end()) ? _config.capacity : item->second->token();
+  }
 
   /**
   * erases all counters
@@ -113,6 +119,10 @@ class mem_token_bucket : public token_bucket<K>
         return false;
       _tokens -= 1;
       return true;
+    }
+
+    inline size_t token() const {
+      return _tokens;
     }
 
     protected:

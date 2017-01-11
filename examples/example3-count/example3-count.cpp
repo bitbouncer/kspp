@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
     });
 
     //auto word_counts = kspp::count_by_key<std::string, kspp::text_codec>::create(word_stream, "C:\\tmp");
-    auto word_counts = builder.create_count_by_key<std::string>(word_stream);
+    auto word_counts = builder.create_count_by_key<std::string>(word_stream, 2000);
     auto sink = builder.create_stream_sink<std::string, size_t>(word_counts, std::cerr);
     //auto sink = builder.create_stream_sink(word_counts, std::cerr); DAG???
 

@@ -9,10 +9,13 @@ namespace kspp {
   class count_by_key : public materialized_partition_source<K, size_t>
   {
   public:
-    count_by_key(std::shared_ptr<partition_source<K, void>> source, std::string storage_path, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
+    count_by_key(std::shared_ptr<partition_source<K, void>> source, std::string storage_path, int64_t punctuate_intervall, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
       : materialized_partition_source(source->partition())
       , _stream(source)
-      , _counter_store(name(), storage_path + "//" + name(), codec) {
+      , _counter_store(name(), storage_path + "//" + name(), codec)
+      , _punctuate_intervall(punctuate_intervall)
+      , _next_punctuate(0)
+      , _dirty(false) {
       source->add_sink([this](auto e) {
         _queue.push_back(e);
       });
@@ -22,8 +25,8 @@ namespace kspp {
       close();
     }
 
-    static std::shared_ptr<materialized_partition_source<K, size_t>> create(std::shared_ptr<partition_source<K, void>> source, std::string storage_path, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) {
-      return std::make_shared<count_by_key<K, CODEC>>(source, storage_path, codec);
+    static std::shared_ptr<materialized_partition_source<K, size_t>> create(std::shared_ptr<partition_source<K, void>> source, std::string storage_path, int64_t punctuate_intervall, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) {
+      return std::make_shared<count_by_key<K, CODEC>>(source, storage_path, punctuate_intervall, codec);
     }
 
     std::string name() const {
@@ -57,6 +60,16 @@ namespace kspp {
       bool processed = (_queue.size() > 0);
       while (_queue.size()) {
         auto e = _queue.front();
+       
+        // should this be on processing time our message time??? 
+        // what happens at end of stream if on messaage time...
+        if (_next_punctuate < e->event_time) {
+          punctuate(_next_punctuate); // what happens here if message comes out of order??? TBD
+          _next_punctuate = e->event_time + _punctuate_intervall;
+          _dirty = false;
+        }
+
+        _dirty = true; // aggregated but not committed
         _queue.pop_front();
         _counter_store.add(e->key, 1);
       }
@@ -69,6 +82,19 @@ namespace kspp {
 
     virtual bool eof() const {
       return _queue.size() == 0 && _stream->eof();
+    }
+
+    virtual bool is_dirty() {
+      return (_dirty || !eof());
+    }
+
+    virtual void flush() {
+      while (!eof())
+        process_one();
+      _stream->flush();
+      while (!eof())
+        process_one();
+      punctuate(milliseconds_since_epoch());
     }
 
     /**
@@ -102,5 +128,8 @@ namespace kspp {
     std::shared_ptr<partition_source<K, void>>      _stream;
     rocksdb_counter_store<K, CODEC>                 _counter_store;
     std::deque<std::shared_ptr<krecord<K, void>>>   _queue;
+    int64_t                                         _punctuate_intervall;
+    int64_t                                         _next_punctuate;
+    bool                                            _dirty;
   };
 }

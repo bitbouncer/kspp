@@ -89,6 +89,18 @@ namespace kspp {
       }
     }
 
+    virtual bool is_dirty() {
+      return _source.is_dirty();
+    }
+
+    virtual void flush() {
+      while (!eof())
+        process_one();
+      _source.flush();
+      while (!eof())
+        process_one();
+    }
+
     inline int64_t offset() const {
       return _current_offset;
     }
