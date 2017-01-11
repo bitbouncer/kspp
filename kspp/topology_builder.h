@@ -4,6 +4,7 @@
 #include "processors/repartition.h"
 #include "processors/filter.h"
 #include "processors/transform.h"
+#include "processors/rate_limiter.h"
 #include "impl/kstream_impl.h"
 #include "impl/ktable_impl.h"
 #include "sinks/kafka_sink.h"
@@ -211,6 +212,11 @@ namespace kspp {
       auto p = std::make_shared<kspp::flat_map<SK, SV, RK, RV>>(source, f);
       //_topology.add(p);
       return p;
+    }
+
+    template<class K, class V>
+    std::shared_ptr<kspp::partition_source<K, V>> create_rate_limiter(std::shared_ptr<kspp::partition_source<K, V>> source, int64_t agetime, size_t capacity) {
+      return rate_limiter<K, V>::create(source, agetime, capacity);
     }
 
     /*
