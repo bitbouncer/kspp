@@ -15,7 +15,7 @@ namespace kspp {
     typedef std::function<void(const K& key, const streamV& left, const tableV& right, R& result)> value_joiner; // TBD replace with std::shared_ptr<const krecord<K, R>> left, std::shared_ptr<const krecord<K, R>> right, std::shared_ptr<krecord<K, R>> result;
 
     left_join(std::shared_ptr<partition_source<K, streamV>> stream, std::shared_ptr<ktable_partition<K, tableV>> table, value_joiner f)
-      : partition_source(stream->partition())
+      : partition_source(stream.get(), stream->partition())
       , _stream(stream)
       , _table(table)
       , _value_joiner(f) {
@@ -57,15 +57,6 @@ namespace kspp {
 
     virtual size_t queue_len() {
       return _queue.size();
-    }
-
-    bool consume_right() {
-      if (!_table->eof()) {
-        _table->process_one();
-        _table->commit();
-        return true;
-      }
-      return false;
     }
 
     virtual bool process_one() {
@@ -115,15 +106,6 @@ namespace kspp {
 
     virtual bool is_dirty() {
       return _table->is_dirty() || _stream->is_dirty();
-    }
-
-    virtual void flush() {
-      while (!eof())
-        process_one();
-      _table->flush();
-      _stream->flush();
-      while (!eof())
-        process_one();
     }
 
   private:

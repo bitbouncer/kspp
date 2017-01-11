@@ -12,7 +12,7 @@ namespace kspp {
   {
   public:
     repartition_by_table(std::shared_ptr<partition_source<K, V>> source, std::shared_ptr<ktable_partition<K, K>> routing_table, std::shared_ptr<topic_sink<K, V, CODEC>> topic_sink)
-      : partition_processor(source->partition())
+      : partition_processor(source.get(), source->partition())
       , _source(source)
       , _routing_table(routing_table)
       , _topic_sink(topic_sink) {
@@ -46,15 +46,6 @@ namespace kspp {
     virtual void close() {
       _routing_table->close();
       _source->close();
-    }
-
-    bool consume_right() {
-      if (!_routing_table->eof()) {
-        _routing_table->process_one();
-        _routing_table->commit();
-        return true;
-      }
-      return false;
     }
 
     virtual bool process_one() {

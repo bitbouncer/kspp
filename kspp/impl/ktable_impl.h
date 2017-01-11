@@ -10,7 +10,7 @@ namespace kspp {
   {
   public:
     ktable_partition_impl(std::string nodeid, std::string brokers, std::string topic, size_t partition, std::string storage_path, std::shared_ptr<CODEC> codec)
-      : ktable_partition(partition)
+      : ktable_partition(NULL, partition)
       , _offset_storage_path(storage_path)
       , _source(brokers, topic, partition, codec)
       , _state_store(topic, partition, storage_path + "\\" + nodeid + "\\" + topic + "_" + std::to_string(partition), codec)
@@ -74,14 +74,6 @@ namespace kspp {
 
     virtual bool is_dirty() {
       return _source.is_dirty();
-    }
-
-    virtual void flush() {
-      while (!eof())
-        process_one();
-      _source.flush();
-      while (!eof())
-        process_one();
     }
 
     virtual bool process_one() {

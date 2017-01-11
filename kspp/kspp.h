@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 #include <mutex>
+#include <thread>
+#include <chrono>
 
 #pragma once
 namespace kspp {
@@ -123,6 +125,7 @@ class topic_processor
   virtual std::string name() const = 0;
 
   virtual void poll(int timeout) {}
+  virtual bool eof() const = 0;
 
   /**
   * Process an input record
@@ -130,6 +133,26 @@ class topic_processor
   virtual bool process_one() = 0;
   virtual void punctuate(int64_t timestamp) {}
   virtual void close() = 0;
+
+
+  virtual void flush() {
+    while (!eof())
+      if (!process_one()) {
+        //using namespace std::chrono_literals;
+        //std::this_thread::sleep_for(10ms);
+        ;
+      }
+    //if (_upstream)   TBD!!!!!
+    //  _upstream->flush();
+    while (!eof())
+      if (!process_one()) {
+        //using namespace std::chrono_literals;
+        //std::this_thread::sleep_for(10ms);
+        ;
+      }
+    punctuate(milliseconds_since_epoch());
+  }
+  
   protected:
 };
 
@@ -145,16 +168,39 @@ class partition_processor
   * Process an input record
   */
   virtual bool process_one() = 0;
+  virtual bool eof() const = 0;
   virtual void poll(int timeout) {}
   virtual void punctuate(int64_t timestamp) {}
   virtual void close() = 0;
   inline uint32_t partition() const {
     return (uint32_t) _partition;
   }
+
+  virtual void flush() {
+    while (!eof())
+      if (!process_one()) {
+        //using namespace std::chrono_literals;
+        //std::this_thread::sleep_for(10ms);
+        ;
+      }
+    if (_upstream)
+      _upstream->flush();
+    while (!eof())
+      if (!process_one()) {
+        //using namespace std::chrono_literals;
+        //std::this_thread::sleep_for(10ms);
+        ;
+      }
+    punctuate(milliseconds_since_epoch());
+  }
+
   protected:
-  partition_processor(size_t partition)
-    : _partition(partition) {}
-  const size_t _partition;
+  partition_processor(partition_processor* upstream, size_t partition)
+    : _upstream(upstream)
+    , _partition(partition) {
+  }
+  const size_t         _partition;
+  partition_processor* _upstream;
 };
 
 // maybee this is not good at all - if we have a separate processors that uses it's own thread to call 
@@ -201,7 +247,8 @@ class partition_sink : public partition_processor
   virtual size_t queue_len() = 0;
   protected:
   partition_sink(size_t partition)
-    : partition_processor(partition) {}
+    : partition_processor(NULL, partition) {
+  }
 };
 
 // specialisation for void key
@@ -221,7 +268,8 @@ class partition_sink<void, V> : public partition_processor
   virtual size_t queue_len() = 0;
   protected:
   partition_sink(size_t partition)
-    : partition_processor(partition) {}
+    : partition_processor(NULL, partition) {
+  }
 };
 
 inline uint32_t djb_hash(const char *str, size_t len) {
@@ -309,8 +357,9 @@ class partition_source : public partition_processor
   public:
   using sink_function = typename std::function<void(std::shared_ptr<krecord<K, V>>)>;
 
-  partition_source(size_t partition)
-    :partition_processor(partition) {}
+  partition_source(partition_processor* upstream, size_t partition)
+    : partition_processor(upstream, partition) {
+  }
 
   virtual void add_sink(std::shared_ptr<partition_sink<K, V>> sink) {
     add_sink([sink](auto e) {
@@ -322,24 +371,13 @@ class partition_source : public partition_processor
     _sinks.push_back(sink);
   }
 
-  virtual bool eof() const = 0;
+
   virtual void start() {}
   virtual void start(int64_t offset) {}
   virtual void commit() {}
   virtual void flush_offset() {}
 
   virtual bool is_dirty() = 0;
-
-  virtual void flush() = 0;
-
-  /*
-  virtual void flush() {
-    //_source->flush();
-    while (!eof())
-      process_one();
-    punctuate(milliseconds_since_epoch());
-  }
-  */
 
   protected:
 
@@ -390,24 +428,27 @@ class materialized_partition_source : public partition_source<K, V>
   virtual iterator end() = 0;
   virtual std::shared_ptr<krecord<K, V>> get(const K& key) = 0;
 
-  materialized_partition_source(size_t partition)
-    :partition_source(partition) {}
+  materialized_partition_source(partition_processor* upstream, size_t partition)
+    : partition_source(upstream, partition) {
+  }
 };
 
 template<class K, class V>
 class kstream_partition : public partition_source<K, V>
 {
   public:
-  kstream_partition(size_t partition)
-    : partition_source(partition) {}
+  kstream_partition(partition_processor* upstream, size_t partition)
+    : partition_source(upstream, partition) {
+  }
 };
 
 template<class K, class V>
 class ktable_partition : public materialized_partition_source<K, V>
 {
   public:
-  ktable_partition(size_t partition)
-    : materialized_partition_source(partition) {}
+  ktable_partition(partition_processor* upstream, size_t partition)
+    : materialized_partition_source(upstream, partition) {
+  }
 };
 
 

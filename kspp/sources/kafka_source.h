@@ -48,12 +48,6 @@ namespace kspp {
       return !_consumer.eof();
     }
 
-    virtual void flush() {
-      //_consumer.flush();
-      while (!eof())
-        process_one();
-    }
-
     virtual bool process_one() {
       auto p = _consumer.consume();
       if (!p)
@@ -64,7 +58,7 @@ namespace kspp {
 
   protected:
     kafka_source_base(std::string brokers, std::string topic, size_t partition, std::shared_ptr<CODEC> codec)
-      : partition_source(partition)
+      : partition_source(NULL, partition)
       , _codec(codec)
       , _consumer(brokers, topic, partition) {}
 

@@ -158,23 +158,23 @@ int main(int argc, char **argv) {
     auto up_sink = builder.create_stream_sink<int64_t, user_profile_data>(userprofiles, std::cerr);
 
     pageviews->start(-2);
+    pageviews->flush();
+    
+    /*
     while (!pageviews->eof()) {
       pageviews->process_one();
     }
+    */
 
     userprofiles->start(-2);
-    while (!userprofiles->eof()) {
-      userprofiles->process_one();
-    }
+    userprofiles->flush();
   }
 
   {
     auto pageviews = builder.create_kstream<int64_t, page_view_data>("example3-pageviews_tmp", "kspp_PageViews", 0);
     auto pw_sink = builder.create_stream_sink<int64_t, page_view_data>(pageviews, std::cerr);
     pageviews->start();
-    while (!pageviews->eof()) {
-      pageviews->process_one();
-    }
+    pageviews->flush();
     pageviews->commit();
   }
 
@@ -190,9 +190,7 @@ int main(int argc, char **argv) {
     auto sink = builder.create_kafka_sink<int64_t, page_view_decorated>("kspp_PageViewsDecorated", PARTITION);
     join->start(-2);
     join->add_sink(sink);
-    while (!join->eof()) {
-      join->process_one();
-    }
+    join->flush();
     join->commit();
   }
 
@@ -200,9 +198,7 @@ int main(int argc, char **argv) {
   {
     auto table = builder.create_ktable<int64_t, user_profile_data>("example3-kspp_UserProfile_tmp0", "kspp_UserProfile", PARTITION);
     table->start();
-    while (!table->eof()) {
-      table->process_one();
-    }
+    table->flush();
     for (auto it = table->begin(), end = table->end(); it != end; ++it)
       std::cerr << "item : " << ksource_to_string(**it) << std::endl;
   }
@@ -211,9 +207,7 @@ int main(int argc, char **argv) {
   {
     auto table = builder.create_ktable<int64_t, user_profile_data>("example3-kspp_UserProfile_tmp0", "kspp_UserProfile", PARTITION);
     table->start();
-    while (!table->eof()) {
-      table->process_one();
-    }
+    table->flush();
     for (auto i : *table)
       std::cerr << "item : " << ksource_to_string(*i) << std::endl;
   }

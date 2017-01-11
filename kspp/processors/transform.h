@@ -9,10 +9,10 @@ namespace kspp {
   class flat_map : public partition_source<RK, RV>
   {
   public:
-    typedef std::function<void(std::shared_ptr<krecord<SK, SV>> record, flat_map* self)> extractor; // maybee better to pass this and send() directrly
+    typedef std::function<void(std::shared_ptr<krecord<SK, SV>> record, flat_map* self)> extractor; // maybe better to pass this and send() directrly
 
     flat_map(std::shared_ptr<partition_source<SK, SV>> source, extractor f)
-      : partition_source(source->partition())
+      : partition_source(source.get(), source->partition())
       , _source(source)
       , _extractor(f) {
       _source->add_sink([this](auto r) {
@@ -77,16 +77,7 @@ namespace kspp {
     virtual bool is_dirty() {
       return (_source->is_dirty() || (_queue.size() == 0));
     }
-
-    virtual void flush() {
-      while (!eof())
-        process_one();
-      _source->flush();
-      while (!eof())
-        process_one();
-      punctuate(milliseconds_since_epoch());
-    }
-
+  
     virtual size_t queue_len() {
       return _queue.size();
     }

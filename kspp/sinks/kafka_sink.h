@@ -54,6 +54,11 @@ namespace kspp {
     virtual bool process_one() {
       return false;
     }
+    
+    virtual bool eof() const {
+      return _impl.queue_len()>0;
+    }
+
   protected:
     kafka_sink_base(std::string brokers, std::string topic, partitioner p, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
       : topic_sink(codec)
@@ -210,6 +215,10 @@ namespace kspp {
     // pure sink cannot suck data from upstream...
     virtual bool process_one() {
       return false;
+    }
+
+    virtual bool eof() const {
+      return _impl.queue_len()>0;
     }
 
   protected:

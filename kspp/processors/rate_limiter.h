@@ -12,7 +12,7 @@ class rate_limiter : public partition_source<K, V>
 {
   public:
   rate_limiter(std::shared_ptr<partition_source<K, V>> source, int64_t agetime, size_t capacity)
-    : partition_source(source->partition())
+    : partition_source(source.get(), source->partition())
     , _source(source)
     , _token_bucket(std::make_shared<mem_token_bucket<K>>(agetime, capacity)) {
     _source->add_sink([this](auto r) {
@@ -80,14 +80,6 @@ class rate_limiter : public partition_source<K, V>
     return (_queue.size() > 0) || _source->is_dirty();
   }
 
-  virtual void flush() {
-    while (!eof())
-      process_one();
-    _source->flush();
-    while (!eof())
-      process_one();
-  }
-
   virtual size_t queue_len() {
     return _queue.size();
   }
@@ -107,7 +99,7 @@ class thoughput_limiter : public partition_source<K, V>
 {
   public:
   thoughput_limiter(std::shared_ptr<partition_source<K, V>> source, double messages_per_sec)
-    : partition_source(source->partition())
+    : partition_source(source.get(), source->partition())
     , _source(source)
     , _token_bucket(std::make_shared<mem_token_bucket<int>>((int64_t) (1000.0/messages_per_sec), 1)) {
     _source->add_sink([this](auto r) {
@@ -174,14 +166,6 @@ class thoughput_limiter : public partition_source<K, V>
 
   virtual bool is_dirty() {
     return (_queue.size() > 0) || _source->is_dirty();
-  }
-
-  virtual void flush() {
-    while (!eof())
-      process_one();
-    _source->flush();
-    while (!eof())
-      process_one();
   }
 
   virtual size_t queue_len() {

@@ -38,28 +38,15 @@ int main(int argc, char **argv) {
       return (e->key != "hello");
     });
 
-
     auto limited_stream = builder.create_rate_limiter<std::string, void>(filtered_stream, 1000, 10);
 
-    auto word_counts = builder.create_count_by_key<std::string>(limited_stream, 2000); // punctuate every 2 sec
-
-    auto thoughput_limited_stream = builder.create_thoughput_limiter<std::string, size_t>(word_counts, 1);
+    auto word_counts = builder.create_count_by_key<std::string>(limited_stream, 2000000); // punctuate every 2000 sec
+    
+    auto thoughput_limited_stream = builder.create_thoughput_limiter<std::string, size_t>(word_counts, 10);
+    
     auto sink = builder.create_stream_sink<std::string, size_t>(thoughput_limited_stream, std::cerr);
 
     thoughput_limited_stream->start(-2);
     thoughput_limited_stream->flush();
-
-    // pull everthing through aggregate count - when done punctuate.
-    //while (!word_counts->eof()) {
-    //  word_counts->process_one();
-    //}
-    //word_counts->punctuate(kspp::milliseconds_since_epoch());
-
-    while (!thoughput_limited_stream->eof()) {
-      thoughput_limited_stream->process_one();
-    }
-
-
-    //thoughput_limited_stream->punctuate(kspp::milliseconds_since_epoch());
   }
 }

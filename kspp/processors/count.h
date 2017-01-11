@@ -10,7 +10,7 @@ namespace kspp {
   {
   public:
     count_by_key(std::shared_ptr<partition_source<K, void>> source, std::string storage_path, int64_t punctuate_intervall, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-      : materialized_partition_source(source->partition())
+      : materialized_partition_source(source.get(), source->partition())
       , _stream(source)
       , _counter_store(name(), storage_path + "//" + name(), codec)
       , _punctuate_intervall(punctuate_intervall)
@@ -88,23 +88,17 @@ namespace kspp {
       return (_dirty || !eof());
     }
 
-    virtual void flush() {
-      while (!eof())
-        process_one();
-      _stream->flush();
-      while (!eof())
-        process_one();
-      punctuate(milliseconds_since_epoch());
-    }
-
     /**
     take a snapshot of state and post it to sinks
     */
     virtual void punctuate(int64_t timestamp) {
-      for (auto i : _counter_store) {
-        i->event_time = timestamp;
-        send_to_sinks(i);
+      if (_dirty) { // keep event timestamts in counter store and only include the updated ones... TBD
+        for (auto i : _counter_store) {
+          i->event_time = timestamp;
+          send_to_sinks(i);
+        }
       }
+      _dirty = false;
     }
 
     // inherited from kmaterialized_source
