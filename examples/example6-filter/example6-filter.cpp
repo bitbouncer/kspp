@@ -47,8 +47,6 @@ int main(int argc, char **argv) {
     auto sink = builder.create_stream_sink<std::string, void>(filtered_stream, std::cerr);
 
     filtered_stream->start(-2);
-    while (!filtered_stream->eof()) {
-      filtered_stream->process_one();
-    }
+    filtered_stream->flush();
   }
 }

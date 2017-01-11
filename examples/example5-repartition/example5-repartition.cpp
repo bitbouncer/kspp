@@ -50,34 +50,26 @@ int main(int argc, char **argv) {
     for (auto s : sources) {
       std::cerr << s->name() << std::endl;
       s->start(-2);
-      while (!s->eof()) {
-        s->process_one();
-      }
+      s->flush();
     }
   }
-
-
+  
   auto topic_sink = builder.create_kafka_sink<int, std::string>("kspp_example5_usernames.per-channel");
   for (int i = 0; i != 8; ++i) {
     auto partition_source = builder.create_kafka_source<int, std::string>("kspp_example5_usernames", i);
     auto partition_routing_table = builder.create_ktable<int, int>("example5", "kspp_example5_user_channel", i);
     auto partition_repartition = std::make_shared<kspp::repartition_by_table<int, std::string, kspp::text_codec>>(partition_source, partition_routing_table, topic_sink);
     partition_repartition->start(-2);
-    while (!partition_repartition->eof()) {
-      partition_repartition->process_one();
-    }
+    partition_repartition->flush();
   }
-
-
+  
   {
     auto sources = builder.create_kafka_sources<int, std::string>("kspp_example5_usernames.per-channel", 8);
     auto sink = builder.create_stream_sinks<int, std::string>(sources, std::cerr);
     for (auto s : sources) {
       std::cerr << s->name() << std::endl;
       s->start(-2);
-      while (!s->eof()) {
-        s->process_one();
-      }
+      s->flush();
     }
   }
 }

@@ -29,6 +29,7 @@ int main(int argc, char **argv) {
       i->add_sink(word_sink);
       i->start(-2);
     }
+    
     while (!eof(word_streams))
       process_one(word_streams);
   }
@@ -39,9 +40,7 @@ int main(int argc, char **argv) {
   for (auto i : word_counts) {
     std::cerr << i->name() << std::endl;
     i->start(-2);
-
-    while (!i->eof())
-      i->process_one();
+    i->flush();
   }
 
   for (auto i : word_counts)

@@ -8,7 +8,7 @@
 
 namespace kspp {
   template<class K, class V, class CODEC>
-  class repartition_by_table : partition_processor
+  class repartition_by_table : public partition_processor
   {
   public:
     repartition_by_table(std::shared_ptr<partition_source<K, V>> source, std::shared_ptr<ktable_partition<K, K>> routing_table, std::shared_ptr<topic_sink<K, V, CODEC>> topic_sink)
@@ -26,13 +26,7 @@ namespace kspp {
     }
 
     std::string name() const { return _source->name() + "-repartition_by_value(" + _routing_table->name() + ")"; }
-
-    /*
-    void add_sink(std::shared_ptr<topic_sink<K, V, CODEC>> sink) {
-      _sinks.push_back(sink);
-    }
-    */
-
+    
     virtual void start() {
       _routing_table->start();
       _source->start();
@@ -64,7 +58,6 @@ namespace kspp {
         auto routing_row = _routing_table->get(e->key);
         if (routing_row) {
           if (routing_row->value) {
-            //uint32_t hash = _topic_sink->get_partition_hash_for_key(*routing_row->value);
             uint32_t hash = get_partition_hash<K, CODEC>(*routing_row->value);
             _topic_sink->produce(hash, e);
           }
