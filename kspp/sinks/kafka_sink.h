@@ -144,10 +144,10 @@ class kafka_sink<K, void, CODEC> : public kafka_sink_base<K, void, CODEC>
   public:
   using partitioner = typename kafka_partitioner_base<K>::partitioner;
 
-  kafka_sink(std::string brokers, std::string topic, partitioner p, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) :
+  kafka_sink(std::string brokers, std::string topic, partitioner p, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
     : kafka_sink_base<K, void, CODEC>(brokers, topic, p, codec) {}
 
-  kafka_sink(std::string brokers, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) :
+  kafka_sink(std::string brokers, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
     : kafka_sink_base<K, void, CODEC>(brokers, topic, codec) {}
 
   virtual int produce(std::shared_ptr<krecord<K, void>> r) {
