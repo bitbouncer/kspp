@@ -10,7 +10,7 @@ namespace kspp {
   {
   public:
     count_by_key(std::shared_ptr<partition_source<K, void>> source, std::string storage_path, int64_t punctuate_intervall, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-      : materialized_partition_source(source.get(), source->partition())
+      : materialized_partition_source<K, size_t>(source.get(), source->partition())
       , _stream(source)
       , _counter_store(name(), storage_path + "//" + name(), codec)
       , _punctuate_intervall(punctuate_intervall)
@@ -30,7 +30,7 @@ namespace kspp {
     }
 
     std::string name() const {
-      return _stream->name() + "(count_by_key)_" + std::to_string(materialized_partition_source::partition());
+      return _stream->name() + "(count_by_key)_" + std::to_string(materialized_partition_source<K, size_t>::partition());
     }
 
     virtual void start() {

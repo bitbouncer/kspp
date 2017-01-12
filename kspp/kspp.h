@@ -448,7 +448,7 @@ class ktable_partition : public materialized_partition_source<K, V>
 {
   public:
   ktable_partition(partition_processor* upstream, size_t partition)
-    : materialized_partition_source(upstream, partition) {
+    : materialized_partition_source<K, V>(upstream, partition) {
   }
 };
 

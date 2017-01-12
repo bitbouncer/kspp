@@ -17,10 +17,6 @@ namespace kspp {
       close();
     }
 
-    virtual std::string name() const {
-      return "kafka_source-" + _consumer.topic() + "-" + std::to_string(_consumer.partition());
-    }
-
     virtual void start(int64_t offset) {
       _consumer.start(offset);
     }
@@ -73,7 +69,11 @@ namespace kspp {
   {
   public:
     kafka_source(std::string brokers, std::string topic, size_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-      : kafka_source_base(brokers, topic, partition, codec) {}
+      : kafka_source_base<K, V, CODEC>(brokers, topic, partition, codec) {}
+
+    virtual std::string name() const {
+      return "kafka_source-" + _consumer.topic() + "-" + std::to_string(_consumer.partition());
+    }
 
   protected:
     std::shared_ptr<krecord<K, V>> parse(const std::unique_ptr<RdKafka::Message> & ref) {
@@ -119,7 +119,11 @@ namespace kspp {
   {
   public:
     kafka_source(std::string brokers, std::string topic, size_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-      : kafka_source_base(brokers, topic, partition, codec) {}
+      : kafka_source_base<void, V, CODEC>(brokers, topic, partition, codec) {}
+
+    virtual std::string name() const {
+      return "kafka_source<void, K>-" + _consumer.topic() + "-" + std::to_string(_consumer.partition());
+    }
 
   protected:
     std::shared_ptr<krecord<void, V>> parse(const std::unique_ptr<RdKafka::Message> & ref) {
@@ -158,7 +162,11 @@ namespace kspp {
   public:
   public:
     kafka_source(std::string brokers, std::string topic, size_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-      : kafka_source_base(brokers, topic, partition, codec) {}
+      : kafka_source_base<K, void, CODEC>(brokers, topic, partition, codec) {}
+
+    virtual std::string name() const {
+      return "kafka_source<K, void>-" + _consumer.topic() + "-" + std::to_string(_consumer.partition());
+    }
 
   protected:
     std::shared_ptr<krecord<K, void>> parse(const std::unique_ptr<RdKafka::Message> & ref) {

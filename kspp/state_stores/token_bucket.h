@@ -40,7 +40,7 @@ class mem_token_bucket : public token_bucket<K>
 {
   public:
   mem_token_bucket(int64_t agetime, size_t capacity)
-    : token_bucket()
+    : token_bucket<K>()
     , _config(agetime, capacity) {
   }
     
@@ -53,7 +53,7 @@ class mem_token_bucket : public token_bucket<K>
   * returns true if bucket has capacity
   */
   virtual bool consume(const K& key, int64_t timestamp) {
-    std::map<K, std::shared_ptr<bucket>>::iterator item = _buckets.find(key);
+    typename std::map<K, std::shared_ptr<bucket>>::iterator item = _buckets.find(key);
     if (item == _buckets.end()) {
       auto b = std::make_shared<bucket>(_config.capacity);
       bool res = b->consume_one(&_config, timestamp);
@@ -73,7 +73,7 @@ class mem_token_bucket : public token_bucket<K>
   * Returns the counter for the given key
   */
   virtual size_t token(const K& key) {
-    std::map<K, std::shared_ptr<bucket>>::iterator item = _buckets.find(key);
+    typename std::map<K, std::shared_ptr<bucket>>::iterator item = _buckets.find(key);
     return (item == _buckets.end()) ? _config.capacity : item->second->token();
   }
 
