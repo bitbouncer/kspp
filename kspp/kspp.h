@@ -7,6 +7,7 @@
 #include <mutex>
 #include <thread>
 #include <chrono>
+#include <strstream>
 
 #pragma once
 namespace kspp {
