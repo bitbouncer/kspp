@@ -60,12 +60,12 @@ class kafka_sink_base : public topic_sink<K, V, CODEC>
 
   protected:
   kafka_sink_base(std::string brokers, std::string topic, partitioner p, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-    : topic_sink(codec)
+    : topic_sink<K, V, CODEC>(codec)
     , _impl(brokers, topic)
     , _partitioner(p) {}
 
   kafka_sink_base(std::string brokers, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-    : topic_sink(codec)
+    : topic_sink<K, V, CODEC>(codec)
     , _impl(brokers, topic) {}
 
   kafka_producer          _impl;
@@ -88,8 +88,8 @@ class kafka_sink : public kafka_sink_base<K, V, CODEC>
     : kafka_sink_base<K, V, CODEC>(brokers, topic, codec) {}
 
   virtual int produce(std::shared_ptr<krecord<K, V>> r) {
-    if (_partitioner)
-      return produce(_partitioner(r->key), r);
+    if (this->_partitioner)
+      return produce(this->_partitioner(r->key), r);
     else
       return produce(get_partition_hash(r->key, codec()), r);
   }
@@ -111,7 +111,7 @@ class kafka_sink : public kafka_sink_base<K, V, CODEC>
       vp = malloc(vsize);
       vs.read((char*) vp, vsize);
     }
-    return _impl.produce(partition, kafka_producer::FREE, kp, ksize, vp, vsize);
+    return this->_impl.produce(partition, kafka_producer::FREE, kp, ksize, vp, vsize);
   }
 };
 
@@ -133,7 +133,7 @@ class kafka_sink<void, V, CODEC> : public kafka_sink_base<void, V, CODEC>
       vp = malloc(vsize);
       vs.read((char*) vp, vsize);
     }
-    return _impl.produce(partition, kafka_producer::FREE, NULL, 0, vp, vsize);
+    return this->_impl.produce(partition, kafka_producer::FREE, NULL, 0, vp, vsize);
   }
 };
 
@@ -160,7 +160,7 @@ class kafka_sink<K, void, CODEC> : public kafka_sink_base<K, void, CODEC>
     ks.read((char*) kp, ksize);
 
     if (_partitioner)
-      return produce(_partitioner(r->key), r);
+      return produce(this->_partitioner(r->key), r);
     else
       return produce(get_partition_hash(r->key, codec()), r);
   }
@@ -173,7 +173,7 @@ class kafka_sink<K, void, CODEC> : public kafka_sink_base<K, void, CODEC>
     ksize = _codec->encode(r->key, ks);
     kp = malloc(ksize);
     ks.read((char*) kp, ksize);
-    return _impl.produce(partition, kafka_producer::FREE, kp, ksize, NULL, 0);
+    return this->_impl.produce(partition, kafka_producer::FREE, kp, ksize, NULL, 0);
   }
 };
 
