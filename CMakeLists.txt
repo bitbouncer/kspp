@@ -48,18 +48,28 @@ SET(LIBRDKAFKA_LIBS librdkafkacpp librdkafka lz4)
 SET(CSI_LIBS kspp ${LIBRDKAFKA_LIBS} ${CSI_BOOST_LIBS} ${CSI_ROCKSDB_LIBS} libssl libcrypto ${ZLIB_LIBS} crypt32 Ws2_32 legacy_stdio_definitions)
 
 elseif(APPLE)
+SET(CSI_INCLUDE_PATH        ${CMAKE_SOURCE_DIR}/../rocksdb/include)
+SET(CSI_LIBRARY_PATH        ${CMAKE_SOURCE_DIR}/../rocksdb)
+
 #add_definitions(-D_FILE_OFFSET_BITS=64 -D_REENTRANT -DEXTERNAL_LOCKS -DMULTITHREAD)
 #add_definitions(-DBOOST_ASIO_HAS_STD_CHRONO)
+
 add_definitions(-DBOOST_LOG_DYN_LINK)
 add_definitions(-std=c++14)
 
 set(CSI_BOOST_LIBS boost_log_setup boost_log boost_date_time boost_timer boost_thread boost_system boost_program_options boost_filesystem boost_regex boost_chrono boost_iostreams pthread rt c)
+SET(CSI_ROCKSDB_LIBS rocksdb snappy bz2 z)
+SET(LIBRDKAFKA_LIBS rdkafka++ rdkafka)
+SET(CSI_LIBS kspp ${LIBRDKAFKA_LIBS} ${CSI_ROCKSDB_LIBS} ${CSI_BOOST_LIBS} crypto ssl)
+
 
 else()
 #LINUX
+SET(CSI_INCLUDE_PATH        ${CMAKE_SOURCE_DIR}/../rocksdb/include)
+SET(CSI_LIBRARY_PATH        ${CMAKE_SOURCE_DIR}/../rocksdb)
+
 set(LIBRARY_OUTPUT_PATH     ${CMAKE_SOURCE_DIR}/lib)
 SET(EXECUTABLE_OUTPUT_PATH  ${CMAKE_SOURCE_DIR}/bin)
-SET(CSI_LIBRARY_PATH        ${CMAKE_SOURCE_DIR}/../rocksdb)
 
 add_definitions(-D_FILE_OFFSET_BITS=64 -D_REENTRANT -DEXTERNAL_LOCKS -DMULTITHREAD)
 #add_definitions(-DBOOST_ASIO_HAS_STD_CHRONO)
