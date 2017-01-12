@@ -42,7 +42,6 @@ std::string to_string(const page_view_decorated& pd) {
   return std::string("time:") + std::to_string(pd.time) + ", userid:" + std::to_string(pd.user_id) + ", url:" + pd.url + ", email:" + pd.email;
 }
 
-
 namespace kspp {
 inline size_t binary_encode(const page_view_data& obj, std::ostream& dst) {
   size_t sz = 0;
@@ -108,19 +107,19 @@ inline size_t binary_decode(std::istream& src, page_view_decorated& obj) {
   return src.good() ? sz : 0;
 }
 
-template<> size_t kspp::text_codec::encode(const page_view_data& src, std::ostream& dst) {
+template<> size_t text_codec::encode(const page_view_data& src, std::ostream& dst) {
   auto s = to_string(src);
   dst << s;
   return s.size();
 }
 
-template<> size_t kspp::text_codec::encode(const user_profile_data& src, std::ostream& dst) {
+template<> size_t text_codec::encode(const user_profile_data& src, std::ostream& dst) {
   auto s = to_string(src);
   dst << s;
   return s.size();
 }
 
-template<> size_t kspp::text_codec::encode(const page_view_decorated& src, std::ostream& dst) {
+template<> size_t text_codec::encode(const page_view_decorated& src, std::ostream& dst) {
   auto s = to_string(src);
   dst << s;
   return s.size();
