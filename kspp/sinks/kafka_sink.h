@@ -248,7 +248,7 @@ class kafka_single_partition_sink : public kafka_single_partition_sink_base<K, V
       vp = malloc(vsize);
       vs.read((char*) vp, vsize);
     }
-    return _impl.produce((uint32_t) this->_fixed_partition, kafka_producer::FREE, kp, ksize, vp, vsize);
+    return this->_impl.produce((uint32_t) this->_fixed_partition, kafka_producer::FREE, kp, ksize, vp, vsize);
   }
 };
 

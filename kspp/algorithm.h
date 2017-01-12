@@ -39,17 +39,17 @@ bool eof(std::vector<std::shared_ptr<materialized_partition_source<K, V>>>& sour
 
 template<class KSINK>
 int produce(KSINK& sink, const typename KSINK::key_type& key) {
-  return sink.produce(std::make_shared<KSINK::record_type>(key));
+  return sink.produce(std::make_shared<typename KSINK::record_type>(key));
 }
 
 template<class KSINK>
 int produce(KSINK& sink, const typename KSINK::key_type& key, const typename KSINK::value_type& value) {
-  return sink.produce(std::make_shared<KSINK::record_type>(key, value));
+  return sink.produce(std::make_shared<typename KSINK::record_type>(key, value));
 }
 
 template<class KSINK>
 int produce(KSINK& sink, const typename KSINK::value_type& value) {
-  return sink.produce(std::make_shared<KSINK::record_type>(void, value));
+  return sink.produce(std::make_shared<typename KSINK::record_type>(value));
 }
 
 // TBD bestämm vilket api som är bäst...
