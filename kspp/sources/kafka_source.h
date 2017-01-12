@@ -2,7 +2,7 @@
 #include <strstream>
 #include <boost/filesystem.hpp>
 #include <boost/log/trivial.hpp>
-#include "kspp.h"
+#include <kspp/kspp.h>
 #include "kafka_consumer.h"
 #pragma once
 
