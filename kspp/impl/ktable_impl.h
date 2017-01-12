@@ -27,7 +27,7 @@ namespace kspp {
           _state_store.put(r->key, *r->value);
         else
           _state_store.del(r->key);
-        send_to_sinks(r);
+        this->send_to_sinks(r);
       });
     }
 

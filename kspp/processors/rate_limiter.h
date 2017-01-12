@@ -63,7 +63,7 @@ class rate_limiter : public partition_source<K, V>
       // milliseconds_since_epoch for processing time limiter
       // 
       if (_token_bucket->consume(r->key, r->event_time))
-        send_to_sinks(r);
+        this->send_to_sinks(r);
     }
     return processed;
   }
@@ -149,7 +149,7 @@ class thoughput_limiter : public partition_source<K, V>
       auto r = _queue.front();
       if (_token_bucket->consume(0, milliseconds_since_epoch())) {
         _queue.pop_front();
-        send_to_sinks(r);
+        this->send_to_sinks(r);
         return true;
       }
     }

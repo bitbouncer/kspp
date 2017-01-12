@@ -81,12 +81,12 @@ namespace kspp {
           if (e->value) {
             auto p = std::make_shared<kspp::krecord<K, R>>(e->key, std::make_shared<R>(), e->event_time);
             _value_joiner(e->key, *e->value, *table_row->value, *p->value);
-            send_to_sinks(p);
+            this->send_to_sinks(p);
           } else {
             auto p = std::make_shared<kspp::krecord<K, R>>(e->key);
             p->event_time = e->event_time;
             p->offset = e->offset;
-            send_to_sinks(p);
+            this->send_to_sinks(p);
           }
         } else {
           // join failed

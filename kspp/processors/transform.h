@@ -63,7 +63,7 @@ namespace kspp {
     }
 
     void push_back(std::shared_ptr<krecord<RK, RV>> r) {
-      send_to_sinks(r);
+      this->send_to_sinks(r);
     }
 
     virtual void commit() {
@@ -150,7 +150,7 @@ namespace kspp {
     }
 
     void push_back(std::shared_ptr<krecord<K, RV>> r) {
-      send_to_sinks(r);
+      this->send_to_sinks(r);
     }
 
     virtual void commit() {

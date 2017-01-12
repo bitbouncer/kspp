@@ -95,7 +95,7 @@ namespace kspp {
       if (_dirty) { // keep event timestamts in counter store and only include the updated ones... TBD
         for (auto i : _counter_store) {
           i->event_time = timestamp;
-          send_to_sinks(i);
+          this->send_to_sinks(i);
         }
       }
       _dirty = false;

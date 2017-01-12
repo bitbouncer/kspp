@@ -53,7 +53,7 @@ namespace kspp {
         auto r = _queue.front();
         _queue.pop_front();
         if (_predicate(r))
-          send_to_sinks(r);
+          this->send_to_sinks(r);
       }
       return processed;
     }

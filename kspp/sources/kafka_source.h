@@ -48,7 +48,7 @@ namespace kspp {
       auto p = _consumer.consume();
       if (!p)
         return false;
-      send_to_sinks(parse(p));
+      this->send_to_sinks(parse(p));
       return true;
     }
 

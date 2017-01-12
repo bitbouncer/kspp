@@ -56,7 +56,7 @@ namespace kspp {
       auto r = _queue.front();
       if (r->event_time + _delay > milliseconds_since_epoch()) {
         _queue.pop_front();
-        send_to_sinks(r);
+        this->send_to_sinks(r);
         return true;
       }
 
