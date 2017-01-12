@@ -2,6 +2,7 @@
 #include <boost/uuid/uuid.hpp>
 #include <ostream>
 #include <istream>
+#include <vector>
 
 namespace kspp {
   inline size_t binary_encode(const int64_t& a, std::ostream& dst) {
@@ -69,7 +70,7 @@ namespace kspp {
     src.read((char*)dst.data(), sz);
     return src.good() ? sz + sizeof(uint32_t) : 0;
   }
-
+  
   class binary_codec
   {
   public:
@@ -83,9 +84,36 @@ namespace kspp {
     }
 
     template<class T>
-    inline size_t decode(std::istream& src, T& dst) {
+    size_t encode(const std::vector<T>& v, std::ostream& dst) {
+      uint32_t vsz = (uint32_t) v.size();
+      dst.write((const char*) &vsz, sizeof(uint32_t));
+      size_t sz = 4;
+      for (auto & i : v)
+        sz += encode<T>(i, dst);
+      return sz;
+    }
+
+    template<class T>
+    size_t decode(std::istream& src, T& dst) {
       return kspp::binary_decode(src, dst);
     }
+
+    template<class T>
+    inline size_t decode(std::istream& src, std::vector<T>& dst) {
+      uint32_t len = 0;
+      src.read((char*) &len, sizeof(uint32_t));
+      if (len > 1048576) // sanity (not more that 1 MB)
+        return 0;
+      size_t sz = 4;
+      dst.reserve(len);
+      for (int i = 0; i != len; ++i) {
+        T t;
+        sz += decode<T>(src, t);
+        dst.push_back(t);
+      }
+      return src.good() ? sz : 0;
+    }
+
   };
 };
 

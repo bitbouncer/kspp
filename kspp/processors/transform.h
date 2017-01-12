@@ -99,7 +99,7 @@ namespace kspp {
     typedef std::function<void(std::shared_ptr<krecord<K, SV>> record, transform_value* self)> extractor; // maybee better to pass this and send() directrly
 
     transform_value(std::shared_ptr<partition_source<K, SV>> source, extractor f)
-      : partition_source<K, RV>(source->partition())
+      : partition_source<K, RV>(source.get(), source->partition())
       , _source(source)
       , _extractor(f) {
       _source->add_sink([this](auto r) {
