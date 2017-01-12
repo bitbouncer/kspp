@@ -159,7 +159,7 @@ class kafka_sink<K, void, CODEC> : public kafka_sink_base<K, void, CODEC>
     kp = malloc(ksize);
     ks.read((char*) kp, ksize);
 
-    if (_partitioner)
+    if (this->_partitioner)
       return produce(this->_partitioner(r->key), r);
     else
       return produce(get_partition_hash(r->key, this->codec()), r);
@@ -170,7 +170,7 @@ class kafka_sink<K, void, CODEC> : public kafka_sink_base<K, void, CODEC>
     size_t ksize = 0;
 
     std::stringstream ks;
-    ksize = _codec->encode(r->key, ks);
+    ksize = this->_codec->encode(r->key, ks);
     kp = malloc(ksize);
     ks.read((char*) kp, ksize);
     return this->_impl.produce(partition, kafka_producer::FREE, kp, ksize, NULL, 0);
@@ -270,7 +270,7 @@ class kafka_single_partition_sink<void, V, CODEC> : public kafka_single_partitio
       vp = malloc(vsize);
       vs.read((char*) vp, vsize);
     }
-    return _impl.produce((uint32_t) this->_fixed_partition, kafka_producer::FREE, NULL, 0, vp, vsize);
+    return this->_impl.produce((uint32_t) this->_fixed_partition, kafka_producer::FREE, NULL, 0, vp, vsize);
   }
 };
 
@@ -290,7 +290,7 @@ class kafka_single_partition_sink<K, void, CODEC> : public kafka_single_partitio
     ksize = this->_codec->encode(r->key, ks);
     kp = malloc(ksize);
     ks.read((char*) kp, ksize);
-    return _impl.produce((uint32_t) this->_fixed_partition, kafka_producer::FREE, kp, ksize, NULL, 0);
+    return this->_impl.produce((uint32_t) this->_fixed_partition, kafka_producer::FREE, kp, ksize, NULL, 0);
   }
 };
 };
