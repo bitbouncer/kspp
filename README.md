@@ -38,6 +38,29 @@ make
 cd ..
 ```
 
+## MacOS X
+
+Install build tools (using Homebrew)
+```
+# Install Xcode
+xcode-select --install
+brew install cmake
+brew install kafka
+brew install librdkafka
+brew install snappy
+brew install rocksdb
+brew install boost
+brew install boost-python
+```
+
+Check out source code
+```
+git clone https://github.com/bitbouncer/kspp.git
+```
+# Run the build
+./rebuild_macos.sh
+```
+
 ## Windows x64:
 
 Install build tools
