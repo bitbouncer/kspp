@@ -72,7 +72,7 @@ namespace kspp {
       : kafka_source_base<K, V, CODEC>(brokers, topic, partition, codec) {}
 
     virtual std::string name() const {
-      return "kafka_source-" + kafka_source_base::_consumer.topic() + "-" + std::to_string(kafka_source_base::_consumer.partition());
+      return "kafka_source-" + this->_consumer.topic() + "-" + std::to_string(this->_consumer.partition());
     }
 
   protected:
@@ -122,7 +122,7 @@ namespace kspp {
       : kafka_source_base<void, V, CODEC>(brokers, topic, partition, codec) {}
 
     virtual std::string name() const {
-      return "kafka_source<void, K>-" + kafka_source_base<void, V, CODEC>::_consumer.topic() + "-" + std::to_string(kafka_source_base<void, V, CODEC>::_consumer.partition());
+      return "kafka_source<void, K>-" + this->_consumer.topic() + "-" + std::to_string(this->_consumer.partition());
     }
 
   protected:
@@ -165,7 +165,7 @@ namespace kspp {
       : kafka_source_base<K, void, CODEC>(brokers, topic, partition, codec) {}
 
     virtual std::string name() const {
-      return "kafka_source<K, void>-" + kafka_source_base<K, void, CODEC>::_consumer.topic() + "-" + std::to_string(kafka_source_base<K, void, CODEC>::_consumer.partition());
+      return "kafka_source<K, void>-" + this->_consumer.topic() + "-" + std::to_string(this->_consumer.partition());
     }
 
   protected:
