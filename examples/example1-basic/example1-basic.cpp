@@ -43,6 +43,15 @@ std::string to_string(const page_view_decorated& pd) {
 }
 
 namespace kspp {
+template<> size_t binary_codec::encode(const page_view_data& src, std::ostream& dst) {
+  size_t sz = 0;
+  sz += kspp::binary_encode(src.time, dst);
+  sz += kspp::binary_encode(src.user_id, dst);
+  sz += kspp::binary_encode(src.url, dst);
+  return dst.good() ? sz : 0;
+}
+
+/*
 inline size_t binary_encode(const page_view_data& obj, std::ostream& dst) {
   size_t sz = 0;
   sz += kspp::binary_encode(obj.time, dst);
@@ -50,6 +59,7 @@ inline size_t binary_encode(const page_view_data& obj, std::ostream& dst) {
   sz += kspp::binary_encode(obj.url, dst);
   return dst.good() ? sz : 0;
 }
+*/
 
 inline size_t binary_decode(std::istream& src, page_view_data& obj) {
   size_t sz = 0;
