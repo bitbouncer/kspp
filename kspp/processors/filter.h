@@ -7,7 +7,7 @@ namespace kspp {
     typedef std::function<bool(std::shared_ptr<krecord<K, V>> record)> predicate; // return true to keep
 
     filter(std::shared_ptr<partition_source<K, V>> source, predicate f)
-      : partition_source(source.get(), source->partition())
+      : partition_source<K, V>(source.get(), source->partition())
       , _source(source)
       , _predicate(f) {
       _source->add_sink([this](auto r) {

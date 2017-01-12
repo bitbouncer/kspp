@@ -58,7 +58,7 @@ namespace kspp {
 
   protected:
     kafka_source_base(std::string brokers, std::string topic, size_t partition, std::shared_ptr<CODEC> codec)
-      : partition_source(NULL, partition)
+      : partition_source<K, V>(NULL, partition)
       , _codec(codec)
       , _consumer(brokers, topic, partition) {}
 

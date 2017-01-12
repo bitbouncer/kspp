@@ -430,7 +430,7 @@ class materialized_partition_source : public partition_source<K, V>
   virtual std::shared_ptr<krecord<K, V>> get(const K& key) = 0;
 
   materialized_partition_source(partition_processor* upstream, size_t partition)
-    : partition_source(upstream, partition) {
+    : partition_source<K, V>(upstream, partition) {
   }
 };
 
@@ -439,7 +439,7 @@ class kstream_partition : public partition_source<K, V>
 {
   public:
   kstream_partition(partition_processor* upstream, size_t partition)
-    : partition_source(upstream, partition) {
+    : partition_source<K, V>(upstream, partition) {
   }
 };
 

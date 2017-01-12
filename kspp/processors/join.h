@@ -15,7 +15,7 @@ namespace kspp {
     typedef std::function<void(const K& key, const streamV& left, const tableV& right, R& result)> value_joiner; // TBD replace with std::shared_ptr<const krecord<K, R>> left, std::shared_ptr<const krecord<K, R>> right, std::shared_ptr<krecord<K, R>> result;
 
     left_join(std::shared_ptr<partition_source<K, streamV>> stream, std::shared_ptr<ktable_partition<K, tableV>> table, value_joiner f)
-      : partition_source(stream.get(), stream->partition())
+      : partition_source<K, R>(stream.get(), stream->partition())
       , _stream(stream)
       , _table(table)
       , _value_joiner(f) {

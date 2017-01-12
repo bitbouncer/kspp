@@ -7,7 +7,7 @@ namespace kspp {
     typedef std::function<bool(std::shared_ptr<krecord<K, V>> record)> predicate; // return true to keep
 
     delay(std::shared_ptr<partition_source<K, V>> source, int ms)
-      : partition_source(source->partition())
+      : partition_source<K, V>(source->partition())
       , _source(source)
       , _delay(ms) {
       _source->add_sink([this](auto r) {
