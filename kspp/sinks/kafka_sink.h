@@ -121,7 +121,7 @@ class kafka_sink<void, V, CODEC> : public kafka_sink_base<void, V, CODEC>
 {
   public:
   kafka_sink(std::string brokers, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-    : kafka_sink_base<void, V, CODEC>(brokers, topic, partition, codec) {}
+    : kafka_sink_base<void, V, CODEC>(brokers, topic, codec) {}
 
   virtual int produce(uint32_t partition, std::shared_ptr<krecord<void, V>> r) {
     void* vp = NULL;
@@ -178,7 +178,7 @@ class kafka_sink<K, void, CODEC> : public kafka_sink_base<K, void, CODEC>
 };
 
 // SINGLE PARTITION PRODUCER
-// this is just to only override the nessesary key value specifications
+// this is just to only override the necessary key value specifications
 template<class K, class V, class CODEC>
 class kafka_single_partition_sink_base : public partition_sink<K, V>
 {
