@@ -51,69 +51,59 @@ template<> size_t binary_codec::encode(const page_view_data& src, std::ostream& 
   return dst.good() ? sz : 0;
 }
 
-/*
-inline size_t binary_encode(const page_view_data& obj, std::ostream& dst) {
+template<> size_t binary_codec::decode(std::istream& src, page_view_data& dst) {
   size_t sz = 0;
-  sz += kspp::binary_encode(obj.time, dst);
-  sz += kspp::binary_encode(obj.user_id, dst);
-  sz += kspp::binary_encode(obj.url, dst);
-  return dst.good() ? sz : 0;
-}
-*/
-
-inline size_t binary_decode(std::istream& src, page_view_data& obj) {
-  size_t sz = 0;
-  sz += kspp::binary_decode(src, obj.time);
-  sz += kspp::binary_decode(src, obj.user_id);
-  sz += kspp::binary_decode(src, obj.url);
+  sz += kspp::binary_decode(src, dst.time);
+  sz += kspp::binary_decode(src, dst.user_id);
+  sz += kspp::binary_decode(src, dst.url);
   return src.good() ? sz : 0;
 }
 
-inline size_t binary_encode(const user_profile_data& obj, std::ostream& dst) {
+template<> size_t binary_codec::encode(const user_profile_data& src, std::ostream& dst) {
   size_t sz = 0;
-  sz += kspp::binary_encode(obj.last_modified_time, dst);
-  sz += kspp::binary_encode(obj.user_id, dst);
-  sz += kspp::binary_encode(obj.email, dst);
+  sz += kspp::binary_encode(src.last_modified_time, dst);
+  sz += kspp::binary_encode(src.user_id, dst);
+  sz += kspp::binary_encode(src.email, dst);
   return dst.good() ? sz : 0;
 }
 
-inline size_t binary_decode(std::istream& src, user_profile_data& obj) {
+template<> size_t binary_codec::decode(std::istream& src, user_profile_data& dst) {
   size_t sz = 0;
-  sz += kspp::binary_decode(src, obj.last_modified_time);
-  sz += kspp::binary_decode(src, obj.user_id);
-  sz += kspp::binary_decode(src, obj.email);
+  sz += kspp::binary_decode(src, dst.last_modified_time);
+  sz += kspp::binary_decode(src, dst.user_id);
+  sz += kspp::binary_decode(src, dst.email);
   return src.good() ? sz : 0;
 }
 
-inline size_t binary_encode(const std::pair<int64_t, int64_t>& obj, std::ostream& dst) {
+template<> size_t binary_codec::encode(const std::pair<int64_t, int64_t>& src, std::ostream& dst) {
   size_t sz = 0;
-  sz += kspp::binary_encode(obj.first, dst);
-  sz += kspp::binary_encode(obj.second, dst);
+  sz += kspp::binary_encode(src.first, dst);
+  sz += kspp::binary_encode(src.second, dst);
   return dst.good() ? sz : 0;
 }
 
-inline size_t binary_decode(std::istream& src, std::pair<int64_t, int64_t>& obj) {
+template<> size_t binary_codec::decode(std::istream& src, std::pair<int64_t, int64_t>& dst) {
   size_t sz = 0;
-  sz += kspp::binary_decode(src, obj.first);
-  sz += kspp::binary_decode(src, obj.second);
+  sz += kspp::binary_decode(src, dst.first);
+  sz += kspp::binary_decode(src, dst.second);
   return src.good() ? sz : 0;
 }
 
-inline size_t binary_encode(const page_view_decorated& obj, std::ostream& dst) {
+template<> size_t binary_codec::encode(const page_view_decorated& src, std::ostream& dst) {
   size_t sz = 0;
-  sz += kspp::binary_encode(obj.time, dst);
-  sz += kspp::binary_encode(obj.user_id, dst);
-  sz += kspp::binary_encode(obj.url, dst);
-  sz += kspp::binary_encode(obj.email, dst);
+  sz += kspp::binary_encode(src.time, dst);
+  sz += kspp::binary_encode(src.user_id, dst);
+  sz += kspp::binary_encode(src.url, dst);
+  sz += kspp::binary_encode(src.email, dst);
   return dst.good() ? sz : 0;
 }
 
-inline size_t binary_decode(std::istream& src, page_view_decorated& obj) {
+template<> size_t binary_codec::decode(std::istream& src, page_view_decorated& dst) {
   size_t sz = 0;
-  sz += kspp::binary_decode(src, obj.time);
-  sz += kspp::binary_decode(src, obj.user_id);
-  sz += kspp::binary_decode(src, obj.url);
-  sz += kspp::binary_decode(src, obj.email);
+  sz += kspp::binary_decode(src, dst.time);
+  sz += kspp::binary_decode(src, dst.user_id);
+  sz += kspp::binary_decode(src, dst.url);
+  sz += kspp::binary_decode(src, dst.email);
   return src.good() ? sz : 0;
 }
 
