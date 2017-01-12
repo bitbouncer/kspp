@@ -86,7 +86,7 @@ namespace kspp {
       res->offset = ref->offset();
       {
         std::istrstream ks((const char*)ref->key_pointer(), ref->key_len());
-        size_t consumed = _codec->decode(ks, res->key);
+        size_t consumed = this->_codec->decode(ks, res->key);
         if (consumed == 0) {
           LOGPREFIX_ERROR << ", decode key failed, actual key sz:" << ref->key_len();
           return NULL;
@@ -100,7 +100,7 @@ namespace kspp {
       if (sz) {
         std::istrstream vs((const char*)ref->payload(), sz);
         res->value = std::make_shared<V>();
-        size_t consumed = _codec->decode(vs, *res->value);
+        size_t consumed = this->_codec->decode(vs, *res->value);
         if (consumed == 0) {
           LOGPREFIX_ERROR << ", decode value failed, size:" << sz;
           return NULL;
@@ -133,7 +133,7 @@ namespace kspp {
       if (sz) {
         std::istrstream vs((const char*)ref->payload(), sz);
         auto v = std::make_shared<V>();
-        size_t consumed = _codec->decode(vs, *v);
+        size_t consumed = this->_codec->decode(vs, *v);
         if (consumed == sz) {
           auto res = std::make_shared<krecord<void, V>>(v);
           res->event_time = ref->timestamp().timestamp;
@@ -178,7 +178,7 @@ namespace kspp {
       res->event_time = ref->timestamp().timestamp;
       res->offset = ref->offset();
       std::istrstream ks((const char*)ref->key_pointer(), ref->key_len());
-      size_t consumed = _codec->decode(ks, res->key);
+      size_t consumed = this->_codec->decode(ks, res->key);
       if (consumed == 0) {
         LOGPREFIX_ERROR << ", decode key failed, actual key sz:" << ref->key_len();
         return NULL;
