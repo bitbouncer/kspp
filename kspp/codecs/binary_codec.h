@@ -79,12 +79,12 @@ namespace kspp {
 
     template<class T>
     size_t encode(const T& src, std::ostream& dst) {
-      return binary_encode(src, dst);
+      return kspp::binary_encode(src, dst);
     }
 
     template<class T>
     inline size_t decode(std::istream& src, T& dst) {
-      return binary_decode(src, dst);
+      return kspp::binary_decode(src, dst);
     }
   };
 };
