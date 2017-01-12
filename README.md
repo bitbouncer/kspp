@@ -58,7 +58,9 @@ Check out source code
 ```
 git clone https://github.com/bitbouncer/kspp.git
 ```
-# Run the build
+
+Run the build
+```
 ./rebuild_macos.sh
 ```
 
