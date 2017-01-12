@@ -12,7 +12,7 @@ namespace kspp {
     count_by_key(std::shared_ptr<partition_source<K, void>> source, std::string storage_path, int64_t punctuate_intervall, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
       : materialized_partition_source<K, size_t>(source.get(), source->partition())
       , _stream(source)
-      , _counter_store(name(), storage_path + "//" + name(), codec)
+      , _counter_store(name(), get_storage_path(storage_path), codec)
       , _punctuate_intervall(punctuate_intervall)
       , _next_punctuate(0)
       , _dirty(false) {
@@ -119,6 +119,12 @@ namespace kspp {
     }
 
   private:
+  boost::filesystem::path get_storage_path(std::string storage_path) {
+    boost::filesystem::path p(storage_path);
+    p /= name();
+    return p;
+  }
+
     std::shared_ptr<partition_source<K, void>>      _stream;
     rocksdb_counter_store<K, CODEC>                 _counter_store;
     std::deque<std::shared_ptr<krecord<K, void>>>   _queue;
