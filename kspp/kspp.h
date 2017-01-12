@@ -273,6 +273,27 @@ class partition_sink<void, V> : public partition_processor
   }
 };
 
+// specialisation for void value
+template<class K>
+class partition_sink<K, void> : public partition_processor
+{
+  public:
+  typedef K key_type;
+  typedef void value_type;
+  typedef kspp::krecord<K, void> record_type;
+
+  virtual int produce(std::shared_ptr<krecord<K, void>> r) = 0;
+  inline int produce(const K& key) {
+    return produce(std::make_shared<krecord<K, void>>(key));
+  }
+
+  virtual size_t queue_len() = 0;
+  protected:
+  partition_sink(size_t partition)
+    : partition_processor(NULL, partition) {}
+};
+
+
 inline uint32_t djb_hash(const char *str, size_t len) {
   uint32_t hash = 5381;
   for (size_t i = 0; i < len; i++)
@@ -350,8 +371,6 @@ class topic_sink<void, V, CODEC> : public topic_processor
   std::shared_ptr<CODEC> _codec;
 };
 
-
-
 template<class K, class V>
 class partition_source : public partition_processor
 {
@@ -371,8 +390,7 @@ class partition_source : public partition_processor
   virtual void add_sink(sink_function sink) {
     _sinks.push_back(sink);
   }
-
-
+  
   virtual void start() {}
   virtual void start(int64_t offset) {}
   virtual void commit() {}
