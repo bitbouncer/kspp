@@ -35,7 +35,7 @@ int main(int argc, char **argv) {
   }
 
   auto word_sources = text_builder.create_kafka_sources<std::string, void>("test_words", NR_OF_PARTITIONS);
-  auto word_counts = text_builder.create_count_by_key<std::string>(word_sources, 10000);
+  auto word_counts = text_builder.create_count_by_key<std::string, size_t>(word_sources, 10000);
 
   for (auto i : word_counts) {
     std::cerr << i->name() << std::endl;

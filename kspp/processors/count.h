@@ -5,12 +5,12 @@
 #pragma once
 
 namespace kspp {
-  template<class K, class CODEC>
-  class count_by_key : public materialized_partition_source<K, size_t>
+  template<class K, class V, class CODEC>
+  class count_by_key : public materialized_partition_source<K, V>
   {
   public:
     count_by_key(std::shared_ptr<partition_source<K, void>> source, std::string storage_path, int64_t punctuate_intervall, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-      : materialized_partition_source<K, size_t>(source.get(), source->partition())
+      : materialized_partition_source<K, V>(source.get(), source->partition())
       , _stream(source)
       , _counter_store(name(), storage_path + "//" + name(), codec)
       , _punctuate_intervall(punctuate_intervall)
@@ -25,12 +25,12 @@ namespace kspp {
       close();
     }
 
-    static std::shared_ptr<materialized_partition_source<K, size_t>> create(std::shared_ptr<partition_source<K, void>> source, std::string storage_path, int64_t punctuate_intervall, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) {
+    static std::shared_ptr<materialized_partition_source<K, V>> create(std::shared_ptr<partition_source<K, void>> source, std::string storage_path, int64_t punctuate_intervall, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) {
       return std::make_shared<count_by_key<K, CODEC>>(source, storage_path, punctuate_intervall, codec);
     }
 
     std::string name() const {
-      return _stream->name() + "(count_by_key)_" + std::to_string(materialized_partition_source<K, size_t>::partition());
+      return _stream->name() + "-count_by_key()[" + type_name<K>::get() + ", " + type_name<V>::get() + "]";
     }
 
     virtual void start() {
@@ -102,25 +102,29 @@ namespace kspp {
     }
 
     // inherited from kmaterialized_source
-    virtual std::shared_ptr<krecord<K, size_t>> get(const K& key) {
-      auto count = _counter_store.get(key);
+    virtual std::shared_ptr<krecord<K, V>> get(const K& key) {
+      V count = (V) _counter_store.get(key); // TBD
+      /*
       if (count)
-        return std::make_shared<krecord<K, size_t>>(key, count);
+        return std::make_shared<krecord<K, V>>(key, count);
       else
         return NULL;
+      */
+      return std::make_shared<krecord<K, V>>(key, count);
     }
 
-    virtual typename kspp::materialized_partition_source<K, size_t>::iterator begin(void) {
+
+    virtual typename kspp::materialized_partition_source<K, V>::iterator begin(void) {
       return _counter_store.begin();
     }
 
-    virtual typename kspp::materialized_partition_source<K, size_t>::iterator end() {
+    virtual typename kspp::materialized_partition_source<K, V>::iterator end() {
       return _counter_store.end();
     }
 
   private:
     std::shared_ptr<partition_source<K, void>>      _stream;
-    rocksdb_counter_store<K, CODEC>                 _counter_store;
+    rocksdb_counter_store<K, V, CODEC>              _counter_store;
     std::deque<std::shared_ptr<krecord<K, void>>>   _queue;
     int64_t                                         _punctuate_intervall;
     int64_t                                         _next_punctuate;
