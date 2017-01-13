@@ -10,18 +10,16 @@ namespace kspp {
   class kstream_partition_impl : public kstream_partition<K, V>
   {
   public:
-    kstream_partition_impl(std::string nodeid, std::string brokers, std::string topic, size_t partition, std::string storage_path, std::shared_ptr<CODEC> codec)
+    kstream_partition_impl(std::string brokers, std::string topic, size_t partition, std::string storage_path, std::shared_ptr<CODEC> codec)
       : kstream_partition<K, V>(NULL, partition)
-      , _offset_storage_path(storage_path)
+      , _offset_storage_path(get_storage_path(storage_path))
       , _source(brokers, topic, partition, codec)
-      , _state_store(topic, partition, storage_path + "\\" + nodeid + "\\" + topic + "_" + std::to_string(partition), codec)
+      , _state_store(topic, partition, get_storage_path(storage_path), codec)
       , _current_offset(RdKafka::Topic::OFFSET_BEGINNING)
       , _last_comitted_offset(RdKafka::Topic::OFFSET_BEGINNING)
       , _last_flushed_offset(RdKafka::Topic::OFFSET_BEGINNING) {
-      _offset_storage_path /= nodeid;
-      _offset_storage_path /= topic + "_" + std::to_string(partition);
       boost::filesystem::create_directories(_offset_storage_path);
-      _offset_storage_path /= "\\kafka_offset.bin";
+      _offset_storage_path /= "kspp_offset.bin";
 
       // this is probably wrong since why should we delete the row in a kstream??? TBD
       // for now this is just a copy from ktable...
@@ -104,12 +102,18 @@ namespace kspp {
     }
 
   private:
-    kafka_source<K, V, CODEC> _source; // TBD this should be a stream-source....
-    rockdb_store<K, V, CODEC> _state_store;
+  boost::filesystem::path get_storage_path(std::string storage_path) {
+    boost::filesystem::path p(storage_path);
+    p /= name();
+    return p;
+  }
 
-    boost::filesystem::path _offset_storage_path;
-    int64_t                 _current_offset;
-    int64_t                 _last_comitted_offset;
-    int64_t                 _last_flushed_offset;
+  kafka_source<K, V, CODEC> _source; // TBD this should be a stream-source....
+  rockdb_store<K, V, CODEC> _state_store;
+
+  boost::filesystem::path _offset_storage_path;
+  int64_t                 _current_offset;
+  int64_t                 _last_comitted_offset;
+  int64_t                 _last_flushed_offset;
   };
 };
