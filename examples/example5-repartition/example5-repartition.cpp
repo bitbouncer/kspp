@@ -57,7 +57,7 @@ int main(int argc, char **argv) {
   auto topic_sink = builder.create_kafka_sink<int, std::string>("kspp_example5_usernames.per-channel");
   for (int i = 0; i != 8; ++i) {
     auto partition_source = builder.create_kafka_source<int, std::string>("kspp_example5_usernames", i);
-    auto partition_routing_table = builder.create_ktable<int, int>("example5", "kspp_example5_user_channel", i);
+    auto partition_routing_table = builder.create_ktable<int, int>("example5", "repartition", "kspp_example5_user_channel", i);
     auto partition_repartition = std::make_shared<kspp::repartition_by_table<int, std::string, kspp::text_codec>>(partition_source, partition_routing_table, topic_sink);
     partition_repartition->start(-2);
     partition_repartition->flush();

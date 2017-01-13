@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
 
     auto limited_stream = builder.create_rate_limiter<std::string, void>(filtered_stream, 1000, 10);
 
-    auto word_counts = builder.create_count_by_key<std::string, size_t>(limited_stream, 2000000); // punctuate every 2000 sec
+    auto word_counts = builder.create_count_by_key<std::string, size_t>("example7", "count", limited_stream, 2000000); // punctuate every 2000 sec
     
     auto thoughput_limited_stream = builder.create_thoughput_limiter<std::string, size_t>(word_counts, 10);
     

@@ -28,7 +28,7 @@ int main(int argc, char **argv) {
         flat_map->push_back(std::make_shared<kspp::krecord<std::string, void>>(*iter));
     });
 
-    auto word_counts = builder.create_count_by_key<std::string, int>(word_stream, 2000);
+    auto word_counts = builder.create_count_by_key<std::string, int>("example2", "count", word_stream, 2000);
     auto sink = builder.create_stream_sink<std::string, int>(word_counts, std::cerr);
     word_counts->start(-2);
     word_counts->flush();

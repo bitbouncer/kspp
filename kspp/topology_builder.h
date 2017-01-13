@@ -61,7 +61,7 @@ namespace kspp {
     template<class K, class V>
     std::shared_ptr<kspp::materialized_partition_source<K, V>> create_count_by_key(std::string app_id, std::string process_id, std::shared_ptr<partition_source<K, void>> source, int64_t punctuate_intervall) {
       //return std::make_shared<kspp::count_partition_keys<K, CODEC>>(source, _storage_path, _default_codec);
-      auto p = std::make_shared<kspp::count_by_key<K, V, CODEC>>(source, get_storage_path(app_id, processor_id), punctuate_intervall);
+      auto p = std::make_shared<kspp::count_by_key<K, V, CODEC>>(source, get_storage_path(app_id, process_id), punctuate_intervall);
       //_topology.add(p);
       return p;
     }
