@@ -1,6 +1,6 @@
 #pragma once
 namespace kspp {
-  template<class K>
+  template<class K, class V>
   class counter_store
   {
   public:
@@ -10,7 +10,7 @@ namespace kspp {
     /**
     * Adds count to a counter
     */
-    virtual void add(const K& key, size_t count) = 0;
+    virtual void add(const K& key, V count) = 0;
     /**
     * Deletes a counter
     */
@@ -24,7 +24,7 @@ namespace kspp {
     */
     virtual void erase() = 0;
 
-    virtual typename kspp::materialized_partition_source<K, size_t>::iterator begin(void) = 0;
-    virtual typename kspp::materialized_partition_source<K, size_t>::iterator end() = 0;
+    virtual typename kspp::materialized_partition_source<K, V>::iterator begin(void) = 0;
+    virtual typename kspp::materialized_partition_source<K, V>::iterator end() = 0;
   };
 };

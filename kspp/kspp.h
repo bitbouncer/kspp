@@ -8,6 +8,7 @@
 #include <thread>
 #include <chrono>
 #include <strstream>
+#include <boost/uuid/uuid.hpp>
 
 #pragma once
 namespace kspp {
@@ -15,6 +16,22 @@ inline int64_t milliseconds_since_epoch() {
   return std::chrono::duration_cast<std::chrono::milliseconds>
     (std::chrono::system_clock::now().time_since_epoch()).count();
 }
+
+// default implementation
+template <typename T>
+struct type_name
+{
+  static std::string get() {
+    return typeid(T).name();
+  }
+};
+
+template <> struct type_name<bool>               { static inline const std::string get() { return "bool"; } };
+template <> struct type_name<int32_t>            { static inline const std::string get() { return "int32_t"; } };
+template <> struct type_name<int64_t>            { static inline const std::string get() { return "int64_t"; } };
+template <> struct type_name<size_t>             { static inline const std::string get() { return "size_t"; } };
+template <> struct type_name<std::string>        { static inline const std::string get() { return "string"; } };
+template <> struct type_name<boost::uuids::uuid> { static inline const std::string get() { return "uuid"; } };
 
 template<class K, class V>
 struct krecord

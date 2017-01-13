@@ -17,6 +17,10 @@ namespace kspp {
       close();
     }
 
+    virtual std::string name() const {
+      return "kafka_source(" + _consumer.topic() + "#" + std::to_string(_consumer.partition()) + ")-codec(" + CODEC::name() + ")[" + type_name<K>::get() + ", " + type_name<V>::get() + "]";
+    }
+
     virtual void start(int64_t offset) {
       _consumer.start(offset);
     }
@@ -52,6 +56,10 @@ namespace kspp {
       return true;
     }
 
+    std::string topic() const {
+      return _consumer.topic();
+    }
+
   protected:
     kafka_source_base(std::string brokers, std::string topic, size_t partition, std::shared_ptr<CODEC> codec)
       : partition_source<K, V>(NULL, partition)
@@ -71,9 +79,6 @@ namespace kspp {
     kafka_source(std::string brokers, std::string topic, size_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
       : kafka_source_base<K, V, CODEC>(brokers, topic, partition, codec) {}
 
-    virtual std::string name() const {
-      return "kafka_source-" + this->_consumer.topic() + "-" + std::to_string(this->_consumer.partition());
-    }
 
   protected:
     std::shared_ptr<krecord<K, V>> parse(const std::unique_ptr<RdKafka::Message> & ref) {
@@ -121,9 +126,9 @@ namespace kspp {
     kafka_source(std::string brokers, std::string topic, size_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
       : kafka_source_base<void, V, CODEC>(brokers, topic, partition, codec) {}
 
-    virtual std::string name() const {
-      return "kafka_source<void, K>-" + this->_consumer.topic() + "-" + std::to_string(this->_consumer.partition());
-    }
+  /*  virtual std::string name() const {
+      return "kafka_source[void, " + type_name<V>::get() "]-" + this->_consumer.topic() + "-" + std::to_string(this->_consumer.partition());
+    }*/
 
   protected:
     std::shared_ptr<krecord<void, V>> parse(const std::unique_ptr<RdKafka::Message> & ref) {
@@ -154,7 +159,6 @@ namespace kspp {
 
   };
 
-
   //<KEY, NULL>
   template<class K, class CODEC>
   class kafka_source<K, void, CODEC> : public kafka_source_base<K, void, CODEC>
@@ -164,9 +168,9 @@ namespace kspp {
     kafka_source(std::string brokers, std::string topic, size_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
       : kafka_source_base<K, void, CODEC>(brokers, topic, partition, codec) {}
 
-    virtual std::string name() const {
-      return "kafka_source<K, void>-" + this->_consumer.topic() + "-" + std::to_string(this->_consumer.partition());
-    }
+  /*  virtual std::string name() const {
+      return "kafka_source[" + type_name<K>::get() ", void]-" + this->_consumer.topic() + "-" + std::to_string(this->_consumer.partition());
+    }*/
 
   protected:
     std::shared_ptr<krecord<K, void>> parse(const std::unique_ptr<RdKafka::Message> & ref) {

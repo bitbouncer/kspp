@@ -25,7 +25,9 @@ namespace kspp {
       close();
     }
 
-    std::string name() const { return _source->name() + "-repartition_by_value(" + _routing_table->name() + ")"; }
+    std::string name() const { 
+      return _source->name() + "-repartition_by_value(" + _routing_table->name() + ")"; 
+    }
     
     virtual void start() {
       _routing_table->start();

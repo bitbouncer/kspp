@@ -32,7 +32,9 @@ namespace kspp {
       return std::make_shared<left_join<K, streamV, tableV, R>>(stream, table, f);
     }
 
-    std::string name() const { return  _stream->name() + "-left_join (" + _table->name() + ")"; }
+    std::string name() const { 
+      return  _stream->name() + "-left_join(" + _table->name() + ")[" + type_name<K>::get() + ", " + type_name<R>::get() + "]"; 
+    }
 
     virtual void start() {
       _table->start();

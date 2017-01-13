@@ -40,8 +40,10 @@ namespace kspp {
       close();
     }
 
-    //std::string name() const { return "kstream_partition_impl_" + _source.topic() + "_" + std::to_string(partition()); }
-    std::string name() const { return "kstream_partition_impl_" + std::to_string(this->partition()); }
+    virtual std::string name() const {
+      return   _source.name() + "-kstream";
+    }
+
 
     virtual void start() {
       if (boost::filesystem::exists(_offset_storage_path)) {

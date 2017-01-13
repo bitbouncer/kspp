@@ -58,10 +58,10 @@ namespace kspp {
     */
 
     //TBD we shouyld get rid of void value - we do not require that but how do we tell compiler that????
-    template<class K>
-    std::shared_ptr<kspp::materialized_partition_source<K, size_t>> create_count_by_key(std::shared_ptr<partition_source<K, void>> source, int64_t punctuate_intervall) {
+    template<class K, class V>
+    std::shared_ptr<kspp::materialized_partition_source<K, V>> create_count_by_key(std::shared_ptr<partition_source<K, void>> source, int64_t punctuate_intervall) {
       //return std::make_shared<kspp::count_partition_keys<K, CODEC>>(source, _storage_path, _default_codec);
-      auto p = std::make_shared<kspp::count_by_key<K, CODEC>>(source, _storage_path, punctuate_intervall);
+      auto p = std::make_shared<kspp::count_by_key<K, V, CODEC>>(source, _storage_path, punctuate_intervall);
       //_topology.add(p);
       return p;
     }
@@ -83,11 +83,11 @@ namespace kspp {
     }
     */
 
-    template<class K>
-    std::vector<std::shared_ptr<kspp::materialized_partition_source<K, size_t>>> create_count_by_key(std::vector<std::shared_ptr<partition_source<K, void>>>& sources, int64_t punctuate_intervall) {
-      std::vector<std::shared_ptr<kspp::materialized_partition_source<K, size_t>>> res;
+    template<class K, class V>
+    std::vector<std::shared_ptr<kspp::materialized_partition_source<K, V>>> create_count_by_key(std::vector<std::shared_ptr<partition_source<K, void>>>& sources, int64_t punctuate_intervall) {
+      std::vector<std::shared_ptr<kspp::materialized_partition_source<K, V>>> res;
       for (auto i : sources)
-        res.push_back(create_count_by_key(i, punctuate_intervall));
+        res.push_back(create_count_by_key<K, V>(i, punctuate_intervall));
       return res;
     }
 

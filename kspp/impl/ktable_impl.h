@@ -36,7 +36,7 @@ namespace kspp {
     }
 
     virtual std::string name() const {
-      return   _source.name() + "(ktable_partition_impl)";
+      return   _source.name() + "-ktable";
     }
 
     virtual void start() {

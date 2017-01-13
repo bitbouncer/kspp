@@ -34,7 +34,7 @@ class kafka_sink_base : public topic_sink<K, V, CODEC>
   }
 
   virtual std::string name() const {
-    return "kafka_sink-" + _impl.topic();
+    return "kafka_topic_sink(" + _impl.topic() + ")-codec(" + CODEC::name() + ")[" + type_name<K>::get() + ", " + type_name<V>::get() + "]";
   }
 
   virtual void close() {
@@ -194,7 +194,7 @@ class kafka_single_partition_sink_base : public partition_sink<K, V>
   }
 
   virtual std::string name() const {
-    return "kafka_sink-" + _impl.topic() + "_" + std::to_string(_fixed_partition);
+    return "kafka_sink(" + _impl.topic() + "#" + std::to_string(_fixed_partition) + ")-codec(" + CODEC::name() + ")[" + type_name<K>::get() + ", " + type_name<V>::get() + "]";
   }
 
   virtual void close() {

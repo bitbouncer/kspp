@@ -66,13 +66,13 @@ namespace kspp {
     }
   };
 
-  template<class K, class CODEC>
-  class rocksdb_counter_store : public counter_store<K>
+  template<class K, class V, class CODEC>
+  class rocksdb_counter_store : public counter_store<K, V>
   {
   public:
     enum { MAX_KEY_SIZE = 10000 };
 
-    class iterator_impl : public kmaterialized_source_iterator_impl<K, size_t>
+    class iterator_impl : public kmaterialized_source_iterator_impl<K, V>
     {
     public:
       enum seek_pos_e { BEGIN, END };
@@ -99,16 +99,16 @@ namespace kspp {
         _it->Next();
       }
 
-      virtual std::shared_ptr<krecord<K, size_t>> item() const {
+      virtual std::shared_ptr<krecord<K, V>> item() const {
         if (!_it->Valid())
           return NULL;
         rocksdb::Slice key = _it->key();
         rocksdb::Slice value = _it->value();
 
-        std::shared_ptr<krecord<K, size_t>> res(std::make_shared<krecord<K, size_t>>());
+        std::shared_ptr<krecord<K, V>> res(std::make_shared<krecord<K, V>>());
         res->offset = -1;
         res->event_time = -1; // ????
-        res->value = std::make_shared<size_t>();
+        res->value = std::make_shared<V>();
 
         std::istrstream isk(key.data(), key.size());
         if (_codec->decode(isk, res->key) == 0)
@@ -118,11 +118,11 @@ namespace kspp {
         if (!UInt64AddOperator::Deserialize(value, &count)) {
           return NULL;
         }
-        *res->value = count;
+        *res->value = (V) count; // TBD byt till V från uint64? eller alltid int64_t?
         return res;
       }
 
-      virtual bool operator==(const kmaterialized_source_iterator_impl<K, size_t>& other) const {
+      virtual bool operator==(const kmaterialized_source_iterator_impl<K, V>& other) const {
         //fastpath...
         if (valid() && !other.valid())
           return false;
@@ -174,7 +174,7 @@ namespace kspp {
       BOOST_LOG_TRIVIAL(info) << BOOST_CURRENT_FUNCTION << ", " << _name << " close()";
     }
 
-    void add(const K& key, size_t val) {
+    void add(const K& key, V val) {
       char key_buf[MAX_KEY_SIZE];
       size_t ksize = 0;
       std::strstream s(key_buf, MAX_KEY_SIZE);
@@ -220,12 +220,12 @@ namespace kspp {
       }
     }
 
-    typename kspp::materialized_partition_source<K, size_t>::iterator begin(void) {
-      return typename kspp::materialized_partition_source<K, size_t>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::BEGIN));
+    typename kspp::materialized_partition_source<K, V>::iterator begin(void) {
+      return typename kspp::materialized_partition_source<K, V>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::BEGIN));
     }
 
-    typename kspp::materialized_partition_source<K, size_t>::iterator end() {
-      return typename kspp::materialized_partition_source<K, size_t>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::END));
+    typename kspp::materialized_partition_source<K, V>::iterator end() {
+      return typename kspp::materialized_partition_source<K, V>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::END));
     }
 
   private:

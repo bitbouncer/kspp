@@ -31,7 +31,7 @@ namespace kspp {
     }
 
     std::string name() const {
-      return _source->name() + "-delay";
+      return _source->name() + "-delay(" + std::to_string(_delay) + ")";
     }
 
     virtual void start() {

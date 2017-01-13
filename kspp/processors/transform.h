@@ -36,7 +36,7 @@ namespace kspp {
     }
 
     std::string name() const {
-      return _source->name() + "-flat_map";
+      return _source->name() + "-flat_map()[" + type_name<RK>::get() + ", " + type_name<RV>::get() + "]"; 
     }
 
     virtual void start() {
