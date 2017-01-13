@@ -38,7 +38,7 @@ namespace kspp {
   }
 
   template<> inline size_t text_codec::encode(const bool& src, std::ostream& dst) {
-    dst << src ? "true" : "false";
+    dst << (src ? "true" : "false");
     return src ? 4 : 5;
   }
 

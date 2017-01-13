@@ -1,12 +1,13 @@
 kspp
 =========
 
-A C++11 kafka streams library 
+A C++14 kafka streams library 
+
+It is intended to be run on mesos or kubernetes but it can be run standalone
+
+Platforms: Windows / Linux / Mac
 
 This is work-in-progress
-
-
-Platforms: Windows / Linux
 
 ## Ubuntu 16 x64:
 
@@ -33,9 +34,34 @@ cd ..
 git clone https://github.com/bitbouncer/kspp.git
 cd kspp
 mkdir build && cd build
-cmake -D__LINUX__=1 -DCMAKE_BUILD_TYPE=Release ..
+cmake -DCMAKE_BUILD_TYPE=Release ..
 make
 cd ..
+```
+
+## MacOS X
+
+Install build tools (using Homebrew)
+```
+# Install Xcode
+xcode-select --install
+brew install cmake
+brew install kafka
+brew install librdkafka
+brew install snappy
+brew install rocksdb
+brew install boost
+brew install boost-python
+```
+
+Check out source code
+```
+git clone https://github.com/bitbouncer/kspp.git
+```
+
+Run the build
+```
+./rebuild_macos.sh
 ```
 
 ## Windows x64:
