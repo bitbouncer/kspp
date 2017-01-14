@@ -21,32 +21,26 @@
 
 namespace kspp {
   template<class CODEC>
-  class topology_builder
+  class topology
   {
   public:
-    topology_builder(std::string app_id, std::string brokers, boost::filesystem::path root_path=boost::filesystem::temp_directory_path(), std::shared_ptr<CODEC> default_codec = std::make_shared<CODEC>())
+    topology(std::string app_id, std::string topology_id, std::string brokers, boost::filesystem::path root_path, std::shared_ptr<CODEC> default_codec)
       : _app_id(app_id)
-      , _topology_id(0)
+      , _topology_id(topology_id)
       , _brokers(brokers)
       , _default_codec(default_codec)
       , _root_path(root_path) {
+      BOOST_LOG_TRIVIAL(info) << "topology " << name() << " created";
     }
 
-    void incr_id() {
-      _topology_id++;
+    ~topology() {
+      BOOST_LOG_TRIVIAL(info) << "topology " << name() << " terminated";
+      // output stats
     }
 
-    /*template<class K, class streamV, class tableV, class R>
-    std::shared_ptr<left_join<K, streamV, tableV, R>> create_left_join(std::string tag, std::string stream_topic, std::string table_topic, int32_t partition, typename kspp::left_join<K, streamV, tableV, R>::value_joiner value_joiner) {
-      auto stream = std::make_shared<kspp::kstream_partition_impl<K, streamV, CODEC>>(tag, _brokers, stream_topic, partition, _storage_path, _default_codec);
-      _topology.add(stream);
-      auto table = std::make_shared<kspp::ktable_partition_impl<K, tableV, CODEC>>(tag, _brokers, table_topic, partition, _storage_path, _default_codec);
-      _topology.add(table);
-      auto p = std::make_shared<kspp::left_join<K, streamV, tableV, R>>(stream, table, value_joiner);
-      _topology.add(p);
-      return p;
+    std::string name() const {
+      return _app_id + "__" + _topology_id;
     }
-    */
 
     template<class K, class streamV, class tableV, class R>
     std::shared_ptr<left_join<K, streamV, tableV, R>> create_left_join(std::shared_ptr<kspp::partition_source<K, streamV>> right, std::shared_ptr<kspp::ktable_partition<K, tableV>> left, typename kspp::left_join<K, streamV, tableV, R>::value_joiner value_joiner) {
@@ -65,7 +59,7 @@ namespace kspp {
     /*
     template<class K, class V>
     std::shared_ptr<repartition_table<K, V>> create_repartition(std::shared_ptr<kspp::ktable<K, V>> table) {
-      return std::make_shared<kspp::repartition_table<K, V>>(table);
+    return std::make_shared<kspp::repartition_table<K, V>>(table);
     }
     */
 
@@ -80,17 +74,17 @@ namespace kspp {
     /*
     template<class K>
     std::shared_ptr<kspp::count_keys<K, CODEC>> create_count_keys(std::shared_ptr<ksource<K, void>> source) {
-      return std::make_shared<kspp::count_keys<K, CODEC>>(source, _storage_path, _default_codec);
+    return std::make_shared<kspp::count_keys<K, CODEC>>(source, _storage_path, _default_codec);
     }
     */
 
     /*
     template<class K>
     std::vector<std::shared_ptr<kspp::count_keys<K, CODEC>>> create_count_keys(std::vector<std::shared_ptr<ksource<K, void>>>& sources) {
-      std::vector<std::shared_ptr<kspp::count_keys<K, CODEC>>> res;
-      for (auto i : sources)
-        res.push_back(create_count_keys(i));
-      return res;
+    std::vector<std::shared_ptr<kspp::count_keys<K, CODEC>>> res;
+    for (auto i : sources)
+    res.push_back(create_count_keys(i));
+    return res;
     }
     */
 
@@ -106,8 +100,8 @@ namespace kspp {
     /*
     template<class K, class V, class RK>
     std::shared_ptr<group_by<K, V, RK>> create_group_by(std::string tag, std::string topic, int32_t partition, typename kspp::group_by<K, V, RK>::extractor extractor) {
-      auto stream = std::make_shared<kspp::kafka_source<K, V, codec>>(_brokers, topic, partition, _default_codec);
-      return std::make_shared<kspp::group_by<K, V, RK>>(stream, value_joiner);
+    auto stream = std::make_shared<kspp::kafka_source<K, V, codec>>(_brokers, topic, partition, _default_codec);
+    return std::make_shared<kspp::group_by<K, V, RK>>(stream, value_joiner);
     }
     */
 
@@ -194,9 +188,9 @@ namespace kspp {
     /* ask DAG!!!
     template<class PARTITION_SOURCE>
     std::shared_ptr<kspp::stream_sink<typename PARTITION_SOURCE::key_type, typename PARTITION_SOURCE::value_type>> create_stream_sink(std::shared_ptr<PARTITION_SOURCE> source, std::ostream& os) {
-      auto p = std::make_shared<kspp::stream_sink<typename PARTITION_SOURCE::key_type, typename PARTITION_SOURCE::value_type>>(source, os);
-      //_topology.add(p);
-      return p;
+    auto p = std::make_shared<kspp::stream_sink<typename PARTITION_SOURCE::key_type, typename PARTITION_SOURCE::value_type>>(source, os);
+    //_topology.add(p);
+    return p;
     }
     */
 
@@ -235,29 +229,52 @@ namespace kspp {
       return thoughput_limiter<K, V>::create(source, messages_per_sec);
     }
 
-    /*
-    topoplogy* topology() {
-      return &_topology;
-    }
-    */
-
   private:
     boost::filesystem::path get_storage_path() {
       boost::filesystem::path top_of_topology(_root_path);
       top_of_topology /= _app_id;
-      top_of_topology /= "node-" + std::to_string(_topology_id);
-      BOOST_LOG_TRIVIAL(debug) << "topology_builder creating local storage at " << top_of_topology;
+      top_of_topology /= _topology_id;
+      BOOST_LOG_TRIVIAL(debug) << "topology << " << name() << ": creating local storage at " << top_of_topology;
       boost::filesystem::create_directories(top_of_topology);
       return top_of_topology;
     }
 
+  private:
     std::string             _app_id;
+    std::string             _topology_id;
     std::string             _brokers;
-    //processor_context       _context;
     std::shared_ptr<CODEC>  _default_codec;
     boost::filesystem::path _root_path;
-    size_t                  _topology_id;
-    //topoplogy               _topology;
+  };
+
+  template<class CODEC>
+  class topology_builder
+  {
+  public:
+    topology_builder(std::string app_id, std::string brokers, boost::filesystem::path root_path=boost::filesystem::temp_directory_path(), std::shared_ptr<CODEC> default_codec = std::make_shared<CODEC>())
+      : _app_id(app_id)
+      , _next_topology_id(0)
+      , _brokers(brokers)
+      , _default_codec(default_codec)
+      , _root_path(root_path) {
+    }
+
+    std::shared_ptr<topology<CODEC>> create_topology(std::string id) {
+      return std::make_shared<topology<CODEC>>(_app_id, id, _brokers, _root_path, _default_codec);
+    }
+
+    std::shared_ptr<topology<CODEC>> create_topology() {
+      std::string id = std::to_string(_next_topology_id);
+      _next_topology_id++;
+      return std::make_shared<topology<CODEC>>(_app_id, id, _brokers, _root_path, _default_codec);
+    }
+ 
+  private:
+    std::string             _app_id;
+    std::string             _brokers;
+    std::shared_ptr<CODEC>  _default_codec;
+    boost::filesystem::path _root_path;
+    size_t                  _next_topology_id;
   };
 
 

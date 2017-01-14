@@ -14,8 +14,8 @@
 int main(int argc, char **argv) {
   auto builder = kspp::topology_builder<kspp::text_codec>("example6-filter", "localhost", "C:\\tmp");
   {
-    builder.incr_id();
-    auto sink = builder.create_kafka_sink<void, std::string>("kspp_TextInput", PARTITION);
+    auto topology = builder.create_topology();
+    auto sink = topology->create_kafka_sink<void, std::string>("kspp_TextInput", PARTITION);
     kspp::produce<void, std::string>(*sink, "hello kafka streams");
   }
 
@@ -31,8 +31,8 @@ int main(int argc, char **argv) {
   }*/
 
   {
-    builder.incr_id();
-    auto source = builder.create_kafka_source<void, std::string>("kspp_TextInput", PARTITION);
+    auto topology = builder.create_topology();
+    auto source = topology->create_kafka_source<void, std::string>("kspp_TextInput", PARTITION);
 
     std::regex rgx("\\s+");
     auto word_stream = std::make_shared<kspp::flat_map<void, std::string, std::string, void>>(source, [&rgx](const auto e, auto flat_map) {
@@ -42,11 +42,11 @@ int main(int argc, char **argv) {
         flat_map->push_back(std::make_shared<kspp::krecord<std::string, void>>(*iter));
     });
 
-    auto filtered_stream = builder.create_filter<std::string, void>(word_stream, [](const auto e)->bool {
+    auto filtered_stream = topology->create_filter<std::string, void>(word_stream, [](const auto e)->bool {
       return (e->key != "hello");
     });
 
-    auto sink = builder.create_stream_sink<std::string, void>(filtered_stream, std::cerr);
+    auto sink = topology->create_stream_sink<std::string, void>(filtered_stream, std::cerr);
 
     filtered_stream->start(-2);
     filtered_stream->flush();
