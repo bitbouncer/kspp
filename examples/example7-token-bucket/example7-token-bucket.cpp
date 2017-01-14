@@ -13,8 +13,9 @@
 #define PARTITION 0
 
 int main(int argc, char **argv) {
-  auto builder = kspp::topology_builder<kspp::text_codec>("localhost", "C:\\tmp");
+  auto builder = kspp::topology_builder<kspp::text_codec>("example7-token-bucket", "localhost", "C:\\tmp");
   {
+    builder.incr_id();
     auto sink = builder.create_kafka_sink<void, std::string>("kspp_TextInput", PARTITION);
     for (int i = 0; i != 100; ++i) {
       kspp::produce<void, std::string>(*sink, "hello kafka streams");
@@ -24,6 +25,7 @@ int main(int argc, char **argv) {
   }
 
   {
+    builder.incr_id();
     auto source = builder.create_kafka_source<void, std::string>("kspp_TextInput", PARTITION);
 
     std::regex rgx("\\s+");
@@ -40,7 +42,7 @@ int main(int argc, char **argv) {
 
     auto limited_stream = builder.create_rate_limiter<std::string, void>(filtered_stream, 1000, 10);
 
-    auto word_counts = builder.create_count_by_key<std::string, size_t>("example7", "count", limited_stream, 2000000); // punctuate every 2000 sec
+    auto word_counts = builder.create_count_by_key<std::string, size_t>(limited_stream, 2000000); // punctuate every 2000 sec
     
     auto thoughput_limited_stream = builder.create_thoughput_limiter<std::string, size_t>(word_counts, 10);
     

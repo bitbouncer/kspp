@@ -133,9 +133,10 @@ std::string ksource_to_string(const T&  ksource) {
 }
 
 int main(int argc, char **argv) {
-  auto builder = kspp::topology_builder<kspp::binary_codec>("localhost", "C:\\tmp");
+  auto builder = kspp::topology_builder<kspp::binary_codec>("example1-basic", "localhost");
 
   {
+    builder.incr_id();
     auto sink = builder.create_kafka_sink<int64_t, page_view_data>("kspp_PageViews", 0);
     kspp::produce<int64_t, page_view_data>(*sink, 1, {1440557383335, 1, "/home?user=1"});
     kspp::produce<int64_t, page_view_data>(*sink, 5, {1440557383345, 5, "/home?user=5"});
@@ -145,6 +146,7 @@ int main(int argc, char **argv) {
   }
 
   {
+    builder.incr_id();
     auto sink = builder.create_kafka_sink<int64_t, user_profile_data>("kspp_UserProfile", 0);
     kspp::produce<int64_t, user_profile_data>(*sink, 1, {1440557383335, 1, "user1@aol.com"});
     kspp::produce<int64_t, user_profile_data>(*sink, 5, {1440557383345, 5, "user5@gmail.com"});
@@ -153,6 +155,7 @@ int main(int argc, char **argv) {
   }
 
   {
+    builder.incr_id();
     auto pageviews = builder.create_kafka_source<int64_t, page_view_data>("kspp_PageViews", 0);
     auto userprofiles = builder.create_kafka_source<int64_t, user_profile_data>("kspp_UserProfile", 0);
 
@@ -173,7 +176,8 @@ int main(int argc, char **argv) {
   }
 
   {
-    auto pageviews = builder.create_kstream<int64_t, page_view_data>("example3", "step-0", "kspp_PageViews", 0);
+    builder.incr_id();
+    auto pageviews = builder.create_kstream<int64_t, page_view_data>("kspp_PageViews", 0);
     auto pw_sink = builder.create_stream_sink<int64_t, page_view_data>(pageviews, std::cerr);
     pageviews->start();
     pageviews->flush();
@@ -181,8 +185,9 @@ int main(int argc, char **argv) {
   }
 
   {
+    builder.incr_id();
     auto stream = builder.create_kafka_source<int64_t, page_view_data>("kspp_PageViews", 0);
-    auto table = builder.create_ktable<int64_t, user_profile_data>("example3","step-1", "kspp_UserProfile", 0);
+    auto table = builder.create_ktable<int64_t, user_profile_data>("kspp_UserProfile", 0);
     auto join = builder.create_left_join<int64_t, page_view_data, user_profile_data, page_view_decorated>(stream, table, [](const int64_t& key, const page_view_data& left, const user_profile_data& right, page_view_decorated& row) {
       row.user_id = key;
       row.email = right.email;
@@ -198,7 +203,8 @@ int main(int argc, char **argv) {
 
   std::cerr << "using iterators " << std::endl;
   {
-    auto table = builder.create_ktable<int64_t, user_profile_data>("example3", "step-2", "kspp_UserProfile", PARTITION);
+    builder.incr_id();
+    auto table = builder.create_ktable<int64_t, user_profile_data>("kspp_UserProfile", PARTITION);
     table->start();
     table->flush();
     for (auto it = table->begin(), end = table->end(); it != end; ++it)
@@ -207,7 +213,7 @@ int main(int argc, char **argv) {
 
   std::cerr << "using range iterators " << std::endl;
   {
-    auto table = builder.create_ktable<int64_t, user_profile_data>("example3", "step-3", "kspp_UserProfile", PARTITION);
+    auto table = builder.create_ktable<int64_t, user_profile_data>("kspp_UserProfile", PARTITION);
     table->start();
     table->flush();
     for (auto i : *table)

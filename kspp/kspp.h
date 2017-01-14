@@ -70,76 +70,76 @@ struct krecord<K, void>
   int64_t            offset;
 };
 
-class processor_context
-{
-  public:
-  processor_context() {}
-  /**
-  * Returns the application id
-  *
-  * @return the application id
-  */
-  std::string application_id() { return "xxx"; }
-  /**
-  * Returns the state directory for the partition.
-  *
-  * @return the state directory
-  */
-  std::string state_dir() { return ""; }
-  /**
-  * Returns the task id
-  *
-  * @return the task id
-  */
-  int32_t task_id() { return 0; }
-  /**
-  * Schedules a periodic operation for processors. A processor may call this method during
-  * {@link Processor#init(ProcessorContext) initialization} to
-  * schedule a periodic call called a punctuation to {@link Processor#punctuate(long)}.
-  *
-  * @param interval the time interval between punctuations
-  */
-  void schedule(int32_t interval) {}
-  /**
-  * Requests a commit
-  */
-  void commit() {
-
-  }
-  /**
-  * Returns the partition id of the current input record; could be -1 if it is not
-  * available (for example, if this method is invoked from the punctuate call)
-  *
-  * @return the partition id
-  */
-  int32_t partition() { return -1; }
-  /**
-  * Returns the offset of the current input record; could be -1 if it is not
-  * available (for example, if this method is invoked from the punctuate call)
-  *
-  * @return the offset
-  */
-  int64_t offset() { return -1; }
-  /**
-  * Returns the current timestamp.
-  *
-  * If it is triggered while processing a record streamed from the source processor, timestamp is defined as the timestamp of the current input record; the timestamp is extracted from
-  * {@link org.apache.kafka.clients.consumer.ConsumerRecord ConsumerRecord} by {@link TimestampExtractor}.
-  *
-  * If it is triggered while processing a record generated not from the source processor (for example,
-  * if this method is invoked from the punctuate call), timestamp is defined as the current
-  * task's stream time, which is defined as the smallest among all its input stream partition timestamps.
-  *
-  * @return the timestamp
-  */
-  int64_t timestamp() { return 0; }
-};
+//class processor_context
+//{
+//  public:
+//  processor_context() {}
+//  /**
+//  * Returns the application id
+//  *
+//  * @return the application id
+//  */
+//  std::string application_id() { return "xxx"; }
+//  /**
+//  * Returns the state directory for the partition.
+//  *
+//  * @return the state directory
+//  */
+//  std::string state_dir() { return ""; }
+//  /**
+//  * Returns the task id
+//  *
+//  * @return the task id
+//  */
+//  int32_t task_id() { return 0; }
+//  /**
+//  * Schedules a periodic operation for processors. A processor may call this method during
+//  * {@link Processor#init(ProcessorContext) initialization} to
+//  * schedule a periodic call called a punctuation to {@link Processor#punctuate(long)}.
+//  *
+//  * @param interval the time interval between punctuations
+//  */
+//  void schedule(int32_t interval) {}
+//  /**
+//  * Requests a commit
+//  */
+//  void commit() {
+//
+//  }
+//  /**
+//  * Returns the partition id of the current input record; could be -1 if it is not
+//  * available (for example, if this method is invoked from the punctuate call)
+//  *
+//  * @return the partition id
+//  */
+//  int32_t partition() { return -1; }
+//  /**
+//  * Returns the offset of the current input record; could be -1 if it is not
+//  * available (for example, if this method is invoked from the punctuate call)
+//  *
+//  * @return the offset
+//  */
+//  int64_t offset() { return -1; }
+//  /**
+//  * Returns the current timestamp.
+//  *
+//  * If it is triggered while processing a record streamed from the source processor, timestamp is defined as the timestamp of the current input record; the timestamp is extracted from
+//  * {@link org.apache.kafka.clients.consumer.ConsumerRecord ConsumerRecord} by {@link TimestampExtractor}.
+//  *
+//  * If it is triggered while processing a record generated not from the source processor (for example,
+//  * if this method is invoked from the punctuate call), timestamp is defined as the current
+//  * task's stream time, which is defined as the smallest among all its input stream partition timestamps.
+//  *
+//  * @return the timestamp
+//  */
+//  int64_t timestamp() { return 0; }
+//};
 
 class topic_processor
 {
   public:
   virtual ~topic_processor() {}
-  virtual void init(processor_context*) {}
+  //virtual void init(processor_context*) {}
   virtual std::string name() const = 0;
 
   virtual void poll(int timeout) {}
@@ -178,7 +178,7 @@ class partition_processor
 {
   public:
   virtual ~partition_processor() {}
-  virtual void init(processor_context*) {}
+  //virtual void init(processor_context*) {}
 
   virtual std::string name() const = 0;
 

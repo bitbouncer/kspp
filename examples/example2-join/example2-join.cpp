@@ -9,9 +9,10 @@
 int main(int argc, char **argv) {
   size_t join_count = 0;
 
-  auto builder = kspp::topology_builder<kspp::binary_codec>("localhost", "C:\\tmp");
+  auto builder = kspp::topology_builder<kspp::binary_codec>("example2-join", "localhost", "C:\\tmp");
+  builder.incr_id();
   auto stream = builder.create_kafka_source<boost::uuids::uuid, int64_t>("kspp_test0_eventstream", PARTITION);
-  auto table = builder.create_ktable<boost::uuids::uuid, int64_t>("example2-join", "proc-0", "kspp_test0_table", PARTITION);
+  auto table = builder.create_ktable<boost::uuids::uuid, int64_t>("kspp_test0_table", PARTITION);
 
   auto join = builder.create_left_join<boost::uuids::uuid, int64_t, int64_t, int64_t>(stream, table, [&join_count](const boost::uuids::uuid& key, const int64_t& left, const int64_t& right, int64_t& row) {
     row = right;

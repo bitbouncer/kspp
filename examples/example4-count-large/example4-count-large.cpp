@@ -11,7 +11,7 @@
 #define NR_OF_PARTITIONS 8
 
 int main(int argc, char **argv) {
-  auto text_builder = kspp::topology_builder<kspp::text_codec>("localhost", "C:\\tmp");
+  auto text_builder = kspp::topology_builder<kspp::text_codec>("example4-count", "localhost", "C:\\tmp");
   auto sources = text_builder.create_kafka_sources<void, std::string>("test_text", NR_OF_PARTITIONS);
 
   //TBD this could be a topic_transform (now it's a partition_transform)
@@ -24,6 +24,7 @@ int main(int argc, char **argv) {
   });
 
   {
+    text_builder.incr_id();
     auto word_sink = text_builder.create_kafka_sink<std::string, void>("test_words", -1);
     for (auto i : word_streams) {
       i->add_sink(word_sink);
@@ -34,8 +35,9 @@ int main(int argc, char **argv) {
       process_one(word_streams);
   }
 
+  text_builder.incr_id();
   auto word_sources = text_builder.create_kafka_sources<std::string, void>("test_words", NR_OF_PARTITIONS);
-  auto word_counts = text_builder.create_count_by_key<std::string, size_t>("example4", "count", word_sources, 10000);
+  auto word_counts = text_builder.create_count_by_key<std::string, size_t>(word_sources, 10000);
 
   for (auto i : word_counts) {
     std::cerr << i->name() << std::endl;

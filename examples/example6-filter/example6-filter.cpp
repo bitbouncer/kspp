@@ -12,8 +12,9 @@
 #define PARTITION 0
 
 int main(int argc, char **argv) {
-  auto builder = kspp::topology_builder<kspp::text_codec>("localhost", "C:\\tmp");
+  auto builder = kspp::topology_builder<kspp::text_codec>("example6-filter", "localhost", "C:\\tmp");
   {
+    builder.incr_id();
     auto sink = builder.create_kafka_sink<void, std::string>("kspp_TextInput", PARTITION);
     kspp::produce<void, std::string>(*sink, "hello kafka streams");
   }
@@ -30,6 +31,7 @@ int main(int argc, char **argv) {
   }*/
 
   {
+    builder.incr_id();
     auto source = builder.create_kafka_source<void, std::string>("kspp_TextInput", PARTITION);
 
     std::regex rgx("\\s+");

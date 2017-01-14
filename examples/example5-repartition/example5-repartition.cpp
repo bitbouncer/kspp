@@ -9,8 +9,9 @@
 #include <kspp/algorithm.h>
 
 int main(int argc, char **argv) {
-  auto builder = kspp::topology_builder<kspp::text_codec>("localhost", "C:\\tmp");
+  auto builder = kspp::topology_builder<kspp::text_codec>("example5-repartition", "localhost", "C:\\tmp");
   {
+    builder.incr_id();
     auto sink = builder.create_kafka_sink<int, std::string>("kspp_example5_usernames");
     kspp::produce(*sink, 1, "user_1");
     kspp::produce(*sink, 2, "user_2");
@@ -25,6 +26,7 @@ int main(int argc, char **argv) {
   }
 
   {
+    builder.incr_id();
     auto sink = builder.create_kafka_sink<int, int>("kspp_example5_user_channel"); // <user_id, channel_id>
     kspp::produce(*sink, 1, 1);
     kspp::produce(*sink, 2, 1);
@@ -39,12 +41,14 @@ int main(int argc, char **argv) {
   }
 
   {
+    builder.incr_id();
     auto sink = builder.create_kafka_sink<int, std::string>("kspp_example5_channel_names");
     kspp::produce(*sink, 1, "channel1");
     kspp::produce(*sink, 2, "channel2");
   }
 
   {
+    builder.incr_id();
     auto sources = builder.create_kafka_sources<int, std::string>("kspp_example5_usernames", 8);
     auto sink = builder.create_stream_sinks<int, std::string>(sources, std::cerr);
     for (auto s : sources) {
@@ -54,16 +58,19 @@ int main(int argc, char **argv) {
     }
   }
   
+
+  builder.incr_id();
   auto topic_sink = builder.create_kafka_sink<int, std::string>("kspp_example5_usernames.per-channel");
   for (int i = 0; i != 8; ++i) {
     auto partition_source = builder.create_kafka_source<int, std::string>("kspp_example5_usernames", i);
-    auto partition_routing_table = builder.create_ktable<int, int>("example5", "repartition", "kspp_example5_user_channel", i);
+    auto partition_routing_table = builder.create_ktable<int, int>("kspp_example5_user_channel", i);
     auto partition_repartition = std::make_shared<kspp::repartition_by_table<int, std::string, kspp::text_codec>>(partition_source, partition_routing_table, topic_sink);
     partition_repartition->start(-2);
     partition_repartition->flush();
   }
   
   {
+    builder.incr_id();
     auto sources = builder.create_kafka_sources<int, std::string>("kspp_example5_usernames.per-channel", 8);
     auto sink = builder.create_stream_sinks<int, std::string>(sources, std::cerr);
     for (auto s : sources) {

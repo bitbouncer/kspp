@@ -1,4 +1,5 @@
 #include <boost/filesystem.hpp>
+#include <boost/log/trivial.hpp>
 #include "processors/join.h"
 #include "processors/count.h"
 #include "processors/repartition.h"
@@ -12,16 +13,27 @@
 #include "sources/kafka_source.h"
 #pragma once
 
+// TBD we should buld a topology class from here that has all the create functions below but 
+// and owns the _topology_id
+// put init in topology
+// on destruction output logs...
+
+
 namespace kspp {
   template<class CODEC>
   class topology_builder
   {
   public:
-    topology_builder(std::string brokers, std::string storage_path, std::shared_ptr<CODEC> default_codec = std::make_shared<CODEC>()) :
-      _brokers(brokers),
-      _default_codec(default_codec),
-      _storage_path(storage_path) {
-      boost::filesystem::create_directories(boost::filesystem::path(storage_path));
+    topology_builder(std::string app_id, std::string brokers, boost::filesystem::path root_path=boost::filesystem::temp_directory_path(), std::shared_ptr<CODEC> default_codec = std::make_shared<CODEC>())
+      : _app_id(app_id)
+      , _topology_id(0)
+      , _brokers(brokers)
+      , _default_codec(default_codec)
+      , _root_path(root_path) {
+    }
+
+    void incr_id() {
+      _topology_id++;
     }
 
     /*template<class K, class streamV, class tableV, class R>
@@ -59,9 +71,8 @@ namespace kspp {
 
     //TBD we shouyld get rid of void value - we do not require that but how do we tell compiler that????
     template<class K, class V>
-    std::shared_ptr<kspp::materialized_partition_source<K, V>> create_count_by_key(std::string app_id, std::string process_id, std::shared_ptr<partition_source<K, void>> source, int64_t punctuate_intervall) {
-      //return std::make_shared<kspp::count_partition_keys<K, CODEC>>(source, _storage_path, _default_codec);
-      auto p = std::make_shared<kspp::count_by_key<K, V, CODEC>>(source, get_storage_path(app_id, process_id), punctuate_intervall);
+    std::shared_ptr<kspp::materialized_partition_source<K, V>> create_count_by_key(std::shared_ptr<partition_source<K, void>> source, int64_t punctuate_intervall) {
+      auto p = std::make_shared<kspp::count_by_key<K, V, CODEC>>(source, get_storage_path(), punctuate_intervall);
       //_topology.add(p);
       return p;
     }
@@ -84,10 +95,10 @@ namespace kspp {
     */
 
     template<class K, class V>
-    std::vector<std::shared_ptr<kspp::materialized_partition_source<K, V>>> create_count_by_key(std::string app_id, std::string process_id, std::vector<std::shared_ptr<partition_source<K, void>>>& sources, int64_t punctuate_intervall) {
+    std::vector<std::shared_ptr<kspp::materialized_partition_source<K, V>>> create_count_by_key(std::vector<std::shared_ptr<partition_source<K, void>>>& sources, int64_t punctuate_intervall) {
       std::vector<std::shared_ptr<kspp::materialized_partition_source<K, V>>> res;
       for (auto i : sources)
-        res.push_back(create_count_by_key<K, V>(app_id, process_id, i, punctuate_intervall));
+        res.push_back(create_count_by_key<K, V>(i, punctuate_intervall));
       return res;
     }
 
@@ -153,22 +164,22 @@ namespace kspp {
     }
 
     template<class K, class V>
-    std::shared_ptr<kspp::kstream_partition<K, V>> create_kstream(std::string app_id, std::string processor_id, std::string topic, size_t partition) { // TBD tags for application_id and processor_id (append to storage paths??)
-      auto p = std::make_shared<kspp::kstream_partition_impl<K, V, CODEC>>(_brokers, topic, partition, get_storage_path(app_id, processor_id), _default_codec);
+    std::shared_ptr<kspp::kstream_partition<K, V>> create_kstream(std::string topic, size_t partition) { // TBD tags for application_id and processor_id (append to storage paths??)
+      auto p = std::make_shared<kspp::kstream_partition_impl<K, V, CODEC>>(_brokers, topic, partition, get_storage_path(), _default_codec);
       //_topology.add(p);
       return p;
     }
 
     template<class K, class V>
-    std::shared_ptr<kspp::ktable_partition<K, V>> create_ktable(std::string app_id, std::string processor_id, std::string topic, size_t partition) {
-      auto p = std::make_shared<kspp::ktable_partition_impl<K, V, CODEC>>(_brokers, topic, partition, get_storage_path(app_id, processor_id), _default_codec);
+    std::shared_ptr<kspp::ktable_partition<K, V>> create_ktable(std::string topic, size_t partition) {
+      auto p = std::make_shared<kspp::ktable_partition_impl<K, V, CODEC>>(_brokers, topic, partition, get_storage_path(), _default_codec);
       //_topology.add(p);
       return p;
     }
 
     template<class K, class V>
-    std::shared_ptr<kspp::ktable_partition<K, V>> create_global_ktable(std::string app_id, std::string processor_id, std::string topic) {
-      auto p = std::make_shared<kspp::ktable_partition_impl<K, V, CODEC>>(_brokers, topic, 0, get_storage_path(app_id, processor_id), _default_codec);
+    std::shared_ptr<kspp::ktable_partition<K, V>> create_global_ktable(std::string topic) {
+      auto p = std::make_shared<kspp::ktable_partition_impl<K, V, CODEC>>(_brokers, topic, 0, get_storage_path(), _default_codec);
       //_topology.add(p);
       return p;
     }
@@ -231,17 +242,21 @@ namespace kspp {
     */
 
   private:
-  boost::filesystem::path get_storage_path(std::string app_id, std::string process_id) {
-    boost::filesystem::path p(_storage_path);
-    p /= app_id;
-    p /= process_id;
-    return p;
-  }
+    boost::filesystem::path get_storage_path() {
+      boost::filesystem::path top_of_topology(_root_path);
+      top_of_topology /= _app_id;
+      top_of_topology /= "node-" + std::to_string(_topology_id);
+      BOOST_LOG_TRIVIAL(debug) << "topology_builder creating local storage at " << top_of_topology;
+      boost::filesystem::create_directories(top_of_topology);
+      return top_of_topology;
+    }
 
+    std::string             _app_id;
     std::string             _brokers;
-    processor_context       _context;
+    //processor_context       _context;
     std::shared_ptr<CODEC>  _default_codec;
-    std::string             _storage_path;
+    boost::filesystem::path _root_path;
+    size_t                  _topology_id;
     //topoplogy               _topology;
   };
 
