@@ -42,6 +42,14 @@ namespace kspp {
       return _app_id + "__" + _topology_id;
     }
 
+    /* TBD
+    void collect_metrics(merics - sink*) {
+    // figure out which is upstream
+    // add seq number to processors...
+    // 
+    }
+    */
+
     template<class K, class streamV, class tableV, class R>
     std::shared_ptr<left_join<K, streamV, tableV, R>> create_left_join(std::shared_ptr<kspp::partition_source<K, streamV>> right, std::shared_ptr<kspp::ktable_partition<K, tableV>> left, typename kspp::left_join<K, streamV, tableV, R>::value_joiner value_joiner) {
       auto p = std::make_shared<kspp::left_join<K, streamV, tableV, R>>(right, left, value_joiner);
@@ -49,9 +57,16 @@ namespace kspp {
       return p;
     }
 
+    //template<class K, class V>
+    //std::shared_ptr<repartition_by_table<K, V, CODEC>> create_repartition(std::shared_ptr<kspp::partition_source<K, V>> right, std::shared_ptr<kspp::ktable_partition<K, V>> left) {
+    //  auto p = std::make_shared<kspp::repartition_by_table<K, V, CODEC>>(right, left);
+    //  //_topology.add(p);
+    //  return p;
+    //}
+
     template<class K, class V>
-    std::shared_ptr<repartition_by_table<K, V, CODEC>> create_repartition(std::shared_ptr<kspp::partition_source<K, V>> right, std::shared_ptr<kspp::ktable_partition<K, V>> left) {
-      auto p = std::make_shared<kspp::repartition_by_table<K, V, CODEC>>(right, left);
+    std::shared_ptr<repartition_by_table<K, V, CODEC>> create_repartition(std::shared_ptr<kspp::partition_source<K, V>> source, std::shared_ptr<kspp::ktable_partition<K, K>> left, std::shared_ptr<topic_sink<K, V, CODEC>> topic_sink) {
+      auto p = std::make_shared<kspp::repartition_by_table<K, V, CODEC>>(source, left, topic_sink);
       //_topology.add(p);
       return p;
     }
