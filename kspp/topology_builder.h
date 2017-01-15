@@ -13,10 +13,34 @@
 #include "sources/kafka_source.h"
 #pragma once
 
-// TBD we should buld a topology class from here that has all the create functions below but 
-// and owns the _topology_id
-// put init in topology
-// on destruction output logs...
+
+// maybee this is not good at all - if we have a separate processors that uses it's own thread to call 
+// process one we relly dont want those to be mixed.... TBD
+//class topoplogy
+//{
+//  public:
+//  topoplogy() {}
+//
+//  void add(std::shared_ptr<partition_processor> p) {
+//    std::lock_guard<std::mutex> lock(_mutex);
+//    _partition_processors.push_back(p);
+//  }
+//
+//  void add(std::shared_ptr<topic_processor> p) {
+//    std::lock_guard<std::mutex> lock(_mutex);
+//    _topic_processors.push_back(p);
+//  }
+//
+//  bool start() {}
+//  bool process_init_eof() { return true; }
+//  bool process_init() { return false; }
+//  bool eof() { return true; }
+//  bool process() { return false; }
+//  protected:
+//  std::mutex                                        _mutex;
+//  std::vector<std::shared_ptr<partition_processor>> _partition_processors;
+//  std::vector<std::shared_ptr<topic_processor>>     _topic_processors;
+//};
 
 
 namespace kspp {
@@ -50,11 +74,24 @@ namespace kspp {
       }
     }
 
-    void output_metrics() {
+    void output_metrics(std::ostream& s) {
       for (auto i : _partition_processors) {
         for (auto j : i->get_metrics())
-          std::cerr << "metrics: " << j->name() << " : " << j->value() << std::endl;
+          s << "metrics: " << j->name() << " : " << j->value() << std::endl;
       }
+    }
+
+    // TBD this should only call most downstream processors??
+    // or should topology call all members??
+    void start(int offset) {
+      for (auto i : _partition_processors)
+        i->start(offset);
+    }
+
+    // TBD this should only call most downstream processors??
+    void flush() {
+      for (auto i : _partition_processors)
+        i->flush();
     }
 
     /* TBD
@@ -82,7 +119,7 @@ namespace kspp {
     //}
 
     template<class K, class V>
-    std::shared_ptr<repartition_by_table<K, V, CODEC>> create_repartition(std::shared_ptr<kspp::partition_source<K, V>> source, std::shared_ptr<kspp::ktable_partition<K, K>> left, std::shared_ptr<topic_sink<K, V, CODEC>> topic_sink) {
+    std::shared_ptr<partition_processor> create_repartition(std::shared_ptr<kspp::partition_source<K, V>> source, std::shared_ptr<kspp::ktable_partition<K, K>> left, std::shared_ptr<topic_sink<K, V, CODEC>> topic_sink) {
       auto p = kspp::repartition_by_table<K, V, CODEC>::create(source, left, topic_sink);
       _partition_processors.push_back(p);
       return p;
@@ -284,8 +321,7 @@ namespace kspp {
     std::shared_ptr<CODEC>                            _default_codec;
     boost::filesystem::path                           _root_path;
     std::vector<std::shared_ptr<partition_processor>> _partition_processors;
-
-      //    _partition_processors.push_back(p);
+    std::vector<std::shared_ptr<topic_processor>>     _topic_processors;
   };
 
   template<class CODEC>

@@ -95,10 +95,6 @@ namespace kspp {
       return _queue.size();
     }
 
-    virtual std::string topic() const {
-      return "internal-deque";
-    }
-
   private:
     std::shared_ptr<partition_source<SK, SV>>    _source;
     extractor                                    _extractor;
@@ -121,6 +117,7 @@ namespace kspp {
       _source->add_sink([this](auto r) {
         _queue.push_back(r);
       });
+      add_metrics(&_lag);
     }
 
     ~transform_value() {
@@ -163,6 +160,7 @@ namespace kspp {
       bool processed = (_queue.size() > 0);
       while (_queue.size()) {
         auto e = _queue.front();
+        _lag.add_event_time(e->event_time);
         _queue.pop_front();
         _extractor(e, this);
       }
@@ -189,14 +187,11 @@ namespace kspp {
       return _queue.size();
     }
 
-    virtual std::string topic() const {
-      return "internal-deque";
-    }
-
   private:
     std::shared_ptr<partition_source<K, SV>>    _source;
     extractor                                   _extractor;
     std::deque<std::shared_ptr<krecord<K, SV>>> _queue;
+    metrics_lag                                 _lag;
   };
 }
 

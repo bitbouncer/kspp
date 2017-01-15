@@ -20,6 +20,7 @@ int main(int argc, char **argv) {
     });
 
     auto sink = topology->create_kafka_sink<boost::uuids::uuid, int64_t>("kspp_test0_eventstream_out", 0);
+    topology->init_metrics();
     join->start(-2);
 
     // first sync table
@@ -40,6 +41,8 @@ int main(int argc, char **argv) {
     auto d = std::chrono::duration_cast<std::chrono::milliseconds>(fs);
     std::cout << "joins: " << join_count << " t: " << d.count() << "ms\n";
     std::cout << "lookups per sec : " << 1000.0 * join_count / (double)d.count() << std::endl;
+
+    topology->output_metrics(std::cerr);
   }
   return 0;
 }

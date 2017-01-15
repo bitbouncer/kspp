@@ -182,8 +182,6 @@ class partition_processor
 {
   public:
   virtual ~partition_processor() {}
-  //virtual void init(processor_context*) {}
-
   virtual std::string name() const = 0;
   virtual std::string processor_name() const { return "partition_processor"; }
 
@@ -221,6 +219,11 @@ class partition_processor
     punctuate(milliseconds_since_epoch());
   }
 
+  virtual void start() {}
+  virtual void start(int64_t offset) {}
+  virtual void commit() {}
+  virtual void flush_offset() {}
+
   const std::vector<metrics*>& get_metrics() const {
     return _metrics;
   }
@@ -238,34 +241,6 @@ class partition_processor
   partition_processor*  _upstream;
   std::vector<metrics*> _metrics;
 };
-
-// maybee this is not good at all - if we have a separate processors that uses it's own thread to call 
-// process one we relly dont want those to be mixed.... TBD
-//class topoplogy
-//{
-//  public:
-//  topoplogy() {}
-//
-//  void add(std::shared_ptr<partition_processor> p) {
-//    std::lock_guard<std::mutex> lock(_mutex);
-//    _partition_processors.push_back(p);
-//  }
-//
-//  void add(std::shared_ptr<topic_processor> p) {
-//    std::lock_guard<std::mutex> lock(_mutex);
-//    _topic_processors.push_back(p);
-//  }
-//
-//  bool start() {}
-//  bool process_init_eof() { return true; }
-//  bool process_init() { return false; }
-//  bool eof() { return true; }
-//  bool process() { return false; }
-//  protected:
-//  std::mutex                                        _mutex;
-//  std::vector<std::shared_ptr<partition_processor>> _partition_processors;
-//  std::vector<std::shared_ptr<topic_processor>>     _topic_processors;
-//};
 
 template<class K, class V>
 class partition_sink : public partition_processor
@@ -425,11 +400,6 @@ class partition_source : public partition_processor
   virtual void add_sink(sink_function sink) {
     _sinks.push_back(sink);
   }
-  
-  virtual void start() {}
-  virtual void start(int64_t offset) {}
-  virtual void commit() {}
-  virtual void flush_offset() {}
 
   virtual bool is_dirty() = 0;
 

@@ -19,6 +19,7 @@ namespace kspp {
       _source->add_sink([this](auto r) {
         _queue.push_back(r);
       });
+      add_metrics(&_lag);
     }
 
     ~repartition_by_table() {
@@ -28,7 +29,11 @@ namespace kspp {
     std::string name() const { 
       return _source->name() + "-repartition_by_value(" + _routing_table->name() + ")"; 
     }
-    
+
+    static std::shared_ptr<partition_processor> create(std::shared_ptr<partition_source<K, V>> source, std::shared_ptr<ktable_partition<K, K>> routing_table, std::shared_ptr<topic_sink<K, V, CODEC>> topic_sink) {
+      return std::make_shared<repartition_by_table<K, V, CODEC>>(source, routing_table, topic_sink);
+    }
+
     virtual std::string processor_name() const { return "repartition_by_table"; }
 
     virtual void start() {
@@ -59,10 +64,12 @@ namespace kspp {
       while (_queue.size()) {
         auto e = _queue.front();
         _queue.pop_front();
+        _lag.add_event_time(e->event_time);
         auto routing_row = _routing_table->get(e->key);
         if (routing_row) {
           if (routing_row->value) {
             uint32_t hash = get_partition_hash<K, CODEC>(*routing_row->value);
+            _lag.add_event_time(e->event_time);
             _topic_sink->produce(hash, e);
           }
         } else {
@@ -81,6 +88,7 @@ namespace kspp {
     std::shared_ptr<partition_source<K, V>>    _source;
     std::shared_ptr<ktable_partition<K, K>>    _routing_table;
     std::shared_ptr<topic_sink<K, V, CODEC>>   _topic_sink;
+    metrics_lag                                _lag;
   };
 }
 

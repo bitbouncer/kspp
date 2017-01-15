@@ -18,6 +18,7 @@ class rate_limiter : public partition_source<K, V>
     _source->add_sink([this](auto r) {
       _queue.push_back(r);
     });
+    add_metrics(&_lag);
   }
 
   ~rate_limiter() {
@@ -86,14 +87,11 @@ class rate_limiter : public partition_source<K, V>
     return _queue.size();
   }
 
-  virtual std::string topic() const {
-    return "internal-deque";
-  }
-
   private:
   std::shared_ptr<partition_source<K, V>>    _source;
   std::deque<std::shared_ptr<krecord<K, V>>> _queue;
   std::shared_ptr<token_bucket<K>>           _token_bucket;
+  metrics_lag                                _lag;
 };
 
 template<class K, class V>
@@ -149,6 +147,7 @@ class thoughput_limiter : public partition_source<K, V>
 
     if (_queue.size()) {
       auto r = _queue.front();
+      _lag.add_event_time(r->event_time);
       if (_token_bucket->consume(0, milliseconds_since_epoch())) {
         _queue.pop_front();
         this->send_to_sinks(r);
@@ -174,14 +173,11 @@ class thoughput_limiter : public partition_source<K, V>
     return _queue.size();
   }
 
-  virtual std::string topic() const {
-    return "internal-deque";
-  }
-
   private:
   std::shared_ptr<partition_source<K, V>>    _source;
   std::deque<std::shared_ptr<krecord<K, V>>> _queue;
   std::shared_ptr<token_bucket<int>>         _token_bucket;
+  metrics_lag                                _lag;
 };
 
 } // namespace

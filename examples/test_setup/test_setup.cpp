@@ -21,10 +21,11 @@ int main(int argc, char **argv) {
   auto table_stream = topology->create_kafka_sink<boost::uuids::uuid, int64_t>("kspp_test0_table", partitioner);
   auto event_stream = topology->create_kafka_sink<boost::uuids::uuid, int64_t>("kspp_test0_eventstream", partitioner);
 
+  topology->init_metrics();
+
   std::vector<boost::uuids::uuid> ids;
   for (int i = 0; i != 10000; ++i)
     ids.push_back(to_uuid(i));
-
   
   std::cerr << "creating " << table_stream->name() << std::endl;
   for (int64_t update_nr = 0; update_nr != 100; ++update_nr) {
@@ -44,5 +45,6 @@ int main(int argc, char **argv) {
       event_stream->poll(0);
     }
   }
+  topology->output_metrics(std::cerr);
   return 0;
 }

@@ -22,6 +22,7 @@ namespace kspp {
       _stream->add_sink([this](auto r) {
         _queue.push_back(r);
       });
+      add_metrics(&_lag);
     }
 
     ~left_join() {
@@ -79,7 +80,7 @@ namespace kspp {
       while (_queue.size()) {
         auto e = _queue.front();
         _queue.pop_front();
-
+        _lag.add_event_time(e->event_time);
         auto table_row = _table->get(e->key);
         if (table_row) {
           if (e->value) {
@@ -117,5 +118,6 @@ namespace kspp {
     std::shared_ptr<ktable_partition<K, tableV>>     _table; // ska denna vara här överhuvudtaget - räcker det inte med att addera den som sink?
     std::deque<std::shared_ptr<krecord<K, streamV>>> _queue;
     value_joiner                                     _value_joiner;
+    metrics_lag                                      _lag;
   };
 }

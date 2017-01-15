@@ -13,6 +13,7 @@ namespace kspp {
       _source->add_sink([this](auto r) {
         _queue.push_back(r);
       });
+      add_metrics(&_lag);
     }
 
     ~filter() {
@@ -54,8 +55,10 @@ namespace kspp {
       while (_queue.size()) {
         auto r = _queue.front();
         _queue.pop_front();
-        if (_predicate(r))
+        _lag.add_event_time(r->event_time);
+        if (_predicate(r)) {
           this->send_to_sinks(r);
+        }
       }
       return processed;
     }
@@ -76,13 +79,10 @@ namespace kspp {
       return _queue.size();
     }
 
-    virtual std::string topic() const {
-      return "internal-deque";
-    }
-
   private:
     std::shared_ptr<partition_source<K, V>>    _source;
     predicate                                  _predicate;
     std::deque<std::shared_ptr<krecord<K, V>>> _queue;
+    metrics_lag                                _lag;
   };
 } // namespace

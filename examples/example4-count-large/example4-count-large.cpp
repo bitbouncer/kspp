@@ -40,6 +40,8 @@ int main(int argc, char **argv) {
     auto topology = text_builder.create_topology();
     auto word_sources = topology->create_kafka_sources<std::string, void>("test_words", NR_OF_PARTITIONS);
     auto word_counts = topology->create_count_by_key<std::string, size_t>(word_sources, 10000);
+    
+    topology->init_metrics();
 
     for (auto i : word_counts) {
       std::cerr << i->name() << std::endl;
@@ -50,5 +52,7 @@ int main(int argc, char **argv) {
     for (auto i : word_counts)
       for (auto j : *i)
         std::cerr << j->key << " : " << *j->value << std::endl;
+
+    topology->output_metrics(std::cerr);
   }
 }

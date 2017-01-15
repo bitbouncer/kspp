@@ -194,28 +194,26 @@ int main(int argc, char **argv) {
       row.url = left.url;
     });
     auto sink = topology->create_kafka_sink<int64_t, page_view_decorated>("kspp_PageViewsDecorated", PARTITION);
+    topology->init_metrics();
     join->start(-2);
     join->add_sink(sink);
     join->flush();
     join->commit();
+    topology->output_metrics(std::cerr);
   }
 
-  std::cerr << "using iterators " << std::endl;
+  
   {
     auto topology = builder.create_topology();
     auto table = topology->create_ktable<int64_t, user_profile_data>("kspp_UserProfile", PARTITION);
     table->start();
     table->flush();
+
+    std::cerr << "using iterators " << std::endl;
     for (auto it = table->begin(), end = table->end(); it != end; ++it)
       std::cerr << "item : " << ksource_to_string(**it) << std::endl;
-  }
 
-  std::cerr << "using range iterators " << std::endl;
-  {
-    auto topology = builder.create_topology();
-    auto table = topology->create_ktable<int64_t, user_profile_data>("kspp_UserProfile", PARTITION);
-    table->start();
-    table->flush();
+    std::cerr << "using range iterators " << std::endl;
     for (auto i : *table)
       std::cerr << "item : " << ksource_to_string(*i) << std::endl;
   }

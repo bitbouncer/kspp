@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
     }
   }
   
-  {
+  /*{
     auto topology = builder.create_topology();
     auto topic_sink = topology->create_kafka_sink<int, std::string>("kspp_example5_usernames.per-channel");
     for (int i = 0; i != 8; ++i) {
@@ -68,8 +68,24 @@ int main(int argc, char **argv) {
       partition_repartition->start(-2);
       partition_repartition->flush();
     }
+  }*/
+
+  {
+    auto topology = builder.create_topology();
+    auto topic_sink = topology->create_kafka_sink<int, std::string>("kspp_example5_usernames.per-channel");
+    for (int i = 0; i != 8; ++i) {
+      auto partition_source = topology->create_kafka_source<int, std::string>("kspp_example5_usernames", i);
+      auto partition_routing_table = topology->create_ktable<int, int>("kspp_example5_user_channel", i);
+      auto partition_repartition = topology->create_repartition<int, std::string>(partition_source, partition_routing_table, topic_sink);
+    }
+
+      topology->init_metrics();
+      topology->start(-2);
+      topology->flush();
+      topology->output_metrics(std::cerr);
   }
-  
+
+
   {
     auto topology = builder.create_topology();
     auto sources = topology->create_kafka_sources<int, std::string>("kspp_example5_usernames.per-channel", 8);
