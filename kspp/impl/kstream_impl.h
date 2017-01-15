@@ -42,6 +42,7 @@ namespace kspp {
       return   _source.name() + "-kstream";
     }
 
+    virtual std::string processor_name() const { return "kstream"; }
 
     virtual void start() {
       if (boost::filesystem::exists(_offset_storage_path)) {

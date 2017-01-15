@@ -28,6 +28,8 @@ namespace kspp {
       close();
     }
 
+    virtual std::string processor_name() const { return "left_join"; }
+
     static std::shared_ptr<partition_source<K, R>> create(std::shared_ptr<partition_source<K, streamV>> stream, std::shared_ptr<ktable_partition<K, tableV>> table, value_joiner f) {
       return std::make_shared<left_join<K, streamV, tableV, R>>(stream, table, f);
     }

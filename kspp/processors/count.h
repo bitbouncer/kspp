@@ -15,18 +15,24 @@ namespace kspp {
       , _counter_store(name(), get_storage_path(storage_path), codec)
       , _punctuate_intervall(punctuate_intervall)
       , _next_punctuate(0)
-      , _dirty(false) {
+      , _dirty(false)
+      , _records_count("total_count")
+      , _lag() {
       source->add_sink([this](auto e) {
         _queue.push_back(e);
       });
+      add_metrics(&_records_count);
+      add_metrics(&_lag);
     }
 
     ~count_by_key() {
       close();
     }
 
+    virtual std::string processor_name() const { return "count_by_key"; }
+
     static std::shared_ptr<materialized_partition_source<K, V>> create(std::shared_ptr<partition_source<K, void>> source, boost::filesystem::path storage_path, int64_t punctuate_intervall, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) {
-      return std::make_shared<count_by_key<K, CODEC>>(source, storage_path, punctuate_intervall, codec);
+      return std::make_shared<count_by_key<K, V, CODEC>>(source, storage_path, punctuate_intervall, codec);
     }
 
     std::string name() const {
@@ -60,7 +66,6 @@ namespace kspp {
       bool processed = (_queue.size() > 0);
       while (_queue.size()) {
         auto e = _queue.front();
-       
         // should this be on processing time our message time??? 
         // what happens at end of stream if on messaage time...
         if (_next_punctuate < e->event_time) {
@@ -69,6 +74,8 @@ namespace kspp {
           _dirty = false;
         }
 
+        ++_records_count;
+        _lag.add_event_time(e->event_time);
         _dirty = true; // aggregated but not committed
         _queue.pop_front();
         _counter_store.add(e->key, 1);
@@ -135,5 +142,7 @@ namespace kspp {
     int64_t                                         _punctuate_intervall;
     int64_t                                         _next_punctuate;
     bool                                            _dirty;
+    metrics_counter                                 _records_count;
+    metrics_lag                                     _lag;
   };
 }

@@ -29,6 +29,8 @@ namespace kspp {
       return _source->name() + "-repartition_by_value(" + _routing_table->name() + ")"; 
     }
     
+    virtual std::string processor_name() const { return "repartition_by_table"; }
+
     virtual void start() {
       _routing_table->start();
       _source->start();

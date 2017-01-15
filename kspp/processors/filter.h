@@ -19,6 +19,8 @@ namespace kspp {
       close();
     }
 
+    virtual std::string processor_name() const { return "filter"; }
+
     static std::vector<std::shared_ptr<partition_source<K, V>>> create(std::vector<std::shared_ptr<partition_source<K, V>>>& streams, predicate f) {
       std::vector<std::shared_ptr<partition_source<K, V>>> res;
       for (auto i : streams)

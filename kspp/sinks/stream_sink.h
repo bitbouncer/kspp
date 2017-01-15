@@ -34,6 +34,10 @@ namespace kspp {
       //_source->remove_sink()
     }
 
+    static std::shared_ptr<kspp::stream_sink<K, V>> create(std::shared_ptr<partition_source<K, V>> source, std::ostream& os) {
+      return std::make_shared<kspp::stream_sink<K, V>>(source, os);
+    }
+
   private:
     std::shared_ptr<partition_source<K, V>> _source;
     std::ostream&                             _os;
@@ -58,6 +62,10 @@ namespace kspp {
 
     virtual ~stream_sink() {
       //_source->remove_sink()
+    }
+
+    static std::shared_ptr<kspp::stream_sink<void, V>> create(std::shared_ptr<partition_source<void, V>> source, std::ostream& os) {
+      return std::make_shared<kspp::stream_sink<void, V>>(source, os);
     }
 
 
@@ -85,6 +93,10 @@ namespace kspp {
 
     virtual ~stream_sink() {
       //_source->remove_sink()
+    }
+
+    static std::shared_ptr<kspp::stream_sink<K, void>> create(std::shared_ptr<partition_source<K, void>> source, std::ostream& os) {
+      return std::make_shared<kspp::stream_sink<K, void>>(source, os);
     }
 
   private:

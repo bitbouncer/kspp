@@ -37,6 +37,8 @@ class ktable_partition_impl : public ktable_partition<K, V>
     return   _source.name() + "-ktable";
   }
 
+  virtual std::string processor_name() const { return "ktable"; }
+
   virtual void start() {
     if (boost::filesystem::exists(_offset_storage_path)) {
       std::ifstream is(_offset_storage_path.generic_string(), std::ios::binary);

@@ -9,6 +9,7 @@
 #include <chrono>
 #include <strstream>
 #include <boost/uuid/uuid.hpp>
+#include "metrics.h"
 
 #pragma once
 namespace kspp {
@@ -69,6 +70,9 @@ struct krecord<K, void>
   int64_t            event_time;
   int64_t            offset;
 };
+
+
+
 
 //class processor_context
 //{
@@ -181,6 +185,11 @@ class partition_processor
   //virtual void init(processor_context*) {}
 
   virtual std::string name() const = 0;
+  virtual std::string processor_name() const { return "partition_processor"; }
+
+  size_t depth() const {
+    return _upstream ? _upstream->depth() + 1 : 0;
+  }
 
   /**
   * Process an input record
@@ -212,13 +221,22 @@ class partition_processor
     punctuate(milliseconds_since_epoch());
   }
 
+  const std::vector<metrics*>& get_metrics() const {
+    return _metrics;
+  }
+
   protected:
   partition_processor(partition_processor* upstream, size_t partition)
     : _upstream(upstream)
     , _partition(partition) {
   }
-  const size_t         _partition;
-  partition_processor* _upstream;
+  void add_metrics(metrics* p) { // cannot be removed...
+    _metrics.push_back(p);
+  }
+
+  const size_t          _partition;
+  partition_processor*  _upstream;
+  std::vector<metrics*> _metrics;
 };
 
 // maybee this is not good at all - if we have a separate processors that uses it's own thread to call 

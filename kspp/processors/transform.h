@@ -14,10 +14,15 @@ namespace kspp {
     flat_map(std::shared_ptr<partition_source<SK, SV>> source, extractor f)
       : partition_source<RK, RV>(source.get(), source->partition())
       , _source(source)
-      , _extractor(f) {
+      , _extractor(f)
+      , _in_count("in_count")
+      , _out_count("out_count") {
       _source->add_sink([this](auto r) {
         _queue.push_back(r);
       });
+      add_metrics(&_in_count);
+      add_metrics(&_out_count);
+      add_metrics(&_lag);
     }
 
     ~flat_map() {
@@ -39,6 +44,10 @@ namespace kspp {
       return _source->name() + "-flat_map()[" + type_name<RK>::get() + ", " + type_name<RV>::get() + "]"; 
     }
 
+    virtual std::string processor_name() const {
+      return "flat_map";
+    }
+
     virtual void start() {
       _source->start();
     }
@@ -57,12 +66,16 @@ namespace kspp {
       while (_queue.size()) {
         auto e = _queue.front();
         _queue.pop_front();
+        _lag.add_event_time(e->event_time);
         _extractor(e, this);
+        ++_in_count;
+
       }
       return processed;
     }
 
     void push_back(std::shared_ptr<krecord<RK, RV>> r) {
+      ++_out_count;
       this->send_to_sinks(r);
     }
 
@@ -90,6 +103,9 @@ namespace kspp {
     std::shared_ptr<partition_source<SK, SV>>    _source;
     extractor                                    _extractor;
     std::deque<std::shared_ptr<krecord<SK, SV>>> _queue;
+    metrics_counter                              _in_count;
+    metrics_counter                              _out_count;
+    metrics_lag                                  _lag;
   };
 
   template<class K, class SV, class RV>
@@ -124,6 +140,10 @@ namespace kspp {
 
     std::string name() const {
       return _source->name() + "-transform_value";
+    }
+
+    virtual std::string processor_name() const {
+      return "transform_value";
     }
 
     virtual void start() {

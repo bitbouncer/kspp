@@ -24,6 +24,8 @@ class rate_limiter : public partition_source<K, V>
     close();
   }
 
+  virtual std::string processor_name() const { return "rate_limiter"; }
+
   static std::vector<std::shared_ptr<partition_source<K, V>>> create(std::vector<std::shared_ptr<partition_source<K, V>>>& streams, int64_t agetime, size_t capacity) {
     std::vector<std::shared_ptr<partition_source<K, V>>> res;
     for (auto i : streams)
