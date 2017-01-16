@@ -117,13 +117,6 @@ class topology
     return p;
   }
 
-  //template<class K, class V>
-  //std::shared_ptr<repartition_by_table<K, V, CODEC>> create_repartition(std::shared_ptr<kspp::partition_source<K, V>> right, std::shared_ptr<kspp::ktable_partition<K, V>> left) {
-  //  auto p = std::make_shared<kspp::repartition_by_table<K, V, CODEC>>(right, left);
-  //  //_topology.add(p);
-  //  return p;
-  //}
-
   template<class K, class V>
   std::shared_ptr<partition_processor> create_repartition(std::shared_ptr<kspp::partition_source<K, V>> source, std::shared_ptr<kspp::ktable_partition<K, K>> left, std::shared_ptr<topic_sink<K, V, CODEC>> topic_sink) {
     auto p = kspp::repartition_by_table<K, V, CODEC>::create(source, left, topic_sink);
@@ -131,37 +124,13 @@ class topology
     return p;
   }
 
-  /*
-  template<class K, class V>
-  std::shared_ptr<repartition_table<K, V>> create_repartition(std::shared_ptr<kspp::ktable<K, V>> table) {
-  return std::make_shared<kspp::repartition_table<K, V>>(table);
-  }
-  */
-
   //TBD we shouyld get rid of void value - we do not require that but how do we tell compiler that????
   template<class K, class V>
   std::shared_ptr<kspp::materialized_partition_source<K, V>> create_count_by_key(std::shared_ptr<partition_source<K, void>> source, int64_t punctuate_intervall) {
-    auto p = kspp::count_by_key<K, V, CODEC>::create(source, get_storage_path(), punctuate_intervall);
+    auto p = kspp::count_by_key<K, V, CODEC>::create(source, get_storage_path(), punctuate_intervall, _default_codec);
     _partition_processors.push_back(p);
     return p;
   }
-
-  /*
-  template<class K>
-  std::shared_ptr<kspp::count_keys<K, CODEC>> create_count_keys(std::shared_ptr<ksource<K, void>> source) {
-  return std::make_shared<kspp::count_keys<K, CODEC>>(source, _storage_path, _default_codec);
-  }
-  */
-
-  /*
-  template<class K>
-  std::vector<std::shared_ptr<kspp::count_keys<K, CODEC>>> create_count_keys(std::vector<std::shared_ptr<ksource<K, void>>>& sources) {
-  std::vector<std::shared_ptr<kspp::count_keys<K, CODEC>>> res;
-  for (auto i : sources)
-  res.push_back(create_count_keys(i));
-  return res;
-  }
-  */
 
   template<class K, class V>
   std::vector<std::shared_ptr<kspp::materialized_partition_source<K, V>>> create_count_by_key(std::vector<std::shared_ptr<partition_source<K, void>>>& sources, int64_t punctuate_intervall) {
@@ -171,18 +140,8 @@ class topology
     return res;
   }
 
-
-  /*
-  template<class K, class V, class RK>
-  std::shared_ptr<group_by<K, V, RK>> create_group_by(std::string tag, std::string topic, int32_t partition, typename kspp::group_by<K, V, RK>::extractor extractor) {
-  auto stream = std::make_shared<kspp::kafka_source<K, V, codec>>(_brokers, topic, partition, _default_codec);
-  return std::make_shared<kspp::group_by<K, V, RK>>(stream, value_joiner);
-  }
-  */
-
   template<class K, class V>
   std::shared_ptr<kspp::partition_sink<K, V>> create_global_kafka_sink(std::string topic) {
-    //auto p = std::make_shared<kspp::kafka_sink<K, V, CODEC>>(_brokers, topic, 0, _default_codec);
     auto p = kspp::kafka_sink<K, V, CODEC>::create(_brokers, topic, 0, _default_codec);
     //_topology.add(p);
     return p;
@@ -203,7 +162,6 @@ class topology
   */
   template<class K, class V>
   std::shared_ptr<kspp::topic_sink<K, V, CODEC>> create_kafka_sink(std::string topic, std::function<uint32_t(const K& key)> partitioner) {
-    //auto p = std::make_shared<kspp::kafka_sink<K, V, CODEC>>(_brokers, topic, partitioner, _default_codec);
     auto p = kspp::kafka_sink<K, V, CODEC>::create(_brokers, topic, partitioner, _default_codec);
     //_topology.add(p);
     return p;
@@ -214,7 +172,6 @@ class topology
   */
   template<class K, class V>
   std::shared_ptr<kspp::partition_sink<K, V>> create_kafka_sink(std::string topic, size_t partition) {
-    //auto p = std::make_shared<kspp::kafka_single_partition_sink<K, V, CODEC>>(_brokers, topic, partition, _default_codec);
     auto p = kspp::kafka_single_partition_sink<K, V, CODEC>::create(_brokers, topic, partition, _default_codec);
     //_topology.add(p);
     return p;

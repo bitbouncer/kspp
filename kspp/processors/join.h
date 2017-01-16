@@ -22,7 +22,7 @@ namespace kspp {
       _stream->add_sink([this](auto r) {
         _queue.push_back(r);
       });
-      add_metrics(&_lag);
+      this->add_metrics(&_lag);
     }
 
     ~left_join() {
