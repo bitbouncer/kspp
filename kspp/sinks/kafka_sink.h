@@ -59,12 +59,12 @@ class kafka_sink_base : public topic_sink<K, V, CODEC>
   }
 
   protected:
-  kafka_sink_base(std::string brokers, std::string topic, partitioner p, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
+  kafka_sink_base(std::string brokers, std::string topic, partitioner p, std::shared_ptr<CODEC> codec)
     : topic_sink<K, V, CODEC>(codec)
     , _impl(brokers, topic)
     , _partitioner(p) {}
 
-  kafka_sink_base(std::string brokers, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
+  kafka_sink_base(std::string brokers, std::string topic, std::shared_ptr<CODEC> codec)
     : topic_sink<K, V, CODEC>(codec)
     , _impl(brokers, topic) {}
 
@@ -87,11 +87,11 @@ class kafka_sink : public kafka_sink_base<K, V, CODEC>
   kafka_sink(std::string brokers, std::string topic, std::shared_ptr<CODEC> codec)
     : kafka_sink_base<K, V, CODEC>(brokers, topic, codec) {}
 
-  static std::shared_ptr<kspp::topic_sink<K, V, CODEC>> create(std::string brokers, std::string topic, partitioner p, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) {
+  static std::shared_ptr<kspp::topic_sink<K, V, CODEC>> create(std::string brokers, std::string topic, partitioner p, std::shared_ptr<CODEC> codec) {
     return std::make_shared<kspp::kafka_sink<K, V, CODEC>>(brokers, topic, p, codec);
   }
 
-  static std::shared_ptr<kspp::topic_sink<K, V, CODEC>> create(std::string brokers, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) {
+  static std::shared_ptr<kspp::topic_sink<K, V, CODEC>> create(std::string brokers, std::string topic, std::shared_ptr<CODEC> codec) {
     return std::make_shared<kspp::kafka_sink<K, V, CODEC>>(brokers, topic, codec);
   }
   
@@ -135,7 +135,7 @@ class kafka_sink<void, V, CODEC> : public kafka_sink_base<void, V, CODEC>
   //  return std::make_shared<kspp::kafka_sink<void, V, CODEC>>(brokers, topic, p, codec);
   //}
 
-  static std::shared_ptr<kspp::topic_sink<void, V, CODEC>> create(std::string brokers, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) {
+  static std::shared_ptr<kspp::topic_sink<void, V, CODEC>> create(std::string brokers, std::string topic, std::shared_ptr<CODEC> codec) {
     return std::make_shared<kspp::kafka_sink<void, V, CODEC>>(brokers, topic, codec);
   }
 
@@ -166,11 +166,11 @@ class kafka_sink<K, void, CODEC> : public kafka_sink_base<K, void, CODEC>
   kafka_sink(std::string brokers, std::string topic, std::shared_ptr<CODEC> codec)
     : kafka_sink_base<K, void, CODEC>(brokers, topic, codec) {}
 
-  static std::shared_ptr<kspp::topic_sink<K, void, CODEC>> create(std::string brokers, std::string topic, partitioner p, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) {
+  static std::shared_ptr<kspp::topic_sink<K, void, CODEC>> create(std::string brokers, std::string topic, partitioner p, std::shared_ptr<CODEC> codec) {
     return std::make_shared<kspp::kafka_sink<K, void, CODEC>>(brokers, topic, p, codec);
   }
 
-  static std::shared_ptr<kspp::topic_sink<K, void, CODEC>> create(std::string brokers, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) {
+  static std::shared_ptr<kspp::topic_sink<K, void, CODEC>> create(std::string brokers, std::string topic, std::shared_ptr<CODEC> codec) {
     return std::make_shared<kspp::kafka_sink<K, void, CODEC>>(brokers, topic, codec);
   }
 
@@ -207,7 +207,7 @@ template<class K, class V, class CODEC>
 class kafka_single_partition_sink_base : public partition_sink<K, V>
 {
   protected:
-  kafka_single_partition_sink_base(std::string brokers, std::string topic, size_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
+  kafka_single_partition_sink_base(std::string brokers, std::string topic, size_t partition, std::shared_ptr<CODEC> codec)
     : partition_sink<K, V>(partition)
     , _codec(codec)
     , _impl(brokers, topic)
@@ -255,7 +255,7 @@ class kafka_single_partition_sink : public kafka_single_partition_sink_base<K, V
   kafka_single_partition_sink(std::string brokers, std::string topic, size_t partition, std::shared_ptr<CODEC> codec)
     : kafka_single_partition_sink_base<K, V, CODEC>(brokers, topic, partition, codec) {}
 
-  static std::shared_ptr<kspp::partition_sink<K, V>> create(std::string brokers, std::string topic, size_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) {
+  static std::shared_ptr<kspp::partition_sink<K, V>> create(std::string brokers, std::string topic, size_t partition, std::shared_ptr<CODEC> codec) {
     return std::make_shared<kspp::kafka_single_partition_sink<K, V, CODEC>>(brokers, topic, partition, codec);
   }
 
@@ -289,7 +289,7 @@ class kafka_single_partition_sink<void, V, CODEC> : public kafka_single_partitio
     : kafka_single_partition_sink_base<void, V, CODEC>(brokers, topic, partition, codec) {
   }
 
-  static std::shared_ptr<kspp::partition_sink<void, V>> create(std::string brokers, std::string topic, size_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) {
+  static std::shared_ptr<kspp::partition_sink<void, V>> create(std::string brokers, std::string topic, size_t partition, std::shared_ptr<CODEC> codec) {
     return std::make_shared<kspp::kafka_single_partition_sink<void, V, CODEC>>(brokers, topic, partition, codec);
   }
   
@@ -316,7 +316,7 @@ class kafka_single_partition_sink<K, void, CODEC> : public kafka_single_partitio
     : kafka_single_partition_sink_base<K, void, CODEC>(brokers, topic, partition, codec) {
   }
 
-  static std::shared_ptr<kspp::partition_sink<K, void>> create(std::string brokers, std::string topic, size_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) {
+  static std::shared_ptr<kspp::partition_sink<K, void>> create(std::string brokers, std::string topic, size_t partition, std::shared_ptr<CODEC> codec) {
     return std::make_shared<kspp::kafka_single_partition_sink<K, void, CODEC>>(brokers, topic, partition, codec);
   }
 

@@ -76,7 +76,7 @@ namespace kspp {
   class kafka_source : public kafka_source_base<K, V, CODEC>
   {
   public:
-    kafka_source(std::string brokers, std::string topic, size_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
+    kafka_source(std::string brokers, std::string topic, size_t partition, std::shared_ptr<CODEC> codec)
       : kafka_source_base<K, V, CODEC>(brokers, topic, partition, codec) {}
 
 
@@ -123,7 +123,7 @@ namespace kspp {
   class kafka_source<void, V, CODEC> : public kafka_source_base<void, V, CODEC>
   {
   public:
-    kafka_source(std::string brokers, std::string topic, size_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
+    kafka_source(std::string brokers, std::string topic, size_t partition, std::shared_ptr<CODEC> codec)
       : kafka_source_base<void, V, CODEC>(brokers, topic, partition, codec) {}
 
   /*  virtual std::string name() const {
@@ -165,7 +165,7 @@ namespace kspp {
   {
   public:
   public:
-    kafka_source(std::string brokers, std::string topic, size_t partition, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
+    kafka_source(std::string brokers, std::string topic, size_t partition, std::shared_ptr<CODEC> codec)
       : kafka_source_base<K, void, CODEC>(brokers, topic, partition, codec) {}
 
   /*  virtual std::string name() const {

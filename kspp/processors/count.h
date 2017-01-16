@@ -9,7 +9,7 @@ namespace kspp {
   class count_by_key : public materialized_partition_source<K, V>
   {
   public:
-    count_by_key(std::shared_ptr<partition_source<K, void>> source, boost::filesystem::path storage_path, int64_t punctuate_intervall, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
+    count_by_key(std::shared_ptr<partition_source<K, void>> source, boost::filesystem::path storage_path, int64_t punctuate_intervall, std::shared_ptr<CODEC> codec)
       : materialized_partition_source<K, V>(source.get(), source->partition())
       , _stream(source)
       , _counter_store(name(), get_storage_path(storage_path), codec)
@@ -31,7 +31,7 @@ namespace kspp {
 
     virtual std::string processor_name() const { return "count_by_key"; }
 
-    static std::shared_ptr<materialized_partition_source<K, V>> create(std::shared_ptr<partition_source<K, void>> source, boost::filesystem::path storage_path, int64_t punctuate_intervall, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) {
+    static std::shared_ptr<materialized_partition_source<K, V>> create(std::shared_ptr<partition_source<K, void>> source, boost::filesystem::path storage_path, int64_t punctuate_intervall, std::shared_ptr<CODEC> codec) {
       return std::make_shared<count_by_key<K, V, CODEC>>(source, storage_path, punctuate_intervall, codec);
     }
 

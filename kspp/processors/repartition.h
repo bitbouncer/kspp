@@ -68,7 +68,7 @@ namespace kspp {
         auto routing_row = _routing_table->get(e->key);
         if (routing_row) {
           if (routing_row->value) {
-            uint32_t hash = get_partition_hash<K, CODEC>(*routing_row->value);
+            uint32_t hash = get_partition_hash<K, CODEC>(*routing_row->value, _topic_sink->codec());
             _lag.add_event_time(e->event_time);
             _topic_sink->produce(hash, e);
           }
