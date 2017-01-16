@@ -224,7 +224,7 @@ class partition_processor
   virtual void commit() {}
   virtual void flush_offset() {}
 
-  const std::vector<metrics*>& get_metrics() const {
+  const std::vector<metric*>& get_metrics() const {
     return _metrics;
   }
 
@@ -233,13 +233,13 @@ class partition_processor
     : _upstream(upstream)
     , _partition(partition) {
   }
-  void add_metrics(metrics* p) { // cannot be removed...
+  void add_metric(metric* p) { // cannot be removed...
     _metrics.push_back(p);
   }
 
   const size_t          _partition;
   partition_processor*  _upstream;
-  std::vector<metrics*> _metrics;
+  std::vector<metric*>  _metrics;
 };
 
 template<class K, class V>

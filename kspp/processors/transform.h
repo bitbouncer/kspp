@@ -20,9 +20,9 @@ namespace kspp {
       _source->add_sink([this](auto r) {
         _queue.push_back(r);
       });
-      add_metrics(&_in_count);
-      add_metrics(&_out_count);
-      add_metrics(&_lag);
+      this->add_metric(&_in_count);
+      this->add_metric(&_out_count);
+      this->add_metric(&_lag);
     }
 
     ~flat_map() {
@@ -99,9 +99,9 @@ namespace kspp {
     std::shared_ptr<partition_source<SK, SV>>    _source;
     extractor                                    _extractor;
     std::deque<std::shared_ptr<krecord<SK, SV>>> _queue;
-    metrics_counter                              _in_count;
-    metrics_counter                              _out_count;
-    metrics_lag                                  _lag;
+    metric_counter                               _in_count;
+    metric_counter                               _out_count;
+    metric_lag                                   _lag;
   };
 
   template<class K, class SV, class RV>
@@ -117,7 +117,7 @@ namespace kspp {
       _source->add_sink([this](auto r) {
         _queue.push_back(r);
       });
-      add_metrics(&_lag);
+      this->add_metric(&_lag);
     }
 
     ~transform_value() {
@@ -191,7 +191,7 @@ namespace kspp {
     std::shared_ptr<partition_source<K, SV>>    _source;
     extractor                                   _extractor;
     std::deque<std::shared_ptr<krecord<K, SV>>> _queue;
-    metrics_lag                                 _lag;
+    metric_lag                                  _lag;
   };
 }
 

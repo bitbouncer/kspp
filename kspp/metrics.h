@@ -4,9 +4,9 @@
 #pragma once
 
 namespace kspp {
-  struct metrics
+  struct metric
   {
-    metrics(std::string s)
+    metric(std::string s)
       : _simple_name(s)
       , _logged_name(s) {
     }
@@ -21,10 +21,10 @@ namespace kspp {
     std::string _logged_name;
   };
   
-  struct metrics_counter : public metrics
+  struct metric_counter : public metric
   {
-    metrics_counter(std::string s)
-      : metrics(s)
+    metric_counter(std::string s)
+      : metric(s)
       , _value(0) {
     }
 
@@ -32,37 +32,37 @@ namespace kspp {
       return _value;
     }
 
-    inline metrics_counter& operator=(int64_t v) {
+    inline metric_counter& operator=(int64_t v) {
       _value = v;
       return *this;
     }
 
-    inline metrics_counter& operator++() {
+    inline metric_counter& operator++() {
       _value++;
       return *this;
     }
 
-    inline metrics_counter& operator+=(int64_t v) {
+    inline metric_counter& operator+=(int64_t v) {
       _value = _value + v;
       return *this;
     }
 
-    inline metrics_counter& operator--() {
+    inline metric_counter& operator--() {
       _value--;
       return *this;
     }
 
-    inline metrics_counter& operator-=(int64_t v) {
+    inline metric_counter& operator-=(int64_t v) {
       _value = _value - v;
       return *this;
     }
     int64_t _value;
   };
 
-  struct metrics_average : public metrics
+  struct metric_average : public metric
   {
-    metrics_average(std::string s)
-      : metrics(s)
+    metric_average(std::string s)
+      : metric(s)
       , _sum(0)
       , _count(0) 
     {}
@@ -85,7 +85,7 @@ namespace kspp {
     int64_t _count;
   };
 
-  struct metrics_lag : public metrics
+  struct metric_lag : public metric
   {
     // TBD is this fast enough???
     static inline int64_t milliseconds_since_epoch() {
@@ -93,8 +93,8 @@ namespace kspp {
         (std::chrono::system_clock::now().time_since_epoch()).count();
     }
 
-    metrics_lag()
-      : metrics("lag")
+    metric_lag()
+      : metric("lag")
       , _lag(-1){
     }
 

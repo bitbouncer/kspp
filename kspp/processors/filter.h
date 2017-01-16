@@ -13,7 +13,7 @@ namespace kspp {
       _source->add_sink([this](auto r) {
         _queue.push_back(r);
       });
-      add_metrics(&_lag);
+      this->add_metric(&_lag);
     }
 
     ~filter() {
@@ -83,6 +83,6 @@ namespace kspp {
     std::shared_ptr<partition_source<K, V>>    _source;
     predicate                                  _predicate;
     std::deque<std::shared_ptr<krecord<K, V>>> _queue;
-    metrics_lag                                _lag;
+    metric_lag                                 _lag;
   };
 } // namespace

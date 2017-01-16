@@ -21,8 +21,8 @@ namespace kspp {
       source->add_sink([this](auto e) {
         _queue.push_back(e);
       });
-      add_metrics(&_records_count);
-      add_metrics(&_lag);
+      this->add_metric(&_records_count);
+      this->add_metric(&_lag);
     }
 
     ~count_by_key() {
@@ -142,7 +142,7 @@ namespace kspp {
     int64_t                                         _punctuate_intervall;
     int64_t                                         _next_punctuate;
     bool                                            _dirty;
-    metrics_counter                                 _records_count;
-    metrics_lag                                     _lag;
+    metric_counter                                  _records_count;
+    metric_lag                                      _lag;
   };
 }

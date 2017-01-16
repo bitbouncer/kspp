@@ -19,7 +19,7 @@ namespace kspp {
       _source->add_sink([this](auto r) {
         _queue.push_back(r);
       });
-      add_metrics(&_lag);
+      this->add_metric(&_lag);
     }
 
     ~repartition_by_table() {
@@ -88,7 +88,7 @@ namespace kspp {
     std::shared_ptr<partition_source<K, V>>    _source;
     std::shared_ptr<ktable_partition<K, K>>    _routing_table;
     std::shared_ptr<topic_sink<K, V, CODEC>>   _topic_sink;
-    metrics_lag                                _lag;
+    metric_lag                                 _lag;
   };
 }
 
