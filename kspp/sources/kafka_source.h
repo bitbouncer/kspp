@@ -6,7 +6,7 @@
 #include "kafka_consumer.h"
 #pragma once
 
-#define LOGPREFIX_ERROR BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << name()
+#define LOGPREFIX_ERROR BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << this->name()
 
 namespace kspp {
   template<class K, class V, class CODEC>
