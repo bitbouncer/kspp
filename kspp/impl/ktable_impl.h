@@ -16,17 +16,22 @@ class ktable_partition_impl : public ktable_partition<K, V>
     , _state_store(topic, partition, get_storage_path(storage_path), codec)
     , _current_offset(RdKafka::Topic::OFFSET_BEGINNING)
     , _last_comitted_offset(RdKafka::Topic::OFFSET_BEGINNING)
-    , _last_flushed_offset(RdKafka::Topic::OFFSET_BEGINNING) {
+    , _last_flushed_offset(RdKafka::Topic::OFFSET_BEGINNING)
+    , _count("count") {
     boost::filesystem::create_directories(_offset_storage_path);
     _offset_storage_path /= "kspp_offset.bin";
     _source.add_sink([this](auto r) {
       _current_offset = r->offset;
+      _lag.add_event_time(r->event_time);
+      ++_count;
       if (r->value)
         _state_store.put(r->key, *r->value);
       else
         _state_store.del(r->key);
       this->send_to_sinks(r);
     });
+    this->add_metric(&_lag);
+    this->add_metric(&_count);
   }
 
   virtual ~ktable_partition_impl() {
@@ -119,5 +124,7 @@ class ktable_partition_impl : public ktable_partition<K, V>
   int64_t                   _current_offset;
   int64_t                   _last_comitted_offset;
   int64_t                   _last_flushed_offset;
+  metric_lag                _lag;
+  metric_counter            _count;
 };
 };
