@@ -38,6 +38,7 @@ namespace kspp {
     const std::string                  _topic;
     std::unique_ptr<RdKafka::Topic>    _rd_topic;
     std::unique_ptr<RdKafka::Producer> _producer;
+    bool                               _closed;
     uint64_t                           _msg_cnt;
     uint64_t                           _msg_bytes;
     MyHashPartitionerCb                _default_partitioner;

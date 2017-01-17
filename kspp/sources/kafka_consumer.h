@@ -36,6 +36,7 @@ namespace kspp {
     uint64_t                           _msg_cnt;
     uint64_t                           _msg_bytes;
     bool                               _eof;
+    bool                               _closed;
   };
 };
 

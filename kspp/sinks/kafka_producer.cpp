@@ -20,10 +20,11 @@ namespace kspp {
     return partition_hash % partition_cnt;
   }
 
-kafka_producer::kafka_producer(std::string brokers, std::string topic) :
-  _topic(topic),
-  _msg_cnt(0),
-  _msg_bytes(0) {
+kafka_producer::kafka_producer(std::string brokers, std::string topic) 
+  : _topic(topic)
+  , _msg_cnt(0)
+  , _msg_bytes(0)
+  , _closed(false) {
   /*
   * Create configuration objects
   */
@@ -68,8 +69,21 @@ kafka_producer::kafka_producer(std::string brokers, std::string topic) :
 }
 
 kafka_producer::~kafka_producer() {
-  close();
+  if (!_closed)
+    close();
 }
+
+void kafka_producer::close() {
+  _closed = true;
+  while (_producer && _producer->outq_len() > 0) {
+    LOG_INFO("closing") << "waining for " << _producer->outq_len() << " messages to be written...";
+    _producer->poll(1000);
+  }
+  _rd_topic = NULL;
+  _producer = NULL;
+  LOG_INFO("closed") << ", produced " << _msg_cnt << " messages (" << _msg_bytes << " bytes)";
+}
+
 
 int kafka_producer::produce(uint32_t partition_hash, rdkafka_memory_management_mode mode, void* key, size_t keysz, void* value, size_t valuesz) {
   RdKafka::ErrorCode resp = _producer->produce(_rd_topic.get(), -1, (int) mode, value, valuesz, key, keysz, (void*) (uintptr_t) partition_hash);
@@ -82,13 +96,4 @@ int kafka_producer::produce(uint32_t partition_hash, rdkafka_memory_management_m
   return 0;
 }
 
-void kafka_producer::close() {
-  while (_producer && _producer->outq_len() > 0) {
-    LOG_INFO("closing") << "waining for " << _producer->outq_len() << " messages to be written...";
-    _producer->poll(1000);
-  }
-  _rd_topic = NULL;
-  _producer = NULL;
-  LOG_INFO("closed") << ", produced " << _msg_cnt << " messages (" << _msg_bytes << " bytes)";
-}
 }; // namespace

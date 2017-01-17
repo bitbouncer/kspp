@@ -5,12 +5,13 @@
 #define LOG_INFO(EVENT)  BOOST_LOG_TRIVIAL(info) << "kafka_consumer: " << EVENT << ", topic:" << _topic << ":" << _partition
 
 namespace kspp {
-kafka_consumer::kafka_consumer(std::string brokers, std::string topic, size_t partition) :
-  _topic(topic),
-  _partition(partition),
-  _eof(false),
-  _msg_cnt(0),
-  _msg_bytes(0) {
+kafka_consumer::kafka_consumer(std::string brokers, std::string topic, size_t partition)
+  : _topic(topic)
+  , _partition(partition)
+  , _eof(false)
+  , _msg_cnt(0)
+  , _msg_bytes(0)
+  , _closed(false) {
   /*
   * Create configuration objects
   */
@@ -48,10 +49,13 @@ kafka_consumer::kafka_consumer(std::string brokers, std::string topic, size_t pa
 }
 
 kafka_consumer::~kafka_consumer() {
+  if (!_closed)
+    close();
   close();
 }
 
 void kafka_consumer::close() {
+  _closed = true;
   if (_consumer) {
     _consumer->stop(_rd_topic.get(), 0);
     LOG_INFO("close") << ", consumed " << _msg_cnt << " messages (" << _msg_bytes << " bytes)";
