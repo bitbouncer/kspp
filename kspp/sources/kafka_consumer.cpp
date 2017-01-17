@@ -23,6 +23,7 @@ kafka_consumer::kafka_consumer(std::string brokers, std::string topic, size_t pa
   */
   std::string errstr;
   conf->set("metadata.broker.list", brokers, errstr);
+  conf->set("api.version.request", "true", errstr);
 
   //ExampleEventCb ex_event_cb;
   //conf->set("event_cb", &ex_event_cb, errstr);

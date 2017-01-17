@@ -36,6 +36,7 @@ kafka_producer::kafka_producer(std::string brokers, std::string topic)
   */
   std::string errstr;
   conf->set("metadata.broker.list", brokers, errstr);
+  conf->set("api.version.request", "true", errstr);
 
   //ExampleEventCb ex_event_cb;
   //conf->set("event_cb", &ex_event_cb, errstr);
