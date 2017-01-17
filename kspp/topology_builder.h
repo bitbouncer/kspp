@@ -157,7 +157,7 @@ class topology
     _topic_processors.push_back(p);
     return p;
   }
-
+  
   /**
   creates a kafka sink using explicit partitioner
   */
@@ -181,7 +181,7 @@ class topology
   template<class K, class V>
   std::shared_ptr<kspp::partition_sink<K, V>> create_global_kafka_sink(std::string topic) {
     auto p = kspp::kafka_single_partition_sink<K, V, CODEC>::create(_brokers, topic, 0, _default_codec);
-    _partition_processors.add(p);
+    _partition_processors.push_back(p);
     return p;
   }
 
@@ -231,7 +231,7 @@ class topology
   template<class PARTITION_SOURCE>
   std::shared_ptr<kspp::stream_sink<typename PARTITION_SOURCE::key_type, typename PARTITION_SOURCE::value_type>> create_stream_sink(std::shared_ptr<PARTITION_SOURCE> source, std::ostream& os) {
   auto p = std::make_shared<kspp::stream_sink<typename PARTITION_SOURCE::key_type, typename PARTITION_SOURCE::value_type>>(source, os);
-  //_topology.add(p);
+  //_topology.push_back(p);
   return p;
   }
   */
