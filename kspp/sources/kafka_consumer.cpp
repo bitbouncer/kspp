@@ -55,6 +55,8 @@ kafka_consumer::~kafka_consumer() {
 }
 
 void kafka_consumer::close() {
+  if (_closed)
+    return;
   _closed = true;
   if (_consumer) {
     _consumer->stop(_rd_topic.get(), 0);

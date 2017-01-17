@@ -74,9 +74,11 @@ kafka_producer::~kafka_producer() {
 }
 
 void kafka_producer::close() {
+  if (_closed)
+    return;
   _closed = true;
   while (_producer && _producer->outq_len() > 0) {
-    LOG_INFO("closing") << "waining for " << _producer->outq_len() << " messages to be written...";
+    LOG_INFO("closing") << ", waiting for " << _producer->outq_len() << " messages to be written...";
     _producer->poll(1000);
   }
   _rd_topic = NULL;
