@@ -66,14 +66,14 @@ class kafka_sink_base : public topic_sink<K, V, CODEC>
     , _impl(brokers, topic)
     , _partitioner(p)
     , _count("messages") {
-    add_metric(&_count);
+    this->add_metric(&_count);
   }
 
   kafka_sink_base(std::string brokers, std::string topic, std::shared_ptr<CODEC> codec)
     : topic_sink<K, V, CODEC>(codec)
     , _impl(brokers, topic)
     , _count("messages") {
-    add_metric(&_count);
+    this->add_metric(&_count);
   }
 
   kafka_producer _impl;
@@ -138,7 +138,8 @@ class kafka_sink<void, V, CODEC> : public kafka_sink_base<void, V, CODEC>
 {
   public:
   kafka_sink(std::string brokers, std::string topic, std::shared_ptr<CODEC> codec)
-    : kafka_sink_base<void, V, CODEC>(brokers, topic, codec) {}
+    : kafka_sink_base<void, V, CODEC>(brokers, topic, codec) {
+  }
 
   //std::shared_ptr<kspp::topic_sink<void, V, CODEC>> create(std::string brokers, std::string topic, partitioner p, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) {
   //  return std::make_shared<kspp::kafka_sink<void, V, CODEC>>(brokers, topic, p, codec);
@@ -171,10 +172,12 @@ class kafka_sink<K, void, CODEC> : public kafka_sink_base<K, void, CODEC>
   using partitioner = typename kafka_partitioner_base<K>::partitioner;
 
   kafka_sink(std::string brokers, std::string topic, partitioner p, std::shared_ptr<CODEC> codec)
-    : kafka_sink_base<K, void, CODEC>(brokers, topic, p, codec) {}
+    : kafka_sink_base<K, void, CODEC>(brokers, topic, p, codec) {
+  }
 
   kafka_sink(std::string brokers, std::string topic, std::shared_ptr<CODEC> codec)
-    : kafka_sink_base<K, void, CODEC>(brokers, topic, codec) {}
+    : kafka_sink_base<K, void, CODEC>(brokers, topic, codec) {
+  }
 
   static std::shared_ptr<kspp::topic_sink<K, void, CODEC>> create(std::string brokers, std::string topic, partitioner p, std::shared_ptr<CODEC> codec) {
     return std::make_shared<kspp::kafka_sink<K, void, CODEC>>(brokers, topic, p, codec);
@@ -224,7 +227,7 @@ class kafka_single_partition_sink_base : public partition_sink<K, V>
     , _impl(brokers, topic)
     , _fixed_partition(partition)
     , _count("count") {
-    add_metric(&_count);
+    this->add_metric(&_count);
   }
 
   virtual ~kafka_single_partition_sink_base() {
@@ -270,7 +273,8 @@ class kafka_single_partition_sink : public kafka_single_partition_sink_base<K, V
 {
   public:
   kafka_single_partition_sink(std::string brokers, std::string topic, size_t partition, std::shared_ptr<CODEC> codec)
-    : kafka_single_partition_sink_base<K, V, CODEC>(brokers, topic, partition, codec) {}
+    : kafka_single_partition_sink_base<K, V, CODEC>(brokers, topic, partition, codec) {
+  }
 
   static std::shared_ptr<kspp::partition_sink<K, V>> create(std::string brokers, std::string topic, size_t partition, std::shared_ptr<CODEC> codec) {
     return std::make_shared<kspp::kafka_single_partition_sink<K, V, CODEC>>(brokers, topic, partition, codec);
