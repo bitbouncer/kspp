@@ -2,7 +2,8 @@
 #include "kafka_producer.h"
 
 #define LOGPREFIX_ERROR BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", topic:" << _topic
-#define LOGPREFIX_INFO  BOOST_LOG_TRIVIAL(info) << BOOST_CURRENT_FUNCTION << ", topic:" << _topic
+//#define LOGPREFIX_INFO  BOOST_LOG_TRIVIAL(info) << BOOST_CURRENT_FUNCTION << ", topic:" << _topic
+#define LOG_INFO(EVENT)  BOOST_LOG_TRIVIAL(info) << "kafka_producer: " << EVENT << ", topic:" << _topic
 
 namespace kspp {
   /*
@@ -48,7 +49,7 @@ kafka_producer::kafka_producer(std::string brokers, std::string topic) :
     exit(1);
   }
 
-  LOGPREFIX_INFO << ", created producer " << _producer->name();
+  LOG_INFO("created");
 
   std::unique_ptr<RdKafka::Conf> tconf2(RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC));
 
@@ -83,11 +84,11 @@ int kafka_producer::produce(uint32_t partition_hash, rdkafka_memory_management_m
 
 void kafka_producer::close() {
   while (_producer && _producer->outq_len() > 0) {
-    LOGPREFIX_INFO << "Waiting for " << _producer->outq_len();
+    LOG_INFO("closing") << "waining for " << _producer->outq_len() << " messages to be written...";
     _producer->poll(1000);
   }
   _rd_topic = NULL;
   _producer = NULL;
-  LOGPREFIX_INFO << ", produced " << _msg_cnt << " messages (" << _msg_bytes << " bytes)";
+  LOG_INFO("closed") << ", produced " << _msg_cnt << " messages (" << _msg_bytes << " bytes)";
 }
 }; // namespace

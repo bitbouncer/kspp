@@ -253,6 +253,13 @@ class topology
     return p;
   }
 
+  template<class K, class SV, class RV>
+  std::shared_ptr<partition_source<K, RV>> create_transform_value(std::shared_ptr<kspp::partition_source<K, SV>> source, typename kspp::transform_value<K, SV, RV>::extractor f) {
+    auto p = transform_value<K, SV, RV>::create(source, f);
+    _partition_processors.push_back(p);
+    return p;
+  }
+
   template<class K, class V>
   std::shared_ptr<kspp::partition_source<K, V>> create_rate_limiter(std::shared_ptr<kspp::partition_source<K, V>> source, int64_t agetime, size_t capacity) {
     auto p = rate_limiter<K, V>::create(source, agetime, capacity);
@@ -266,6 +273,9 @@ class topology
     _partition_processors.push_back(p);
     return p;
   }
+
+
+
 
   private:
   boost::filesystem::path get_storage_path() {
