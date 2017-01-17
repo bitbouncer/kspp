@@ -111,7 +111,6 @@ class kafka_sink : public kafka_sink_base<K, V, CODEC>
   }
 
   virtual int produce(uint32_t partition, std::shared_ptr<krecord<K, V>> r) {
-    ++_count;
     void* kp = NULL;
     void* vp = NULL;
     size_t ksize = 0;
@@ -128,6 +127,7 @@ class kafka_sink : public kafka_sink_base<K, V, CODEC>
       vp = malloc(vsize);
       vs.read((char*) vp, vsize);
     }
+    ++(this->_count);
     return this->_impl.produce(partition, kafka_producer::FREE, kp, ksize, vp, vsize);
   }
 };
@@ -150,7 +150,6 @@ class kafka_sink<void, V, CODEC> : public kafka_sink_base<void, V, CODEC>
   }
 
   virtual int produce(uint32_t partition, std::shared_ptr<krecord<void, V>> r) {
-    ++_count;
     void* vp = NULL;
     size_t vsize = 0;
 
@@ -160,6 +159,7 @@ class kafka_sink<void, V, CODEC> : public kafka_sink_base<void, V, CODEC>
       vp = malloc(vsize);
       vs.read((char*) vp, vsize);
     }
+    ++(this->_count);
     return this->_impl.produce(partition, kafka_producer::FREE, NULL, 0, vp, vsize);
   }
 };
@@ -203,7 +203,6 @@ class kafka_sink<K, void, CODEC> : public kafka_sink_base<K, void, CODEC>
   }
 
   virtual int produce(uint32_t partition, std::shared_ptr<krecord<K, void>> r) {
-    ++_count;
     void* kp = NULL;
     size_t ksize = 0;
 
@@ -211,6 +210,7 @@ class kafka_sink<K, void, CODEC> : public kafka_sink_base<K, void, CODEC>
     ksize = this->_codec->encode(r->key, ks);
     kp = malloc(ksize);
     ks.read((char*) kp, ksize);
+    ++(this->_count);
     return this->_impl.produce(partition, kafka_producer::FREE, kp, ksize, NULL, 0);
   }
 };
@@ -281,7 +281,6 @@ class kafka_single_partition_sink : public kafka_single_partition_sink_base<K, V
   }
 
   virtual int produce(std::shared_ptr<krecord<K, V>> r) {
-    ++_count;
     void* kp = NULL;
     void* vp = NULL;
     size_t ksize = 0;
@@ -298,6 +297,7 @@ class kafka_single_partition_sink : public kafka_single_partition_sink_base<K, V
       vp = malloc(vsize);
       vs.read((char*) vp, vsize);
     }
+    ++(this->_count);
     return this->_impl.produce((uint32_t) this->_fixed_partition, kafka_producer::FREE, kp, ksize, vp, vsize);
   }
 };
