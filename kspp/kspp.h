@@ -139,12 +139,32 @@ struct krecord<K, void>
 //  int64_t timestamp() { return 0; }
 //};
 
-class topic_processor
+class processor
+{
+  public:
+  virtual ~processor() {}
+
+  const std::vector<metric*>& get_metrics() const {
+    return _metrics;
+  }
+
+  protected:
+  void add_metric(metric* p) { // cannot be removed...
+    _metrics.push_back(p);
+  }
+
+  //const size_t          _partition; or -1 if not valid??
+  //partition_processor*  _upstream;
+  std::vector<metric*>  _metrics;
+};
+
+class topic_processor : public processor
 {
   public:
   virtual ~topic_processor() {}
   //virtual void init(processor_context*) {}
   virtual std::string name() const = 0;
+  virtual std::string processor_name() const { return "partition_processor"; }
 
   virtual void poll(int timeout) {}
   virtual bool eof() const = 0;
@@ -178,7 +198,7 @@ class topic_processor
   protected:
 };
 
-class partition_processor
+class partition_processor : public processor
 {
   public:
   virtual ~partition_processor() {}
@@ -224,22 +244,22 @@ class partition_processor
   virtual void commit() {}
   virtual void flush_offset() {}
 
-  const std::vector<metric*>& get_metrics() const {
-    return _metrics;
-  }
+  //const std::vector<metric*>& get_metrics() const {
+  //  return _metrics;
+  //}
 
   protected:
   partition_processor(partition_processor* upstream, size_t partition)
     : _upstream(upstream)
     , _partition(partition) {
   }
-  void add_metric(metric* p) { // cannot be removed...
-    _metrics.push_back(p);
-  }
+  //void add_metric(metric* p) { // cannot be removed...
+  //  _metrics.push_back(p);
+  //}
 
   const size_t          _partition;
   partition_processor*  _upstream;
-  std::vector<metric*>  _metrics;
+  //std::vector<metric*>  _metrics;
 };
 
 template<class K, class V>

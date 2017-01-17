@@ -37,6 +37,8 @@ class kafka_sink_base : public topic_sink<K, V, CODEC>
     return "kafka_topic_sink(" + _impl.topic() + ")-codec(" + CODEC::name() + ")[" + type_name<K>::get() + ", " + type_name<V>::get() + "]";
   }
 
+  virtual std::string processor_name() const { return "kafka_sink"; }
+
   virtual void close() {
     return _impl.close();
   }
@@ -62,16 +64,22 @@ class kafka_sink_base : public topic_sink<K, V, CODEC>
   kafka_sink_base(std::string brokers, std::string topic, partitioner p, std::shared_ptr<CODEC> codec)
     : topic_sink<K, V, CODEC>(codec)
     , _impl(brokers, topic)
-    , _partitioner(p) {}
+    , _partitioner(p)
+    , _count("messages") {
+    add_metric(&_count);
+  }
 
   kafka_sink_base(std::string brokers, std::string topic, std::shared_ptr<CODEC> codec)
     : topic_sink<K, V, CODEC>(codec)
-    , _impl(brokers, topic) {}
+    , _impl(brokers, topic)
+    , _count("messages") {
+    add_metric(&_count);
+  }
 
-  kafka_producer          _impl;
-  partitioner             _partitioner;
+  kafka_producer _impl;
+  partitioner    _partitioner;
+  metric_counter _count;
 };
-
 
 template<class K, class V, class CODEC>
 class kafka_sink : public kafka_sink_base<K, V, CODEC>
@@ -103,6 +111,7 @@ class kafka_sink : public kafka_sink_base<K, V, CODEC>
   }
 
   virtual int produce(uint32_t partition, std::shared_ptr<krecord<K, V>> r) {
+    ++_count;
     void* kp = NULL;
     void* vp = NULL;
     size_t ksize = 0;
@@ -140,6 +149,7 @@ class kafka_sink<void, V, CODEC> : public kafka_sink_base<void, V, CODEC>
   }
 
   virtual int produce(uint32_t partition, std::shared_ptr<krecord<void, V>> r) {
+    ++_count;
     void* vp = NULL;
     size_t vsize = 0;
 
@@ -190,6 +200,7 @@ class kafka_sink<K, void, CODEC> : public kafka_sink_base<K, void, CODEC>
   }
 
   virtual int produce(uint32_t partition, std::shared_ptr<krecord<K, void>> r) {
+    ++_count;
     void* kp = NULL;
     size_t ksize = 0;
 
@@ -211,7 +222,10 @@ class kafka_single_partition_sink_base : public partition_sink<K, V>
     : partition_sink<K, V>(partition)
     , _codec(codec)
     , _impl(brokers, topic)
-    , _fixed_partition(partition) {}
+    , _fixed_partition(partition)
+    , _count("count") {
+    add_metric(&_count);
+  }
 
   virtual ~kafka_single_partition_sink_base() {
     close();
@@ -220,6 +234,8 @@ class kafka_single_partition_sink_base : public partition_sink<K, V>
   virtual std::string name() const {
     return "kafka_sink(" + _impl.topic() + "#" + std::to_string(_fixed_partition) + ")-codec(" + CODEC::name() + ")[" + type_name<K>::get() + ", " + type_name<V>::get() + "]";
   }
+
+  virtual std::string processor_name() const { return "kafka_sink"; }
 
   virtual void close() {
     return _impl.close();
@@ -246,6 +262,7 @@ class kafka_single_partition_sink_base : public partition_sink<K, V>
   kafka_producer          _impl;
   std::shared_ptr<CODEC>  _codec;
   size_t                  _fixed_partition;
+  metric_counter          _count;
 };
 
 template<class K, class V, class CODEC>
@@ -260,6 +277,7 @@ class kafka_single_partition_sink : public kafka_single_partition_sink_base<K, V
   }
 
   virtual int produce(std::shared_ptr<krecord<K, V>> r) {
+    ++_count;
     void* kp = NULL;
     void* vp = NULL;
     size_t ksize = 0;
@@ -294,6 +312,7 @@ class kafka_single_partition_sink<void, V, CODEC> : public kafka_single_partitio
   }
   
   virtual int produce(std::shared_ptr<krecord<void, V>> r) {
+    ++_count;
     void* vp = NULL;
     size_t vsize = 0;
 
@@ -321,6 +340,7 @@ class kafka_single_partition_sink<K, void, CODEC> : public kafka_single_partitio
   }
 
   virtual int produce(std::shared_ptr<krecord<K, void>> r) {
+    ++_count;
     void* kp = NULL;
     size_t ksize = 0;
 

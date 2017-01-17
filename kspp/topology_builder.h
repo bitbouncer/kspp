@@ -78,6 +78,14 @@ class topology
         j->_logged_name = _app_id + "." + _topology_id + ".depth-" + std::to_string(i->depth()) + "." + i->processor_name() + ".partition-" + std::to_string(i->partition()) + "." + j->_simple_name;
       }
     }
+
+    for (auto i : _topic_processors) {
+      for (auto j : i->get_metrics()) {
+        j->_logged_name = _app_id + "." + _topology_id + "." + i->processor_name() + "." + j->_simple_name;
+        //j->_logged_name = _app_id + "." + _topology_id + ".depth-" + std::to_string(i->depth()) + "." + i->processor_name() + "." + j->_simple_name;
+      }
+    }
+
   }
 
   void output_metrics(std::ostream& s) {
@@ -140,20 +148,13 @@ class topology
     return res;
   }
 
-  template<class K, class V>
-  std::shared_ptr<kspp::partition_sink<K, V>> create_global_kafka_sink(std::string topic) {
-    auto p = kspp::kafka_sink<K, V, CODEC>::create(_brokers, topic, 0, _default_codec);
-    //_topology.add(p);
-    return p;
-  }
-
   /**
   creates a kafka sink using default partitioner (hash on key)
   */
   template<class K, class V>
   std::shared_ptr<kspp::topic_sink<K, V, CODEC>> create_kafka_sink(std::string topic) {
     auto p = kspp::kafka_sink<K, V, CODEC>::create(_brokers, topic, _default_codec);
-    //_topology.add(p);
+    _topic_processors.push_back(p);
     return p;
   }
 
@@ -163,7 +164,7 @@ class topology
   template<class K, class V>
   std::shared_ptr<kspp::topic_sink<K, V, CODEC>> create_kafka_sink(std::string topic, std::function<uint32_t(const K& key)> partitioner) {
     auto p = kspp::kafka_sink<K, V, CODEC>::create(_brokers, topic, partitioner, _default_codec);
-    //_topology.add(p);
+    _topic_processors.push_back(p);
     return p;
   }
 
@@ -173,7 +174,14 @@ class topology
   template<class K, class V>
   std::shared_ptr<kspp::partition_sink<K, V>> create_kafka_sink(std::string topic, size_t partition) {
     auto p = kspp::kafka_single_partition_sink<K, V, CODEC>::create(_brokers, topic, partition, _default_codec);
-    //_topology.add(p);
+    _partition_processors.push_back(p);
+    return p;
+  }
+
+  template<class K, class V>
+  std::shared_ptr<kspp::partition_sink<K, V>> create_global_kafka_sink(std::string topic) {
+    auto p = kspp::kafka_single_partition_sink<K, V, CODEC>::create(_brokers, topic, 0, _default_codec);
+    _partition_processors.add(p);
     return p;
   }
 
