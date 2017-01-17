@@ -320,7 +320,7 @@ class topology_builder
     , _brokers(brokers)
     , _default_codec(default_codec)
     , _root_path(root_path) {
-    BOOST_LOG_TRIVIAL(info) << "topology_builder created, app_id:" << app_id << ", kafka_brokers:" << brokers << ", storage_path:" << storage_path;
+    BOOST_LOG_TRIVIAL(info) << "topology_builder created, app_id:" << app_id << ", kafka_brokers:" << brokers << ", root_path:" << root_path;
   }
 
   std::shared_ptr<topology<CODEC>> create_topology(std::string id) {
