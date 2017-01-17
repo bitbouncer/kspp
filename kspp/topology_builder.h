@@ -56,11 +56,11 @@ class topology
     , _brokers(brokers)
     , _default_codec(default_codec)
     , _root_path(root_path) {
-    BOOST_LOG_TRIVIAL(info) << "topology created, name:" << name() << ", brokers: " << brokers << " , storage_path:" << root_path;
+    BOOST_LOG_TRIVIAL(info) << "topology created, name:" << name() << ", brokers:" << brokers << " , storage_path:" << root_path;
   }
 
   ~topology() {
-    BOOST_LOG_TRIVIAL(info) << "topology " << name() << " terminated";
+    BOOST_LOG_TRIVIAL(info) << "topology, name:" << name() << " terminated";
     // output stats
   }
 
@@ -308,12 +308,20 @@ class topology_builder
     return boost::filesystem::temp_directory_path();
   }
 
-  topology_builder(std::string app_id, std::string brokers, boost::filesystem::path root_path = default_directory(), std::shared_ptr<CODEC> default_codec = std::make_shared<CODEC>())
+  static std::string default_kafka_broker() {
+    if (const char* env_p = std::getenv("KAFKA_BROKER"))
+      return std::string(env_p);
+    return "localhost";
+  }
+
+  topology_builder(std::string app_id, std::string brokers= default_kafka_broker(), boost::filesystem::path root_path = default_directory(), std::shared_ptr<CODEC> default_codec = std::make_shared<CODEC>())
     : _app_id(app_id)
     , _next_topology_id(0)
     , _brokers(brokers)
     , _default_codec(default_codec)
-    , _root_path(root_path) {}
+    , _root_path(root_path) {
+    BOOST_LOG_TRIVIAL(info) << "topology_builder created, app_id:" << app_id << ", kafka_brokers:" << brokers << ", storage_path:" << storage_path;
+  }
 
   std::shared_ptr<topology<CODEC>> create_topology(std::string id) {
     return std::make_shared<topology<CODEC>>(_app_id, id, _brokers, _root_path, _default_codec);
