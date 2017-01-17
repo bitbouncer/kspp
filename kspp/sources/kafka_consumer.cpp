@@ -1,8 +1,8 @@
 #include <boost/log/trivial.hpp>
 #include "kafka_consumer.h"
 
-#define LOGPREFIX_ERROR BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", topic:" << _topic << ": " << _partition
-#define LOGPREFIX_INFO  BOOST_LOG_TRIVIAL(info) << BOOST_CURRENT_FUNCTION << ", topic:" << _topic << ": " << _partition
+#define LOGPREFIX_ERROR BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", topic:" << _topic << ":" << _partition
+#define LOG_INFO(EVENT)  BOOST_LOG_TRIVIAL(info) << "kafka_consumer: " << EVENT << ", topic:" << _topic << ": " << _partition
 
 namespace kspp {
 kafka_consumer::kafka_consumer(std::string brokers, std::string topic, size_t partition) :
@@ -36,7 +36,7 @@ kafka_consumer::kafka_consumer(std::string brokers, std::string topic, size_t pa
     LOGPREFIX_ERROR << ", failed to create consumer, reason: " << errstr;
     exit(1);
   }
-  LOGPREFIX_INFO << ", created consumer " << _consumer->name();
+  LOG_INFO("created");
 
   std::unique_ptr<RdKafka::Conf> tconf2(RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC));
   _rd_topic = std::unique_ptr<RdKafka::Topic>(RdKafka::Topic::create(_consumer.get(), _topic, tconf2.get(), errstr));
@@ -54,7 +54,7 @@ kafka_consumer::~kafka_consumer() {
 void kafka_consumer::close() {
   if (_consumer) {
     _consumer->stop(_rd_topic.get(), 0);
-    LOGPREFIX_INFO << ", consumed " << _msg_cnt << " messages (" << _msg_bytes << " bytes)";
+    LOG_INFO("close") << ", consumed " << _msg_cnt << " messages (" << _msg_bytes << " bytes)";
   }
   _rd_topic = NULL;
   _consumer = NULL;

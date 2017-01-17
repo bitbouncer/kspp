@@ -56,7 +56,7 @@ class topology
     , _brokers(brokers)
     , _default_codec(default_codec)
     , _root_path(root_path) {
-    BOOST_LOG_TRIVIAL(info) << "topology " << name() << " created";
+    BOOST_LOG_TRIVIAL(info) << "topology created, name:" << name() << ", brokers: " << brokers << " , storage_path:" << root_path;
   }
 
   ~topology() {
