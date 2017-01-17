@@ -316,7 +316,6 @@ class kafka_single_partition_sink<void, V, CODEC> : public kafka_single_partitio
   }
   
   virtual int produce(std::shared_ptr<krecord<void, V>> r) {
-    ++_count;
     void* vp = NULL;
     size_t vsize = 0;
 
@@ -326,6 +325,7 @@ class kafka_single_partition_sink<void, V, CODEC> : public kafka_single_partitio
       vp = malloc(vsize);
       vs.read((char*) vp, vsize);
     }
+    ++(this->_count);
     return this->_impl.produce((uint32_t) this->_fixed_partition, kafka_producer::FREE, NULL, 0, vp, vsize);
   }
 };
@@ -344,7 +344,6 @@ class kafka_single_partition_sink<K, void, CODEC> : public kafka_single_partitio
   }
 
   virtual int produce(std::shared_ptr<krecord<K, void>> r) {
-    ++_count;
     void* kp = NULL;
     size_t ksize = 0;
 
@@ -352,6 +351,7 @@ class kafka_single_partition_sink<K, void, CODEC> : public kafka_single_partitio
     ksize = this->_codec->encode(r->key, ks);
     kp = malloc(ksize);
     ks.read((char*) kp, ksize);
+    ++(this->_count);
     return this->_impl.produce((uint32_t) this->_fixed_partition, kafka_producer::FREE, kp, ksize, NULL, 0);
   }
 };
