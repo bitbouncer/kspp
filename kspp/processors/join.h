@@ -1,3 +1,5 @@
+#include <memory>
+#include <deque>
 #include <functional>
 #include <kspp/kspp.h>
 #pragma once
