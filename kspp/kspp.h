@@ -411,13 +411,20 @@ class partition_source : public partition_processor
     : partition_processor(upstream, partition) {
   }
 
-  virtual void add_sink(std::shared_ptr<partition_sink<K, V>> sink) {
+  void add_sink(std::shared_ptr<partition_sink<K, V>> sink) {
     add_sink([sink](auto e) {
       sink->produce(e);
     });
   }
 
-  virtual void add_sink(sink_function sink) {
+  template<class CODEC>
+  void add_sink(std::shared_ptr<topic_sink<K, V, CODEC>> sink) {
+    add_sink([sink](auto e) {
+      sink->produce(e);
+    });
+  }
+
+  void add_sink(sink_function sink) {
     _sinks.push_back(sink);
   }
 
