@@ -93,6 +93,12 @@ class topology
       for (auto j : i->get_metrics())
         s << "metrics: " << j->name() << " : " << j->value() << std::endl;
     }
+    
+    for (auto i : _topic_processors) {
+      for (auto j : i->get_metrics()) {
+        s << "metrics: " << j->name() << " : " << j->value() << std::endl;
+      }
+    }
   }
 
   // TBD this should only call most downstream processors??
