@@ -123,6 +123,12 @@ class topology
   */
 
   //std::shared_ptr<left_join<K, streamV, tableV, R>> create_left_join(std::shared_ptr<kspp::partition_source<K, streamV>> right, std::shared_ptr<kspp::ktable_partition<K, tableV>> left, typename kspp::left_join<K, streamV, tableV, R>::value_joiner value_joiner) {
+  template<class K, class V>
+  std::shared_ptr<kspp::partition_source<K, V>> create_mem_source(/* upstream and partition*/) {
+    //auto p = std::make_shared<kspp::create_mem_source<K, V>>(source, partition, get_storage_path(), _default_codec);
+    //_partition_processors.push_back(p);
+    return NULL;
+  }
 
   template<class K, class streamV, class tableV, class R>
   std::shared_ptr<kspp::partition_source<K, R>> create_left_join(std::shared_ptr<kspp::partition_source<K, streamV>> right, std::shared_ptr<kspp::ktable_partition<K, tableV>> left, typename kspp::left_join<K, streamV, tableV, R>::value_joiner value_joiner) {
@@ -215,10 +221,18 @@ class topology
 
   template<class K, class V>
   std::shared_ptr<kspp::ktable_partition<K, V>> create_ktable(std::string topic, size_t partition) {
+    // here we should creeate a own kafka source and use the below kspp::partition_source<K, V> source variant...
     auto p = std::make_shared<kspp::ktable_partition_impl<K, V, CODEC>>(_brokers, topic, partition, get_storage_path(), _default_codec);
     _partition_processors.push_back(p);
     return p;
   }
+
+  //template<class K, class V>
+  //std::shared_ptr<kspp::ktable_partition<K, V>> create_ktable(kspp::partition_source<K, V> source, size_t partition) {
+  //  auto p = std::make_shared<kspp::ktable_partition_impl<K, V, CODEC>>(source, partition, get_storage_path(), _default_codec);
+  //  _partition_processors.push_back(p);
+  //  return p;
+  //}
 
   template<class K, class V>
   std::shared_ptr<kspp::ktable_partition<K, V>> create_global_ktable(std::string topic) {
