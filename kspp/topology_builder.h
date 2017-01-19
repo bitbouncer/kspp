@@ -3,7 +3,7 @@
 #include "sinks/kafka_sink.h"
 #include "sinks/stream_sink.h"
 #include "sources/kafka_source.h"
-#include "sources/pipe.h"
+#include "processors/pipe.h"
 #include "processors/join.h"
 #include "processors/count.h"
 #include "processors/repartition.h"
