@@ -13,6 +13,7 @@ file(GLOB LIB_SRCS
   sources/kafka_source.h
   sources/kafka_consumer.h
   sources/kafka_consumer.cpp
+  sources/pipe.cpp
   codecs/*.h
   processors/*.h
   state_stores/*.h

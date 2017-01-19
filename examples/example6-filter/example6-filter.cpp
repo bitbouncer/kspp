@@ -19,17 +19,6 @@ int main(int argc, char **argv) {
     kspp::produce<void, std::string>(*sink, "hello kafka streams");
   }
 
- /*
- // print to cerr...
- {
-    auto source = builder.create_kafka_source<void, std::string>("kspp_TextInput", PARTITION);
-    auto sink = builder.create_stream_sink<void, std::string>(source, std::cerr);
-    source->start(-2);
-    while (!source->eof()) {
-      source->process_one();
-    }
-  }*/
-
   {
     auto topology = builder.create_topology();
     auto source = topology->create_kafka_source<void, std::string>("kspp_TextInput", PARTITION);
@@ -46,9 +35,10 @@ int main(int argc, char **argv) {
       return (e->key != "hello");
     });
 
-    auto sink = topology->create_stream_sink<std::string, void>(filtered_stream, std::cerr);
-
-    filtered_stream->start(-2);
-    filtered_stream->flush();
+    auto pipe = topology->create_pipe<std::string, void>(filtered_stream, PARTITION);
+    auto sink = topology->create_stream_sink<std::string, void>(pipe, std::cerr);
+    pipe->produce("extra message injected");
+    pipe->start(-2);
+    pipe->flush();
   }
 }

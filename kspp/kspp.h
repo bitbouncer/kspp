@@ -197,11 +197,22 @@ class partition_processor : public processor
   /**
   * Process an input record
   */
-  virtual bool process_one() = 0;
-  virtual bool eof() const = 0;
+  virtual bool process_one() {
+    return _upstream ? _upstream->process_one() : false;
+  }
+
+  virtual bool eof() const {
+    return _upstream ? _upstream->eof() : true;
+  }
+
   virtual void poll(int timeout) {}
   virtual void punctuate(int64_t timestamp) {}
-  virtual void close() = 0;
+  
+  virtual void close()     {
+    if (_upstream)
+      _upstream->close();
+  }
+
   inline uint32_t partition() const {
     return (uint32_t) _partition;
   }
@@ -224,8 +235,16 @@ class partition_processor : public processor
     punctuate(milliseconds_since_epoch());
   }
 
-  virtual void start() {}
-  virtual void start(int64_t offset) {}
+  virtual void start() {
+    if (_upstream)
+      _upstream->start();
+  }
+
+  virtual void start(int64_t offset) {
+    if (_upstream)
+      _upstream->start(offset);
+  }
+
   virtual void commit() {}
   virtual void flush_offset() {}
 

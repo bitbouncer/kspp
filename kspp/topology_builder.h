@@ -1,17 +1,19 @@
-#include <cstdlib>
-#include <boost/filesystem.hpp>
-#include <boost/log/trivial.hpp>
+#include "impl/kstream_impl.h"
+#include "impl/ktable_impl.h"
+#include "sinks/kafka_sink.h"
+#include "sinks/stream_sink.h"
+#include "sources/kafka_source.h"
+#include "sources/pipe.h"
 #include "processors/join.h"
 #include "processors/count.h"
 #include "processors/repartition.h"
 #include "processors/filter.h"
 #include "processors/transform.h"
 #include "processors/rate_limiter.h"
-#include "impl/kstream_impl.h"
-#include "impl/ktable_impl.h"
-#include "sinks/kafka_sink.h"
-#include "sinks/stream_sink.h"
-#include "sources/kafka_source.h"
+
+#include <cstdlib>
+#include <boost/filesystem.hpp>
+#include <boost/log/trivial.hpp>
 
 #pragma once
 
@@ -124,10 +126,10 @@ class topology
 
   //std::shared_ptr<left_join<K, streamV, tableV, R>> create_left_join(std::shared_ptr<kspp::partition_source<K, streamV>> right, std::shared_ptr<kspp::ktable_partition<K, tableV>> left, typename kspp::left_join<K, streamV, tableV, R>::value_joiner value_joiner) {
   template<class K, class V>
-  std::shared_ptr<kspp::partition_source<K, V>> create_mem_source(/* upstream and partition*/) {
-    //auto p = std::make_shared<kspp::create_mem_source<K, V>>(source, partition, get_storage_path(), _default_codec);
-    //_partition_processors.push_back(p);
-    return NULL;
+  std::shared_ptr<kspp::pipe<K, V>> create_pipe(std::shared_ptr<kspp::partition_source<K, V>> upstream, size_t partition) {
+    auto p = std::make_shared<kspp::pipe<K, V>>(upstream, partition);
+    _partition_processors.push_back(p);
+    return p;
   }
 
   template<class K, class streamV, class tableV, class R>
