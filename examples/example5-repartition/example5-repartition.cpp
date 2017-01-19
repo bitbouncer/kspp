@@ -76,7 +76,7 @@ int main(int argc, char **argv) {
     for (int i = 0; i != 8; ++i) {
       auto partition_source = topology->create_kafka_source<int, std::string>("kspp_example5_usernames", i);
       auto partition_routing_table = topology->create_ktable<int, int>("kspp_example5_user_channel", i);
-      auto partition_repartition = topology->create_repartition<int, std::string>(partition_source, partition_routing_table, topic_sink);
+      auto partition_repartition = topology->create_repartition<int, std::string, int>(partition_source, partition_routing_table, topic_sink);
     }
 
       topology->init_metrics();

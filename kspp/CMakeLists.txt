@@ -1,5 +1,6 @@
 file(GLOB LIB_SRCS
   kspp.h
+  type_name.h
   metrics.h
   algorithm.h
   topology_builder.h

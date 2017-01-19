@@ -125,9 +125,9 @@ class topology
     return p;
   }
 
-  template<class K, class V>
-  std::shared_ptr<partition_processor> create_repartition(std::shared_ptr<kspp::partition_source<K, V>> source, std::shared_ptr<kspp::ktable_partition<K, K>> left, std::shared_ptr<topic_sink<K, V, CODEC>> topic_sink) {
-    auto p = kspp::repartition_by_table<K, V, CODEC>::create(source, left, topic_sink);
+  template<class K, class V, class PK>
+  std::shared_ptr<partition_processor> create_repartition(std::shared_ptr<kspp::partition_source<K, V>> source, std::shared_ptr<kspp::ktable_partition<K, PK>> left, std::shared_ptr<topic_sink<K, V, CODEC>> topic_sink) {
+    auto p = kspp::repartition_by_table<K, V, PK, CODEC>::create(source, left, topic_sink);
     _partition_processors.push_back(p);
     return p;
   }

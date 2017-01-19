@@ -7,11 +7,11 @@
 // std::shared_ptr<ktable_partition<K, K>> routing_table could be a external partition-source and an internal ktable_partition that uses an internal kv-store...
 
 namespace kspp {
-  template<class K, class V, class CODEC>
+  template<class K, class V, class PK, class CODEC>
   class repartition_by_table : public partition_processor
   {
   public:
-    repartition_by_table(std::shared_ptr<partition_source<K, V>> source, std::shared_ptr<ktable_partition<K, K>> routing_table, std::shared_ptr<topic_sink<K, V, CODEC>> topic_sink)
+    repartition_by_table(std::shared_ptr<partition_source<K, V>> source, std::shared_ptr<ktable_partition<K, PK>> routing_table, std::shared_ptr<topic_sink<K, V, CODEC>> topic_sink)
       : partition_processor(source.get(), source->partition())
       , _source(source)
       , _routing_table(routing_table)
@@ -30,8 +30,8 @@ namespace kspp {
       return _source->name() + "-repartition_by_value(" + _routing_table->name() + ")"; 
     }
 
-    static std::shared_ptr<partition_processor> create(std::shared_ptr<partition_source<K, V>> source, std::shared_ptr<ktable_partition<K, K>> routing_table, std::shared_ptr<topic_sink<K, V, CODEC>> topic_sink) {
-      return std::make_shared<repartition_by_table<K, V, CODEC>>(source, routing_table, topic_sink);
+    static std::shared_ptr<partition_processor> create(std::shared_ptr<partition_source<K, V>> source, std::shared_ptr<ktable_partition<K, PK>> routing_table, std::shared_ptr<topic_sink<K, V, CODEC>> topic_sink) {
+      return std::make_shared<repartition_by_table<K, V, PK, CODEC>>(source, routing_table, topic_sink);
     }
 
     virtual std::string processor_name() const { return "repartition_by_table"; }
@@ -68,7 +68,7 @@ namespace kspp {
         auto routing_row = _routing_table->get(e->key);
         if (routing_row) {
           if (routing_row->value) {
-            uint32_t hash = get_partition_hash<K, CODEC>(*routing_row->value, _topic_sink->codec());
+            uint32_t hash = get_partition_hash<PK, CODEC>(*routing_row->value, _topic_sink->codec());
             _topic_sink->produce(hash, e);
           }
         } else {
@@ -85,7 +85,7 @@ namespace kspp {
   private:
     std::deque<std::shared_ptr<krecord<K, V>>> _queue;
     std::shared_ptr<partition_source<K, V>>    _source;
-    std::shared_ptr<ktable_partition<K, K>>    _routing_table;
+    std::shared_ptr<ktable_partition<K, PK>>   _routing_table;
     std::shared_ptr<topic_sink<K, V, CODEC>>   _topic_sink;
     metric_lag                                 _lag;
   };
