@@ -26,7 +26,7 @@ class pipe : public partition_source<K, V>
   }
 
   virtual bool is_dirty() {
-    return eof();
+    return !(this->eof());
   }
 
   virtual int produce(std::shared_ptr<krecord<K, V>> r) {
@@ -68,7 +68,7 @@ class pipe<void, V> : public partition_source<void, V>
   }
 
   virtual bool is_dirty() {
-    return eof();
+    return !(this->eof());
   }
 
   virtual int produce(std::shared_ptr<krecord<void, V>> r) {
@@ -109,7 +109,7 @@ class pipe<K, void> : public partition_source<K, void>
   }
 
   virtual bool is_dirty() {
-    return eof();
+    return !(this->eof());
   }
 
   virtual int produce(std::shared_ptr<krecord<K, void>> r) {
