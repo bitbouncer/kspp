@@ -16,7 +16,8 @@ class pipe : public partition_source<K, V>
 
   pipe(std::shared_ptr<kspp::partition_source<K, V>> upstream, size_t partition)
     : partition_source<K, V>(upstream.get(), partition) {
-    upstream->add_sink([this](auto r) {
+    if (upstream)
+      upstream->add_sink([this](auto r) {
       this->send_to_sinks(r);
     });
   }
@@ -62,7 +63,8 @@ class pipe<void, V> : public partition_source<void, V>
 
   pipe(std::shared_ptr<kspp::partition_source<void, V>> upstream, size_t partition)
     : partition_source<void, V>(upstream.get(), partition) {
-    upstream->add_sink([this](auto r) {
+    if (upstream)
+      upstream->add_sink([this](auto r) {
       this->send_to_sinks(r);
     });
   }
@@ -107,7 +109,8 @@ class pipe<K, void> : public partition_source<K, void>
 
   pipe(std::shared_ptr<kspp::partition_source<K, void>> upstream, size_t partition)
     : partition_source<K, void>(upstream.get(), partition) {
-    upstream->add_sink([this](std::shared_ptr<krecord<K, void>> r) {
+    if (upstream)
+      upstream->add_sink([this](std::shared_ptr<krecord<K, void>> r) {
       this->send_to_sinks(r);
     });
   }
