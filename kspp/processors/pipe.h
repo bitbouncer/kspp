@@ -34,9 +34,9 @@ class pipe : public partition_source<K, V>
     return 0;
   }
 
-  inline int produce(const K& key, const V& value) {
+ /* inline int produce(const K& key, const V& value) {
     return produce(std::make_shared<krecord<K, V>>(key, value));
-  }
+  }*/
 
   virtual size_t queue_len() {
     return 0;
@@ -76,9 +76,9 @@ class pipe<void, V> : public partition_source<void, V>
     return 0;
   }
 
-  inline int produce(const V& value) {
+ /* inline int produce(const V& value) {
     return produce(std::make_shared<krecord<void, V>>(value));
-  }
+  }*/
 
   virtual size_t queue_len() {
     return 0;
@@ -117,9 +117,11 @@ class pipe<K, void> : public partition_source<K, void>
     return 0;
   }
 
+  /*
   inline int produce(const K& key) {
     return produce(std::make_shared<krecord<K, void>>(key));
   }
+  */
 
   virtual size_t queue_len() {
     return 0;
