@@ -15,11 +15,11 @@ static boost::uuids::uuid to_uuid(int64_t x) {
 
 int main(int argc, char **argv) {
   auto builder     = kspp::topology_builder<kspp::binary_codec>("test_setup", "localhost");
-  auto topology = builder.create_topology();
+  auto topology = builder.create_topology(-1);
 
   auto partitioner = [](const boost::uuids::uuid& key)->uint32_t { return boost::hash<boost::uuids::uuid>()(key) % 8; };
-  auto table_stream = topology->create_kafka_sink<boost::uuids::uuid, int64_t>("kspp_test0_table", partitioner);
-  auto event_stream = topology->create_kafka_sink<boost::uuids::uuid, int64_t>("kspp_test0_eventstream", partitioner);
+  auto table_stream = topology->create_kafka_topic_sink<boost::uuids::uuid, int64_t>("kspp_test0_table", partitioner);
+  auto event_stream = topology->create_kafka_topic_sink<boost::uuids::uuid, int64_t>("kspp_test0_eventstream", partitioner);
 
   topology->init_metrics();
 

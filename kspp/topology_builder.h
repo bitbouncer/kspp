@@ -52,9 +52,10 @@ template<class CODEC>
 class topology
 {
   public:
-  topology(std::string app_id, std::string topology_id, std::string brokers, boost::filesystem::path root_path, std::shared_ptr<CODEC> default_codec)
+  topology(std::string app_id, std::string topology_id, int32_t partition, std::string brokers, boost::filesystem::path root_path, std::shared_ptr<CODEC> default_codec)
     : _app_id(app_id)
     , _topology_id(topology_id)
+    , _partition(partition)
     , _brokers(brokers)
     , _default_codec(default_codec)
     , _root_path(root_path) {
@@ -67,7 +68,7 @@ class topology
   }
 
   std::string name() const {
-    return _app_id + "__" + _topology_id;
+    return _app_id + "__" + _topology_id + "[p" + std::to_string(_partition) + "]";
   }
 
   inline std::shared_ptr<CODEC> codec() {
@@ -87,7 +88,6 @@ class topology
         //j->_logged_name = _app_id + "." + _topology_id + ".depth-" + std::to_string(i->depth()) + "." + i->processor_name() + "." + j->_simple_name;
       }
     }
-
   }
 
   void output_metrics(std::ostream& s) {
@@ -125,15 +125,8 @@ class topology
   */
 
   template<class K, class V>
-  std::shared_ptr<kspp::pipe<K, V>> create_pipe(size_t partition) {
-    auto p = std::make_shared<kspp::pipe<K, V>>(partition);
-    _partition_processors.push_back(p);
-    return p;
-  }
-
-  template<class K, class V>
-  std::shared_ptr<kspp::pipe<K, V>> create_pipe(std::shared_ptr<kspp::partition_source<K, V>> upstream, size_t partition) {
-    auto p = std::make_shared<kspp::pipe<K, V>>(upstream, partition);
+  std::shared_ptr<kspp::pipe<K, V>> create_pipe(std::shared_ptr<kspp::partition_source<K, V>> upstream) {
+    auto p = std::make_shared<kspp::pipe<K, V>>(upstream, _partition);
     _partition_processors.push_back(p);
     return p;
   }
@@ -172,7 +165,7 @@ class topology
   creates a kafka sink using default partitioner (hash on key)
   */
   template<class K, class V>
-  std::shared_ptr<kspp::topic_sink<K, V, CODEC>> create_kafka_sink(std::string topic) {
+  std::shared_ptr<kspp::topic_sink<K, V, CODEC>> create_kafka_topic_sink(std::string topic) {
     auto p = kspp::kafka_sink<K, V, CODEC>::create(_brokers, topic, _default_codec);
     _topic_processors.push_back(p);
     return p;
@@ -182,7 +175,7 @@ class topology
   creates a kafka sink using explicit partitioner
   */
   template<class K, class V>
-  std::shared_ptr<kspp::topic_sink<K, V, CODEC>> create_kafka_sink(std::string topic, std::function<uint32_t(const K& key)> partitioner) {
+  std::shared_ptr<kspp::topic_sink<K, V, CODEC>> create_kafka_topic_sink(std::string topic, std::function<uint32_t(const K& key)> partitioner) {
     auto p = kspp::kafka_sink<K, V, CODEC>::create(_brokers, topic, partitioner, _default_codec);
     _topic_processors.push_back(p);
     return p;
@@ -192,8 +185,8 @@ class topology
   creates a kafka sink using explicit partition
   */
   template<class K, class V>
-  std::shared_ptr<kspp::partition_sink<K, V>> create_kafka_sink(std::string topic, size_t partition) {
-    auto p = kspp::kafka_single_partition_sink<K, V, CODEC>::create(_brokers, topic, partition, _default_codec);
+  std::shared_ptr<kspp::partition_sink<K, V>> create_kafka_partition_sink(std::string topic) {
+    auto p = kspp::kafka_single_partition_sink<K, V, CODEC>::create(_brokers, topic, _partition, _default_codec);
     _partition_processors.push_back(p);
     return p;
   }
@@ -206,12 +199,13 @@ class topology
   }
 
   template<class K, class V>
-  std::shared_ptr<kspp::partition_source<K, V>> create_kafka_source(std::string topic, size_t partition) {
-    auto p = std::make_shared<kspp::kafka_source<K, V, CODEC>>(_brokers, topic, partition, _default_codec);
+  std::shared_ptr<kspp::partition_source<K, V>> create_kafka_source(std::string topic) {
+    auto p = std::make_shared<kspp::kafka_source<K, V, CODEC>>(_brokers, topic, _partition, _default_codec);
     _partition_processors.push_back(p);
     return p;
   }
 
+  /*
   template<class K, class V>
   std::vector<std::shared_ptr<kspp::partition_source<K, V>>> create_kafka_sources(std::string topic, size_t nr_of_partitions) {
     std::vector<std::shared_ptr<kspp::partition_source<K, V>>> v;
@@ -219,43 +213,35 @@ class topology
       v.push_back(create_kafka_source<K, V>(topic, i));
     return v;
   }
-
-  template<class K, class V>
-  std::shared_ptr<kspp::kstream_partition<K, V>> create_kstream(std::shared_ptr<kspp::partition_source<K, V>> source, size_t partition) {
-    auto p = std::make_shared<kspp::kstream_partition_impl<K, V, CODEC>>(source, partition, get_storage_path(), _default_codec);
-    _partition_processors.push_back(p);
-    return p;
-  }
-  
-  template<class K, class V>
-  std::shared_ptr<kspp::kstream_partition<K, V>> create_kstream(std::string topic, size_t partition) { // TBD tags for application_id and processor_id (append to storage paths??)
-    auto source = create_kafka_source<K, V>(topic, partition);
-    return create_kstream<K, V>(source, partition);
-    // no adding to _partition_processors
-  }
-
-  template<class K, class V>
-  std::shared_ptr<kspp::ktable_partition<K, V>> create_ktable(std::shared_ptr<kspp::partition_source<K, V>> source, size_t partition) {
-    auto p = std::make_shared<kspp::ktable_partition_impl<K, V, CODEC>>(source, partition, get_storage_path(), _default_codec);
-    _partition_processors.push_back(p);
-    return p;
-  }
-  
-  template<class K, class V>
-  std::shared_ptr<kspp::ktable_partition<K, V>> create_ktable(std::string topic, size_t partition) {
-    auto source = create_kafka_source<K, V>(topic, partition);
-    // no adding to _partition_processors
-    return create_ktable<K, V>(source, partition);
-  }
-
-  /*
-  template<class K, class V>
-  std::shared_ptr<kspp::ktable_partition<K, V>> create_global_ktable(std::string topic) {
-    auto p = std::make_shared<kspp::ktable_partition_impl<K, V, CODEC>>(_brokers, topic, 0, get_storage_path(), _default_codec);
-    _partition_processors.push_back(p);
-    return p;
-  }
   */
+
+  template<class K, class V>
+  std::shared_ptr<kspp::kstream_partition<K, V>> create_kstream(std::shared_ptr<kspp::partition_source<K, V>> source) {
+    auto p = std::make_shared<kspp::kstream_partition_impl<K, V, CODEC>>(source, _partition, get_storage_path(), _default_codec);
+    _partition_processors.push_back(p);
+    return p;
+  }
+  
+  template<class K, class V>
+  std::shared_ptr<kspp::kstream_partition<K, V>> create_kstream(std::string topic) {
+    auto source = create_kafka_source<K, V>(topic);
+    return create_kstream<K, V>(source);
+    // no adding to _partition_processors
+  }
+
+  template<class K, class V>
+  std::shared_ptr<kspp::ktable_partition<K, V>> create_ktable(std::shared_ptr<kspp::partition_source<K, V>> source) {
+    auto p = std::make_shared<kspp::ktable_partition_impl<K, V, CODEC>>(source, _partition, get_storage_path(), _default_codec);
+    _partition_processors.push_back(p);
+    return p;
+  }
+  
+  template<class K, class V>
+  std::shared_ptr<kspp::ktable_partition<K, V>> create_ktable(std::string topic) {
+    auto source = create_kafka_source<K, V>(topic);
+    return create_ktable<K, V>(source);
+    // no adding to _partition_processors
+  }
 
   template<class K, class V>
   std::shared_ptr<kspp::stream_sink<K, V>> create_stream_sink(std::shared_ptr<kspp::partition_source<K, V>>source, std::ostream& os) {
@@ -263,19 +249,8 @@ class topology
     return p;
   }
 
-  /* ask DAG!!!
-  template<class PARTITION_SOURCE>
-  std::shared_ptr<kspp::stream_sink<typename PARTITION_SOURCE::key_type, typename PARTITION_SOURCE::value_type>> create_stream_sink(std::shared_ptr<PARTITION_SOURCE> source, std::ostream& os) {
-  auto p = std::make_shared<kspp::stream_sink<typename PARTITION_SOURCE::key_type, typename PARTITION_SOURCE::value_type>>(source, os);
-  //_topology.push_back(p);
-  return p;
-  }
-  */
-
-
-  // not useful for anything excepts cout ord cerr... since everything is bundeled into same stream???
-  // maybee we should have a topicstreamsink that takes a vector intead...
-  template<class K, class V>
+  // not useful for anything excepts cout or cerr... since everything is bundeled into same stream???
+   template<class K, class V>
   std::vector<std::shared_ptr<kspp::stream_sink<K, V>>> create_stream_sinks(std::vector<std::shared_ptr<kspp::partition_source<K, V>>> sources, std::ostream& os) {
     std::vector<std::shared_ptr<kspp::stream_sink<K, V>>> v;
     for (auto s : sources)
@@ -334,6 +309,7 @@ class topology
   private:
   std::string                                       _app_id;
   std::string                                       _topology_id;
+  int32_t                                           _partition;
   std::string                                       _brokers;
   std::shared_ptr<CODEC>                            _default_codec;
   boost::filesystem::path                           _root_path;
@@ -367,14 +343,14 @@ class topology_builder
     BOOST_LOG_TRIVIAL(info) << "topology_builder created, app_id:" << app_id << ", kafka_brokers:" << brokers << ", root_path:" << root_path;
   }
 
-  std::shared_ptr<topology<CODEC>> create_topology(std::string id) {
-    return std::make_shared<topology<CODEC>>(_app_id, id, _brokers, _root_path, _default_codec);
+  std::shared_ptr<topology<CODEC>> create_topology(std::string id, int32_t partition) {
+    return std::make_shared<topology<CODEC>>(_app_id, id, partition, _brokers, _root_path, _default_codec);
   }
 
-  std::shared_ptr<topology<CODEC>> create_topology() {
+  std::shared_ptr<topology<CODEC>> create_topology(int32_t partition) {
     std::string id = "topology-" + std::to_string(_next_topology_id);
     _next_topology_id++;
-    return std::make_shared<topology<CODEC>>(_app_id, id, _brokers, _root_path, _default_codec);
+    return std::make_shared<topology<CODEC>>(_app_id, id, partition, _brokers, _root_path, _default_codec);
   }
 
   inline std::shared_ptr<CODEC> codec() {
