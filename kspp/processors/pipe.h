@@ -1,48 +1,32 @@
 #include <kspp/kspp.h>
 #pragma once
 
-namespace kspp{
+namespace kspp {
 template<class K, class V>
 class pipe : public partition_source<K, V>
 {
-public:
+  public:
   typedef K key_type;
   typedef V value_type;
   typedef kspp::krecord<K, V> record_type;
-   
+
   pipe(std::shared_ptr<kspp::partition_source<K, V>> upstream, size_t partition)
-    : partition_source(upstream.get(), partition) {
+    : partition_source<K, V>(upstream.get(), partition) {
     upstream->add_sink([this](auto r) {
       produce(r);
     });
   }
 
-  virtual std::string name() const { 
-    return "pipe";  
-  }
-  
-  virtual std::string processor_name() const { 
-    return "pipe"; 
-  }
-  
-  /*
-  bool kspp::partition_processor::process_one() {
-    return this->_upstream->process_one();
-  }
-  */
-
-  /*
-  virtual bool eof() const {
-    return this->_upstream->eof();
+  virtual std::string name() const {
+    return "pipe";
   }
 
-  virtual void close() {
-    this->_upstream->close();
+  virtual std::string processor_name() const {
+    return "pipe";
   }
-  */
 
   virtual bool is_dirty() {
-     return eof();
+    return eof();
   }
 
   virtual int produce(std::shared_ptr<krecord<K, V>> r) {
@@ -63,13 +47,13 @@ public:
 template<class V>
 class pipe<void, V> : public partition_source<void, V>
 {
-public:
+  public:
   typedef void key_type;
   typedef V value_type;
   typedef kspp::krecord<void, V> record_type;
 
   pipe(std::shared_ptr<kspp::partition_source<void, V>> upstream, size_t partition)
-    : partition_source(upstream.get(), partition) {
+    : partition_source<void, V>(upstream.get(), partition) {
     upstream->add_sink([this](auto r) {
       produce(r);
     });
@@ -82,20 +66,6 @@ public:
   virtual std::string processor_name() const {
     return "pipe";
   }
-
-  /*
-  bool kspp::partition_processor::process_one() {
-    return this->_upstream->process_one();
-  }
-
-  virtual bool eof() const {
-    return this->_upstream->eof();
-  }
-
-  virtual void close() {
-    this->_upstream->close();
-  }
-  */
 
   virtual bool is_dirty() {
     return eof();
@@ -118,13 +88,13 @@ public:
 template<class K>
 class pipe<K, void> : public partition_source<K, void>
 {
-public:
+  public:
   typedef K key_type;
   typedef void value_type;
   typedef kspp::krecord<K, void> record_type;
 
   pipe(std::shared_ptr<kspp::partition_source<K, void>> upstream, size_t partition)
-    : partition_source(upstream.get(), partition) {
+    : partition_source<K, void>(upstream.get(), partition) {
     upstream->add_sink([this](auto r) {
       produce(r);
     });
@@ -138,24 +108,10 @@ public:
     return "pipe";
   }
 
-  /*
-  bool kspp::partition_processor::process_one() {
-    return this->_upstream->process_one();
-  }
-
-  virtual bool eof() const {
-    return this->_upstream->eof();
-  }
-
-  virtual void close() {
-    this->_upstream->close();
-  }
-  */
-
   virtual bool is_dirty() {
     return eof();
   }
-  
+
   virtual int produce(std::shared_ptr<krecord<K, void>> r) {
     send_to_sinks(r);
     return 0;
