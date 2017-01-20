@@ -79,10 +79,8 @@ namespace kspp {
 
     };
 
-    rockdb_store(std::string topic, size_t partition, boost::filesystem::path storage_path, std::shared_ptr<CODEC> codec)
-      : _codec(codec)
-      , _topic(topic)
-      , _partition(partition) {
+    rockdb_store(boost::filesystem::path storage_path, std::shared_ptr<CODEC> codec)
+      : _codec(codec) {
       boost::filesystem::create_directories(boost::filesystem::path(storage_path));
       rocksdb::Options options;
       options.create_if_missing = true;
@@ -90,7 +88,7 @@ namespace kspp {
       auto s = rocksdb::DB::Open(options, storage_path.generic_string(), &tmp);
       _db.reset(tmp);
       if (!s.ok()) {
-        BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", " << _topic << ":" << _partition << ", failed to open rocks db, path:" << storage_path.generic_string();
+        BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", failed to open rocks db, path:" << storage_path.generic_string();
       }
       assert(s.ok());
     }
@@ -101,7 +99,6 @@ namespace kspp {
 
     void close() {
       _db = NULL;
-      BOOST_LOG_TRIVIAL(info) << BOOST_CURRENT_FUNCTION << ", " << ", " << _topic << ":" << _partition;
     }
 
     void put(const K& key, const V& val) {
@@ -152,10 +149,10 @@ namespace kspp {
         res->value = std::make_shared<V>();
         size_t consumed = _codec->decode(is, *res->value);
         if (consumed == 0) {
-          BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", " << _topic << ":" << _partition << ", decode payload failed, actual sz:" << payload.size();
+          BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", decode payload failed, actual sz:" << payload.size();
           return NULL;
         } else if (consumed != payload.size()) {
-          BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", " << _topic << ":" << _partition << ", decode payload failed, consumed:" << consumed << ", actual sz:" << payload.size();
+          BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", decode payload failed, consumed:" << consumed << ", actual sz:" << payload.size();
           return NULL;
         }
       }
@@ -171,8 +168,6 @@ namespace kspp {
     }
 
   private:
-    std::string                           _topic;     // only used for logging to make sense...
-    size_t                                _partition; // only used for logging to make sense...
     std::unique_ptr<rocksdb::DB>          _db;        // maybee this should be a shared ptr since we're letting iterators out...
     std::shared_ptr<CODEC>                _codec;
   };

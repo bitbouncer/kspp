@@ -10,11 +10,11 @@ namespace kspp {
   class kstream_partition_impl : public kstream_partition<K, V>
   {
   public:
-    kstream_partition_impl(std::string brokers, std::string topic, size_t partition, boost::filesystem::path storage_path, std::shared_ptr<CODEC> codec)
+    kstream_partition_impl(std::shared_ptr<kspp::partition_source<K, V>> source, size_t partition, boost::filesystem::path storage_path, std::shared_ptr<CODEC> codec)
       : kstream_partition<K, V>(NULL, partition)
       , _offset_storage_path(get_storage_path(storage_path))
-      , _source(brokers, topic, partition, codec)
-      , _state_store(topic, partition, get_storage_path(storage_path), codec)
+      , _source(source)
+      , _state_store(get_storage_path(storage_path), codec)
       , _current_offset(RdKafka::Topic::OFFSET_BEGINNING)
       , _last_comitted_offset(RdKafka::Topic::OFFSET_BEGINNING)
       , _last_flushed_offset(RdKafka::Topic::OFFSET_BEGINNING) {
@@ -23,7 +23,7 @@ namespace kspp {
 
       // this is probably wrong since why should we delete the row in a kstream??? TBD
       // for now this is just a copy from ktable...
-      _source.add_sink([this](auto r) {
+      _source->add_sink([this](auto r) {
         _current_offset = r->offset;
         if (r->value)
           _state_store.put(r->key, *r->value);
@@ -39,7 +39,7 @@ namespace kspp {
     }
 
     virtual std::string name() const {
-      return   _source.name() + "-kstream";
+      return   _source->name() + "-kstream";
     }
 
     virtual std::string processor_name() const { return "kstream"; }
@@ -55,12 +55,12 @@ namespace kspp {
           _last_flushed_offset = tmp;
         }
       }
-      _source.start(_current_offset);
+      _source->start(_current_offset);
     }
 
     virtual void start(int64_t offset) {
       _current_offset = offset;
-      _source.start(_current_offset);
+      _source->start(_current_offset);
     }
 
     virtual void commit() {
@@ -68,17 +68,17 @@ namespace kspp {
     }
 
     virtual void close() {
-      _source.close();
+      _source->close();
       _state_store.close();
       flush_offset();
     }
 
     virtual bool eof() const {
-      return _source.eof();
+      return _source->eof();
     }
 
     virtual bool process_one() {
-      return _source.process_one();
+      return _source->process_one();
     }
 
     virtual void flush_offset() {
@@ -91,7 +91,7 @@ namespace kspp {
     }
 
     virtual bool is_dirty() {
-      return _source.is_dirty();
+      return _source->is_dirty();
     }
 
     inline int64_t offset() const {
@@ -109,12 +109,11 @@ namespace kspp {
     return p;
   }
 
-  kafka_source<K, V, CODEC> _source; // TBD this should be a stream-source....
-  rockdb_store<K, V, CODEC> _state_store;
-
-  boost::filesystem::path _offset_storage_path;
-  int64_t                 _current_offset;
-  int64_t                 _last_comitted_offset;
-  int64_t                 _last_flushed_offset;
+  std::shared_ptr<kspp::partition_source<K, V>> _source;
+  rockdb_store<K, V, CODEC>                     _state_store;
+  boost::filesystem::path                       _offset_storage_path;
+  int64_t                                       _current_offset;
+  int64_t                                       _last_comitted_offset;
+  int64_t                                       _last_flushed_offset;
   };
 };

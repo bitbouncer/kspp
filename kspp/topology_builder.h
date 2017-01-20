@@ -215,33 +215,41 @@ class topology
   }
 
   template<class K, class V>
-  std::shared_ptr<kspp::kstream_partition<K, V>> create_kstream(std::string topic, size_t partition) { // TBD tags for application_id and processor_id (append to storage paths??)
-    auto p = std::make_shared<kspp::kstream_partition_impl<K, V, CODEC>>(_brokers, topic, partition, get_storage_path(), _default_codec);
+  std::shared_ptr<kspp::kstream_partition<K, V>> create_kstream(std::shared_ptr<kspp::partition_source<K, V>> source, size_t partition) {
+    auto p = std::make_shared<kspp::kstream_partition_impl<K, V, CODEC>>(source, partition, get_storage_path(), _default_codec);
     _partition_processors.push_back(p);
     return p;
+  }
+  
+  template<class K, class V>
+  std::shared_ptr<kspp::kstream_partition<K, V>> create_kstream(std::string topic, size_t partition) { // TBD tags for application_id and processor_id (append to storage paths??)
+    auto source = create_kafka_source<K, V>(topic, partition);
+    return create_kstream<K, V>(source, partition);
+    // no adding to _partition_processors
   }
 
   template<class K, class V>
-  std::shared_ptr<kspp::ktable_partition<K, V>> create_ktable(std::string topic, size_t partition) {
-    // here we should creeate a own kafka source and use the below kspp::partition_source<K, V> source variant...
-    auto p = std::make_shared<kspp::ktable_partition_impl<K, V, CODEC>>(_brokers, topic, partition, get_storage_path(), _default_codec);
+  std::shared_ptr<kspp::ktable_partition<K, V>> create_ktable(std::shared_ptr<kspp::partition_source<K, V>> source, size_t partition) {
+    auto p = std::make_shared<kspp::ktable_partition_impl<K, V, CODEC>>(source, partition, get_storage_path(), _default_codec);
     _partition_processors.push_back(p);
     return p;
   }
+  
+  template<class K, class V>
+  std::shared_ptr<kspp::ktable_partition<K, V>> create_ktable(std::string topic, size_t partition) {
+    auto source = create_kafka_source<K, V>(topic, partition);
+    // no adding to _partition_processors
+    return create_ktable<K, V>(source, partition);
+  }
 
-  //template<class K, class V>
-  //std::shared_ptr<kspp::ktable_partition<K, V>> create_ktable(kspp::partition_source<K, V> source, size_t partition) {
-  //  auto p = std::make_shared<kspp::ktable_partition_impl<K, V, CODEC>>(source, partition, get_storage_path(), _default_codec);
-  //  _partition_processors.push_back(p);
-  //  return p;
-  //}
-
+  /*
   template<class K, class V>
   std::shared_ptr<kspp::ktable_partition<K, V>> create_global_ktable(std::string topic) {
     auto p = std::make_shared<kspp::ktable_partition_impl<K, V, CODEC>>(_brokers, topic, 0, get_storage_path(), _default_codec);
     _partition_processors.push_back(p);
     return p;
   }
+  */
 
   template<class K, class V>
   std::shared_ptr<kspp::stream_sink<K, V>> create_stream_sink(std::shared_ptr<kspp::partition_source<K, V>>source, std::ostream& os) {

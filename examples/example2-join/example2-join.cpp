@@ -8,7 +8,7 @@
 
 int main(int argc, char **argv) {
   size_t join_count = 0;
-  auto builder = kspp::topology_builder<kspp::binary_codec>("example2-join", "localhost", "C:\\tmp");
+  auto builder = kspp::topology_builder<kspp::binary_codec>("example2-join", "localhost");
   {
     auto topology = builder.create_topology();
     auto stream = topology->create_kafka_source<boost::uuids::uuid, int64_t>("kspp_test0_eventstream", PARTITION);
@@ -19,7 +19,6 @@ int main(int argc, char **argv) {
       join_count++;
     });
 
-    auto sink = topology->create_kafka_sink<boost::uuids::uuid, int64_t>("kspp_test0_eventstream_out", 0);
     topology->init_metrics();
     join->start(-2);
 

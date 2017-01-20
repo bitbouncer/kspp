@@ -11,7 +11,7 @@
 #define PARTITION 0
 
 int main(int argc, char **argv) {
-  auto builder = kspp::topology_builder<kspp::text_codec>("example3-count", "localhost", "C:\\tmp");
+  auto builder = kspp::topology_builder<kspp::text_codec>("example3-count", "localhost");
   {
     auto topology = builder.create_topology();
     auto sink = topology->create_kafka_sink<void, std::string>("kspp_TextInput", PARTITION);

@@ -11,7 +11,7 @@
 #define NR_OF_PARTITIONS 8
 
 int main(int argc, char **argv) {
-  auto text_builder = kspp::topology_builder<kspp::text_codec>("example4-count", "localhost", "C:\\tmp");
+  auto text_builder = kspp::topology_builder<kspp::text_codec>("example4-count", "localhost");
 
   {
     auto topology = text_builder.create_topology();

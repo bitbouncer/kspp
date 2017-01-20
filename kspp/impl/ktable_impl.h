@@ -1,6 +1,5 @@
 #include <boost/filesystem.hpp>
 #include <kspp/state_stores/rocksdb_store.h>
-#include <kspp/sources/kafka_source.h>
 #include <kspp/kspp.h>
 #pragma once
 
@@ -9,18 +8,18 @@ template<class K, class V, class CODEC>
 class ktable_partition_impl : public ktable_partition<K, V>
 {
   public:
-  ktable_partition_impl(std::string brokers, std::string topic, size_t partition, boost::filesystem::path storage_path, std::shared_ptr<CODEC> codec)
+  ktable_partition_impl(std::shared_ptr<kspp::partition_source<K, V>> source, size_t partition, boost::filesystem::path storage_path, std::shared_ptr<CODEC> codec)
     : ktable_partition<K, V>(NULL, partition)
     , _offset_storage_path(get_storage_path(storage_path))
-    , _source(brokers, topic, partition, codec)
-    , _state_store(topic, partition, get_storage_path(storage_path), codec)
+    , _source(source)
+    , _state_store(get_storage_path(storage_path), codec)
     , _current_offset(RdKafka::Topic::OFFSET_BEGINNING)
     , _last_comitted_offset(RdKafka::Topic::OFFSET_BEGINNING)
     , _last_flushed_offset(RdKafka::Topic::OFFSET_BEGINNING)
     , _count("count") {
     boost::filesystem::create_directories(_offset_storage_path);
     _offset_storage_path /= "kspp_offset.bin";
-    _source.add_sink([this](auto r) {
+    _source->add_sink([this](auto r) {
       _current_offset = r->offset;
       _lag.add_event_time(r->event_time);
       ++_count;
@@ -39,7 +38,7 @@ class ktable_partition_impl : public ktable_partition<K, V>
   }
 
   virtual std::string name() const {
-    return   _source.name() + "-ktable";
+    return   _source->name() + "-ktable";
   }
 
   virtual std::string processor_name() const { return "ktable"; }
@@ -55,12 +54,12 @@ class ktable_partition_impl : public ktable_partition<K, V>
         _last_flushed_offset = tmp;
       }
     }
-    _source.start(_current_offset);
+    _source->start(_current_offset);
   }
 
   virtual void start(int64_t offset) {
     _current_offset = offset;
-    _source.start(_current_offset);
+    _source->start(_current_offset);
   }
 
   virtual void commit() {
@@ -68,21 +67,21 @@ class ktable_partition_impl : public ktable_partition<K, V>
   }
 
   virtual void close() {
-    _source.close();
+    _source->close();
     _state_store.close();
     flush_offset();
   }
 
   virtual bool eof() const {
-    return _source.eof();
+    return _source->eof();
   }
 
   virtual bool is_dirty() {
-    return _source.is_dirty();
+    return _source->is_dirty();
   }
 
   virtual bool process_one() {
-    return _source.process_one();
+    return _source->process_one();
   }
 
   virtual void flush_offset() {
@@ -118,13 +117,13 @@ class ktable_partition_impl : public ktable_partition<K, V>
     return p;
   }
 
-  kafka_source<K, V, CODEC> _source;  // TBD this should be a stream-source....
-  rockdb_store<K, V, CODEC> _state_store;
-  boost::filesystem::path   _offset_storage_path;
-  int64_t                   _current_offset;
-  int64_t                   _last_comitted_offset;
-  int64_t                   _last_flushed_offset;
-  metric_lag                _lag;
-  metric_counter            _count;
+  std::shared_ptr<kspp::partition_source<K, V>> _source;
+  rockdb_store<K, V, CODEC>                     _state_store;
+  boost::filesystem::path                       _offset_storage_path;
+  int64_t                                       _current_offset;
+  int64_t                                       _last_comitted_offset;
+  int64_t                                       _last_flushed_offset;
+  metric_lag                                    _lag;
+  metric_counter                                _count;
 };
 };
