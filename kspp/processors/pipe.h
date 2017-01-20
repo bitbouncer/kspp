@@ -30,7 +30,7 @@ class pipe : public partition_source<K, V>
   }
 
   virtual int produce(std::shared_ptr<krecord<K, V>> r) {
-    send_to_sinks(r);
+    this->send_to_sinks(r);
     return 0;
   }
 
@@ -72,7 +72,7 @@ class pipe<void, V> : public partition_source<void, V>
   }
 
   virtual int produce(std::shared_ptr<krecord<void, V>> r) {
-    send_to_sinks(r);
+    this->send_to_sinks(r);
     return 0;
   }
 
@@ -111,9 +111,9 @@ class pipe<K, void> : public partition_source<K, void>
   virtual bool is_dirty() {
     return !(this->eof());
   }
-
+  
   virtual int produce(std::shared_ptr<krecord<K, void>> r) {
-    send_to_sinks(r);
+    this->send_to_sinks(r);
     return 0;
   }
 
