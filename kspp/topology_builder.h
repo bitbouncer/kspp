@@ -245,7 +245,8 @@ class topology
 
   template<class K, class V>
   std::shared_ptr<kspp::partition_stream_sink<K, V>> create_stream_sink(std::shared_ptr<kspp::partition_source<K, V>>source, std::ostream& os) {
-    auto p = kspp::partition_stream_sink<K, V>::create(source, source->partition(), os);
+    auto p = kspp::partition_stream_sink<K, V>::create(source->partition(), os);
+    source->add_sink(p);
     return p;
   }
 
@@ -253,8 +254,11 @@ class topology
    template<class K, class V>
   std::vector<std::shared_ptr<kspp::partition_stream_sink<K, V>>> create_stream_sinks(std::vector<std::shared_ptr<kspp::partition_source<K, V>>> sources, std::ostream& os) {
     std::vector<std::shared_ptr<kspp::partition_stream_sink<K, V>>> v;
-    for (auto s : sources)
-      v.push_back(create_stream_sink<K, V>(s, s->partition(), os));
+    for (auto s : sources) {
+      auto p = create_stream_sink<K, V>(s->partition(), os);
+      s->add_sink(p);
+      v.push_back(p);
+    }
     return v;
   }
 
@@ -386,6 +390,15 @@ public:
     return p;
   }
 
+  template<class K, class V>
+  std::shared_ptr<kspp::topic_sink<K, V, CODEC>> create_kafka_topic_sink(std::vector<std::shared_ptr<kspp::partition_source<K, V>>>& source, std::string topic) {
+    auto p = kspp::kafka_sink<K, V, CODEC>::create(_brokers, topic, _default_codec);
+    // topic sinks add??
+    for (auto i : source)
+      i->add_sink(p);
+    return p;
+  }
+
   /**
   creates a kafka sink using explicit partitioner
   */
@@ -419,9 +432,21 @@ public:
   }
 
   template<class K, class V>
+  std::vector<std::shared_ptr<kspp::materialized_partition_source<K, V>>> create_count_by_key(std::vector<std::shared_ptr<partition_source<K, void>>>& sources, int64_t punctuate_intervall) {
+    std::vector<std::shared_ptr<kspp::materialized_partition_source<K, V>>> res;
+    for (auto i : sources) {
+      auto p = kspp::count_by_key<K, V, CODEC>::create(i, get_storage_path(), punctuate_intervall, _default_codec);
+      _partition_processors.push_back(p);
+      res.push_back(p);
+    }
+    return res;
+  }
+
+  template<class K, class V>
   void create_stream_sink(const std::vector<std::shared_ptr<kspp::partition_source<K, V>>>& sources, std::ostream& os) {
     for (auto i : sources) {
-      auto p = kspp::partition_stream_sink<K, V>::create(i, i->partition(), os);
+      auto p = kspp::partition_stream_sink<K, V>::create(i->partition(), os);
+      i->add_sink(p);
       _partition_processors.push_back(p);
     }
   }

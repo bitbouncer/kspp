@@ -330,6 +330,33 @@ class topic_sink<void, V, CODEC> : public topic_processor
   std::shared_ptr<CODEC> _codec;
 };
 
+// specialisation for void value
+template<class K, class CODEC>
+class topic_sink<K, void, CODEC> : public topic_processor
+{
+public:
+  typedef K key_type;
+  typedef void value_type;
+  typedef kspp::krecord<K, void> record_type;
+
+  virtual int produce(std::shared_ptr<krecord<K, void>> r) = 0;
+  virtual size_t queue_len() = 0;
+  virtual int produce(uint32_t partition_hash, std::shared_ptr<krecord<K, void>> r) = 0;
+  inline  int produce(uint32_t partition_hash, const K& key) {
+    return produce(partition_hash, std::make_shared<krecord<K, void>>(key));
+  }
+
+  inline std::shared_ptr<CODEC> codec() {
+    return _codec;
+  }
+
+protected:
+  topic_sink(std::shared_ptr<CODEC> codec)
+    :_codec(codec) {}
+
+  std::shared_ptr<CODEC> _codec;
+};
+
 template<class K, class V>
 class partition_source : public partition_processor
 {
