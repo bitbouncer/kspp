@@ -13,7 +13,7 @@
 int main(int argc, char **argv) {
   auto text_builder = kspp::topology_builder<kspp::text_codec>("example4-count", "localhost");
 
-  //{
+ // {
   //  auto topology = text_builder.create_topology(-1);
   //  auto sources = topology->create_kafka_sources<void, std::string>("test_text", NR_OF_PARTITIONS);
 

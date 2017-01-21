@@ -292,10 +292,7 @@ class topology
     _partition_processors.push_back(p);
     return p;
   }
-
-
-
-
+  
   private:
   boost::filesystem::path get_storage_path() {
     boost::filesystem::path top_of_topology(_root_path);
@@ -307,6 +304,167 @@ class topology
   }
 
   private:
+  std::string                                       _app_id;
+  std::string                                       _topology_id;
+  int32_t                                           _partition;
+  std::string                                       _brokers;
+  std::shared_ptr<CODEC>                            _default_codec;
+  boost::filesystem::path                           _root_path;
+  std::vector<std::shared_ptr<partition_processor>> _partition_processors;
+  std::vector<std::shared_ptr<topic_processor>>     _topic_processors;
+};
+
+
+template<class CODEC>
+class topic_topology
+{
+public:
+  topic_topology(std::string app_id, std::string topology_id, std::string brokers, boost::filesystem::path root_path, std::shared_ptr<CODEC> default_codec)
+    : _app_id(app_id)
+    , _topology_id(topology_id)
+    , _brokers(brokers)
+    , _default_codec(default_codec)
+    , _root_path(root_path) {
+    BOOST_LOG_TRIVIAL(info) << "topology created, name:" << name() << ", brokers:" << brokers << " , storage_path:" << root_path;
+  }
+
+  ~topic_topology() {
+    BOOST_LOG_TRIVIAL(info) << "topology, name:" << name() << " terminated";
+    // output stats
+  }
+
+  std::string name() const {
+    return _app_id + "__" + _topology_id;
+  }
+
+  inline std::shared_ptr<CODEC> codec() {
+    return _default_codec;
+  }
+
+  void init_metrics() {
+    for (auto i : _topic_processors) {
+      for (auto j : i->get_metrics()) {
+        j->_logged_name = _app_id + "." + _topology_id + "." + i->processor_name() + "." + j->_simple_name;
+        //j->_logged_name = _app_id + "." + _topology_id + ".depth-" + std::to_string(i->depth()) + "." + i->processor_name() + "." + j->_simple_name;
+      }
+    }
+  }
+
+  void output_metrics(std::ostream& s) {
+    for (auto i : _partition_processors) {
+      for (auto j : i->get_metrics())
+        s << "metrics: " << j->name() << " : " << j->value() << std::endl;
+    }
+
+    for (auto i : _topic_processors) {
+      for (auto j : i->get_metrics()) {
+        s << "metrics: " << j->name() << " : " << j->value() << std::endl;
+      }
+    }
+  }
+
+  // TBD this should only call most downstream processors??
+  // or should topology call all members??
+  void start(int offset) {
+    for (auto i : _partition_processors)
+      i->start(offset);
+  }
+
+  // TBD this should only call most downstream processors??
+  void flush() {
+    for (auto i : _partition_processors)
+      i->flush();
+  }
+
+  /**
+  creates a kafka sink using default partitioner (hash on key)
+  */
+  template<class K, class V>
+  std::shared_ptr<kspp::topic_sink<K, V, CODEC>> create_kafka_topic_sink(std::string topic) {
+    auto p = kspp::kafka_sink<K, V, CODEC>::create(_brokers, topic, _default_codec);
+    _topic_processors.push_back(p);
+    return p;
+  }
+
+  /**
+  creates a kafka sink using explicit partitioner
+  */
+  template<class K, class V>
+  std::shared_ptr<kspp::topic_sink<K, V, CODEC>> create_kafka_topic_sink(std::string topic, std::function<uint32_t(const K& key)> partitioner) {
+    auto p = kspp::kafka_sink<K, V, CODEC>::create(_brokers, topic, partitioner, _default_codec);
+    _topic_processors.push_back(p);
+    return p;
+  }
+ 
+  template<class K, class V>
+  std::vector<std::shared_ptr<kspp::partition_source<K, V>>> create_kafka_sources(std::string topic, size_t nr_of_partitions) {
+  std::vector<std::shared_ptr<kspp::partition_source<K, V>>> result;
+  for (size_t i = 0; i != nr_of_partitions; ++i) {
+    auto p = std::make_shared<kspp::kafka_source<K, V, CODEC>>(_brokers, topic, i, _default_codec);
+    result.push_back(p);
+    _partition_processors.push_back(p);
+  }
+  return result;;
+  }
+
+  template<class K, class V>
+  std::vector<std::shared_ptr<kspp::ktable_partition<K, V>>> create_ktables(std::vector<std::shared_ptr<kspp::partition_source<K, V>>>& sources) {
+    std::vector<std::shared_ptr<kspp::ktable_partition<K, V>>> result;
+    for (auto i : sources) {
+      auto p = std::make_shared<kspp::ktable_partition_impl<K, V, CODEC>>(i, _partition, get_storage_path(), _default_codec);
+      result.push_back(p);
+      _partition_processors.push_back(p);
+    }
+    return result;
+  }
+
+  template<class K, class V>
+  void create_stream_sink(const std::vector<std::shared_ptr<kspp::partition_source<K, V>>>& sources, std::ostream& os) {
+    for (auto i : sources) {
+      kspp::stream_sink<K, V>::create(i, os);
+    }
+  }
+
+
+  template<class K, class V, class PK>
+  std::vector<std::shared_ptr<partition_processor>> create_repartition(
+    std::vector<std::shared_ptr<kspp::partition_source<K, V>>>& source, 
+    std::vector<std::shared_ptr<kspp::ktable_partition<K, PK>>>& left,
+    std::shared_ptr<topic_sink<K, V, CODEC>> topic_sink) {
+    assert(source.size() == left.size());
+
+    std::vector<std::shared_ptr<partition_processor>> result;
+    auto begin = source.begin();
+    auto lbegin = left.begin();
+    auto end = source.end();
+
+    for (; begin != end; ++begin, ++lbegin) {
+      auto p = kspp::repartition_by_table<K, V, PK, CODEC>::create(*begin, *lbegin, topic_sink);
+      result.push_back(p);
+      _partition_processors.push_back(p);
+    }
+    return result;
+  }
+
+ /* template<class K, class V>
+  std::shared_ptr<kspp::partition_source<K, V>> create_kafka_source(std::string topic) {
+    auto p = std::make_shared<kspp::kafka_source<K, V, CODEC>>(_brokers, topic, _partition, _default_codec);
+    _partition_processors.push_back(p);
+    return p;
+  }*/
+
+
+private:
+  boost::filesystem::path get_storage_path() {
+    boost::filesystem::path top_of_topology(_root_path);
+    top_of_topology /= _app_id;
+    top_of_topology /= _topology_id;
+    BOOST_LOG_TRIVIAL(debug) << "topology << " << name() << ": creating local storage at " << top_of_topology;
+    boost::filesystem::create_directories(top_of_topology);
+    return top_of_topology;
+  }
+
+private:
   std::string                                       _app_id;
   std::string                                       _topology_id;
   int32_t                                           _partition;
@@ -351,6 +509,12 @@ class topology_builder
     std::string id = "topology-" + std::to_string(_next_topology_id);
     _next_topology_id++;
     return std::make_shared<topology<CODEC>>(_app_id, id, partition, _brokers, _root_path, _default_codec);
+  }
+
+  std::shared_ptr<topic_topology<CODEC>> create_topic_topology() {
+    std::string id = "topology-" + std::to_string(_next_topology_id);
+    _next_topology_id++;
+    return std::make_shared<topic_topology<CODEC>>(_app_id, id, _brokers, _root_path, _default_codec);
   }
 
   inline std::shared_ptr<CODEC> codec() {

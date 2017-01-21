@@ -9,7 +9,7 @@
 namespace kspp {
 
   template<class K, class V>
-  class stream_sink
+  class stream_sink //: partition_sink<K, V>
   {
   public:
     enum { MAX_KEY_SIZE = 1000 };
@@ -40,13 +40,13 @@ namespace kspp {
 
   private:
     std::shared_ptr<partition_source<K, V>> _source;
-    std::ostream&                             _os;
-    std::shared_ptr<kspp::text_codec>          _codec;
+    std::ostream&                           _os;
+    std::shared_ptr<kspp::text_codec>       _codec;
   };
 
   //<null, VALUE>
   template<class V>
-  class stream_sink<void, V>
+  class stream_sink<void, V> 
   {
   public:
     stream_sink(std::shared_ptr<partition_source<void, V>> source, std::ostream& os)
@@ -68,11 +68,10 @@ namespace kspp {
       return std::make_shared<kspp::stream_sink<void, V>>(source, os);
     }
 
-
   private:
     std::shared_ptr<partition_source<void, V>> _source;
     std::ostream&                              _os;
-    std::shared_ptr<kspp::text_codec>           _codec;
+    std::shared_ptr<kspp::text_codec>          _codec;
   };
 
   // <key, NULL>
@@ -102,7 +101,7 @@ namespace kspp {
   private:
     std::shared_ptr<partition_source<K, void>> _source;
     std::ostream&                              _os;
-    std::shared_ptr<kspp::text_codec>           _codec;
+    std::shared_ptr<kspp::text_codec>          _codec;
   };
 
 };
