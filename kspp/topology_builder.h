@@ -244,17 +244,17 @@ class topology
   }
 
   template<class K, class V>
-  std::shared_ptr<kspp::stream_sink<K, V>> create_stream_sink(std::shared_ptr<kspp::partition_source<K, V>>source, std::ostream& os) {
-    auto p = kspp::stream_sink<K, V>::create(source, os);
+  std::shared_ptr<kspp::partition_stream_sink<K, V>> create_stream_sink(std::shared_ptr<kspp::partition_source<K, V>>source, std::ostream& os) {
+    auto p = kspp::partition_stream_sink<K, V>::create(source, source->partition(), os);
     return p;
   }
 
   // not useful for anything excepts cout or cerr... since everything is bundeled into same stream???
    template<class K, class V>
-  std::vector<std::shared_ptr<kspp::stream_sink<K, V>>> create_stream_sinks(std::vector<std::shared_ptr<kspp::partition_source<K, V>>> sources, std::ostream& os) {
-    std::vector<std::shared_ptr<kspp::stream_sink<K, V>>> v;
+  std::vector<std::shared_ptr<kspp::partition_stream_sink<K, V>>> create_stream_sinks(std::vector<std::shared_ptr<kspp::partition_source<K, V>>> sources, std::ostream& os) {
+    std::vector<std::shared_ptr<kspp::partition_stream_sink<K, V>>> v;
     for (auto s : sources)
-      v.push_back(create_stream_sink<K, V>(s, os));
+      v.push_back(create_stream_sink<K, V>(s, s->partition(), os));
     return v;
   }
 
@@ -421,10 +421,10 @@ public:
   template<class K, class V>
   void create_stream_sink(const std::vector<std::shared_ptr<kspp::partition_source<K, V>>>& sources, std::ostream& os) {
     for (auto i : sources) {
-      kspp::stream_sink<K, V>::create(i, os);
+      auto p = kspp::partition_stream_sink<K, V>::create(i, i->partition(), os);
+      _partition_processors.push_back(p);
     }
   }
-
 
   template<class K, class V, class PK>
   std::vector<std::shared_ptr<partition_processor>> create_repartition(
