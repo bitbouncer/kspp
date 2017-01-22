@@ -17,36 +17,6 @@
 
 #pragma once
 
-
-// maybee this is not good at all - if we have a separate processors that uses it's own thread to call 
-// process one we relly dont want those to be mixed.... TBD
-//class topoplogy
-//{
-//  public:
-//  topoplogy() {}
-//
-//  void add(std::shared_ptr<partition_processor> p) {
-//    std::lock_guard<std::mutex> lock(_mutex);
-//    _partition_processors.push_back(p);
-//  }
-//
-//  void add(std::shared_ptr<topic_processor> p) {
-//    std::lock_guard<std::mutex> lock(_mutex);
-//    _topic_processors.push_back(p);
-//  }
-//
-//  bool start() {}
-//  bool process_init_eof() { return true; }
-//  bool process_init() { return false; }
-//  bool eof() { return true; }
-//  bool process() { return false; }
-//  protected:
-//  std::mutex                                        _mutex;
-//  std::vector<std::shared_ptr<partition_processor>> _partition_processors;
-//  std::vector<std::shared_ptr<topic_processor>>     _topic_processors;
-//};
-
-
 namespace kspp {
 template<class CODEC>
 class topology
@@ -124,43 +94,6 @@ class topology
   }
   */
 
-  template<class K, class V>
-  std::shared_ptr<kspp::pipe<K, V>> create_pipe(std::shared_ptr<kspp::partition_source<K, V>> upstream) {
-    auto p = std::make_shared<kspp::pipe<K, V>>(upstream, _partition);
-    _partition_processors.push_back(p);
-    return p;
-  }
-
-  template<class K, class streamV, class tableV, class R>
-  std::shared_ptr<kspp::partition_source<K, R>> create_left_join(std::shared_ptr<kspp::partition_source<K, streamV>> right, std::shared_ptr<kspp::ktable_partition<K, tableV>> left, typename kspp::left_join<K, streamV, tableV, R>::value_joiner value_joiner) {
-    auto p = kspp::left_join<K, streamV, tableV, R>::create(right, left, value_joiner);
-    _partition_processors.push_back(p);
-    return p;
-  }
-
-  template<class K, class V, class PK>
-  std::shared_ptr<partition_processor> create_repartition(std::shared_ptr<kspp::partition_source<K, V>> source, std::shared_ptr<kspp::ktable_partition<K, PK>> left, std::shared_ptr<topic_sink<K, V, CODEC>> topic_sink) {
-    auto p = kspp::repartition_by_table<K, V, PK, CODEC>::create(source, left, topic_sink);
-    _partition_processors.push_back(p);
-    return p;
-  }
-
-  //TBD we shouyld get rid of void value - we do not require that but how do we tell compiler that????
-  template<class K, class V>
-  std::shared_ptr<kspp::materialized_partition_source<K, V>> create_count_by_key(std::shared_ptr<partition_source<K, void>> source, int64_t punctuate_intervall) {
-    auto p = kspp::count_by_key<K, V, CODEC>::create(source, get_storage_path(), punctuate_intervall, _default_codec);
-    _partition_processors.push_back(p);
-    return p;
-  }
-
-  template<class K, class V>
-  std::vector<std::shared_ptr<kspp::materialized_partition_source<K, V>>> create_count_by_key(std::vector<std::shared_ptr<partition_source<K, void>>>& sources, int64_t punctuate_intervall) {
-    std::vector<std::shared_ptr<kspp::materialized_partition_source<K, V>>> res;
-    for (auto i : sources)
-      res.push_back(create_count_by_key<K, V>(i, punctuate_intervall));
-    return res;
-  }
-
   /**
   creates a kafka sink using default partitioner (hash on key)
   */
@@ -170,7 +103,7 @@ class topology
     _topic_processors.push_back(p);
     return p;
   }
-  
+
   /**
   creates a kafka sink using explicit partitioner
   */
@@ -208,10 +141,10 @@ class topology
   /*
   template<class K, class V>
   std::vector<std::shared_ptr<kspp::partition_source<K, V>>> create_kafka_sources(std::string topic, size_t nr_of_partitions) {
-    std::vector<std::shared_ptr<kspp::partition_source<K, V>>> v;
-    for (size_t i = 0; i != nr_of_partitions; ++i)
-      v.push_back(create_kafka_source<K, V>(topic, i));
-    return v;
+  std::vector<std::shared_ptr<kspp::partition_source<K, V>>> v;
+  for (size_t i = 0; i != nr_of_partitions; ++i)
+  v.push_back(create_kafka_source<K, V>(topic, i));
+  return v;
   }
   */
 
@@ -221,7 +154,7 @@ class topology
     _partition_processors.push_back(p);
     return p;
   }
-  
+
   template<class K, class V>
   std::shared_ptr<kspp::kstream_partition<K, V>> create_kstream(std::string topic) {
     auto source = create_kafka_source<K, V>(topic);
@@ -235,13 +168,54 @@ class topology
     _partition_processors.push_back(p);
     return p;
   }
-  
+
   template<class K, class V>
   std::shared_ptr<kspp::ktable_partition<K, V>> create_ktable(std::string topic) {
     auto source = create_kafka_source<K, V>(topic);
     return create_ktable<K, V>(source);
     // no adding to _partition_processors
   }
+
+  template<class K, class V>
+  std::shared_ptr<kspp::pipe<K, V>> create_pipe(std::shared_ptr<kspp::partition_source<K, V>> upstream) {
+    auto p = std::make_shared<kspp::pipe<K, V>>(upstream, _partition);
+    _partition_processors.push_back(p);
+    return p;
+  }
+
+  template<class K, class streamV, class tableV, class R>
+  std::shared_ptr<kspp::partition_source<K, R>> create_left_join(std::shared_ptr<kspp::partition_source<K, streamV>> right, std::shared_ptr<kspp::ktable_partition<K, tableV>> left, typename kspp::left_join<K, streamV, tableV, R>::value_joiner value_joiner) {
+    auto p = kspp::left_join<K, streamV, tableV, R>::create(right, left, value_joiner);
+    _partition_processors.push_back(p);
+    return p;
+  }
+
+  template<class K, class V, class PK>
+  std::shared_ptr<partition_processor> create_repartition(std::shared_ptr<kspp::partition_source<K, V>> source, std::shared_ptr<kspp::ktable_partition<K, PK>> left, std::shared_ptr<topic_sink<K, V, CODEC>> topic_sink) {
+    auto p = kspp::repartition_by_table<K, V, PK, CODEC>::create(source, left, topic_sink);
+    _partition_processors.push_back(p);
+    return p;
+  }
+
+  //TBD we shouyld get rid of void value - we do not require that but how do we tell compiler that????
+  template<class K, class V>
+  std::shared_ptr<kspp::materialized_partition_source<K, V>> create_count_by_key(std::shared_ptr<partition_source<K, void>> source, int64_t punctuate_intervall) {
+    auto p = kspp::count_by_key<K, V, CODEC>::create(source, get_storage_path(), punctuate_intervall, _default_codec);
+    _partition_processors.push_back(p);
+    return p;
+  }
+
+  /*
+  template<class K, class V>
+  std::vector<std::shared_ptr<kspp::materialized_partition_source<K, V>>> create_count_by_key(std::vector<std::shared_ptr<partition_source<K, void>>>& sources, int64_t punctuate_intervall) {
+    std::vector<std::shared_ptr<kspp::materialized_partition_source<K, V>>> res;
+    for (auto i : sources)
+      res.push_back(create_count_by_key<K, V>(i, punctuate_intervall));
+    return res;
+  }
+  */
+
+ 
 
   template<class K, class V>
   std::shared_ptr<kspp::partition_stream_sink<K, V>> create_stream_sink(std::shared_ptr<kspp::partition_source<K, V>>source, std::ostream& os) {
@@ -393,7 +367,7 @@ public:
   template<class K, class V>
   std::shared_ptr<kspp::topic_sink<K, V, CODEC>> create_kafka_topic_sink(std::vector<std::shared_ptr<kspp::partition_source<K, V>>>& source, std::string topic) {
     auto p = kspp::kafka_sink<K, V, CODEC>::create(_brokers, topic, _default_codec);
-    // topic sinks add??
+    _topic_processors.push_back(p);
     for (auto i : source)
       i->add_sink(p);
     return p;
@@ -408,16 +382,32 @@ public:
     _topic_processors.push_back(p);
     return p;
   }
- 
+
+  template<class K, class V>
+  std::shared_ptr<kspp::partition_sink<K, V>> create_global_kafka_sink(std::string topic) {
+    auto p = kspp::kafka_single_partition_sink<K, V, CODEC>::create(_brokers, topic, 0, _default_codec);
+    _partition_processors.push_back(p);
+    return p;
+  }
+
+  template<class K, class V>
+  std::shared_ptr<kspp::topic_sink<K, V, CODEC>> create_global_kafka_topic_sink(std::vector<std::shared_ptr<kspp::partition_source<K, V>>>& source, std::string topic) {
+    auto p = kspp::kafka_single_partition_sink<K, V, CODEC>::create(_brokers, topic, 0, _default_codec);
+    _partition_processors.push_back(p);
+    for (auto i : source)
+      i->add_sink(p);
+    return p;
+  }
+  
   template<class K, class V>
   std::vector<std::shared_ptr<kspp::partition_source<K, V>>> create_kafka_sources(std::string topic, size_t nr_of_partitions) {
-  std::vector<std::shared_ptr<kspp::partition_source<K, V>>> result;
-  for (size_t i = 0; i != nr_of_partitions; ++i) {
-    auto p = std::make_shared<kspp::kafka_source<K, V, CODEC>>(_brokers, topic, i, _default_codec);
-    result.push_back(p);
-    _partition_processors.push_back(p);
-  }
-  return result;;
+    std::vector<std::shared_ptr<kspp::partition_source<K, V>>> result;
+    for (size_t i = 0; i != nr_of_partitions; ++i) {
+      auto p = std::make_shared<kspp::kafka_source<K, V, CODEC>>(_brokers, topic, i, _default_codec);
+      result.push_back(p);
+      _partition_processors.push_back(p);
+    }
+    return result;;
   }
 
   template<class K, class V>
@@ -432,7 +422,50 @@ public:
   }
 
   template<class K, class V>
-  std::vector<std::shared_ptr<kspp::materialized_partition_source<K, V>>> create_count_by_key(std::vector<std::shared_ptr<partition_source<K, void>>>& sources, int64_t punctuate_intervall) {
+  std::vector<std::shared_ptr<kspp::kstream_partition<K, V>>> create_kstreams(std::vector<std::shared_ptr<kspp::partition_source<K, V>>>& sources) {
+    std::vector<std::shared_ptr<kspp::kstream_partition<K, V>>> result;
+    for (auto i : sources) {
+      auto p = std::make_shared<kspp::kstream_partition_impl<K, V, CODEC>>(i, _partition, get_storage_path(), _default_codec);
+      result.push_back(p);
+      _partition_processors.push_back(p);
+    }
+    return result;
+  }
+
+
+  template<class K, class V>
+  std::vector<std::shared_ptr<kspp::pipe<K, V>>> create_pipes(std::vector<std::shared_ptr<kspp::partition_source<K, V>>>& sources) {
+    std::vector<std::shared_ptr<kspp::pipe<K, V>>> result;
+    for (auto i : sources) {
+      auto p = std::make_shared<kspp::pipe<K, V, CODEC>>(i, _partition);
+      result.push_back(p);
+      _partition_processors.push_back(p);
+    }
+    return result;
+  }
+
+  template<class K, class streamV, class tableV, class R>
+  std::vector<std::shared_ptr<kspp::partition_source<K, R>>> create_left_join(
+    std::vector<std::shared_ptr<kspp::partition_source<K, streamV>>> source, 
+    std::vector<std::shared_ptr<kspp::ktable_partition<K, tableV>>> left, 
+    typename kspp::left_join<K, streamV, tableV, R>::value_joiner value_joiner) {
+    std::vector<std::shared_ptr<kspp::partition_source<K, R>>> result;
+    assert(source.size() == left.size());
+    auto i = source.begin();
+    auto il = left.begin();
+    auto end = source.end();
+    for (; begin != end; ++begin, ++lbegin) {
+      auto p = kspp::left_join<K, streamV, tableV, R>::create(i, il, value_joiner);
+      _partition_processors.push_back(p);
+      result.push_back(p);
+    }
+    return result;
+  }
+
+  template<class K, class V>
+  std::vector<std::shared_ptr<kspp::materialized_partition_source<K, V>>> create_count_by_key(
+    std::vector<std::shared_ptr<partition_source<K, void>>>& sources, 
+    int64_t punctuate_intervall) {
     std::vector<std::shared_ptr<kspp::materialized_partition_source<K, V>>> res;
     for (auto i : sources) {
       auto p = kspp::count_by_key<K, V, CODEC>::create(i, get_storage_path(), punctuate_intervall, _default_codec);
@@ -471,13 +504,60 @@ public:
     return result;
   }
 
- /* template<class K, class V>
+  template<class K, class V>
+  std::vector<std::shared_ptr<kspp::partition_source<K, V>>> create_filter(
+    std::vector<std::shared_ptr<kspp::partition_source<K, V>>> source, 
+    typename kspp::filter<K, V>::predicate f) {
+    std::vector<std::shared_ptr<kspp::partition_source<K, V>>> result;
+    for (auto i : sources) {
+      auto p = kspp::filter<K, V>::create(source, f);
+      _partition_processors.push_back(p);
+      result.push_back(p);
+    }
+    return result;;
+  }
+
+  template<class SK, class SV, class RK, class RV>
+  std::vector<std::shared_ptr<partition_source<RK, RV>>> create_flat_map(
+    std::vector<std::shared_ptr<kspp::partition_source<SK, SV>>> source, 
+    typename kspp::flat_map<SK, SV, RK, RV>::extractor f) {
+    std::vector<std::shared_ptr<kspp::partition_source<RK, RV>>> result;
+    for (auto i : sources) {
+      auto p = flat_map<SK, SV, RK, RV>::create(i, f);
+      _partition_processors.push_back(p);
+      result.push_back(p);
+    }
+    return result;;
+  }
+  
+  template<class K, class V>
+  std::vector<std::shared_ptr<kspp::partition_source<K, V>>> create_rate_limiter(std::vector<std::shared_ptr<kspp::partition_source<K, V>>> source, int64_t agetime, size_t capacity) {
+    std::vector<std::shared_ptr<kspp::partition_source<K, V>>> result;
+    for (auto i : sources) {
+      auto p = rate_limiter<K, V>::create(i, agetime, capacity);
+      _partition_processors.push_back(p);
+      result.push_back(p);
+    }
+    return result;;
+  }
+
+  template<class K, class V>
+  std::vector<std::shared_ptr<kspp::partition_source<K, V>>> create_thoughput_limiter(std::vector<std::shared_ptr<kspp::partition_source<K, V>>> source, double messages_per_sec) {
+    std::vector<std::shared_ptr<kspp::partition_source<K, V>>> result;
+    for (auto i : sources) {
+      auto p = thoughput_limiter<K, V>::create(i, messages_per_sec);
+      _partition_processors.push_back(p);
+      result.push_back(p);
+    }
+    return result;;
+  }
+
+  /* template<class K, class V>
   std::shared_ptr<kspp::partition_source<K, V>> create_kafka_source(std::string topic) {
     auto p = std::make_shared<kspp::kafka_source<K, V, CODEC>>(_brokers, topic, _partition, _default_codec);
     _partition_processors.push_back(p);
     return p;
   }*/
-
 
 private:
   boost::filesystem::path get_storage_path() {
