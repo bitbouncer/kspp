@@ -31,15 +31,31 @@ struct page_view_decorated
 
 
 std::string to_string(const page_view_data& pd) {
-  return std::string("time:") + std::to_string(pd.time) + ", userid:" + std::to_string(pd.user_id) + ", url:" + pd.url;
+  return std::string("time:") 
+    + std::to_string(pd.time) 
+    + ", userid:" 
+    + std::to_string(pd.user_id) 
+    + ", url:" + pd.url;
 }
 
 std::string to_string(const user_profile_data& pd) {
-  return std::string("last_modified_time:") + std::to_string(pd.last_modified_time) + ", userid:" + std::to_string(pd.user_id) + ", email:" + pd.email;
+  return std::string("last_modified_time:") 
+    + std::to_string(pd.last_modified_time) 
+    + ", userid:" 
+    + std::to_string(pd.user_id) 
+    + ", email:" 
+    + pd.email;
 }
 
 std::string to_string(const page_view_decorated& pd) {
-  return std::string("time:") + std::to_string(pd.time) + ", userid:" + std::to_string(pd.user_id) + ", url:" + pd.url + ", email:" + pd.email;
+  return std::string("time:") 
+    + std::to_string(pd.time) 
+    + ", userid:" 
+    + std::to_string(pd.user_id) 
+    + ", url:" 
+    + pd.url 
+    + ", email:" 
+    + pd.email;
 }
 
 namespace kspp {
@@ -128,7 +144,11 @@ template<> size_t text_codec::encode(const page_view_decorated& src, std::ostrea
 
 template<class T>
 std::string ksource_to_string(const T&  ksource) {
-  std::string res = std::to_string(ksource.event_time) + ", " + std::to_string(ksource.key) + ", " + (ksource.value ? to_string(*(ksource.value)) : "NULL");
+  std::string res = std::to_string(ksource.event_time) 
+    + ", " 
+    + std::to_string(ksource.key) 
+    + ", " 
+    + (ksource.value ? to_string(*(ksource.value)) : "NULL");
   return res;
 }
 
@@ -181,7 +201,10 @@ int main(int argc, char **argv) {
     auto topology = builder.create_topology(PARTITION);
     auto stream = topology->create_kafka_source<int64_t, page_view_data>("kspp_PageViews");
     auto table = topology->create_ktable<int64_t, user_profile_data>("kspp_UserProfile");
-    auto join = topology->create_left_join<int64_t, page_view_data, user_profile_data, page_view_decorated>(stream, table, [](const int64_t& key, const page_view_data& left, const user_profile_data& right, page_view_decorated& row) {
+    auto join = topology->create_left_join<int64_t, page_view_data, user_profile_data, page_view_decorated>(
+      stream, 
+      table, 
+      [](const int64_t& key, const page_view_data& left, const user_profile_data& right, page_view_decorated& row) {
       row.user_id = key;
       row.email = right.email;
       row.time = left.time;
@@ -195,7 +218,6 @@ int main(int argc, char **argv) {
     join->commit();
     topology->output_metrics(std::cerr);
   }
-
   
   {
     auto topology = builder.create_topology(PARTITION);
