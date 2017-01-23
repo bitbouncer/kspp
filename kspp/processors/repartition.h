@@ -79,7 +79,7 @@ namespace kspp {
     }
 
     virtual bool eof() const {
-      return _routing_table->eof() && _source->eof();
+      return !_queue.size() && _routing_table->eof() && _source->eof();
     }
 
   private:

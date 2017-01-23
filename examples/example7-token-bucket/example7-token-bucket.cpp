@@ -15,8 +15,8 @@
 int main(int argc, char **argv) {
   auto builder = kspp::topology_builder<kspp::text_codec>("example7-token-bucket", "localhost");
   {
-    auto topology = builder.create_topology();
-    auto sink = topology->create_kafka_sink<void, std::string>("kspp_TextInput", PARTITION);
+    auto topology = builder.create_topology(PARTITION);
+    auto sink = topology->create_kafka_partition_sink<void, std::string>("kspp_TextInput");
     for (int i = 0; i != 100; ++i) {
       kspp::produce<void, std::string>(*sink, "hello kafka streams");
       kspp::produce<void, std::string>(*sink, "more text to parse");
@@ -25,8 +25,8 @@ int main(int argc, char **argv) {
   }
 
   {
-    auto topology = builder.create_topology();
-    auto source = topology->create_kafka_source<void, std::string>("kspp_TextInput", PARTITION);
+    auto topology = builder.create_topology(PARTITION);
+    auto source = topology->create_kafka_source<void, std::string>("kspp_TextInput");
 
     std::regex rgx("\\s+");
     auto word_stream = std::make_shared<kspp::flat_map<void, std::string, std::string, void>>(source, [&rgx](const auto e, auto flat_map) {

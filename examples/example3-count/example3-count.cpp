@@ -13,14 +13,14 @@
 int main(int argc, char **argv) {
   auto builder = kspp::topology_builder<kspp::text_codec>("example3-count", "localhost");
   {
-    auto topology = builder.create_topology();
-    auto sink = topology->create_kafka_sink<void, std::string>("kspp_TextInput", PARTITION);
+    auto topology = builder.create_topology(PARTITION);
+    auto sink = topology->create_kafka_partition_sink<void, std::string>("kspp_TextInput");
     kspp::produce<void, std::string>(*sink, "hello kafka streams");
   }
 
   {
-    auto topology = builder.create_topology();
-    auto source = topology->create_kafka_source<void, std::string>("kspp_TextInput", PARTITION);
+    auto topology = builder.create_topology(PARTITION);
+    auto source = topology->create_kafka_source<void, std::string>("kspp_TextInput");
 
     std::regex rgx("\\s+");
     auto word_stream = topology->create_flat_map<void, std::string, std::string, void> (source, [&rgx](const auto e, auto flat_map) {

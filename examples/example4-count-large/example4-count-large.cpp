@@ -14,7 +14,7 @@ int main(int argc, char **argv) {
   auto text_builder = kspp::topology_builder<kspp::text_codec>("example4-count", "localhost");
 
   {
-    auto topology = text_builder.create_topology();
+    auto topology = text_builder.create_topic_topology();
     auto sources = topology->create_kafka_sources<void, std::string>("test_text", NR_OF_PARTITIONS);
 
     //TBD this could be a topic_transform (now it's a partition_transform)
@@ -26,9 +26,9 @@ int main(int argc, char **argv) {
         flat_map->push_back(std::make_shared<kspp::krecord<std::string, void>>(*iter));
     });
 
-    auto word_sink = topology->create_kafka_sink<std::string, void>("test_words", -1);
+    auto word_sink = topology->create_kafka_topic_sink<std::string, void>(word_streams, "test_words");
+
     for (auto i : word_streams) {
-      i->add_sink(word_sink);
       i->start(-2);
     }
 
@@ -36,8 +36,8 @@ int main(int argc, char **argv) {
       process_one(word_streams);
   }
 
-  {
-    auto topology = text_builder.create_topology();
+  { 
+    auto topology = text_builder.create_topic_topology();
     auto word_sources = topology->create_kafka_sources<std::string, void>("test_words", NR_OF_PARTITIONS);
     auto word_counts = topology->create_count_by_key<std::string, size_t>(word_sources, 10000);
     

@@ -14,14 +14,14 @@
 int main(int argc, char **argv) {
   auto builder = kspp::topology_builder<kspp::text_codec>("example6-filter", "localhost");
   {
-    auto topology = builder.create_topology();
-    auto sink = topology->create_kafka_sink<void, std::string>("kspp_TextInput", PARTITION);
+    auto topology = builder.create_topology(PARTITION);
+    auto sink = topology->create_kafka_partition_sink<void, std::string>("kspp_TextInput");
     kspp::produce<void, std::string>(*sink, "hello kafka streams");
   }
 
   {
-    auto topology = builder.create_topology();
-    auto source = topology->create_kafka_source<void, std::string>("kspp_TextInput", PARTITION);
+    auto topology = builder.create_topology(PARTITION);
+    auto source = topology->create_kafka_source<void, std::string>("kspp_TextInput");
 
     std::regex rgx("\\s+");
     auto word_stream = std::make_shared<kspp::flat_map<void, std::string, std::string, void>>(source, [&rgx](const auto e, auto flat_map) {
@@ -35,7 +35,7 @@ int main(int argc, char **argv) {
       return (e->key != "hello");
     });
 
-    auto pipe = topology->create_pipe<std::string, void>(filtered_stream, PARTITION);
+    auto pipe = topology->create_pipe<std::string, void>(filtered_stream);
     auto sink = topology->create_stream_sink<std::string, void>(pipe, std::cerr);
     pipe->produce("extra message injected");
     pipe->start(-2);

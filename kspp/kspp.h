@@ -56,74 +56,6 @@ struct krecord<K, void>
   int64_t            offset;
 };
 
-
-
-
-//class processor_context
-//{
-//  public:
-//  processor_context() {}
-//  /**
-//  * Returns the application id
-//  *
-//  * @return the application id
-//  */
-//  std::string application_id() { return "xxx"; }
-//  /**
-//  * Returns the state directory for the partition.
-//  *
-//  * @return the state directory
-//  */
-//  std::string state_dir() { return ""; }
-//  /**
-//  * Returns the task id
-//  *
-//  * @return the task id
-//  */
-//  int32_t task_id() { return 0; }
-//  /**
-//  * Schedules a periodic operation for processors. A processor may call this method during
-//  * {@link Processor#init(ProcessorContext) initialization} to
-//  * schedule a periodic call called a punctuation to {@link Processor#punctuate(long)}.
-//  *
-//  * @param interval the time interval between punctuations
-//  */
-//  void schedule(int32_t interval) {}
-//  /**
-//  * Requests a commit
-//  */
-//  void commit() {
-//
-//  }
-//  /**
-//  * Returns the partition id of the current input record; could be -1 if it is not
-//  * available (for example, if this method is invoked from the punctuate call)
-//  *
-//  * @return the partition id
-//  */
-//  int32_t partition() { return -1; }
-//  /**
-//  * Returns the offset of the current input record; could be -1 if it is not
-//  * available (for example, if this method is invoked from the punctuate call)
-//  *
-//  * @return the offset
-//  */
-//  int64_t offset() { return -1; }
-//  /**
-//  * Returns the current timestamp.
-//  *
-//  * If it is triggered while processing a record streamed from the source processor, timestamp is defined as the timestamp of the current input record; the timestamp is extracted from
-//  * {@link org.apache.kafka.clients.consumer.ConsumerRecord ConsumerRecord} by {@link TimestampExtractor}.
-//  *
-//  * If it is triggered while processing a record generated not from the source processor (for example,
-//  * if this method is invoked from the punctuate call), timestamp is defined as the current
-//  * task's stream time, which is defined as the smallest among all its input stream partition timestamps.
-//  *
-//  * @return the timestamp
-//  */
-//  int64_t timestamp() { return 0; }
-//};
-
 class processor
 {
   public:
@@ -134,7 +66,8 @@ class processor
   }
 
   protected:
-  void add_metric(metric* p) { // cannot be removed...
+  // must be valid for processor lifetime  (cannot be removed)
+  void add_metric(metric* p) { 
     _metrics.push_back(p);
   }
 
@@ -248,22 +181,14 @@ class partition_processor : public processor
   virtual void commit() {}
   virtual void flush_offset() {}
 
-  //const std::vector<metric*>& get_metrics() const {
-  //  return _metrics;
-  //}
-
   protected:
   partition_processor(partition_processor* upstream, size_t partition)
     : _upstream(upstream)
     , _partition(partition) {
   }
-  //void add_metric(metric* p) { // cannot be removed...
-  //  _metrics.push_back(p);
-  //}
 
   const size_t          _partition;
   partition_processor*  _upstream;
-  //std::vector<metric*>  _metrics;
 };
 
 template<class K, class V>
@@ -405,6 +330,33 @@ class topic_sink<void, V, CODEC> : public topic_processor
   std::shared_ptr<CODEC> _codec;
 };
 
+// specialisation for void value
+template<class K, class CODEC>
+class topic_sink<K, void, CODEC> : public topic_processor
+{
+public:
+  typedef K key_type;
+  typedef void value_type;
+  typedef kspp::krecord<K, void> record_type;
+
+  virtual int produce(std::shared_ptr<krecord<K, void>> r) = 0;
+  virtual size_t queue_len() = 0;
+  virtual int produce(uint32_t partition_hash, std::shared_ptr<krecord<K, void>> r) = 0;
+  inline  int produce(uint32_t partition_hash, const K& key) {
+    return produce(partition_hash, std::make_shared<krecord<K, void>>(key));
+  }
+
+  inline std::shared_ptr<CODEC> codec() {
+    return _codec;
+  }
+
+protected:
+  topic_sink(std::shared_ptr<CODEC> codec)
+    :_codec(codec) {}
+
+  std::shared_ptr<CODEC> _codec;
+};
+
 template<class K, class V>
 class partition_source : public partition_processor
 {
@@ -505,6 +457,4 @@ class ktable_partition : public materialized_partition_source<K, V>
     : materialized_partition_source<K, V>(upstream, partition) {
   }
 };
-
-
 }; // namespace
