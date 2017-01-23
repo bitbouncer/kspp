@@ -73,7 +73,7 @@ namespace kspp {
     }
 
     virtual bool is_dirty() {
-      return (_queue.size()>0 || _source->is_dirty())
+      return (_queue.size() > 0) || _source->is_dirty();
     }
 
     virtual size_t queue_len() {
