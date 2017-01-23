@@ -190,6 +190,13 @@ class topology
     return p;
   }
 
+  template<class K, class V>
+  std::shared_ptr<kspp::pipe<K, V>> create_pipe() {
+    auto p = std::make_shared<kspp::pipe<K, V>>(_partition);
+    _partition_processors.push_back(p);
+    return p;
+  }
+
   template<class K, class streamV, class tableV, class R>
   std::shared_ptr<kspp::partition_source<K, R>> create_left_join(std::shared_ptr<kspp::partition_source<K, streamV>> right, std::shared_ptr<kspp::ktable_partition<K, tableV>> left, typename kspp::left_join<K, streamV, tableV, R>::value_joiner value_joiner) {
     auto p = kspp::left_join<K, streamV, tableV, R>::create(right, left, value_joiner);
