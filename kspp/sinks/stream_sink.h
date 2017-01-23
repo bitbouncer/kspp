@@ -27,8 +27,9 @@ namespace kspp {
     static std::shared_ptr<kspp::partition_stream_sink<K, V>> create(size_t partition, std::ostream& os) {
       return std::make_shared<kspp::partition_stream_sink<K, V>>(partition, os);
     }
-
-    virtual std::string kspp::partition_processor::name() const {
+    
+    // from kspp::partition_processor::name()
+    virtual std::string name() const {
       return "partition_stream_sink";
     }
 
@@ -72,7 +73,8 @@ namespace kspp {
       return std::make_shared<kspp::partition_stream_sink<void, V>>(partition, os);
     }
     
-    virtual std::string kspp::partition_processor::name() const {
+    // kspp::partition_processor::name()
+    virtual std::string name() const {
       return "stream_sink";
     }
 
@@ -110,7 +112,8 @@ namespace kspp {
       return std::make_shared<kspp::partition_stream_sink<K, void>>(partition, os);
     }
 
-    virtual std::string kspp::partition_processor::name() const {
+    // kspp::partition_processor::name()
+    virtual std::string name() const {
       return "stream_sink";
     }
 

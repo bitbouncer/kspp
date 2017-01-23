@@ -437,7 +437,7 @@ public:
   std::vector<std::shared_ptr<kspp::pipe<K, V>>> create_pipes(std::vector<std::shared_ptr<kspp::partition_source<K, V>>>& sources) {
     std::vector<std::shared_ptr<kspp::pipe<K, V>>> result;
     for (auto i : sources) {
-      auto p = std::make_shared<kspp::pipe<K, V, CODEC>>(i, _partition);
+      auto p = std::make_shared<kspp::pipe<K, V>>(i, _partition);
       result.push_back(p);
       _partition_processors.push_back(p);
     }
@@ -452,10 +452,10 @@ public:
     std::vector<std::shared_ptr<kspp::partition_source<K, R>>> result;
     assert(source.size() == left.size());
     auto i = source.begin();
-    auto il = left.begin();
+    auto j = left.begin();
     auto end = source.end();
-    for (; begin != end; ++begin, ++lbegin) {
-      auto p = kspp::left_join<K, streamV, tableV, R>::create(i, il, value_joiner);
+    for (; i != end; ++i, ++j) {
+      auto p = kspp::left_join<K, streamV, tableV, R>::create(i, j, value_joiner);
       _partition_processors.push_back(p);
       result.push_back(p);
     }
@@ -509,8 +509,8 @@ public:
     std::vector<std::shared_ptr<kspp::partition_source<K, V>>> source, 
     typename kspp::filter<K, V>::predicate f) {
     std::vector<std::shared_ptr<kspp::partition_source<K, V>>> result;
-    for (auto i : sources) {
-      auto p = kspp::filter<K, V>::create(source, f);
+    for (auto i : source) {
+      auto p = kspp::filter<K, V>::create(i, f);
       _partition_processors.push_back(p);
       result.push_back(p);
     }
@@ -522,7 +522,7 @@ public:
     std::vector<std::shared_ptr<kspp::partition_source<SK, SV>>> source, 
     typename kspp::flat_map<SK, SV, RK, RV>::extractor f) {
     std::vector<std::shared_ptr<kspp::partition_source<RK, RV>>> result;
-    for (auto i : sources) {
+    for (auto i : source) {
       auto p = flat_map<SK, SV, RK, RV>::create(i, f);
       _partition_processors.push_back(p);
       result.push_back(p);
@@ -533,7 +533,7 @@ public:
   template<class K, class V>
   std::vector<std::shared_ptr<kspp::partition_source<K, V>>> create_rate_limiter(std::vector<std::shared_ptr<kspp::partition_source<K, V>>> source, int64_t agetime, size_t capacity) {
     std::vector<std::shared_ptr<kspp::partition_source<K, V>>> result;
-    for (auto i : sources) {
+    for (auto i : source) {
       auto p = rate_limiter<K, V>::create(i, agetime, capacity);
       _partition_processors.push_back(p);
       result.push_back(p);
@@ -544,7 +544,7 @@ public:
   template<class K, class V>
   std::vector<std::shared_ptr<kspp::partition_source<K, V>>> create_thoughput_limiter(std::vector<std::shared_ptr<kspp::partition_source<K, V>>> source, double messages_per_sec) {
     std::vector<std::shared_ptr<kspp::partition_source<K, V>>> result;
-    for (auto i : sources) {
+    for (auto i : source) {
       auto p = thoughput_limiter<K, V>::create(i, messages_per_sec);
       _partition_processors.push_back(p);
       result.push_back(p);
