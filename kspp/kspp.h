@@ -444,8 +444,8 @@ template<class K, class V>
 class kstream_partition : public partition_source<K, V>
 {
   public:
-  kstream_partition(partition_processor* upstream, size_t partition)
-    : partition_source<K, V>(upstream, partition) {
+  kstream_partition(partition_processor* upstream)
+    : partition_source<K, V>(upstream, upstream->partition()) {
   }
 };
 
@@ -453,8 +453,8 @@ template<class K, class V>
 class ktable_partition : public materialized_partition_source<K, V>
 {
   public:
-  ktable_partition(partition_processor* upstream, size_t partition)
-    : materialized_partition_source<K, V>(upstream, partition) {
+  ktable_partition(partition_processor* upstream)
+    : materialized_partition_source<K, V>(upstream, upstream->partition()) {
   }
 };
 }; // namespace

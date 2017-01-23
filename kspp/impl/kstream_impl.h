@@ -10,8 +10,8 @@ namespace kspp {
   class kstream_partition_impl : public kstream_partition<K, V>
   {
   public:
-    kstream_partition_impl(std::shared_ptr<kspp::partition_source<K, V>> source, size_t partition, boost::filesystem::path storage_path, std::shared_ptr<CODEC> codec)
-      : kstream_partition<K, V>(NULL, partition)
+    kstream_partition_impl(std::shared_ptr<kspp::partition_source<K, V>> source, boost::filesystem::path storage_path, std::shared_ptr<CODEC> codec)
+      : kstream_partition<K, V>(source.get())
       , _offset_storage_path(get_storage_path(storage_path))
       , _source(source)
       , _state_store(get_storage_path(storage_path), codec)
