@@ -1,8 +1,5 @@
 cmake_minimum_required(VERSION 2.8.11)
 
-SET(CSI_INCLUDE_PATH 
-)
-
 if(WIN32)
 SET(CSI_INCLUDE_PATH
   ${CMAKE_SOURCE_DIR}/../include
@@ -51,9 +48,6 @@ elseif(APPLE)
 SET(CSI_INCLUDE_PATH        ${CMAKE_SOURCE_DIR}/../rocksdb/include)
 SET(CSI_LIBRARY_PATH        ${CMAKE_SOURCE_DIR}/../rocksdb)
 
-#add_definitions(-D_FILE_OFFSET_BITS=64 -D_REENTRANT -DEXTERNAL_LOCKS -DMULTITHREAD)
-#add_definitions(-DBOOST_ASIO_HAS_STD_CHRONO)
-
 add_definitions(-DBOOST_LOG_DYN_LINK)
 add_definitions(-std=c++14)
 
@@ -61,7 +55,6 @@ set(CSI_BOOST_LIBS boost_log_setup boost_log-mt boost_date_time boost_timer boos
 SET(CSI_ROCKSDB_LIBS rocksdb_lite snappy bz2 z)
 SET(LIBRDKAFKA_LIBS rdkafka++ rdkafka)
 SET(CSI_LIBS kspp ${LIBRDKAFKA_LIBS} ${CSI_ROCKSDB_LIBS} ${CSI_BOOST_LIBS} crypto ssl)
-
 
 else()
 #LINUX
@@ -72,12 +65,10 @@ set(LIBRARY_OUTPUT_PATH     ${CMAKE_SOURCE_DIR}/lib)
 SET(EXECUTABLE_OUTPUT_PATH  ${CMAKE_SOURCE_DIR}/bin)
 
 add_definitions(-D_FILE_OFFSET_BITS=64 -D_REENTRANT -DEXTERNAL_LOCKS -DMULTITHREAD)
-#add_definitions(-DBOOST_ASIO_HAS_STD_CHRONO)
 add_definitions(-D__LINUX__)
 add_definitions(-fPIC)
 add_definitions(-std=c++14)
 add_definitions(-DBOOST_LOG_DYN_LINK)
-#add_definitions(-DBOOST_LOG_USE_NATIVE_SYSLOG)
 add_definitions(-Wno-deprecated)
 
 set(CSI_BOOST_LIBS boost_log_setup boost_log boost_date_time boost_timer boost_thread boost_system boost_program_options boost_filesystem boost_regex boost_chrono boost_iostreams pthread rt c)
@@ -88,18 +79,6 @@ endif()
 
 include_directories(${CSI_INCLUDE_PATH} ${CMAKE_SOURCE_DIR})
 link_directories(${CSI_LIBRARY_PATH})
-
-#if(__DARWIN__)
-#add_definitions(-D__DARWIN__)
-#add_definitions(-fPIC)
-#add_definitions(-std=c++11)
-#include_directories(/opt/X11/include)
-#endif()
-
-#most likely wrong since I don't have a mac anymore...
-#if(__DARWIN__)
-#set(CSI_BOOST_LIBS boost_log_setup boost_log boost_date_time boost_timer boost_thread boost_system boost_program_options boost_filesystem boost_regex boost_chrono boost_iostreams pthread stdc++ c)
-#endif()
 
 
 #dirty fix to complile non supported static lib on windows...
