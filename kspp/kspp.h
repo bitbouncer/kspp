@@ -71,6 +71,12 @@ class processor
     _metrics.push_back(p);
   }
 
+  /*
+  int64_t identity() const {
+    return (int64_t) this;
+  }
+  */
+
   //const size_t          _partition; or -1 if not valid??
   //partition_processor*  _upstream;
   std::vector<metric*>  _metrics;
@@ -82,7 +88,7 @@ class topic_processor : public processor
   virtual ~topic_processor() {}
   //virtual void init(processor_context*) {}
   virtual std::string name() const = 0;
-  virtual std::string processor_name() const { return "partition_processor"; }
+  virtual std::string processor_name() const { return "topic_processor"; }
 
   virtual void poll(int timeout) {}
   virtual bool eof() const = 0;
@@ -180,6 +186,15 @@ class partition_processor : public processor
 
   virtual void commit() {}
   virtual void flush_offset() {}
+
+  bool is_upstream(const partition_processor* node) const {
+    //return _upstream ? _upstream == node ? true : _upstream->is_upstream(node) : false;
+    if (_upstream == nullptr)
+      return false;
+    if (_upstream == node)
+      return true;
+    return _upstream->is_upstream(node);
+  }
 
   protected:
   partition_processor(partition_processor* upstream, size_t partition)
@@ -368,6 +383,7 @@ class partition_source : public partition_processor
   }
 
   void add_sink(std::shared_ptr<partition_sink<K, V>> sink) {
+    assert(sink.get() != nullptr);
     add_sink([sink](auto e) {
       sink->produce(e);
     });

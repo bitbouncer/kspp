@@ -65,7 +65,7 @@ class topology
       for (auto j : i->get_metrics())
         s << "metrics: " << j->name() << " : " << j->value() << std::endl;
     }
-    
+
     for (auto i : _topic_processors) {
       for (auto j : i->get_metrics()) {
         s << "metrics: " << j->name() << " : " << j->value() << std::endl;
@@ -185,7 +185,7 @@ class topology
 
   template<class K, class V>
   std::shared_ptr<kspp::pipe<K, V>> create_pipe(std::shared_ptr<kspp::partition_source<K, V>> source) {
-    auto p = std::make_shared<kspp::pipe<K, V>>(source, source->partition());
+    auto p = std::make_shared<kspp::pipe<K, V>>(source);
     _partition_processors.push_back(p);
     return p;
   }
@@ -229,7 +229,7 @@ class topology
   }
   */
 
- 
+
 
   template<class K, class V>
   std::shared_ptr<kspp::partition_stream_sink<K, V>> create_stream_sink(std::shared_ptr<kspp::partition_source<K, V>>source, std::ostream& os) {
@@ -239,7 +239,7 @@ class topology
   }
 
   // not useful for anything excepts cout or cerr... since everything is bundeled into same stream???
-   template<class K, class V>
+  template<class K, class V>
   std::vector<std::shared_ptr<kspp::partition_stream_sink<K, V>>> create_stream_sinks(std::vector<std::shared_ptr<kspp::partition_source<K, V>>> sources, std::ostream& os) {
     std::vector<std::shared_ptr<kspp::partition_stream_sink<K, V>>> v;
     for (auto s : sources) {
@@ -284,7 +284,64 @@ class topology
     _partition_processors.push_back(p);
     return p;
   }
-  
+
+  void init() {
+    //_top_partition_processors = _partition_processors;
+
+    for (auto i : _partition_processors) {
+      bool upstream_of_something = false;
+      for (auto j : _partition_processors) {
+        if (j->is_upstream(i.get()))
+          upstream_of_something = true;
+      }
+      if (!upstream_of_something) {
+        BOOST_LOG_TRIVIAL(info) << "topology << " << name() << ": adding " << i->name() << " to top";
+        _top_partition_processors.push_back(i);
+      } else {
+        BOOST_LOG_TRIVIAL(info) << "topology << " << name() << ": skipping poll of " << i->name();
+      }
+    }
+    /*
+    for (std::vector<std::shared_ptr<partition_processor>>::const_iterator i = _partition_processors.begin(); i != _partition_processors.end(); ++i) {
+    for (std::vector<std::shared_ptr<partition_processor>>::reverse_iterator j = _top_partition_processors.rbegin(); j != _top_partition_processors.rend(); --j) {
+    if (i->is_upstream(j.get())) {
+    std::cerr << "-" << j->name();
+    _top_partition_processors.erase(j);
+    }
+    }
+    }
+    */
+
+  }
+
+  bool eof() {
+    for (auto&& i : _top_partition_processors) {
+      if (!i->eof())
+        return false;
+    }
+    return true;
+  }
+
+  int process_one() {
+    // maybe we should check sinks here an return 0 if we need to wait...
+
+    int res = 0;
+    for (auto&& i : _top_partition_processors) {
+      res += i->process_one();
+    }
+    // is this nessessary??? are those only sinks??
+    for (auto i : _topic_processors)
+      res += i->process_one();
+    return res;
+  }
+
+  void close() {
+    for (auto i : _topic_processors)
+      i->close();
+    for (auto i : _partition_processors)
+      i->close();
+  }
+
   private:
   boost::filesystem::path get_storage_path() {
     boost::filesystem::path top_of_topology(_root_path);
@@ -304,13 +361,14 @@ class topology
   boost::filesystem::path                           _root_path;
   std::vector<std::shared_ptr<partition_processor>> _partition_processors;
   std::vector<std::shared_ptr<topic_processor>>     _topic_processors;
+  std::vector<std::shared_ptr<partition_processor>> _top_partition_processors;
 };
 
 
 template<class CODEC>
 class topic_topology
 {
-public:
+  public:
   topic_topology(std::string app_id, std::string topology_id, std::string brokers, boost::filesystem::path root_path, std::shared_ptr<CODEC> default_codec)
     : _app_id(app_id)
     , _topology_id(topology_id)
@@ -368,6 +426,17 @@ public:
       i->flush();
   }
 
+  template<class K, class V>
+  std::vector<std::shared_ptr<kspp::partition_source<K, V>>> create_kafka_sources(std::string topic, size_t nr_of_partitions) {
+    std::vector<std::shared_ptr<kspp::partition_source<K, V>>> result;
+    for (size_t i = 0; i != nr_of_partitions; ++i) {
+      auto p = std::make_shared<kspp::kafka_source<K, V, CODEC>>(_brokers, topic, i, _default_codec);
+      result.push_back(p);
+      _partition_processors.push_back(p);
+    }
+    return result;;
+  }
+
   /**
   creates a kafka sink using default partitioner (hash on key)
   */
@@ -412,17 +481,6 @@ public:
       i->add_sink(p);
     return p;
   }
-  
-  template<class K, class V>
-  std::vector<std::shared_ptr<kspp::partition_source<K, V>>> create_kafka_sources(std::string topic, size_t nr_of_partitions) {
-    std::vector<std::shared_ptr<kspp::partition_source<K, V>>> result;
-    for (size_t i = 0; i != nr_of_partitions; ++i) {
-      auto p = std::make_shared<kspp::kafka_source<K, V, CODEC>>(_brokers, topic, i, _default_codec);
-      result.push_back(p);
-      _partition_processors.push_back(p);
-    }
-    return result;;
-  }
 
   template<class K, class V>
   std::vector<std::shared_ptr<kspp::ktable_partition<K, V>>> create_ktables(std::vector<std::shared_ptr<kspp::partition_source<K, V>>>& sources) {
@@ -446,7 +504,6 @@ public:
     return result;
   }
 
-
   template<class K, class V>
   std::vector<std::shared_ptr<kspp::pipe<K, V>>> create_pipes(std::vector<std::shared_ptr<kspp::partition_source<K, V>>>& sources) {
     std::vector<std::shared_ptr<kspp::pipe<K, V>>> result;
@@ -458,10 +515,22 @@ public:
     return result;
   }
 
+  template<class K, class V>
+  std::shared_ptr<kspp::pipe<K, V>> create_global_pipe(std::vector<std::shared_ptr<kspp::partition_source<K, V>>>& sources) {
+    auto pipe = std::make_shared<kspp::pipe<K, V>>(0);
+    _partition_processors.push_back(pipe);
+    for (auto i : sources)
+      i->add_sink([pipe](auto e) {
+      pipe->produce(e);
+    });
+    return pipe;
+  }
+
+
   template<class K, class streamV, class tableV, class R>
   std::vector<std::shared_ptr<kspp::partition_source<K, R>>> create_left_join(
-    std::vector<std::shared_ptr<kspp::partition_source<K, streamV>>> source, 
-    std::vector<std::shared_ptr<kspp::ktable_partition<K, tableV>>> left, 
+    std::vector<std::shared_ptr<kspp::partition_source<K, streamV>>> source,
+    std::vector<std::shared_ptr<kspp::ktable_partition<K, tableV>>> left,
     typename kspp::left_join<K, streamV, tableV, R>::value_joiner value_joiner) {
     std::vector<std::shared_ptr<kspp::partition_source<K, R>>> result;
     assert(source.size() == left.size());
@@ -478,7 +547,7 @@ public:
 
   template<class K, class V>
   std::vector<std::shared_ptr<kspp::materialized_partition_source<K, V>>> create_count_by_key(
-    std::vector<std::shared_ptr<partition_source<K, void>>>& sources, 
+    std::vector<std::shared_ptr<partition_source<K, void>>>& sources,
     int64_t punctuate_intervall) {
     std::vector<std::shared_ptr<kspp::materialized_partition_source<K, V>>> res;
     for (auto i : sources) {
@@ -500,7 +569,7 @@ public:
 
   template<class K, class V, class PK>
   std::vector<std::shared_ptr<partition_processor>> create_repartition(
-    std::vector<std::shared_ptr<kspp::partition_source<K, V>>>& source, 
+    std::vector<std::shared_ptr<kspp::partition_source<K, V>>>& source,
     std::vector<std::shared_ptr<kspp::ktable_partition<K, PK>>>& left,
     std::shared_ptr<topic_sink<K, V, CODEC>> topic_sink) {
     assert(source.size() == left.size());
@@ -520,7 +589,7 @@ public:
 
   template<class K, class V>
   std::vector<std::shared_ptr<kspp::partition_source<K, V>>> create_filter(
-    std::vector<std::shared_ptr<kspp::partition_source<K, V>>> source, 
+    std::vector<std::shared_ptr<kspp::partition_source<K, V>>> source,
     typename kspp::filter<K, V>::predicate f) {
     std::vector<std::shared_ptr<kspp::partition_source<K, V>>> result;
     for (auto i : source) {
@@ -533,7 +602,7 @@ public:
 
   template<class SK, class SV, class RK, class RV>
   std::vector<std::shared_ptr<partition_source<RK, RV>>> create_flat_map(
-    std::vector<std::shared_ptr<kspp::partition_source<SK, SV>>> source, 
+    std::vector<std::shared_ptr<kspp::partition_source<SK, SV>>> source,
     typename kspp::flat_map<SK, SV, RK, RV>::extractor f) {
     std::vector<std::shared_ptr<kspp::partition_source<RK, RV>>> result;
     for (auto i : source) {
@@ -543,7 +612,7 @@ public:
     }
     return result;;
   }
-  
+
   template<class K, class V>
   std::vector<std::shared_ptr<kspp::partition_source<K, V>>> create_rate_limiter(std::vector<std::shared_ptr<kspp::partition_source<K, V>>> source, int64_t agetime, size_t capacity) {
     std::vector<std::shared_ptr<kspp::partition_source<K, V>>> result;
@@ -552,6 +621,13 @@ public:
       _partition_processors.push_back(p);
       result.push_back(p);
     }
+    return result;;
+  }
+
+  template<class K, class V>
+  std::shared_ptr<kspp::partition_source<K, V>> create_rate_limiter(std::shared_ptr<kspp::partition_source<K, V>> source, int64_t agetime, size_t capacity) {
+    auto result = rate_limiter<K, V>::create(source, agetime, capacity);
+    _partition_processors.push_back(result);
     return result;;
   }
 
@@ -573,7 +649,64 @@ public:
     return p;
   }*/
 
-private:
+  void init() {
+    //_top_partition_processors = _partition_processors;
+
+    for (auto i : _partition_processors) {
+      bool upstream_of_something = false;
+      for (auto j : _partition_processors) {
+        if (j->is_upstream(i.get()))
+          upstream_of_something = true;
+      }
+      if (!upstream_of_something) {
+        BOOST_LOG_TRIVIAL(info) << "topology << " << name() << ": adding " << i->name() << " to top";
+        _top_partition_processors.push_back(i);
+      } else {
+        BOOST_LOG_TRIVIAL(info) << "topology << " << name() << ": skipping poll of " << i->name();
+      }
+    }
+   /*
+    for (std::vector<std::shared_ptr<partition_processor>>::const_iterator i = _partition_processors.begin(); i != _partition_processors.end(); ++i) {
+      for (std::vector<std::shared_ptr<partition_processor>>::reverse_iterator j = _top_partition_processors.rbegin(); j != _top_partition_processors.rend(); --j) {
+        if (i->is_upstream(j.get())) {
+          std::cerr << "-" << j->name();
+          _top_partition_processors.erase(j);
+        }
+      }
+    }
+    */
+
+  }
+
+  bool eof() {
+    for (auto&& i : _top_partition_processors) {
+      if (!i->eof())
+        return false;
+    }
+    return true;
+  }
+
+  int process_one() {
+    int res = 0;
+    for (auto&& i : _top_partition_processors) {
+      res += i->process_one();
+    }
+    
+    // is this nessessary???
+    for (auto i : _topic_processors)
+      res += i->process_one();
+
+    return res;
+  }
+
+  void close() {
+    for (auto i : _topic_processors)
+      i->close();
+    for (auto i : _partition_processors)
+      i->close();
+  }
+
+  private:
   boost::filesystem::path get_storage_path() {
     boost::filesystem::path top_of_topology(_root_path);
     top_of_topology /= _app_id;
@@ -583,7 +716,7 @@ private:
     return top_of_topology;
   }
 
-private:
+  private:
   std::string                                       _app_id;
   std::string                                       _topology_id;
   int32_t                                           _partition;
@@ -592,6 +725,8 @@ private:
   boost::filesystem::path                           _root_path;
   std::vector<std::shared_ptr<partition_processor>> _partition_processors;
   std::vector<std::shared_ptr<topic_processor>>     _topic_processors;
+
+  std::vector<std::shared_ptr<partition_processor>> _top_partition_processors;
 };
 
 template<class CODEC>
@@ -611,7 +746,7 @@ class topology_builder
     return "localhost";
   }
 
-  topology_builder(std::string app_id, std::string brokers= default_kafka_broker(), boost::filesystem::path root_path = default_directory(), std::shared_ptr<CODEC> default_codec = std::make_shared<CODEC>())
+  topology_builder(std::string app_id, std::string brokers = default_kafka_broker(), boost::filesystem::path root_path = default_directory(), std::shared_ptr<CODEC> default_codec = std::make_shared<CODEC>())
     : _app_id(app_id)
     , _next_topology_id(0)
     , _brokers(brokers)
@@ -647,8 +782,5 @@ class topology_builder
   boost::filesystem::path _root_path;
   size_t                  _next_topology_id;
 };
-
-
-
 
 };
