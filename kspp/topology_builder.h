@@ -48,13 +48,13 @@ class topology
   void init_metrics() {
     for (auto i : _partition_processors) {
       for (auto j : i->get_metrics()) {
-        j->_logged_name = _app_id + "." + _topology_id + ".depth-" + std::to_string(i->depth()) + "." + i->processor_name() + ".partition-" + std::to_string(i->partition()) + "." + j->_simple_name;
+        j->_logged_name = _app_id + "." + _topology_id + ".depth-" + std::to_string(i->depth()) + "." + i->processor_name() + i->record_type_name() + ".partition-" + std::to_string(i->partition()) + "." + j->_simple_name;
       }
     }
 
     for (auto i : _topic_processors) {
       for (auto j : i->get_metrics()) {
-        j->_logged_name = _app_id + "." + _topology_id + "." + i->processor_name() + "." + j->_simple_name;
+        j->_logged_name = _app_id + "." + _topology_id + "." + i->processor_name() + i->record_type_name() + "." + j->_simple_name;
         //j->_logged_name = _app_id + "." + _topology_id + ".depth-" + std::to_string(i->depth()) + "." + i->processor_name() + "." + j->_simple_name;
       }
     }
@@ -392,9 +392,15 @@ class topic_topology
   }
 
   void init_metrics() {
+    for (auto i : _partition_processors) {
+      for (auto j : i->get_metrics()) {
+        j->_logged_name = _app_id + "." + _topology_id + ".depth-" + std::to_string(i->depth()) + "." + i->processor_name() + i->record_type_name() + ".partition-" + std::to_string(i->partition()) + "." + j->_simple_name;
+      }
+    }
+    
     for (auto i : _topic_processors) {
       for (auto j : i->get_metrics()) {
-        j->_logged_name = _app_id + "." + _topology_id + "." + i->processor_name() + "." + j->_simple_name;
+        j->_logged_name = _app_id + "." + _topology_id + "." + i->processor_name() + i->record_type_name() + "." + j->_simple_name;
         //j->_logged_name = _app_id + "." + _topology_id + ".depth-" + std::to_string(i->depth()) + "." + i->processor_name() + "." + j->_simple_name;
       }
     }
