@@ -180,21 +180,16 @@ int main(int argc, char **argv) {
     auto userprofiles = topology->create_kafka_source<int64_t, user_profile_data>("kspp_UserProfile");
     auto pw_sink = topology->create_stream_sink<int64_t, page_view_data>(pageviews, std::cerr);
     auto up_sink = topology->create_stream_sink<int64_t, user_profile_data>(userprofiles, std::cerr);
-
-    pageviews->start(-2);
-    pageviews->flush();
-
-    userprofiles->start(-2);
-    userprofiles->flush();
+    topology->start(-2);
+    topology->flush();
   }
 
   {
     auto topology = builder.create_topology(PARTITION);
     auto pageviews = topology->create_kstream<int64_t, page_view_data>("kspp_PageViews");
     auto pw_sink = topology->create_stream_sink<int64_t, page_view_data>(pageviews, std::cerr);
-    pageviews->start();
-    pageviews->flush();
-    pageviews->commit();
+    topology->start(-2);
+    topology->flush();
   }
 
   {
@@ -212,18 +207,20 @@ int main(int argc, char **argv) {
     });
     auto sink = topology->create_kafka_partition_sink<int64_t, page_view_decorated>("kspp_PageViewsDecorated");
     topology->init_metrics();
-    join->start(-2);
     join->add_sink(sink);
-    join->flush();
-    join->commit();
+    
+    topology->start(-2);
+    topology->flush();
     topology->output_metrics(std::cerr);
+    join->commit(); // should we move to topology?
   }
   
   {
     auto topology = builder.create_topology(PARTITION);
     auto table = topology->create_ktable<int64_t, user_profile_data>("kspp_UserProfile");
-    table->start();
-    table->flush();
+    
+    topology->start();
+    topology->flush();
 
     std::cerr << "using iterators " << std::endl;
     for (auto it = table->begin(), end = table->end(); it != end; ++it)
