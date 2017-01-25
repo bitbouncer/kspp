@@ -98,7 +98,9 @@ file(GLOB librdkafka_cpp_files
   ${CMAKE_CURRENT_SOURCE_DIR}/../librdkafka/src-cpp/*.h
   )
 
-list(REMOVE_ITEM librdkafka_files ${CMAKE_CURRENT_SOURCE_DIR}/../librdkafka/src/rdkafka_sasl.c)
+#list(REMOVE_ITEM librdkafka_files ${CMAKE_CURRENT_SOURCE_DIR}/../librdkafka/src/rdkafka_sasl.c)
+list(REMOVE_ITEM librdkafka_files ${CMAKE_CURRENT_SOURCE_DIR}/../librdkafka/src/rdkafka_sasl_cyrus.c)
+
 
 add_library(librdkafka STATIC ${librdkafka_files})
 add_library(librdkafkacpp STATIC ${librdkafka_cpp_files})
