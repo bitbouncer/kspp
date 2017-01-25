@@ -50,7 +50,8 @@ namespace kspp {
     }
 
     virtual bool process_one() {
-      _source->process_one();
+      if (_queue.size()==0)
+        _source->process_one();
       bool processed = (_queue.size() > 0);
       while (_queue.size()) {
         auto r = _queue.front();
@@ -68,11 +69,11 @@ namespace kspp {
     }
 
     virtual bool eof() const {
-      return _source->eof() && (_queue.size() == 0);
+      return (_queue.size() == 0) && _source->eof();
     }
 
     virtual bool is_dirty() {
-      return _source->is_dirty() || _queue.size()>0;
+      return (_queue.size() > 0) || _source->is_dirty();
     }
 
     virtual size_t queue_len() {

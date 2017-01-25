@@ -8,8 +8,8 @@ template<class K, class V, class CODEC>
 class ktable_partition_impl : public ktable_partition<K, V>
 {
   public:
-  ktable_partition_impl(std::shared_ptr<kspp::partition_source<K, V>> source, size_t partition, boost::filesystem::path storage_path, std::shared_ptr<CODEC> codec)
-    : ktable_partition<K, V>(NULL, partition)
+  ktable_partition_impl(std::shared_ptr<kspp::partition_source<K, V>> source, boost::filesystem::path storage_path, std::shared_ptr<CODEC> codec)
+    : ktable_partition<K, V>(source.get())
     , _offset_storage_path(get_storage_path(storage_path))
     , _source(source)
     , _state_store(get_storage_path(storage_path), codec)
