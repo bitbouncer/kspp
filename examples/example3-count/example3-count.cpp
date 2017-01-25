@@ -37,7 +37,14 @@ int main(int argc, char **argv) {
     word_counts->start(-2);
     word_counts->flush();
 
-    topology->output_metrics(std::cerr);
+
+    {
+      auto metrics = builder.create_topic_topology();
+      auto metrics_sink = metrics->create_kafka_topic_sink<std::string, std::string>("kspp_metrics");
+
+      topology->output_metrics(metrics_sink);
+
+    }
 
   }
 }

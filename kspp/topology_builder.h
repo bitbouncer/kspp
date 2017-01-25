@@ -10,10 +10,13 @@
 #include "processors/filter.h"
 #include "processors/transform.h"
 #include "processors/rate_limiter.h"
+#include "codecs/text_codec.h"
 
 #include <cstdlib>
 #include <boost/filesystem.hpp>
 #include <boost/log/trivial.hpp>
+
+
 
 #pragma once
 
@@ -46,20 +49,42 @@ namespace kspp {
       return _default_codec;
     }
 
+    // the metrics should look like this...
+    //cpu_load_short, host=server01, region=us-west value=0.64 1434055562000000000
+    //metric_name, add_id={app_id}}, topology={{_topology_id}}, depth={{depth}}, processor_type={{processor_name()}} record_type="
     void init_metrics() {
       for (auto i : _partition_processors) {
         for (auto j : i->get_metrics()) {
-          j->_logged_name = _app_id + "." + _topology_id + ".depth-" + std::to_string(i->depth()) + "." + i->processor_name() + i->record_type_name() + ".partition-" + std::to_string(i->partition()) + "." + j->_simple_name;
+          j->_logged_name = j->_simple_name + ", app_id=" + _app_id + ", topology=" + _topology_id + ", depth=" + std::to_string(i->depth()) + ", processor_type=" + i->processor_name() + ", record_type='" + i->record_type_name() + "', partition=" + std::to_string(i->partition());
+          std::cerr << j->_logged_name << std::endl;
+          //j->_logged_name = _app_id + "." + _topology_id + ".depth-" + std::to_string(i->depth()) + "." + i->processor_name() + i->record_type_name() + ".partition-" + std::to_string(i->partition()) + "." + j->_simple_name;
         }
       }
 
       for (auto i : _topic_processors) {
         for (auto j : i->get_metrics()) {
-          j->_logged_name = _app_id + "." + _topology_id + "." + i->processor_name() + i->record_type_name() + "." + j->_simple_name;
+          j->_logged_name = j->_simple_name + ", app_id=" + _app_id + ", topology=" + _topology_id + ", processor_type=" + i->processor_name() + ", record_type='" + i->record_type_name() + "'";
+          //j->_logged_name = _app_id + "." + _topology_id + "." + i->processor_name() + i->record_type_name() + "." + j->_simple_name;
           //j->_logged_name = _app_id + "." + _topology_id + ".depth-" + std::to_string(i->depth()) + "." + i->processor_name() + "." + j->_simple_name;
         }
       }
     }
+
+    //void init_metrics() {
+    //  for (auto i : _partition_processors) {
+    //    for (auto j : i->get_metrics()) {
+    //      j->_logged_name = _app_id + "." + _topology_id + ".depth-" + std::to_string(i->depth()) + "." + i->processor_name() + i->record_type_name() + ".partition-" + std::to_string(i->partition()) + "." + j->_simple_name;
+    //    }
+    //  }
+
+    //  for (auto i : _topic_processors) {
+    //    for (auto j : i->get_metrics()) {
+    //      j->_logged_name = _app_id + "." + _topology_id + "." + i->processor_name() + i->record_type_name() + "." + j->_simple_name;
+    //      //j->_logged_name = _app_id + "." + _topology_id + ".depth-" + std::to_string(i->depth()) + "." + i->processor_name() + "." + j->_simple_name;
+    //    }
+    //  }
+    //}
+
 
     void output_metrics(std::ostream& s) {
       for (auto i : _partition_processors) {
@@ -70,6 +95,19 @@ namespace kspp {
       for (auto i : _topic_processors) {
         for (auto j : i->get_metrics()) {
           s << "metrics: " << j->name() << " : " << j->value() << std::endl;
+        }
+      }
+    }
+
+    void output_metrics(std::shared_ptr<kspp::topic_sink<std::string, std::string, kspp::text_codec>> sink) {
+      for (auto i : _partition_processors) {
+        for (auto j : i->get_metrics())
+          sink->produce(std::make_shared<kspp::krecord<std::string, std::string>>(j->name(), std::to_string(j->value())));
+      }
+
+      for (auto i : _topic_processors) {
+        for (auto j : i->get_metrics()) {
+          sink->produce(std::make_shared<kspp::krecord<std::string, std::string>>(j->name(), std::to_string(j->value())));
         }
       }
     }
@@ -407,20 +445,38 @@ namespace kspp {
       return _default_codec;
     }
 
+    //void init_metrics() {
+    //  for (auto i : _partition_processors) {
+    //    for (auto j : i->get_metrics()) {
+    //      j->_logged_name = _app_id + "." + _topology_id + ".depth-" + std::to_string(i->depth()) + "." + i->processor_name() + i->record_type_name() + ".partition-" + std::to_string(i->partition()) + "." + j->_simple_name;
+    //    }
+    //  }
+
+    //  for (auto i : _topic_processors) {
+    //    for (auto j : i->get_metrics()) {
+    //      j->_logged_name = _app_id + "." + _topology_id + "." + i->processor_name() + i->record_type_name() + "." + j->_simple_name;
+    //      //j->_logged_name = _app_id + "." + _topology_id + ".depth-" + std::to_string(i->depth()) + "." + i->processor_name() + "." + j->_simple_name;
+    //    }
+    //  }
+    //}
+
     void init_metrics() {
       for (auto i : _partition_processors) {
         for (auto j : i->get_metrics()) {
-          j->_logged_name = _app_id + "." + _topology_id + ".depth-" + std::to_string(i->depth()) + "." + i->processor_name() + i->record_type_name() + ".partition-" + std::to_string(i->partition()) + "." + j->_simple_name;
+          j->_logged_name = j->_simple_name + ", app_id=" + _app_id + ", topology=" + _topology_id + ", depth=" + std::to_string(i->depth()) + ", processor_type=" + i->processor_name() + ", record_type='" + i->record_type_name() + "', partition=" + std::to_string(i->partition());
+          //j->_logged_name = _app_id + "." + _topology_id + ".depth-" + std::to_string(i->depth()) + "." + i->processor_name() + i->record_type_name() + ".partition-" + std::to_string(i->partition()) + "." + j->_simple_name;
         }
       }
 
       for (auto i : _topic_processors) {
         for (auto j : i->get_metrics()) {
-          j->_logged_name = _app_id + "." + _topology_id + "." + i->processor_name() + i->record_type_name() + "." + j->_simple_name;
-          //j->_logged_name = _app_id + "." + _topology_id + ".depth-" + std::to_string(i->depth()) + "." + i->processor_name() + "." + j->_simple_name;
+          j->_logged_name = j->_simple_name + ", app_id=" + _app_id + ", topology=" + _topology_id + ", processor_type=" + i->processor_name() + ", record_type='" + i->record_type_name() + "'";
+            //j->_logged_name = _app_id + "." + _topology_id + "." + i->processor_name() + i->record_type_name() + "." + j->_simple_name;
+            //j->_logged_name = _app_id + "." + _topology_id + ".depth-" + std::to_string(i->depth()) + "." + i->processor_name() + "." + j->_simple_name;
         }
       }
     }
+
 
     void output_metrics(std::ostream& s) {
       for (auto i : _partition_processors) {
@@ -435,15 +491,26 @@ namespace kspp {
       }
     }
 
+    void output_metrics(std::shared_ptr<kspp::topic_sink<std::string, std::string, kspp::text_codec>> sink) {
+      for (auto i : _partition_processors) {
+        for (auto j : i->get_metrics())
+          sink->produce(std::make_shared<kspp::krecord<std::string, std::string>>(j->name(), std::to_string(j->value())));
+      }
+
+      for (auto i : _topic_processors) {
+        for (auto j : i->get_metrics()) {
+          sink->produce(std::make_shared<kspp::krecord<std::string, std::string>>(j->name(), std::to_string(j->value())));
+        }
+      }
+    }
+
     //// TBD this should only call most downstream processors??
     //// or should topology call all members??
     //void start(int offset) {
     //  for (auto i : _partition_processors)
     //    i->start(offset);
     //}
-
-  
-
+    
     template<class K, class V>
     std::vector<std::shared_ptr<kspp::partition_source<K, V>>> create_kafka_sources(std::string topic, size_t nr_of_partitions) {
       std::vector<std::shared_ptr<kspp::partition_source<K, V>>> result;
