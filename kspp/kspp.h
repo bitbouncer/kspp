@@ -363,7 +363,6 @@ class partition_topology_base
       i->flush();
   }
 
-  protected:
   boost::filesystem::path get_storage_path() {
     boost::filesystem::path top_of_topology(_root_path);
     top_of_topology /= _app_id;

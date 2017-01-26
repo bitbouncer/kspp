@@ -14,18 +14,14 @@ namespace kspp {
   public:
     enum { MAX_KEY_SIZE = 1000 };
 
-    partition_stream_sink(size_t partition, std::ostream& os)
-      : partition_sink<K, V>(partition)
+    partition_stream_sink(partition_topology_base& topology, std::ostream& os)
+      : partition_sink<K, V>(topology.partition())
       , _os(os)
       , _codec(std::make_shared<kspp::text_codec>()) {
     }
 
     virtual ~partition_stream_sink() {
       //_source->remove_sink()
-    }
-
-    static std::shared_ptr<kspp::partition_stream_sink<K, V>> create(size_t partition, std::ostream& os) {
-      return std::make_shared<kspp::partition_stream_sink<K, V>>(partition, os);
     }
     
     // from kspp::partition_processor::name()
@@ -59,8 +55,8 @@ namespace kspp {
   class partition_stream_sink<void, V> : public partition_sink<void, V>
   {
   public:
-    partition_stream_sink(size_t partition, std::ostream& os)
-      : partition_sink<void, V>(partition)
+    partition_stream_sink(partition_topology_base& topology, std::ostream& os)
+      : partition_sink<void, V>(topology.partition())
       , _os(os)
       , _codec(std::make_shared<kspp::text_codec>()) {
     }
@@ -68,12 +64,7 @@ namespace kspp {
     virtual ~partition_stream_sink() {
       //_source->remove_sink()
     }
-
-    static std::shared_ptr<kspp::partition_stream_sink<void, V>> create(size_t partition, std::ostream& os) {
-      return std::make_shared<kspp::partition_stream_sink<void, V>>(partition, os);
-    }
-    
-    // kspp::partition_processor::name()
+   
     virtual std::string name() const {
       return "stream_sink";
     }
@@ -98,8 +89,8 @@ namespace kspp {
   class partition_stream_sink<K, void> : public partition_sink<K, void>
   {
   public:
-    partition_stream_sink(size_t partition, std::ostream& os)
-      : partition_sink<K, void>(partition)
+    partition_stream_sink(partition_topology_base& topology, std::ostream& os)
+      : partition_sink<K, void>(topology.partition())
       , _os(os)
       , _codec(std::make_shared<kspp::text_codec>()) {
     }
@@ -108,11 +99,6 @@ namespace kspp {
       //_source->remove_sink()
     }
 
-    static std::shared_ptr<kspp::partition_stream_sink<K, void>> create(size_t partition, std::ostream& os) {
-      return std::make_shared<kspp::partition_stream_sink<K, void>>(partition, os);
-    }
-
-    // kspp::partition_processor::name()
     virtual std::string name() const {
       return "stream_sink";
     }

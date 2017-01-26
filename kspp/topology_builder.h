@@ -90,19 +90,23 @@ namespace kspp {
     }
     */
 
+    /*
     template<class K, class V>
     std::shared_ptr<kspp::partition_sink<K, V>> create_global_kafka_sink(std::string topic) {
       auto p = kspp::kafka_single_partition_sink<K, V, CODEC>::create(_brokers, topic, 0, _default_codec);
       _partition_processors.push_back(p);
       return p;
     }
+    */
 
+    /*
     template<class K, class V>
     std::shared_ptr<kspp::partition_source<K, V>> create_kafka_source(std::string topic) {
       auto p = std::make_shared<kspp::kafka_source<K, V, CODEC>>(_brokers, topic, _partition, _default_codec);
       _partition_processors.push_back(p);
       return p;
     }
+    */
 
     template<class K, class V>
     std::shared_ptr<kspp::partition_source<K, V>> create_global_kafka_source(std::string topic) {
@@ -130,7 +134,7 @@ namespace kspp {
 
     template<class K, class V>
     std::shared_ptr<kspp::kstream_partition<K, V>> create_kstream(std::string topic) {
-      auto source = create_kafka_source<K, V>(topic);
+      auto source = create<kafka_source<K, V, CODEC>>(topic, codec());
       return create_kstream<K, V>(source);
       // no adding to _partition_processors
     }
@@ -144,7 +148,7 @@ namespace kspp {
 
     template<class K, class V>
     std::shared_ptr<kspp::ktable_partition<K, V>> create_ktable(std::string topic) {
-      auto source = create_kafka_source<K, V>(topic);
+      auto source = create<kafka_source<K, V, CODEC>>(topic, codec());
       return create_ktable<K, V>(source);
       // no adding to _partition_processors
     }
@@ -180,12 +184,14 @@ namespace kspp {
     }
 
     //TBD we shouyld get rid of void value - we do not require that but how do we tell compiler that????
+    /*
     template<class K, class V>
     std::shared_ptr<kspp::materialized_partition_source<K, V>> create_count_by_key(std::shared_ptr<partition_source<K, void>> source, int64_t punctuate_intervall) {
       auto p = kspp::count_by_key<K, V, CODEC>::create(source, get_storage_path(), punctuate_intervall, _default_codec);
       _partition_processors.push_back(p);
       return p;
     }
+    */
 
     /*
     template<class K, class V>
@@ -199,24 +205,24 @@ namespace kspp {
 
 
 
-    template<class K, class V>
-    std::shared_ptr<kspp::partition_stream_sink<K, V>> create_stream_sink(std::shared_ptr<kspp::partition_source<K, V>>source, std::ostream& os) {
-      auto p = kspp::partition_stream_sink<K, V>::create(source->partition(), os);
-      source->add_sink(p);
-      return p;
-    }
+    //template<class K, class V>
+    //std::shared_ptr<kspp::partition_stream_sink<K, V>> create_stream_sink(std::shared_ptr<kspp::partition_source<K, V>>source, std::ostream& os) {
+    //  auto p = kspp::partition_stream_sink<K, V>::create(source->partition(), os);
+    //  source->add_sink(p);
+    //  return p;
+    //}
 
-    // not useful for anything excepts cout or cerr... since everything is bundeled into same stream???
-    template<class K, class V>
-    std::vector<std::shared_ptr<kspp::partition_stream_sink<K, V>>> create_stream_sinks(std::vector<std::shared_ptr<kspp::partition_source<K, V>>> sources, std::ostream& os) {
-      std::vector<std::shared_ptr<kspp::partition_stream_sink<K, V>>> v;
-      for (auto s : sources) {
-        auto p = create_stream_sink<K, V>(s->partition(), os);
-        s->add_sink(p);
-        v.push_back(p);
-      }
-      return v;
-    }
+    //// not useful for anything excepts cout or cerr... since everything is bundeled into same stream???
+    //template<class K, class V>
+    //std::vector<std::shared_ptr<kspp::partition_stream_sink<K, V>>> create_stream_sinks(std::vector<std::shared_ptr<kspp::partition_source<K, V>>> sources, std::ostream& os) {
+    //  std::vector<std::shared_ptr<kspp::partition_stream_sink<K, V>>> v;
+    //  for (auto s : sources) {
+    //    auto p = create_stream_sink<K, V>(s->partition(), os);
+    //    s->add_sink(p);
+    //    v.push_back(p);
+    //  }
+    //  return v;
+    //}
 
     template<class K, class V>
     std::shared_ptr<kspp::partition_source<K, V>> create_filter(std::shared_ptr<kspp::partition_source<K, V>> source, typename kspp::filter<K, V>::predicate f) {
@@ -225,12 +231,13 @@ namespace kspp {
       return p;
     }
 
-    template<class SK, class SV, class RK, class RV>
+    /*template<class SK, class SV, class RK, class RV>
     std::shared_ptr<partition_source<RK, RV>> create_flat_map(std::shared_ptr<kspp::partition_source<SK, SV>> source, typename kspp::flat_map<SK, SV, RK, RV>::extractor f) {
       auto p = flat_map<SK, SV, RK, RV>::create(source, f);
       _partition_processors.push_back(p);
       return p;
     }
+    */
 
     template<class K, class SV, class RV>
     std::shared_ptr<partition_source<K, RV>> create_transform_value(std::shared_ptr<kspp::partition_source<K, SV>> source, typename kspp::transform_value<K, SV, RV>::extractor f) {
@@ -271,6 +278,32 @@ namespace kspp {
       _partition_processors.push_back(p);
       return p;
     }
+
+    template<class pp, typename... Args>
+    typename std::enable_if<std::is_base_of<kspp::partition_processor, pp>::value, std::vector<std::shared_ptr<pp>>>::type
+      create_N(size_t count, Args... args) {
+      std::vector<std::shared_ptr<pp>> result;
+      for (size_t i = 0; i != count; ++i) {
+        auto p = std::make_shared<pp>(*this, args...);
+        _partition_processors.push_back(p);
+        result.push_back(p);
+      }
+      return result;
+    }
+
+    // for flat map???
+    template<class pp, class ps, typename... Args>
+    typename std::enable_if<std::is_base_of<kspp::partition_processor, pp>::value, std::vector<std::shared_ptr<pp>>>::type
+      create(std::vector<std::shared_ptr<ps>> sources, Args... args) {
+      std::vector<std::shared_ptr<pp>> result;
+      for (auto i : sources) {
+        auto p = std::make_shared<pp>(*this, i, args...);
+        _partition_processors.push_back(p);
+        result.push_back(p);
+      }
+      return result;
+    }
+
 
     // this seems to be only sinks???
     template<class pp, typename... Args>
@@ -527,7 +560,7 @@ namespace kspp {
       return result;;
     }
 
-    template<class SK, class SV, class RK, class RV>
+    /*template<class SK, class SV, class RK, class RV>
     std::vector<std::shared_ptr<partition_source<RK, RV>>> create_flat_map(
       std::vector<std::shared_ptr<kspp::partition_source<SK, SV>>> source,
       typename kspp::flat_map<SK, SV, RK, RV>::extractor f) {
@@ -539,6 +572,7 @@ namespace kspp {
       }
       return result;;
     }
+    */
 
     template<class K, class V>
     std::vector<std::shared_ptr<kspp::partition_source<K, V>>> create_rate_limiter(std::vector<std::shared_ptr<kspp::partition_source<K, V>>> source, int64_t agetime, size_t capacity) {

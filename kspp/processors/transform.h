@@ -11,7 +11,7 @@ namespace kspp {
   public:
     typedef std::function<void(std::shared_ptr<krecord<SK, SV>> record, flat_map* self)> extractor; // maybe better to pass this and send() directrly
 
-    flat_map(std::shared_ptr<partition_source<SK, SV>> source, extractor f)
+    flat_map(partition_topology_base& topology, std::shared_ptr<partition_source<SK, SV>> source, extractor f)
       : partition_source<RK, RV>(source.get(), source->partition())
       , _source(source)
       , _extractor(f)
@@ -29,6 +29,7 @@ namespace kspp {
       close();
     }
 
+    /*
     static std::vector<std::shared_ptr<partition_source<RK, RV>>> create(std::vector<std::shared_ptr<partition_source<SK, SV>>>& streams, extractor f) {
       std::vector<std::shared_ptr<partition_source<RK, RV>>> res;
       for (auto i : streams)
@@ -39,6 +40,7 @@ namespace kspp {
     static std::shared_ptr<partition_source<RK, RV>> create(std::shared_ptr<partition_source<SK, SV>> source, extractor f) {
       return std::make_shared<flat_map<SK, SV, RK, RV>>(source, f);
     }
+    */
 
     std::string name() const {
       return _source->name() + "-flat_map()[" + type_name<RK>::get() + ", " + type_name<RV>::get() + "]"; 

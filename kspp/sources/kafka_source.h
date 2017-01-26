@@ -72,8 +72,8 @@ namespace kspp {
   class kafka_source : public kafka_source_base<K, V, CODEC>
   {
   public:
-    kafka_source(std::string brokers, std::string topic, size_t partition, std::shared_ptr<CODEC> codec)
-      : kafka_source_base<K, V, CODEC>(brokers, topic, partition, codec) {}
+    kafka_source(partition_topology_base& topology, std::string topic, std::shared_ptr<CODEC> codec)
+      : kafka_source_base<K, V, CODEC>(topology.brokers(), topic, topology.partition(), codec) {}
 
 
   protected:
@@ -119,12 +119,8 @@ namespace kspp {
   class kafka_source<void, V, CODEC> : public kafka_source_base<void, V, CODEC>
   {
   public:
-    kafka_source(std::string brokers, std::string topic, size_t partition, std::shared_ptr<CODEC> codec)
-      : kafka_source_base<void, V, CODEC>(brokers, topic, partition, codec) {}
-
-  /*  virtual std::string name() const {
-      return "kafka_source[void, " + type_name<V>::get() "]-" + this->_consumer.topic() + "-" + std::to_string(this->_consumer.partition());
-    }*/
+    kafka_source(partition_topology_base& topology, std::string topic, std::shared_ptr<CODEC> codec)
+      : kafka_source_base<void, V, CODEC>(topology.brokers(), topic, topology.partition(), codec) {}
 
   protected:
     std::shared_ptr<krecord<void, V>> parse(const std::unique_ptr<RdKafka::Message> & ref) {
@@ -160,13 +156,8 @@ namespace kspp {
   class kafka_source<K, void, CODEC> : public kafka_source_base<K, void, CODEC>
   {
   public:
-  public:
-    kafka_source(std::string brokers, std::string topic, size_t partition, std::shared_ptr<CODEC> codec)
-      : kafka_source_base<K, void, CODEC>(brokers, topic, partition, codec) {}
-
-  /*  virtual std::string name() const {
-      return "kafka_source[" + type_name<K>::get() ", void]-" + this->_consumer.topic() + "-" + std::to_string(this->_consumer.partition());
-    }*/
+    kafka_source(partition_topology_base& topology, std::string topic, std::shared_ptr<CODEC> codec)
+      : kafka_source_base<K, void, CODEC>(topology.brokers(), topic, topology.partition(), codec) {}
 
   protected:
     std::shared_ptr<krecord<K, void>> parse(const std::unique_ptr<RdKafka::Message> & ref) {

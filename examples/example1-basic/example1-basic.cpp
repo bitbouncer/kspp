@@ -177,10 +177,10 @@ int main(int argc, char **argv) {
 
   {
     auto topology = builder.create_topology(PARTITION);
-    auto pageviews = topology->create_kafka_source<int64_t, page_view_data>("kspp_PageViews");
-    auto userprofiles = topology->create_kafka_source<int64_t, user_profile_data>("kspp_UserProfile");
-    auto pw_sink = topology->create_stream_sink<int64_t, page_view_data>(pageviews, std::cerr);
-    auto up_sink = topology->create_stream_sink<int64_t, user_profile_data>(userprofiles, std::cerr);
+    auto pageviews = topology->create<kspp::kafka_source<int64_t, page_view_data, kspp::binary_codec>>("kspp_PageViews", codec);
+    auto userprofiles = topology->create<kspp::kafka_source<int64_t, user_profile_data, kspp::binary_codec>>("kspp_UserProfile", codec);
+    //auto pw_sink = topology->create<kspp::partition_stream_sink<int64_t, page_view_data>>(pageviews, std::cerr);
+    //auto up_sink = topology->create<kspp::partition_stream_sink<int64_t, user_profile_data>>(userprofiles, std::cerr);
     topology->start(-2);
     topology->flush();
   }
@@ -188,14 +188,14 @@ int main(int argc, char **argv) {
   {
     auto topology = builder.create_topology(PARTITION);
     auto pageviews = topology->create_kstream<int64_t, page_view_data>("kspp_PageViews");
-    auto pw_sink = topology->create_stream_sink<int64_t, page_view_data>(pageviews, std::cerr);
+    //auto pw_sink = topology->create<kspp::partition_stream_sink<int64_t, page_view_data>>(pageviews, std::cerr);
     topology->start(-2);
     topology->flush();
   }
 
   {
     auto topology = builder.create_topology(PARTITION);
-    auto stream = topology->create_kafka_source<int64_t, page_view_data>("kspp_PageViews");
+    auto stream = topology->create<kspp::kafka_source<int64_t, page_view_data, kspp::binary_codec>>("kspp_PageViews", codec);
     auto table = topology->create_ktable<int64_t, user_profile_data>("kspp_UserProfile");
     auto join = topology->create_left_join<int64_t, page_view_data, user_profile_data, page_view_decorated>(
       stream, 
