@@ -133,6 +133,14 @@ namespace kspp {
     }
     */
 
+    template<class pp, typename... Args>
+    typename std::enable_if<std::is_base_of<kspp::partition_processor, pp>::value, std::shared_ptr<pp>>::type
+      create(Args... args) {
+      auto p = std::make_shared<pp>(*this, this->partition(), args...);
+      _partition_processors.push_back(p);
+      return p;
+    }
+
     /**
     creates a kafka sink using default partitioner (hash on key)
     */
@@ -142,6 +150,8 @@ namespace kspp {
       _topic_processors.push_back(p);
       return p;
     }
+
+
 
     /**
     creates a kafka sink using explicit partitioner
