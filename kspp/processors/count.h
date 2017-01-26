@@ -91,10 +91,6 @@ namespace kspp {
       return _queue.size() == 0 && _stream->eof();
     }
 
-    virtual bool is_dirty() {
-      return (_dirty || !eof());
-    }
-
     /**
     take a snapshot of state and post it to sinks
     */

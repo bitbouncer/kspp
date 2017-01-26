@@ -416,8 +416,6 @@ class partition_source : public partition_processor
     _sinks.push_back(sink);
   }
 
-  virtual bool is_dirty() = 0;
-
   protected:
 
   virtual void send_to_sinks(std::shared_ptr<krecord<K, V>> p) {

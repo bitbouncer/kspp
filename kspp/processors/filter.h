@@ -72,10 +72,6 @@ namespace kspp {
       return (_queue.size() == 0) && _source->eof();
     }
 
-    virtual bool is_dirty() {
-      return (_queue.size() > 0) || _source->is_dirty();
-    }
-
     virtual size_t queue_len() {
       return _queue.size();
     }

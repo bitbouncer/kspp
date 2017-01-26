@@ -89,11 +89,7 @@ namespace kspp {
         os.flush();
       }
     }
-
-    virtual bool is_dirty() {
-      return _source->is_dirty();
-    }
-
+  
     inline int64_t offset() const {
       return _current_offset;
     }

@@ -79,10 +79,6 @@ class rate_limiter : public partition_source<K, V>
     return _source->eof() && (_queue.size() == 0);
   }
 
-  virtual bool is_dirty() {
-    return (_queue.size() > 0) || _source->is_dirty();
-  }
-
   virtual size_t queue_len() {
     return _queue.size();
   }
@@ -163,10 +159,6 @@ class thoughput_limiter : public partition_source<K, V>
 
   virtual bool eof() const {
     return _source->eof() && (_queue.size() == 0);
-  }
-
-  virtual bool is_dirty() {
-    return (_queue.size() > 0) || _source->is_dirty();
   }
 
   virtual size_t queue_len() {

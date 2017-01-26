@@ -111,10 +111,6 @@ namespace kspp {
       return _table->eof() && _stream->eof();
     }
 
-    virtual bool is_dirty() {
-      return _table->is_dirty() || _stream->is_dirty();
-    }
-
   private:
     std::shared_ptr<partition_source<K, streamV>>    _stream;
     std::shared_ptr<ktable_partition<K, tableV>>     _table; // ska denna vara här överhuvudtaget - räcker det inte med att addera den som sink?

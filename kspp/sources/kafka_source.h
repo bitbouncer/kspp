@@ -43,11 +43,7 @@ namespace kspp {
 
     // TBD hard commit offsets to kafka
     virtual void flush_offset() {}
-
-    virtual bool is_dirty() {
-      return !_consumer.eof();
-    }
-
+     
     virtual bool process_one() {
       auto p = _consumer.consume();
       if (!p)

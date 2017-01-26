@@ -76,10 +76,6 @@ class ktable_partition_impl : public ktable_partition<K, V>
     return _source->eof();
   }
 
-  virtual bool is_dirty() {
-    return _source->is_dirty();
-  }
-
   virtual bool process_one() {
     return _source->process_one();
   }
