@@ -11,6 +11,8 @@
 #define NR_OF_PARTITIONS 8
 
 int main(int argc, char **argv) {
+  auto codec = std::make_shared<kspp::text_codec>();
+
   auto text_builder = kspp::topology_builder<kspp::text_codec>("example4-count", "localhost");
 
   {
@@ -26,7 +28,11 @@ int main(int argc, char **argv) {
         flat_map->push_back(std::make_shared<kspp::krecord<std::string, void>>(*iter));
     });
 
-    auto word_sink = topology->create_kafka_topic_sink<std::string, void>(word_streams, "test_words");
+    auto word_sink = topology->create<kspp::kafka_topic_sink<std::string, void, kspp::text_codec>>("test_words", codec);
+    for (auto i : word_streams)
+      i->add_sink(word_sink);
+
+    //auto word_sink = topology->create<kspp::kafka_topic_sink<std::string, void, kspp::text_codec>>(word_streams, "test_words", codec);
 
     for (auto i : word_streams) {
       i->start(-2);

@@ -11,10 +11,12 @@
 #define PARTITION 0
 
 int main(int argc, char **argv) {
+  auto codec = std::make_shared<kspp::text_codec>();
+
   auto builder = kspp::topology_builder<kspp::text_codec>("example5-repartition", "localhost");
   {
     auto topology = builder.create_topic_topology();
-    auto sink = topology->create_kafka_topic_sink<int, std::string>("kspp_example5_usernames");
+    auto sink = topology->create<kspp::kafka_topic_sink<int, std::string, kspp::text_codec>>("kspp_example5_usernames", codec);
     kspp::produce(*sink, 1, "user_1");
     kspp::produce(*sink, 2, "user_2");
     kspp::produce(*sink, 3, "user_3");
@@ -29,7 +31,7 @@ int main(int argc, char **argv) {
 
   {
     auto topology = builder.create_topic_topology();
-    auto sink = topology->create_kafka_topic_sink<int, int>("kspp_example5_user_channel"); // <user_id, channel_id>
+    auto sink = topology->create<kspp::kafka_topic_sink<int, int, kspp::text_codec>>("kspp_example5_user_channel", codec); // <user_id, channel_id>
     kspp::produce(*sink, 1, 1);
     kspp::produce(*sink, 2, 1);
     kspp::produce(*sink, 3, 1);
@@ -44,7 +46,7 @@ int main(int argc, char **argv) {
 
   {
     auto topology = builder.create_topic_topology();
-    auto sink = topology->create_kafka_topic_sink<int, std::string>("kspp_example5_channel_names");
+    auto sink = topology->create<kspp::kafka_topic_sink<int, std::string, kspp::text_codec>>("kspp_example5_channel_names", codec);
     kspp::produce(*sink, 1, "channel1");
     kspp::produce(*sink, 2, "channel2");
   }
@@ -63,7 +65,7 @@ int main(int argc, char **argv) {
 
   {
     auto topology = builder.create_topic_topology();
-    auto topic_sink = topology->create_kafka_topic_sink<int, std::string>("kspp_example5_usernames.per-channel");
+    auto topic_sink = topology->create<kspp::kafka_topic_sink<int, std::string, kspp::text_codec>>("kspp_example5_usernames.per-channel", codec);
     auto sources = topology->create_kafka_sources<int, std::string>("kspp_example5_usernames", 8);
     auto routing_sources = topology->create_kafka_sources<int, int>("kspp_example5_user_channel", 8);
     auto routing_tables = topology->create_ktables<int, int>(routing_sources);

@@ -11,10 +11,11 @@
 #define PARTITION 0
 
 int main(int argc, char **argv) {
+  auto codec = std::make_shared<kspp::text_codec>();
   auto builder = kspp::topology_builder<kspp::text_codec>("example3-count", "localhost");
   {
     auto topology = builder.create_topology(PARTITION);
-    auto sink = topology->create_kafka_partition_sink<void, std::string>("kspp_TextInput");
+    auto sink = topology->create<kspp::kafka_partition_sink<void, std::string, kspp::text_codec>>("kspp_TextInput", codec);
     kspp::produce<void, std::string>(*sink, "hello kafka streams");
   }
 
@@ -37,12 +38,11 @@ int main(int argc, char **argv) {
     word_counts->start(-2);
     word_counts->flush();
 
-
     {
       auto metrics = builder.create_topic_topology();
-      auto metrics_sink = metrics->create_kafka_topic_sink<std::string, std::string>("kspp_metrics");
+      auto metrics_sink = metrics->create<kspp::kafka_topic_sink<std::string, std::string, kspp::text_codec>>("kspp_metrics", codec);
 
-      topology->output_metrics(metrics_sink);
+      //topology->output_metrics(metrics_sink);
 
     }
 

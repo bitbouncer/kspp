@@ -22,117 +22,31 @@
 
 namespace kspp {
   template<class CODEC>
-  class topology
+  class topology : public partition_topology<CODEC>
   {
-  public:
+    public:
     topology(std::string app_id, std::string topology_id, int32_t partition, std::string brokers, boost::filesystem::path root_path, std::shared_ptr<CODEC> default_codec)
-      : _app_id(app_id)
-      , _is_init(false)
-      , _topology_id(topology_id)
-      , _partition(partition)
-      , _brokers(brokers)
-      , _default_codec(default_codec)
-      , _root_path(root_path) {
-      BOOST_LOG_TRIVIAL(info) << "topology created, name:" << name() << ", brokers:" << brokers << " , storage_path:" << root_path;
+      : partition_topology<CODEC>(app_id, topology_id, partition, brokers, root_path, default_codec) {}
+
+    template<class pp, typename... Args>
+    typename std::enable_if<std::is_base_of<kspp::partition_processor, pp>::value, std::shared_ptr<pp>>::type
+      create(Args... args) {
+      auto p = std::make_shared<pp>(*this, args...);
+      _partition_processors.push_back(p);
+      return p;
     }
 
-    ~topology() {
-      BOOST_LOG_TRIVIAL(info) << "topology, name:" << name() << " terminated";
-      // output stats
+    // this seems to be only sinks???
+    template<class pp, typename... Args>
+    typename std::enable_if<std::is_base_of<kspp::topic_processor, pp>::value, std::shared_ptr<pp>>::type
+      create(Args... args) {
+      auto p = std::make_shared<pp>(*this, args...);
+      _topic_processors.push_back(p);
+      return p;
     }
 
-    std::string name() const {
-      return _app_id + "__" + _topology_id + "[p" + std::to_string(_partition) + "]";
-    }
 
-    inline std::shared_ptr<CODEC> codec() {
-      return _default_codec;
-    }
-
-    // the metrics should look like this...
-    //cpu_load_short, host=server01, region=us-west value=0.64 1434055562000000000
-    //metric_name, add_id={app_id}}, topology={{_topology_id}}, depth={{depth}}, processor_type={{processor_name()}} record_type="
-    void init_metrics() {
-      for (auto i : _partition_processors) {
-        for (auto j : i->get_metrics()) {
-          j->_logged_name = j->_simple_name + ", app_id=" + _app_id + ", topology=" + _topology_id + ", depth=" + std::to_string(i->depth()) + ", processor_type=" + i->processor_name() + ", record_type='" + i->record_type_name() + "', partition=" + std::to_string(i->partition());
-          std::cerr << j->_logged_name << std::endl;
-          //j->_logged_name = _app_id + "." + _topology_id + ".depth-" + std::to_string(i->depth()) + "." + i->processor_name() + i->record_type_name() + ".partition-" + std::to_string(i->partition()) + "." + j->_simple_name;
-        }
-      }
-
-      for (auto i : _topic_processors) {
-        for (auto j : i->get_metrics()) {
-          j->_logged_name = j->_simple_name + ", app_id=" + _app_id + ", topology=" + _topology_id + ", processor_type=" + i->processor_name() + ", record_type='" + i->record_type_name() + "'";
-          //j->_logged_name = _app_id + "." + _topology_id + "." + i->processor_name() + i->record_type_name() + "." + j->_simple_name;
-          //j->_logged_name = _app_id + "." + _topology_id + ".depth-" + std::to_string(i->depth()) + "." + i->processor_name() + "." + j->_simple_name;
-        }
-      }
-    }
-
-    //void init_metrics() {
-    //  for (auto i : _partition_processors) {
-    //    for (auto j : i->get_metrics()) {
-    //      j->_logged_name = _app_id + "." + _topology_id + ".depth-" + std::to_string(i->depth()) + "." + i->processor_name() + i->record_type_name() + ".partition-" + std::to_string(i->partition()) + "." + j->_simple_name;
-    //    }
-    //  }
-
-    //  for (auto i : _topic_processors) {
-    //    for (auto j : i->get_metrics()) {
-    //      j->_logged_name = _app_id + "." + _topology_id + "." + i->processor_name() + i->record_type_name() + "." + j->_simple_name;
-    //      //j->_logged_name = _app_id + "." + _topology_id + ".depth-" + std::to_string(i->depth()) + "." + i->processor_name() + "." + j->_simple_name;
-    //    }
-    //  }
-    //}
-
-
-    void output_metrics(std::ostream& s) {
-      for (auto i : _partition_processors) {
-        for (auto j : i->get_metrics())
-          s << "metrics: " << j->name() << " : " << j->value() << std::endl;
-      }
-
-      for (auto i : _topic_processors) {
-        for (auto j : i->get_metrics()) {
-          s << "metrics: " << j->name() << " : " << j->value() << std::endl;
-        }
-      }
-    }
-
-    void output_metrics(std::shared_ptr<kspp::topic_sink<std::string, std::string, kspp::text_codec>> sink) {
-      for (auto i : _partition_processors) {
-        for (auto j : i->get_metrics())
-          sink->produce(std::make_shared<kspp::krecord<std::string, std::string>>(j->name(), std::to_string(j->value())));
-      }
-
-      for (auto i : _topic_processors) {
-        for (auto j : i->get_metrics()) {
-          sink->produce(std::make_shared<kspp::krecord<std::string, std::string>>(j->name(), std::to_string(j->value())));
-        }
-      }
-    }
-
-    //// TBD this should only call most downstream processors??
-    //// or should topology call all members??
-    //void start(int offset) {
-    //  for (auto i : _partition_processors)
-    //    i->start(offset);
-    //}
-
-    //// TBD this should only call most downstream processors??
-    //void flush() {
-    //  for (auto i : _partition_processors)
-    //    i->flush();
-    //}
-
-    /* TBD
-    void collect_metrics(merics - sink*) {
-    // figure out which is upstream
-    // add seq number to processors...
-    //
-    }
-    */
-
+    /*
     template<class pp, typename... Args>
     typename std::enable_if<std::is_base_of<kspp::partition_processor, pp>::value, std::shared_ptr<pp>>::type
       create(Args... args) {
@@ -140,38 +54,41 @@ namespace kspp {
       _partition_processors.push_back(p);
       return p;
     }
+    */
 
     /**
     creates a kafka sink using default partitioner (hash on key)
     */
-    template<class K, class V>
+   /* template<class K, class V>
     std::shared_ptr<kspp::topic_sink<K, V, CODEC>> create_kafka_topic_sink(std::string topic) {
       auto p = kspp::kafka_sink<K, V, CODEC>::create(_brokers, topic, _default_codec);
       _topic_processors.push_back(p);
       return p;
-    }
-
-
+    }*/
 
     /**
     creates a kafka sink using explicit partitioner
     */
+    /*
     template<class K, class V>
     std::shared_ptr<kspp::topic_sink<K, V, CODEC>> create_kafka_topic_sink(std::string topic, std::function<uint32_t(const K& key)> partitioner) {
       auto p = kspp::kafka_sink<K, V, CODEC>::create(_brokers, topic, partitioner, _default_codec);
       _topic_processors.push_back(p);
       return p;
     }
+    */
 
     /**
     creates a kafka sink using explicit partition
     */
+    /*
     template<class K, class V>
     std::shared_ptr<kspp::partition_sink<K, V>> create_kafka_partition_sink(std::string topic) {
       auto p = kspp::kafka_single_partition_sink<K, V, CODEC>::create(_brokers, topic, _partition, _default_codec);
       _partition_processors.push_back(p);
       return p;
     }
+    */
 
     template<class K, class V>
     std::shared_ptr<kspp::partition_sink<K, V>> create_global_kafka_sink(std::string topic) {
@@ -239,12 +156,14 @@ namespace kspp {
       return p;
     }
 
+    /*
     template<class K, class V>
     std::shared_ptr<kspp::pipe<K, V>> create_pipe() {
       auto p = std::make_shared<kspp::pipe<K, V>>(_partition);
       _partition_processors.push_back(p);
       return p;
     }
+    */
 
     template<class K, class streamV, class tableV, class R>
     std::shared_ptr<kspp::partition_source<K, R>> create_left_join(std::shared_ptr<kspp::partition_source<K, streamV>> right, std::shared_ptr<kspp::ktable_partition<K, tableV>> left, typename kspp::left_join<K, streamV, tableV, R>::value_joiner value_joiner) {
@@ -334,185 +253,92 @@ namespace kspp {
       return p;
     }
 
-    void init() {
-      _top_partition_processors.clear();
-
-      for (auto i : _partition_processors) {
-        bool upstream_of_something = false;
-        for (auto j : _partition_processors) {
-          if (j->is_upstream(i.get()))
-            upstream_of_something = true;
-        }
-        if (!upstream_of_something) {
-          BOOST_LOG_TRIVIAL(info) << "topology << " << name() << ": adding " << i->name() << " to top";
-          _top_partition_processors.push_back(i);
-        } else {
-          BOOST_LOG_TRIVIAL(info) << "topology << " << name() << ": skipping poll of " << i->name();
-        }
-      }
-      _is_init = true;
-    }
-
-    bool eof() {
-      for (auto&& i : _top_partition_processors) {
-        if (!i->eof())
-          return false;
-      }
-      return true;
-    }
-
-    int process_one() {
-      // maybe we should check sinks here an return 0 if we need to wait...
-
-      int res = 0;
-      for (auto&& i : _top_partition_processors) {
-        res += i->process_one();
-      }
-      // is this nessessary??? are those only sinks??
-      for (auto i : _topic_processors)
-        res += i->process_one();
-      return res;
-    }
-
-    void close() {
-      for (auto i : _topic_processors)
-        i->close();
-      for (auto i : _partition_processors)
-        i->close();
-    }
-
-    void start() {
-      if (!_is_init)
-        init();
-      for (auto&& i : _top_partition_processors)
-        i->start();
-      //for (auto i : _topic_processors) // those are only sinks??
-      //  i->start();
-    }
-
-    void start(int offset) {
-      if (!_is_init)
-        init();
-      for (auto&& i : _top_partition_processors)
-        i->start(offset);
-      //for (auto i : _topic_processors) // those are only sinks??
-      //  i->start(offset);
-    }
-
-    void flush() {
-      for (auto i : _top_partition_processors)
-        i->flush();
-    }
-
-  private:
-    boost::filesystem::path get_storage_path() {
-      boost::filesystem::path top_of_topology(_root_path);
-      top_of_topology /= _app_id;
-      top_of_topology /= _topology_id;
-      BOOST_LOG_TRIVIAL(debug) << "topology << " << name() << ": creating local storage at " << top_of_topology;
-      boost::filesystem::create_directories(top_of_topology);
-      return top_of_topology;
-    }
-
-  private:
-    bool                                              _is_init;
-    std::string                                       _app_id;
-    std::string                                       _topology_id;
-    int32_t                                           _partition;
-    std::string                                       _brokers;
-    std::shared_ptr<CODEC>                            _default_codec;
-    boost::filesystem::path                           _root_path;
-    std::vector<std::shared_ptr<partition_processor>> _partition_processors;
-    std::vector<std::shared_ptr<topic_processor>>     _topic_processors;
-    std::vector<std::shared_ptr<partition_processor>> _top_partition_processors;
   };
 
 
   template<class CODEC>
-  class topic_topology
+  class topic_topology : public partition_topology<CODEC>
   {
-  public:
+    public:
     topic_topology(std::string app_id, std::string topology_id, std::string brokers, boost::filesystem::path root_path, std::shared_ptr<CODEC> default_codec)
-      : _app_id(app_id)
-      , _is_init(false)
-      , _topology_id(topology_id)
-      , _brokers(brokers)
-      , _default_codec(default_codec)
-      , _root_path(root_path) {
-      BOOST_LOG_TRIVIAL(info) << "topology created, name:" << name() << ", brokers:" << brokers << " , storage_path:" << root_path;
+      : partition_topology<CODEC>(app_id, topology_id, 99, brokers, root_path, default_codec) {
+    }
+  
+    template<class pp, typename... Args>
+    typename std::enable_if<std::is_base_of<kspp::partition_processor, pp>::value, std::shared_ptr<pp>>::type
+      create(Args... args) {
+      auto p = std::make_shared<pp>(*this, args...);
+      _partition_processors.push_back(p);
+      return p;
     }
 
-    ~topic_topology() {
-      BOOST_LOG_TRIVIAL(info) << "topology, name:" << name() << " terminated";
-      // output stats
+    // this seems to be only sinks???
+    template<class pp, typename... Args>
+    typename std::enable_if<std::is_base_of<kspp::topic_processor, pp>::value, std::shared_ptr<pp>>::type
+      create(Args... args) {
+      auto p = std::make_shared<pp>(*this, args...);
+      _topic_processors.push_back(p);
+      return p;
     }
 
-    std::string name() const {
-      return _app_id + "__" + _topology_id;
+    /**
+      adds a vector of sources to a topic sink
+    */
+    /*
+    template<class pp, class ps, typename... Args>
+    typename std::enable_if<std::is_base_of<kspp::topic_processor, pp>::value, std::shared_ptr<pp>>::type
+      create(std::vector<std::shared_ptr<ps>> upstreams, Args... args) {
+      auto p = std::make_shared<pp>(*this, args...);
+      _topic_processors.push_back(p);
+      for (auto i : upstreams)
+        i->add_sink(p);
+      return p;
     }
-
-    inline std::shared_ptr<CODEC> codec() {
-      return _default_codec;
-    }
+    */
 
     //void init_metrics() {
     //  for (auto i : _partition_processors) {
     //    for (auto j : i->get_metrics()) {
-    //      j->_logged_name = _app_id + "." + _topology_id + ".depth-" + std::to_string(i->depth()) + "." + i->processor_name() + i->record_type_name() + ".partition-" + std::to_string(i->partition()) + "." + j->_simple_name;
+    //      j->_logged_name = j->_simple_name + ", app_id=" + _app_id + ", topology=" + _topology_id + ", depth=" + std::to_string(i->depth()) + ", processor_type=" + i->processor_name() + ", record_type='" + i->record_type_name() + "', partition=" + std::to_string(i->partition());
+    //      //j->_logged_name = _app_id + "." + _topology_id + ".depth-" + std::to_string(i->depth()) + "." + i->processor_name() + i->record_type_name() + ".partition-" + std::to_string(i->partition()) + "." + j->_simple_name;
     //    }
     //  }
 
     //  for (auto i : _topic_processors) {
     //    for (auto j : i->get_metrics()) {
-    //      j->_logged_name = _app_id + "." + _topology_id + "." + i->processor_name() + i->record_type_name() + "." + j->_simple_name;
-    //      //j->_logged_name = _app_id + "." + _topology_id + ".depth-" + std::to_string(i->depth()) + "." + i->processor_name() + "." + j->_simple_name;
+    //      j->_logged_name = j->_simple_name + ", app_id=" + _app_id + ", topology=" + _topology_id + ", processor_type=" + i->processor_name() + ", record_type='" + i->record_type_name() + "'";
+    //        //j->_logged_name = _app_id + "." + _topology_id + "." + i->processor_name() + i->record_type_name() + "." + j->_simple_name;
+    //        //j->_logged_name = _app_id + "." + _topology_id + ".depth-" + std::to_string(i->depth()) + "." + i->processor_name() + "." + j->_simple_name;
     //    }
     //  }
     //}
 
-    void init_metrics() {
-      for (auto i : _partition_processors) {
-        for (auto j : i->get_metrics()) {
-          j->_logged_name = j->_simple_name + ", app_id=" + _app_id + ", topology=" + _topology_id + ", depth=" + std::to_string(i->depth()) + ", processor_type=" + i->processor_name() + ", record_type='" + i->record_type_name() + "', partition=" + std::to_string(i->partition());
-          //j->_logged_name = _app_id + "." + _topology_id + ".depth-" + std::to_string(i->depth()) + "." + i->processor_name() + i->record_type_name() + ".partition-" + std::to_string(i->partition()) + "." + j->_simple_name;
-        }
-      }
 
-      for (auto i : _topic_processors) {
-        for (auto j : i->get_metrics()) {
-          j->_logged_name = j->_simple_name + ", app_id=" + _app_id + ", topology=" + _topology_id + ", processor_type=" + i->processor_name() + ", record_type='" + i->record_type_name() + "'";
-            //j->_logged_name = _app_id + "." + _topology_id + "." + i->processor_name() + i->record_type_name() + "." + j->_simple_name;
-            //j->_logged_name = _app_id + "." + _topology_id + ".depth-" + std::to_string(i->depth()) + "." + i->processor_name() + "." + j->_simple_name;
-        }
-      }
-    }
+    //void output_metrics(std::ostream& s) {
+    //  for (auto i : _partition_processors) {
+    //    for (auto j : i->get_metrics())
+    //      s << "metrics: " << j->name() << " : " << j->value() << std::endl;
+    //  }
 
+    //  for (auto i : _topic_processors) {
+    //    for (auto j : i->get_metrics()) {
+    //      s << "metrics: " << j->name() << " : " << j->value() << std::endl;
+    //    }
+    //  }
+    //}
 
-    void output_metrics(std::ostream& s) {
-      for (auto i : _partition_processors) {
-        for (auto j : i->get_metrics())
-          s << "metrics: " << j->name() << " : " << j->value() << std::endl;
-      }
+    //void output_metrics(std::shared_ptr<kspp::topic_sink<std::string, std::string, kspp::text_codec>> sink) {
+    //  for (auto i : _partition_processors) {
+    //    for (auto j : i->get_metrics())
+    //      sink->produce(std::make_shared<kspp::krecord<std::string, std::string>>(j->name(), std::to_string(j->value())));
+    //  }
 
-      for (auto i : _topic_processors) {
-        for (auto j : i->get_metrics()) {
-          s << "metrics: " << j->name() << " : " << j->value() << std::endl;
-        }
-      }
-    }
-
-    void output_metrics(std::shared_ptr<kspp::topic_sink<std::string, std::string, kspp::text_codec>> sink) {
-      for (auto i : _partition_processors) {
-        for (auto j : i->get_metrics())
-          sink->produce(std::make_shared<kspp::krecord<std::string, std::string>>(j->name(), std::to_string(j->value())));
-      }
-
-      for (auto i : _topic_processors) {
-        for (auto j : i->get_metrics()) {
-          sink->produce(std::make_shared<kspp::krecord<std::string, std::string>>(j->name(), std::to_string(j->value())));
-        }
-      }
-    }
+    //  for (auto i : _topic_processors) {
+    //    for (auto j : i->get_metrics()) {
+    //      sink->produce(std::make_shared<kspp::krecord<std::string, std::string>>(j->name(), std::to_string(j->value())));
+    //    }
+    //  }
+    //}
 
     //// TBD this should only call most downstream processors??
     //// or should topology call all members??
@@ -535,13 +361,16 @@ namespace kspp {
     /**
     creates a kafka sink using default partitioner (hash on key)
     */
+    /*
     template<class K, class V>
     std::shared_ptr<kspp::topic_sink<K, V, CODEC>> create_kafka_topic_sink(std::string topic) {
       auto p = kspp::kafka_sink<K, V, CODEC>::create(_brokers, topic, _default_codec);
       _topic_processors.push_back(p);
       return p;
     }
+    */
 
+    /*
     template<class K, class V>
     std::shared_ptr<kspp::topic_sink<K, V, CODEC>> create_kafka_topic_sink(std::vector<std::shared_ptr<kspp::partition_source<K, V>>>& source, std::string topic) {
       auto p = kspp::kafka_sink<K, V, CODEC>::create(_brokers, topic, _default_codec);
@@ -550,16 +379,19 @@ namespace kspp {
         i->add_sink(p);
       return p;
     }
+    */
 
     /**
     creates a kafka sink using explicit partitioner
     */
+    /*
     template<class K, class V>
     std::shared_ptr<kspp::topic_sink<K, V, CODEC>> create_kafka_topic_sink(std::string topic, std::function<uint32_t(const K& key)> partitioner) {
       auto p = kspp::kafka_sink<K, V, CODEC>::create(_brokers, topic, partitioner, _default_codec);
       _topic_processors.push_back(p);
       return p;
     }
+    */
 
     template<class K, class V>
     std::shared_ptr<kspp::partition_sink<K, V>> create_global_kafka_sink(std::string topic) {

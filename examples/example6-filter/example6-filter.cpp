@@ -15,7 +15,7 @@ int main(int argc, char **argv) {
   auto builder = kspp::topology_builder<kspp::text_codec>("example6-filter", "localhost");
   {
     auto topology = builder.create_topology(PARTITION);
-    auto sink = topology->create_kafka_partition_sink<void, std::string>("kspp_TextInput");
+    auto sink = topology->create<kspp::kafka_partition_sink<void, std::string, kspp::text_codec>>("kspp_TextInput", topology->codec());
     kspp::produce<void, std::string>(*sink, "hello kafka streams");
   }
 

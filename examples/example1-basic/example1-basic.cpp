@@ -154,10 +154,11 @@ std::string ksource_to_string(const T&  ksource) {
 
 int main(int argc, char **argv) {
   auto builder = kspp::topology_builder<kspp::binary_codec>("example1-basic", "localhost");
+  auto codec = std::make_shared<kspp::binary_codec>();
 
   {
     auto topology = builder.create_topology(PARTITION);
-    auto sink = topology->create_kafka_partition_sink<int64_t, page_view_data>("kspp_PageViews");
+    auto sink = topology->create<kspp::kafka_partition_sink<int64_t, page_view_data, kspp::binary_codec>>("kspp_PageViews", codec);
     kspp::produce<int64_t, page_view_data>(*sink, 1, {1440557383335, 1, "/home?user=1"});
     kspp::produce<int64_t, page_view_data>(*sink, 5, {1440557383345, 5, "/home?user=5"});
     kspp::produce<int64_t, page_view_data>(*sink, 2, {1440557383456, 2, "/profile?user=2"});
@@ -167,7 +168,7 @@ int main(int argc, char **argv) {
 
   {
     auto topology = builder.create_topology(PARTITION);
-    auto sink = topology->create_kafka_partition_sink<int64_t, user_profile_data>("kspp_UserProfile"); 
+    auto sink = topology->create<kspp::kafka_partition_sink<int64_t, user_profile_data, kspp::binary_codec>>("kspp_UserProfile", codec);
     kspp::produce<int64_t, user_profile_data>(*sink, 1, {1440557383335, 1, "user1@aol.com"});
     kspp::produce<int64_t, user_profile_data>(*sink, 5, {1440557383345, 5, "user5@gmail.com"});
     kspp::produce<int64_t, user_profile_data>(*sink, 2, {1440557383456, 2, "user2@yahoo.com"});
@@ -205,7 +206,7 @@ int main(int argc, char **argv) {
       row.time = left.time;
       row.url = left.url;
     });
-    auto sink = topology->create_kafka_partition_sink<int64_t, page_view_decorated>("kspp_PageViewsDecorated");
+    auto sink = topology->create<kspp::kafka_partition_sink<int64_t, page_view_decorated, kspp::binary_codec>>("kspp_PageViewsDecorated", codec);
     topology->init_metrics();
     join->add_sink(sink);
     
