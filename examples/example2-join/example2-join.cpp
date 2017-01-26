@@ -13,7 +13,8 @@ int main(int argc, char **argv) {
   {
     auto topology = builder.create_topology(PARTITION);
     auto stream = topology->create<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_codec>>("kspp_test0_eventstream", codec);
-    auto table = topology->create_ktable<boost::uuids::uuid, int64_t>("kspp_test0_table");
+    auto table_source = topology->create<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_codec>>("kspp_test0_table", codec);
+    auto table = topology->create<kspp::ktable_partition_impl<boost::uuids::uuid, int64_t, kspp::binary_codec>>(table_source,  codec);
     auto join = topology->create_left_join<boost::uuids::uuid, int64_t, int64_t, int64_t>(
       stream, 
       table, 

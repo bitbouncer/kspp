@@ -125,20 +125,25 @@ namespace kspp {
     }
     */
 
+    /*
     template<class K, class V>
     std::shared_ptr<kspp::kstream_partition<K, V>> create_kstream(std::shared_ptr<kspp::partition_source<K, V>> source) {
       auto p = std::make_shared<kspp::kstream_partition_impl<K, V, CODEC>>(source, get_storage_path(), _default_codec);
       _partition_processors.push_back(p);
       return p;
     }
+    */
 
+    /*
     template<class K, class V>
     std::shared_ptr<kspp::kstream_partition<K, V>> create_kstream(std::string topic) {
       auto source = create<kafka_source<K, V, CODEC>>(topic, codec());
       return create_kstream<K, V>(source);
       // no adding to _partition_processors
     }
+    */
 
+    /*
     template<class K, class V>
     std::shared_ptr<kspp::ktable_partition<K, V>> create_ktable(std::shared_ptr<kspp::partition_source<K, V>> source) {
       auto p = std::make_shared<kspp::ktable_partition_impl<K, V, CODEC>>(source, get_storage_path(), _default_codec);
@@ -152,6 +157,7 @@ namespace kspp {
       return create_ktable<K, V>(source);
       // no adding to _partition_processors
     }
+    */
 
     template<class K, class V>
     std::shared_ptr<kspp::pipe<K, V>> create_pipe(std::shared_ptr<kspp::partition_source<K, V>> source) {
@@ -453,7 +459,7 @@ namespace kspp {
       return result;
     }
 
-    template<class K, class V>
+    /*template<class K, class V>
     std::vector<std::shared_ptr<kspp::kstream_partition<K, V>>> create_kstreams(std::vector<std::shared_ptr<kspp::partition_source<K, V>>>& sources) {
       std::vector<std::shared_ptr<kspp::kstream_partition<K, V>>> result;
       for (auto i : sources) {
@@ -463,6 +469,7 @@ namespace kspp {
       }
       return result;
     }
+    */
 
     template<class K, class V>
     std::vector<std::shared_ptr<kspp::pipe<K, V>>> create_pipes(std::vector<std::shared_ptr<kspp::partition_source<K, V>>>& sources) {

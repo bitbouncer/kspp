@@ -10,11 +10,11 @@ namespace kspp {
   class kstream_partition_impl : public kstream_partition<K, V>
   {
   public:
-    kstream_partition_impl(std::shared_ptr<kspp::partition_source<K, V>> source, boost::filesystem::path storage_path, std::shared_ptr<CODEC> codec)
+    kstream_partition_impl(partition_topology_base& topology, std::shared_ptr<kspp::partition_source<K, V>> source, std::shared_ptr<CODEC> codec)
       : kstream_partition<K, V>(source.get())
-      , _offset_storage_path(get_storage_path(storage_path))
+      , _offset_storage_path(get_storage_path(topology.get_storage_path()))
       , _source(source)
-      , _state_store(get_storage_path(storage_path), codec)
+      , _state_store(get_storage_path(topology.get_storage_path()), codec)
       , _current_offset(RdKafka::Topic::OFFSET_BEGINNING)
       , _last_comitted_offset(RdKafka::Topic::OFFSET_BEGINNING)
       , _last_flushed_offset(RdKafka::Topic::OFFSET_BEGINNING) {

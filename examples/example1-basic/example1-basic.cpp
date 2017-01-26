@@ -187,7 +187,8 @@ int main(int argc, char **argv) {
 
   {
     auto topology = builder.create_topology(PARTITION);
-    auto pageviews = topology->create_kstream<int64_t, page_view_data>("kspp_PageViews");
+    auto pageviews_source = topology->create<kspp::kafka_source<int64_t, page_view_data, kspp::binary_codec>>("kspp_PageViews", codec);
+    auto pageviews_kstream = topology->create<kspp::kstream_partition_impl<int64_t, page_view_data, kspp::binary_codec>>(pageviews_source, codec);
     //auto pw_sink = topology->create<kspp::partition_stream_sink<int64_t, page_view_data>>(pageviews, std::cerr);
     topology->start(-2);
     topology->flush();
@@ -196,7 +197,8 @@ int main(int argc, char **argv) {
   {
     auto topology = builder.create_topology(PARTITION);
     auto stream = topology->create<kspp::kafka_source<int64_t, page_view_data, kspp::binary_codec>>("kspp_PageViews", codec);
-    auto table = topology->create_ktable<int64_t, user_profile_data>("kspp_UserProfile");
+    auto table_source = topology->create<kspp::kafka_source<int64_t, user_profile_data, kspp::binary_codec>>("kspp_UserProfile", codec);
+    auto table = topology->create<kspp::ktable_partition_impl<int64_t, user_profile_data, kspp::binary_codec>>(table_source, codec);
     auto join = topology->create_left_join<int64_t, page_view_data, user_profile_data, page_view_decorated>(
       stream, 
       table, 
@@ -218,7 +220,8 @@ int main(int argc, char **argv) {
   
   {
     auto topology = builder.create_topology(PARTITION);
-    auto table = topology->create_ktable<int64_t, user_profile_data>("kspp_UserProfile");
+    auto table_source = topology->create<kspp::kafka_source<int64_t, user_profile_data, kspp::binary_codec>>("kspp_UserProfile", codec);
+    auto table = topology->create<kspp::ktable_partition_impl<int64_t, user_profile_data, kspp::binary_codec>>(table_source, codec);
     
     topology->start();
     topology->flush();
