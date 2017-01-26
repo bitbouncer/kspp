@@ -11,7 +11,7 @@ namespace kspp {
   public:
     typedef std::function<void(std::shared_ptr<krecord<SK, SV>> record, flat_map* self)> extractor; // maybe better to pass this and send() directrly
 
-    flat_map(partition_topology_base& topology, std::shared_ptr<partition_source<SK, SV>> source, extractor f)
+    flat_map(topology_base& topology, std::shared_ptr<partition_source<SK, SV>> source, extractor f)
       : partition_source<RK, RV>(source.get(), source->partition())
       , _source(source)
       , _extractor(f)
@@ -108,7 +108,7 @@ namespace kspp {
   public:
     typedef std::function<void(std::shared_ptr<krecord<K, SV>> record, transform_value* self)> extractor; // maybee better to pass this and send() directrly
 
-    transform_value(std::shared_ptr<partition_source<K, SV>> source, extractor f)
+    transform_value(topology_base& topology, std::shared_ptr<partition_source<K, SV>> source, extractor f)
       : partition_source<K, RV>(source.get(), source->partition())
       , _source(source)
       , _extractor(f) {
@@ -121,18 +121,7 @@ namespace kspp {
     ~transform_value() {
       close();
     }
-
-    static std::vector<std::shared_ptr<partition_source<K, RV>>> create(std::vector<std::shared_ptr<partition_source<K, SV>>>& streams, extractor f) {
-      std::vector<std::shared_ptr<partition_source<K, RV>>> res;
-      for (auto i : streams)
-        res.push_back(std::make_shared<transform_value<K, SV, RV>>(i, f));
-      return res;
-    }
-
-    static std::shared_ptr<partition_source<K, RV>> create(std::shared_ptr<partition_source<K, SV>> source, extractor f) {
-      return std::make_shared<transform_value<K, SV, RV>>(source, f);
-    }
-
+ 
     std::string name() const {
       return _source->name() + "-transform_value";
     }

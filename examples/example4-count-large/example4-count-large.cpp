@@ -13,7 +13,7 @@
 int main(int argc, char **argv) {
   auto codec = std::make_shared<kspp::text_codec>();
 
-  auto text_builder = kspp::topology_builder<kspp::text_codec>("example4-count", "localhost");
+  auto text_builder = kspp::topology_builder("example4-count", "localhost");
 
   {
     auto topology = text_builder.create_topic_topology();

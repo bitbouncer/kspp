@@ -10,11 +10,11 @@ class pipe : public partition_source<K, V>
   typedef V value_type;
   typedef kspp::krecord<K, V> record_type;
 
-  pipe(size_t partition)
-    : partition_source<K, V>(NULL, partition) {
+  pipe(topology_base& topology)
+    : partition_source<K, V>(NULL, topology.partition()) {
   }
 
-  pipe(std::shared_ptr<kspp::partition_source<K, V>> upstream)
+  pipe(topology_base& topology, std::shared_ptr<kspp::partition_source<K, V>> upstream)
     : partition_source<K, V>(upstream.get(), upstream->partition()) {
       upstream->add_sink([this](auto r) {
       this->send_to_sinks(r);
@@ -52,8 +52,8 @@ class pipe<void, V> : public partition_source<void, V>
   typedef V value_type;
   typedef kspp::krecord<void, V> record_type;
 
-  pipe(size_t partition)
-    : partition_source<void, V>(NULL, partition) {
+  pipe(topology_base& topology, size_t partition)
+    : partition_source<void, V>(NULL, topology.partition()) {
   }
 
   pipe(std::shared_ptr<kspp::partition_source<void, V>> upstream)
@@ -94,11 +94,11 @@ class pipe<K, void> : public partition_source<K, void>
   typedef void value_type;
   typedef kspp::krecord<K, void> record_type;
 
-  pipe(size_t partition)
-    : partition_source<K, void>(NULL, partition) {
+  pipe(topology_base& topology)
+    : partition_source<K, void>(NULL, topology.partition()) {
   }
 
-  pipe(std::shared_ptr<kspp::partition_source<K, void>> upstream)
+  pipe(topology_base& topology, std::shared_ptr<kspp::partition_source<K, void>> upstream)
     : partition_source<K, void>(upstream.get(), upstream->partition()) {
     if (upstream)
       upstream->add_sink([this](std::shared_ptr<krecord<K, void>> r) {

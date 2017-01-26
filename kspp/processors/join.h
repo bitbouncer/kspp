@@ -16,7 +16,7 @@ namespace kspp {
   public:
     typedef std::function<void(const K& key, const streamV& left, const tableV& right, R& result)> value_joiner; // TBD replace with std::shared_ptr<const krecord<K, R>> left, std::shared_ptr<const krecord<K, R>> right, std::shared_ptr<krecord<K, R>> result;
 
-    left_join(std::shared_ptr<partition_source<K, streamV>> stream, std::shared_ptr<ktable_partition<K, tableV>> table, value_joiner f)
+    left_join(topology_base& topology, std::shared_ptr<partition_source<K, streamV>> stream, std::shared_ptr<ktable_partition<K, tableV>> table, value_joiner f)
       : partition_source<K, R>(stream.get(), stream->partition())
       , _stream(stream)
       , _table(table)
@@ -33,11 +33,7 @@ namespace kspp {
 
     virtual std::string processor_name() const { return "left_join"; }
 
-    static std::shared_ptr<partition_source<K, R>> create(std::shared_ptr<partition_source<K, streamV>> stream, std::shared_ptr<ktable_partition<K, tableV>> table, value_joiner f) {
-      return std::make_shared<left_join<K, streamV, tableV, R>>(stream, table, f);
-    }
-
-    std::string name() const { 
+    std::string name() const {
       return  _stream->name() + "-left_join(" + _table->name() + ")[" + type_name<K>::get() + ", " + type_name<R>::get() + "]"; 
     }
 
@@ -55,12 +51,6 @@ namespace kspp {
       _table->close();
       _stream->close();
     }
-
-    /*
-    virtual int produce(std::shared_ptr<krecord<K, streamV>> r) {
-      _queue.push_back(r);
-    }
-    */
 
     virtual size_t queue_len() {
       return _queue.size();

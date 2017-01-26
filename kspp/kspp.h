@@ -209,23 +209,25 @@ class partition_processor : public processor
   partition_processor*  _upstream;
 };
 
-class partition_topology_base
+class topology_base
 {
-  public:
-  partition_topology_base(std::string app_id, std::string topology_id, int32_t partition, std::string brokers, boost::filesystem::path root_path)
+  protected:
+    topology_base(std::string app_id, std::string topology_id, int32_t partition, std::string brokers, boost::filesystem::path root_path)
     : _app_id(app_id)
     , _is_init(false)
     , _topology_id(topology_id)
     , _partition(partition)
     , _brokers(brokers)
     , _root_path(root_path) {
-    BOOST_LOG_TRIVIAL(info) << "partition_topology created, name:" << name() << ", brokers:" << brokers << " , storage_path:" << root_path;
+    BOOST_LOG_TRIVIAL(info) << "topology created, name:" << name() << ", brokers:" << brokers << " , storage_path:" << root_path;
   }
 
-  virtual ~partition_topology_base() {
-    BOOST_LOG_TRIVIAL(info) << "partition_topology, name:" << name() << " terminated";
+  virtual ~topology_base() {
+    BOOST_LOG_TRIVIAL(info) << "topology, name:" << name() << " terminated";
     // output stats
   }
+
+public:
 
   std::string app_id() const { 
     return _app_id; 
@@ -358,9 +360,28 @@ class partition_topology_base
     //  i->start(offset);
   }
 
-  void flush() {
+  /*void flush() {
     for (auto i : _top_partition_processors)
       i->flush();
+  }
+  */
+  
+  void flush() {
+    while (!eof())
+      if (!process_one()) {
+        //using namespace std::chrono_literals;
+        //std::this_thread::sleep_for(10ms);
+        ;
+      }
+    for (auto i : _top_partition_processors)
+      i->flush();
+
+    while (!eof())
+      if (!process_one()) {
+        //using namespace std::chrono_literals;
+        //std::this_thread::sleep_for(10ms);
+        ;
+      }
   }
 
   boost::filesystem::path get_storage_path() {
@@ -384,23 +405,6 @@ class partition_topology_base
   std::vector<std::shared_ptr<partition_processor>> _top_partition_processors;
 };
 
-template<class CODEC>
-class partition_topology : public partition_topology_base
-{
-  public:
-  partition_topology(std::string app_id, std::string topology_id, int32_t partition, std::string brokers, boost::filesystem::path root_path, std::shared_ptr<CODEC> default_codec)
-    : partition_topology_base(app_id, topology_id, partition, brokers, root_path)
-    , _default_codec(default_codec) {
-
-  }
-
-  std::shared_ptr<CODEC> codec() {
-    return _default_codec;
-  }
-
-  protected:
-  std::shared_ptr<CODEC> _default_codec;
-};
 
 template<class K, class V>
 class partition_sink : public partition_processor
@@ -597,8 +601,26 @@ class partition_source : public partition_processor
 
   virtual std::string record_type_name() const { return "[" + type_name<K>::get() + ", " + type_name<V>::get() + "]"; }
 
+  /*
   void add_sink(std::shared_ptr<partition_sink<K, V>> sink) {
     assert(sink.get() != nullptr);
+    add_sink([sink](auto e) {
+      sink->produce(e);
+    });
+  }
+  */
+
+  template<class SINK>
+  typename std::enable_if<std::is_base_of<kspp::partition_sink<K, V>, SINK>::value, void>::type
+    add_sink(SINK* sink) {
+    add_sink([sink](auto e) {
+      sink->produce(e);
+    });
+  }
+
+  template<class SINK>
+  typename std::enable_if<std::is_base_of<kspp::partition_sink<K, V>, SINK>::value, void>::type
+    add_sink(std::shared_ptr<SINK> sink) {
     add_sink([sink](auto e) {
       sink->produce(e);
     });

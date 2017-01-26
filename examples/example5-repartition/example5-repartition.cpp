@@ -13,7 +13,7 @@
 int main(int argc, char **argv) {
   auto codec = std::make_shared<kspp::text_codec>();
 
-  auto builder = kspp::topology_builder<kspp::text_codec>("example5-repartition", "localhost");
+  auto builder = kspp::topology_builder("example5-repartition", "localhost");
   {
     auto topology = builder.create_topic_topology();
     auto sink = topology->create<kspp::kafka_topic_sink<int, std::string, kspp::text_codec>>("kspp_example5_usernames", codec);
@@ -54,7 +54,7 @@ int main(int argc, char **argv) {
   {
     auto topology = builder.create_topic_topology(); 
     auto sources = topology->create_N<kspp::kafka_source<int, std::string, kspp::text_codec>>(8, "kspp_example5_usernames", codec);
-    //topology->create_N<kspp::partition_stream_sink<int, std::string>>(sources, std::cerr);
+    topology->create<kspp::stream_sink<int, std::string>>(sources, &std::cerr);
     topology->start(-2);
     topology->flush();
 
@@ -65,8 +65,8 @@ int main(int argc, char **argv) {
     auto topic_sink = topology->create<kspp::kafka_topic_sink<int, std::string, kspp::text_codec>>("kspp_example5_usernames.per-channel", codec);
     auto sources = topology->create_N<kspp::kafka_source<int, std::string, kspp::text_codec>>(8, "kspp_example5_usernames", codec);
     auto routing_sources = topology->create_N<kspp::kafka_source<int, int, kspp::text_codec>>(8, "kspp_example5_user_channel", codec);
-    //auto routing_tables = topology->create_ktables<int, int>(routing_sources);
-    //auto partition_repartition = topology->create_repartition<int, std::string, int>(sources, routing_tables, topic_sink);
+    auto routing_tables = topology->create<kspp::ktable_partition_impl<int, int, kspp::text_codec>>(routing_sources, codec);
+    auto partition_repartition = topology->create<kspp::repartition_by_table<int, std::string, int, kspp::text_codec>>(sources, routing_tables, topic_sink);
 
     topology->init_metrics();
     topology->start(-2);
@@ -78,7 +78,7 @@ int main(int argc, char **argv) {
   {
     auto topology = builder.create_topic_topology();
     auto sources = topology->create_N<kspp::kafka_source<int, std::string, kspp::text_codec>>(8, "kspp_example5_usernames.per-channel", codec);
-    //topology->create<kspp::partition_stream_sink<int, std::string>>(sources, std::cerr);
+    topology->create<kspp::stream_sink<int, std::string>>(sources, &std::cerr);
     topology->start(-2);
     topology->flush();
     topology->output_metrics(std::cerr);

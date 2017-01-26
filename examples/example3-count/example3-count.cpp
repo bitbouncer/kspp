@@ -12,7 +12,7 @@
 
 int main(int argc, char **argv) {
   auto codec = std::make_shared<kspp::text_codec>();
-  auto builder = kspp::topology_builder<kspp::text_codec>("example3-count", "localhost");
+  auto builder = kspp::topology_builder("example3-count", "localhost");
   {
     auto topology = builder.create_topology(PARTITION);
     auto sink = topology->create<kspp::kafka_partition_sink<void, std::string, kspp::text_codec>>("kspp_TextInput", codec);
@@ -32,7 +32,7 @@ int main(int argc, char **argv) {
     });
 
     auto word_counts = topology->create<kspp::count_by_key<std::string, int, kspp::text_codec>>(word_stream, 2000, codec);
-    //auto sink = topology->create_stream_sink<std::string, int>(word_counts, std::cerr);
+    auto sink = topology->create<kspp::stream_sink<std::string, int>>(word_counts, &std::cerr);
 
     topology->init_metrics();
     word_counts->start(-2);

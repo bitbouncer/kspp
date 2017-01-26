@@ -9,13 +9,13 @@
 int main(int argc, char **argv) {
   size_t join_count = 0;
   auto codec = std::make_shared<kspp::binary_codec>();
-  auto builder = kspp::topology_builder<kspp::binary_codec>("example2-join", "localhost");
+  auto builder = kspp::topology_builder("example2-join", "localhost");
   {
     auto topology = builder.create_topology(PARTITION);
     auto stream = topology->create<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_codec>>("kspp_test0_eventstream", codec);
     auto table_source = topology->create<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_codec>>("kspp_test0_table", codec);
     auto table = topology->create<kspp::ktable_partition_impl<boost::uuids::uuid, int64_t, kspp::binary_codec>>(table_source,  codec);
-    auto join = topology->create_left_join<boost::uuids::uuid, int64_t, int64_t, int64_t>(
+    auto join = topology->create<kspp::left_join<boost::uuids::uuid, int64_t, int64_t, int64_t>>(
       stream, 
       table, 
       [&join_count](const boost::uuids::uuid& key, const int64_t& left, const int64_t& right, int64_t& row) {
@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
     });
 
     topology->init_metrics();
-    join->start(-2);
+    topology->start(-2);
 
     // first sync table
     std::cout << "before sync" << std::endl;
@@ -36,8 +36,8 @@ int main(int argc, char **argv) {
 
     // now join stream with loaded table
     join_count = 0;
-    join->flush();
-    join->commit();
+    topology->flush();
+    //topology->commit();
 
     auto t1 = std::chrono::high_resolution_clock::now();
     auto fs = t1 - t0;

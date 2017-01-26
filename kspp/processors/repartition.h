@@ -11,7 +11,7 @@ namespace kspp {
   class repartition_by_table : public partition_processor
   {
   public:
-    repartition_by_table(std::shared_ptr<partition_source<K, V>> source, std::shared_ptr<ktable_partition<K, PK>> routing_table, std::shared_ptr<topic_sink<K, V, CODEC>> topic_sink)
+    repartition_by_table(topology_base& topology, std::shared_ptr<partition_source<K, V>> source, std::shared_ptr<ktable_partition<K, PK>> routing_table, std::shared_ptr<topic_sink<K, V, CODEC>> topic_sink)
       : partition_processor(source.get(), source->partition())
       , _source(source)
       , _routing_table(routing_table)

@@ -6,7 +6,7 @@ namespace kspp {
   public:
     typedef std::function<bool(std::shared_ptr<krecord<K, V>> record)> predicate; // return true to keep
 
-    delay(std::shared_ptr<partition_source<K, V>> source, int ms)
+    delay(topology_base& topology, std::shared_ptr<partition_source<K, V>> source, int ms)
       : partition_source<K, V>(source->partition())
       , _source(source)
       , _delay(ms) {
@@ -21,17 +21,6 @@ namespace kspp {
     }
 
     virtual std::string processor_name() const { return "delay"; }
-
-    static std::vector<std::shared_ptr<partition_source<K, V>>> create(std::vector<std::shared_ptr<partition_source<K, V>>>& streams, int ms) {
-      std::vector<std::shared_ptr<partition_source<K, V>>> res;
-      for (auto i : streams)
-        res.push_back(std::make_shared<delay<K, V>>(i, ms));
-      return res;
-    }
-
-    static std::shared_ptr<partition_source<K, V>> create(std::shared_ptr<partition_source<K, V>> source, int ms) {
-      return std::make_shared<delay<K, V>>(source, f);
-    }
 
     std::string name() const {
       return _source->name() + "-delay(" + std::to_string(_delay) + ")";

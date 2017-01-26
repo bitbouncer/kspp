@@ -6,7 +6,7 @@ namespace kspp {
   public:
     typedef std::function<bool(std::shared_ptr<krecord<K, V>> record)> predicate; // return true to keep
 
-    filter(std::shared_ptr<partition_source<K, V>> source, predicate f)
+    filter(topology_base& topology, std::shared_ptr<partition_source<K, V>> source, predicate f)
       : partition_source<K, V>(source.get(), source->partition())
       , _source(source)
       , _predicate(f) {
@@ -21,17 +21,6 @@ namespace kspp {
     }
 
     virtual std::string processor_name() const { return "filter"; }
-
-    static std::vector<std::shared_ptr<partition_source<K, V>>> create(std::vector<std::shared_ptr<partition_source<K, V>>>& streams, predicate f) {
-      std::vector<std::shared_ptr<partition_source<K, V>>> res;
-      for (auto i : streams)
-        res.push_back(std::make_shared<filter<K, V>>(i, f));
-      return res;
-    }
-
-    static std::shared_ptr<partition_source<K, V>> create(std::shared_ptr<partition_source<K, V>> source, predicate f) {
-      return std::make_shared<filter<K, V>>(source, f);
-    }
 
     std::string name() const {
       return _source->name() + "-filter";

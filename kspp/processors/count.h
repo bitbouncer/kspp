@@ -9,7 +9,7 @@ namespace kspp {
   class count_by_key : public materialized_partition_source<K, V>
   {
   public:
-    count_by_key(partition_topology_base& topology, std::shared_ptr<partition_source<K, void>> source, int64_t punctuate_intervall, std::shared_ptr<CODEC> codec)
+    count_by_key(topology_base& topology, std::shared_ptr<partition_source<K, void>> source, int64_t punctuate_intervall, std::shared_ptr<CODEC> codec)
       : materialized_partition_source<K, V>(source.get(), source->partition())
       , _stream(source)
       , _counter_store(name(), get_storage_path(topology.get_storage_path()), codec)
@@ -30,12 +30,6 @@ namespace kspp {
     }
 
     virtual std::string processor_name() const { return "count_by_key"; }
-
-    /*
-    static std::shared_ptr<materialized_partition_source<K, V>> create(std::shared_ptr<partition_source<K, void>> source, boost::filesystem::path storage_path, int64_t punctuate_intervall, std::shared_ptr<CODEC> codec) {
-      return std::make_shared<count_by_key<K, V, CODEC>>(source, storage_path, punctuate_intervall, codec);
-    }
-    */
 
     std::string name() const {
       return _stream->name() + "-count_by_key()[" + type_name<K>::get() + ", " + type_name<V>::get() + "]";

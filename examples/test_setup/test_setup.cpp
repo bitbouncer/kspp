@@ -16,7 +16,7 @@ static boost::uuids::uuid to_uuid(int64_t x) {
 int main(int argc, char **argv) {
   auto codec = std::make_shared<kspp::binary_codec>();
   
-  auto builder     = kspp::topology_builder<kspp::binary_codec>("test_setup", "localhost");
+  auto builder     = kspp::topology_builder("test_setup", "localhost");
   auto topology = builder.create_topology(-1);
 
   auto partitioner = [](const boost::uuids::uuid& key)->uint32_t { return boost::hash<boost::uuids::uuid>()(key) % 8; };
