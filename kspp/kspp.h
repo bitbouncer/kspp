@@ -8,7 +8,9 @@
 #include <thread>
 #include <chrono>
 #include <strstream>
+#include <boost/filesystem.hpp>
 #include <boost/uuid/uuid.hpp>
+#include <boost/log/trivial.hpp>
 #include "metrics.h"
 #include "type_name.h"
 
