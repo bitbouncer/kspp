@@ -20,8 +20,8 @@ int main(int argc, char **argv) {
   auto topology = builder.create_topology(-1);
 
   auto partitioner = [](const boost::uuids::uuid& key)->uint32_t { return boost::hash<boost::uuids::uuid>()(key) % 8; };
-  auto table_stream = topology->create<kspp::kafka_topic_sink<boost::uuids::uuid, int64_t, kspp::binary_codec>>("kspp_test0_table", partitioner, codec);
-  auto event_stream = topology->create<kspp::kafka_topic_sink<boost::uuids::uuid, int64_t, kspp::binary_codec>>("kspp_test0_eventstream", partitioner, codec);
+  auto table_stream = topology->create_topic_sink<kspp::kafka_topic_sink<boost::uuids::uuid, int64_t, kspp::binary_codec>>("kspp_test0_table", partitioner, codec);
+  auto event_stream = topology->create_topic_sink<kspp::kafka_topic_sink<boost::uuids::uuid, int64_t, kspp::binary_codec>>("kspp_test0_eventstream", partitioner, codec);
 
   topology->init_metrics();
 

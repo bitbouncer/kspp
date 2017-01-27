@@ -47,7 +47,7 @@ namespace kspp {
     // this seems to be only sinks???
     template<class pp, typename... Args>
     typename std::enable_if<std::is_base_of<kspp::topic_processor, pp>::value, std::shared_ptr<pp>>::type
-      create(Args... args) {
+      create_topic_sink(Args... args) {
       auto p = std::make_shared<pp>(*this, args...);
       _topic_processors.push_back(p);
       return p;
