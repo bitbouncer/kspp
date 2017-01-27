@@ -36,6 +36,14 @@ namespace kspp {
       return p;
     }
 
+    template<class pp, typename... Args>
+    typename std::enable_if<std::is_base_of<kspp::partition_processor, pp>::value, std::shared_ptr<pp>>::type
+      create7(Args... args) {
+      auto p = std::make_shared<pp>(*this, args...);
+      _partition_processors.push_back(p);
+      return p;
+    }
+
     // this seems to be only sinks???
     template<class pp, typename... Args>
     typename std::enable_if<std::is_base_of<kspp::topic_processor, pp>::value, std::shared_ptr<pp>>::type
