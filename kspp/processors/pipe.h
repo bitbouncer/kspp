@@ -56,7 +56,7 @@ class pipe<void, V> : public partition_source<void, V>
     : partition_source<void, V>(NULL, topology.partition()) {
   }
 
-  pipe(std::shared_ptr<kspp::partition_source<void, V>> upstream)
+  pipe(topology_base& topology, std::shared_ptr<kspp::partition_source<void, V>> upstream)
     : partition_source<void, V>(upstream.get(), upstream->partition()) {
     if (upstream)
       upstream->add_sink([this](auto r) {
