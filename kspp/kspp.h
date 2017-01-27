@@ -11,6 +11,9 @@
 #include <boost/filesystem.hpp>
 #include <boost/uuid/uuid.hpp>
 #include <boost/log/trivial.hpp>
+#include <boost/algorithm/string/replace.hpp>
+//#include <boost/algorithm/string.hpp>                                                                                                                                                
+//#include <boost/algorithm/string/regex.hpp>   
 #include "metrics.h"
 #include "type_name.h"
 
@@ -249,20 +252,42 @@ public:
   std::string name() const {
     return _app_id + "__" + _topology_id + "[p" + std::to_string(_partition) + "]";
   }
-
   // the metrics should look like this...
   //cpu_load_short, host=server01, region=us-west value=0.64 1434055562000000000
-  //metric_name, add_id={app_id}}, topology={{_topology_id}}, depth={{depth}}, processor_type={{processor_name()}} record_type="
+  //metric_name,add_id={app_id}},topology={{_topology_id}},depth={{depth}},processor_type={{processor_name()}},record_type="
+  //order tags descending
+  std::string escape_influx(std::string s) {
+    std::string s2 = boost::replace_all_copy(s, " ", "\\ ");
+    std::string s3 = boost::replace_all_copy(s2, ",", "\\,");
+    std::string s4 = boost::replace_all_copy(s3, "=", "\\=");
+    /*
+    static const std::string toReplace = " ,="; // character class that matches . and -                                                                                                          
+    std::string replacement = ";";
+    std::string processedString = boost::replace_all_regex_copy(someString, boost::regex(toReplace), replacement);
+    */
+    return s4;
+  }
+
   void init_metrics() {
     for (auto i : _partition_processors) {
       for (auto j : i->get_metrics()) {
-        j->_logged_name = j->_simple_name + ", app_id=" + _app_id + ", topology=" + _topology_id + ", depth=" + std::to_string(i->depth()) + ", processor_type=" + i->processor_name() + ", record_type='" + i->record_type_name() + "', partition=" + std::to_string(i->partition());
+        j->_logged_name = j->_simple_name
+          + ",app_id=" + escape_influx(_app_id)
+          + ",depth=" + std::to_string(i->depth())
+          + ",partition=" + std::to_string(i->partition())
+          + ",processor_type=" + escape_influx(i->processor_name())
+          + ",record_type=" + escape_influx(i->record_type_name())
+          + ",topology=" + escape_influx(_topology_id);
       }
     }
 
     for (auto i : _topic_processors) {
       for (auto j : i->get_metrics()) {
-        j->_logged_name = j->_simple_name + ", app_id=" + _app_id + ", topology=" + _topology_id + ", processor_type=" + i->processor_name() + ", record_type='" + i->record_type_name() + "'";
+        j->_logged_name = j->_simple_name
+          + ",app_id=" + escape_influx(_app_id)
+          + ",processor_type=" + escape_influx(i->processor_name())
+          + ",record_type=" + escape_influx(i->record_type_name())
+          + ",topology=" + escape_influx(_topology_id);
       }
     }
   }
@@ -276,38 +301,7 @@ public:
       for (auto j : i->get_metrics())
         f(*j);
   }
-
-  /*
-  void output_metrics(std::ostream& s) {
-    for (auto i : _partition_processors) {
-      for (auto j : i->get_metrics())
-        s << "metrics: " << j->name() << " : " << j->value() << std::endl;
-    }
-
-    for (auto i : _topic_processors) {
-      for (auto j : i->get_metrics()) {
-        s << "metrics: " << j->name() << " : " << j->value() << std::endl;
-      }
-    }
-  }
-  */
-
-  /*
-  void output_metrics(std::shared_ptr<kspp::topic_sink<std::string, std::string, kspp::text_codec>> sink) {
-    for (auto i : _partition_processors) {
-      for (auto j : i->get_metrics())
-        sink->produce(std::make_shared<kspp::krecord<std::string, std::string>>(j->name(), std::to_string(j->value())));
-    }
-
-    for (auto i : _topic_processors) {
-      for (auto j : i->get_metrics()) {
-        sink->produce(std::make_shared<kspp::krecord<std::string, std::string>>(j->name(), std::to_string(j->value())));
-      }
-    }
-  }
-  */
-
-
+  
   void init() {
     _top_partition_processors.clear();
 
@@ -515,21 +509,20 @@ template<class K, class V>
 class topic_sink_base : public topic_processor
 {
   public:
+  typedef K key_type;
+  typedef V value_type;
+  typedef kspp::krecord<K, V> record_type;
+
   virtual int produce(std::shared_ptr<krecord<K, V>> r) = 0;
+  virtual std::string record_type_name() const { return "[" + type_name<K>::get() + ", " + type_name<V>::get() + "]"; }
+  virtual size_t queue_len() = 0;
 };
 
 template<class K, class V, class CODEC>
 class topic_sink : public topic_sink_base<K, V>
 {
   public:
-  typedef K key_type;
-  typedef V value_type;
-  typedef kspp::krecord<K, V> record_type;
 
-  virtual std::string record_type_name() const { return "[" + type_name<K>::get() + ", " + type_name<V>::get() + "]"; }
-
-  virtual int    produce(std::shared_ptr<krecord<K, V>> r) = 0;
-  virtual size_t queue_len() = 0;
   virtual int produce(uint32_t partition_hash, std::shared_ptr<krecord<K, V>> r) = 0;
   inline  int produce(uint32_t partition_hash, const K& key, const V& value) {
     return produce(partition_hash, std::make_shared<krecord<K, V>>(key, value));
@@ -550,15 +543,15 @@ template<class V, class CODEC>
 class topic_sink<void, V, CODEC> : public topic_sink_base<void, V>
 {
   public:
-  typedef void key_type;
-  typedef V value_type;
-  typedef kspp::krecord<void, V> record_type;
+  //typedef void key_type;
+  //typedef V value_type;
+  //typedef kspp::krecord<void, V> record_type;
 
-  virtual std::string record_type_name() const { return "[void, " + type_name<V>::get() + "]"; }
+  //virtual std::string record_type_name() const { return "[void, " + type_name<V>::get() + "]"; }
 
-  virtual int produce(std::shared_ptr<krecord<void, V>> r) = 0;
-  virtual size_t queue_len() = 0;
-  virtual int produce(uint32_t partition_hash, std::shared_ptr<krecord<void, V>> r) = 0;
+  ////virtual int produce(std::shared_ptr<krecord<void, V>> r) = 0;
+  //virtual size_t queue_len() = 0;
+  //virtual int produce(uint32_t partition_hash, std::shared_ptr<krecord<void, V>> r) = 0;
   inline  int produce(uint32_t partition_hash, const V& value) {
     return produce(partition_hash, std::make_shared<krecord<void, V>>(value));
   }
@@ -579,7 +572,7 @@ template<class K, class CODEC>
 class topic_sink<K, void, CODEC> : public topic_sink_base<K, void>
 {
   public:
-  typedef K key_type;
+ /* typedef K key_type;
   typedef void value_type;
   typedef kspp::krecord<K, void> record_type;
 
@@ -588,6 +581,7 @@ class topic_sink<K, void, CODEC> : public topic_sink_base<K, void>
   virtual int produce(std::shared_ptr<krecord<K, void>> r) = 0;
   virtual size_t queue_len() = 0;
   virtual int produce(uint32_t partition_hash, std::shared_ptr<krecord<K, void>> r) = 0;
+ */ 
   inline  int produce(uint32_t partition_hash, const K& key) {
     return produce(partition_hash, std::make_shared<krecord<K, void>>(key));
   }
