@@ -71,6 +71,8 @@ class processor
   }
 
   virtual std::string record_type_name() const { return "[?,?]"; }
+  virtual std::string key_type_name() const { return "?"; }
+  virtual std::string value_type_name() const { return "?"; }
 
   protected:
   // must be valid for processor lifetime  (cannot be removed)
@@ -274,10 +276,12 @@ public:
         j->_logged_name = j->_simple_name
           + ",app_id=" + escape_influx(_app_id)
           + ",depth=" + std::to_string(i->depth())
+          + ",key_type=" + escape_influx(i->key_type_name())
           + ",partition=" + std::to_string(i->partition())
           + ",processor_type=" + escape_influx(i->processor_name())
-          + ",record_type=" + escape_influx(i->record_type_name())
-          + ",topology=" + escape_influx(_topology_id);
+          //+ ",record_type=" + escape_influx(i->record_type_name())
+          + ",topology=" + escape_influx(_topology_id)
+          + ",value_type=" + escape_influx(i->value_type_name());
       }
     }
 
@@ -285,9 +289,11 @@ public:
       for (auto j : i->get_metrics()) {
         j->_logged_name = j->_simple_name
           + ",app_id=" + escape_influx(_app_id)
+          + ",key_type=" + escape_influx(i->key_type_name())
           + ",processor_type=" + escape_influx(i->processor_name())
-          + ",record_type=" + escape_influx(i->record_type_name())
-          + ",topology=" + escape_influx(_topology_id);
+          //+ ",record_type=" + escape_influx(i->record_type_name())
+          + ",topology=" + escape_influx(_topology_id)
+          + ",value_type=" + escape_influx(i->value_type_name());
       }
     }
   }
