@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
       return (e->key != "hello");
     });
 
-    auto mypipe = topology->create7<kspp::pipe<std::string, void>>(filtered_stream.get());
+    auto mypipe = topology->create7<kspp::pipe<std::string, void>>(filtered_stream);
     auto sink = topology->create<stream_sink<std::string, void>>(mypipe, &std::cerr);
     mypipe->produce("extra message injected");
     topology->start(-2);
