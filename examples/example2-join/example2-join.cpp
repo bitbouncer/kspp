@@ -12,10 +12,10 @@ int main(int argc, char **argv) {
   auto builder = kspp::topology_builder("example2-join", "localhost");
   {
     auto topology = builder.create_topology(PARTITION);
-    auto stream = topology->create<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_codec>>("kspp_test0_eventstream", codec);
-    auto table_source = topology->create<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_codec>>("kspp_test0_table", codec);
-    auto table = topology->create<kspp::ktable_partition_impl<boost::uuids::uuid, int64_t, kspp::binary_codec>>(table_source,  codec);
-    auto join = topology->create<kspp::left_join<boost::uuids::uuid, int64_t, int64_t, int64_t>>(
+    auto stream = topology->create_processor<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_codec>>("kspp_test0_eventstream", codec);
+    auto table_source = topology->create_processor<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_codec>>("kspp_test0_table", codec);
+    auto table = topology->create_processor<kspp::ktable_partition_impl<boost::uuids::uuid, int64_t, kspp::binary_codec>>(table_source,  codec);
+    auto join = topology->create_processor<kspp::left_join<boost::uuids::uuid, int64_t, int64_t, int64_t>>(
       stream, 
       table, 
       [&join_count](const boost::uuids::uuid& key, const int64_t& left, const int64_t& right, int64_t& row) {

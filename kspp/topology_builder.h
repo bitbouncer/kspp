@@ -30,19 +30,19 @@ namespace kspp {
 
     template<class pp, typename... Args>
     typename std::enable_if<std::is_base_of<kspp::partition_processor, pp>::value, std::shared_ptr<pp>>::type
-      create(Args... args) {
+      create_processor(Args... args) {
       auto p = std::make_shared<pp>(*this, args...);
       _partition_processors.push_back(p);
       return p;
     }
 
-    template<class pp, typename... Args>
+   /* template<class pp, typename... Args>
     typename std::enable_if<std::is_base_of<kspp::partition_processor, pp>::value, std::shared_ptr<pp>>::type
       create7(Args... args) {
       auto p = std::make_shared<pp>(*this, args...);
       _partition_processors.push_back(p);
       return p;
-    }
+    }*/
 
     // this seems to be only sinks???
     template<class pp, typename... Args>
@@ -52,13 +52,6 @@ namespace kspp {
       _topic_processors.push_back(p);
       return p;
     }
-
-   /* template<class K, class V>
-    std::shared_ptr<kspp::partition_source<K, V>> create_global_kafka_source(std::string topic) {
-      auto p = std::make_shared<kspp::kafka_source<K, V, CODEC>>(_brokers, topic, 0, _default_codec);
-      _partition_processors.push_back(p);
-      return p;
-    }*/
   };
 
 

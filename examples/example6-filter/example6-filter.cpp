@@ -17,28 +17,28 @@ int main(int argc, char **argv) {
   auto builder = topology_builder("example6-filter", "localhost");
   {
     auto topology = builder.create_topology(PARTITION);
-    auto sink = topology->create<kafka_partition_sink<void, std::string, text_codec>>("kspp_TextInput", codec);
+    auto sink = topology->create_processor<kafka_partition_sink<void, std::string, text_codec>>("kspp_TextInput", codec);
     kspp::produce<void, std::string>(*sink, "hello kafka streams");
   }
 
   {
     auto topology = builder.create_topology(PARTITION);
-    auto source = topology->create<kafka_source<void, std::string, text_codec>>("kspp_TextInput", codec);
+    auto source = topology->create_processor<kafka_source<void, std::string, text_codec>>("kspp_TextInput", codec);
 
     std::regex rgx("\\s+");
-    auto word_stream = topology->create<flat_map<void, std::string, std::string, void>>(source, [&rgx](const auto e, auto flat_map) {
+    auto word_stream = topology->create_processor<flat_map<void, std::string, std::string, void>>(source, [&rgx](const auto e, auto flat_map) {
       std::sregex_token_iterator iter(e->value->begin(), e->value->end(), rgx, -1);
       std::sregex_token_iterator end;
       for (; iter != end; ++iter)
         flat_map->push_back(std::make_shared<krecord<std::string, void>>(*iter));
     });
 
-    std::shared_ptr<kspp::partition_source<std::string, void>> filtered_stream = topology->create<filter<std::string, void>>(word_stream, [](const auto e)->bool {
+    std::shared_ptr<kspp::partition_source<std::string, void>> filtered_stream = topology->create_processor<filter<std::string, void>>(word_stream, [](const auto e)->bool {
       return (e->key != "hello");
     });
 
-    auto mypipe = topology->create7<kspp::pipe<std::string, void>>(filtered_stream);
-    auto sink = topology->create<stream_sink<std::string, void>>(mypipe, &std::cerr);
+    auto mypipe = topology->create_processor<kspp::pipe<std::string, void>>(filtered_stream);
+    auto sink = topology->create_processor<stream_sink<std::string, void>>(mypipe, &std::cerr);
     mypipe->produce("extra message injected");
     topology->start(-2);
     topology->flush();
