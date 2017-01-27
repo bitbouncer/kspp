@@ -64,7 +64,7 @@ namespace kspp {
   
     template<class pp, typename... Args>
     typename std::enable_if<std::is_base_of<kspp::partition_processor, pp>::value, std::shared_ptr<pp>>::type
-      create(Args... args) {
+      create_partition_processor(Args... args) {
       auto p = std::make_shared<pp>(*this, args...);
       _partition_processors.push_back(p);
       return p;
@@ -72,7 +72,7 @@ namespace kspp {
 
     template<class pp, typename... Args>
     typename std::enable_if<std::is_base_of<kspp::partition_processor, pp>::value, std::vector<std::shared_ptr<pp>>>::type
-      create_N(size_t count, Args... args) {
+      create_partition_processors(size_t count, Args... args) {
       std::vector<std::shared_ptr<pp>> result;
       for (size_t i = 0; i != count; ++i) {
         auto p = std::make_shared<pp>(*this, i, args...);
@@ -85,7 +85,7 @@ namespace kspp {
     // for flat map???
     template<class pp, class ps, typename... Args>
     typename std::enable_if<std::is_base_of<kspp::partition_processor, pp>::value, std::vector<std::shared_ptr<pp>>>::type
-      create(std::vector<std::shared_ptr<ps>> sources, Args... args) {
+      create_partition_processors(std::vector<std::shared_ptr<ps>> sources, Args... args) {
       std::vector<std::shared_ptr<pp>> result;
       for (auto i : sources) {
         auto p = std::make_shared<pp>(*this, i, args...);
@@ -101,7 +101,7 @@ namespace kspp {
     */
     template<class pp, class sourceT, class leftT, typename... Args>
     typename std::enable_if<std::is_base_of<kspp::partition_processor, pp>::value, std::vector<std::shared_ptr<pp>>>::type
-      create(
+      create_partition_processors(
         std::vector<std::shared_ptr<sourceT>> v1, 
         std::vector<std::shared_ptr<leftT>> v2,
         Args... args) {
@@ -120,7 +120,7 @@ namespace kspp {
     // this seems to be only sinks???
     template<class pp, typename... Args>
     typename std::enable_if<std::is_base_of<kspp::topic_processor, pp>::value, std::shared_ptr<pp>>::type
-      create(Args... args) {
+      create_topic_sink(Args... args) {
       auto p = std::make_shared<pp>(*this, args...);
       _topic_processors.push_back(p);
       return p;

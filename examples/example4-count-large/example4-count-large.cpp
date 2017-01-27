@@ -17,9 +17,9 @@ int main(int argc, char **argv) {
 
   {
     auto topology = text_builder.create_topic_topology();
-    auto sources = topology->create_N<kspp::kafka_source<void, std::string, kspp::text_codec>>(NR_OF_PARTITIONS, "test_text", codec);
+    auto sources = topology->create_partition_processors<kspp::kafka_source<void, std::string, kspp::text_codec>>(NR_OF_PARTITIONS, "test_text", codec);
     std::regex rgx("\\s+");
-    auto word_streams = topology->create<kspp::flat_map<void, std::string, std::string, void>>(sources, [&rgx](const auto e, auto flat_map) {
+    auto word_streams = topology->create_partition_processors<kspp::flat_map<void, std::string, std::string, void>>(sources, [&rgx](const auto e, auto flat_map) {
       std::sregex_token_iterator iter(e->value->begin(), e->value->end(), rgx, -1);
       std::sregex_token_iterator end;
       for (; iter != end; ++iter)
@@ -35,11 +35,11 @@ int main(int argc, char **argv) {
     //    flat_map->push_back(std::make_shared<kspp::krecord<std::string, void>>(*iter));
     //});
 
-    auto word_sink = topology->create<kspp::kafka_topic_sink<std::string, void, kspp::text_codec>>("test_words", codec);
+    auto word_sink = topology->create_topic_sink<kspp::kafka_topic_sink<std::string, void, kspp::text_codec>>("test_words", codec);
     for (auto i : word_streams)
       i->add_sink(word_sink);
 
-    //auto word_sink = topology->create<kspp::kafka_topic_sink<std::string, void, kspp::text_codec>>(word_streams, "test_words", codec);
+    //auto word_sink = topology->create_topic_sink<kspp::kafka_topic_sink<std::string, void, kspp::text_codec>>(word_streams, "test_words", codec);
 
     for (auto i : word_streams) {
       i->start(-2);
@@ -50,8 +50,8 @@ int main(int argc, char **argv) {
 
   { 
     auto topology = text_builder.create_topic_topology();
-    auto word_sources = topology->create_N<kspp::kafka_source<std::string, void, kspp::text_codec>>(NR_OF_PARTITIONS, "test_words", codec);
-    auto word_counts = topology->create<kspp::count_by_key<std::string, size_t, kspp::text_codec>>(word_sources, 10000, codec);
+    auto word_sources = topology->create_partition_processors<kspp::kafka_source<std::string, void, kspp::text_codec>>(NR_OF_PARTITIONS, "test_words", codec);
+    auto word_counts = topology->create_partition_processors<kspp::count_by_key<std::string, size_t, kspp::text_codec>>(word_sources, 10000, codec);
     
     topology->init_metrics();
     topology->start(-2);
