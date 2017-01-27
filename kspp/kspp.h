@@ -522,7 +522,7 @@ template<class K, class V, class CODEC>
 class topic_sink : public topic_sink_base<K, V>
 {
   public:
-
+  virtual int produce(std::shared_ptr<krecord<K, V>> r) = 0;
   virtual int produce(uint32_t partition_hash, std::shared_ptr<krecord<K, V>> r) = 0;
   inline  int produce(uint32_t partition_hash, const K& key, const V& value) {
     return produce(partition_hash, std::make_shared<krecord<K, V>>(key, value));
@@ -543,15 +543,8 @@ template<class V, class CODEC>
 class topic_sink<void, V, CODEC> : public topic_sink_base<void, V>
 {
   public:
-  //typedef void key_type;
-  //typedef V value_type;
-  //typedef kspp::krecord<void, V> record_type;
-
-  //virtual std::string record_type_name() const { return "[void, " + type_name<V>::get() + "]"; }
-
-  ////virtual int produce(std::shared_ptr<krecord<void, V>> r) = 0;
-  //virtual size_t queue_len() = 0;
-  //virtual int produce(uint32_t partition_hash, std::shared_ptr<krecord<void, V>> r) = 0;
+  virtual int produce(std::shared_ptr<krecord<void, V>> r) = 0;
+  virtual int produce(uint32_t partition_hash, std::shared_ptr<krecord<void, V>> r) = 0;
   inline  int produce(uint32_t partition_hash, const V& value) {
     return produce(partition_hash, std::make_shared<krecord<void, V>>(value));
   }
@@ -572,16 +565,7 @@ template<class K, class CODEC>
 class topic_sink<K, void, CODEC> : public topic_sink_base<K, void>
 {
   public:
- /* typedef K key_type;
-  typedef void value_type;
-  typedef kspp::krecord<K, void> record_type;
-
-  virtual std::string record_type_name() const { return "[" + type_name<K>::get() + ", void]"; }
-
   virtual int produce(std::shared_ptr<krecord<K, void>> r) = 0;
-  virtual size_t queue_len() = 0;
-  virtual int produce(uint32_t partition_hash, std::shared_ptr<krecord<K, void>> r) = 0;
- */ 
   inline  int produce(uint32_t partition_hash, const K& key) {
     return produce(partition_hash, std::make_shared<krecord<K, void>>(key));
   }
