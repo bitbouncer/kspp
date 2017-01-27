@@ -131,8 +131,8 @@ template<class V, class CODEC>
 class kafka_topic_sink<void, V, CODEC> : public kafka_sink_base<void, V, CODEC>
 {
   public:
-  kafka_topic_sink(topology_base& topology, std::string brokers, std::string topic, std::shared_ptr<CODEC> codec)
-    : kafka_sink_base<void, V, CODEC>(topology.brokers()brokers, topic, codec) {
+  kafka_topic_sink(topology_base& topology, std::string topic, std::shared_ptr<CODEC> codec)
+    : kafka_sink_base<void, V, CODEC>(topology.brokers(), topic, codec) {
   }
 
   virtual int produce(uint32_t partition, std::shared_ptr<krecord<void, V>> r) {
@@ -158,7 +158,7 @@ class kafka_topic_sink<K, void, CODEC> : public kafka_sink_base<K, void, CODEC>
   using partitioner = typename kafka_partitioner_base<K>::partitioner;
 
   kafka_topic_sink(topology_base& topology, std::string topic, partitioner p, std::shared_ptr<CODEC> codec)
-    : kafka_sink_base<K, void, CODEC>(topology.brokers()brokers, topic, p, codec) {
+    : kafka_sink_base<K, void, CODEC>(topology.brokers(), topic, p, codec) {
   }
 
   kafka_topic_sink(topology_base& topology, std::string topic, std::shared_ptr<CODEC> codec)
