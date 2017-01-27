@@ -70,9 +70,12 @@ class processor
     return _metrics;
   }
 
-  virtual std::string record_type_name() const { return "[?,?]"; }
-  virtual std::string key_type_name() const { return "?"; }
-  virtual std::string value_type_name() const { return "?"; }
+  inline std::string record_type_name() const { 
+    return "[" + key_type_name() + "," + value_type_name() + "]"; 
+  }
+
+  virtual std::string key_type_name() const = 0;
+  virtual std::string value_type_name() const = 0;
 
   protected:
   // must be valid for processor lifetime  (cannot be removed)
@@ -431,6 +434,13 @@ class partition_sink : public partition_processor
   inline int produce(const K& key, const V& value) {
     return produce(std::make_shared<krecord<K, V>>(key, value));
   }
+  virtual std::string key_type_name() const {
+    return type_name<K>::get();
+  }
+
+  virtual std::string value_type_name() const {
+    return type_name<V>::get();
+  }
 
   virtual size_t queue_len() = 0;
   protected:
@@ -446,9 +456,15 @@ class partition_sink<void, V> : public partition_processor
   typedef void key_type;
   typedef V value_type;
   typedef kspp::krecord<void, V> record_type;
+  
+  virtual std::string key_type_name() const { 
+    return "void";  
+  }
 
-  virtual std::string record_type_name() const { return "[void, " + type_name<V>::get() + "]"; }
-
+  virtual std::string value_type_name() const {
+    return type_name<V>::get();
+  }
+  
   virtual int produce(std::shared_ptr<krecord<void, V>> r) = 0;
   inline int produce(const V& value) {
     return produce(std::make_shared<krecord<void, V>>(value));
@@ -469,7 +485,13 @@ class partition_sink<K, void> : public partition_processor
   typedef void value_type;
   typedef kspp::krecord<K, void> record_type;
 
-  virtual std::string record_type_name() const { return "[" + type_name<K>::get() + ", void]"; }
+  virtual std::string key_type_name() const {
+    return type_name<K>::get();
+  }
+
+  virtual std::string value_type_name() const {
+    return "void";
+  }
 
   virtual int produce(std::shared_ptr<krecord<K, void>> r) = 0;
   inline int produce(const K& key) {
@@ -520,7 +542,15 @@ class topic_sink_base : public topic_processor
   typedef kspp::krecord<K, V> record_type;
 
   virtual int produce(std::shared_ptr<krecord<K, V>> r) = 0;
-  virtual std::string record_type_name() const { return "[" + type_name<K>::get() + ", " + type_name<V>::get() + "]"; }
+  
+  virtual std::string key_type_name() const {
+    return type_name<K>::get();
+  }
+
+  virtual std::string value_type_name() const {
+    return type_name<V>::get();
+  }
+
   virtual size_t queue_len() = 0;
 };
 
@@ -596,7 +626,14 @@ class partition_source : public partition_processor
   partition_source(partition_processor* upstream, size_t partition)
     : partition_processor(upstream, partition) {}
 
-  virtual std::string record_type_name() const { return "[" + type_name<K>::get() + ", " + type_name<V>::get() + "]"; }
+  virtual std::string key_type_name() const {
+    return type_name<K>::get();
+  }
+
+  virtual std::string value_type_name() const {
+    return type_name<V>::get();
+  }
+
 
   /*
   void add_sink(std::shared_ptr<partition_sink<K, V>> sink) {

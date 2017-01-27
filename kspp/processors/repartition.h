@@ -30,11 +30,15 @@ namespace kspp {
       return _source->name() + "-repartition_by_value(" + _routing_table->name() + ")"; 
     }
 
-    static std::shared_ptr<partition_processor> create(std::shared_ptr<partition_source<K, V>> source, std::shared_ptr<ktable_partition<K, PK>> routing_table, std::shared_ptr<topic_sink<K, V, CODEC>> topic_sink) {
-      return std::make_shared<repartition_by_table<K, V, PK, CODEC>>(source, routing_table, topic_sink);
+    virtual std::string processor_name() const { return "repartition_by_table"; }
+
+    virtual std::string key_type_name() const {
+      return type_name<K>::get();
     }
 
-    virtual std::string processor_name() const { return "repartition_by_table"; }
+    virtual std::string value_type_name() const {
+      return type_name<V>::get();
+    }
 
     virtual void start() {
       _routing_table->start();
