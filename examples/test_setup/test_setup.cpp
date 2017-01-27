@@ -47,6 +47,8 @@ int main(int argc, char **argv) {
       event_stream->poll(0);
     }
   }
-  topology->output_metrics(std::cerr);
+  topology->for_each_metrics([](kspp::metric& m) {
+    std::cerr << "metrics: " << m.name() << " : " << m.value() << std::endl;
+  });
   return 0;
 }

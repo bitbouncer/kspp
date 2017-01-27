@@ -71,7 +71,9 @@ int main(int argc, char **argv) {
     topology->init_metrics();
     topology->start(-2);
     topology->flush();
-    topology->output_metrics(std::cerr);
+    topology->for_each_metrics([](kspp::metric& m) {
+      std::cerr << "metrics: " << m.name() << " : " << m.value() << std::endl;
+    });
   }
 
 
@@ -81,6 +83,8 @@ int main(int argc, char **argv) {
     topology->create_partition_processors<kspp::stream_sink<int, std::string>>(sources, &std::cerr);
     topology->start(-2);
     topology->flush();
-    topology->output_metrics(std::cerr);
+    topology->for_each_metrics([](kspp::metric& m) {
+      std::cerr << "metrics: " << m.name() << " : " << m.value() << std::endl;
+    });
   }
 }

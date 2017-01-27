@@ -230,7 +230,6 @@ class topology_base
   }
 
 public:
-
   std::string app_id() const { 
     return _app_id; 
   }
@@ -268,6 +267,17 @@ public:
     }
   }
 
+  void for_each_metrics(std::function<void(kspp::metric&)> f) {
+    for (auto i : _partition_processors)
+      for (auto j : i->get_metrics())
+        f(*j);
+
+    for (auto i : _topic_processors)
+      for (auto j : i->get_metrics())
+        f(*j);
+  }
+
+  /*
   void output_metrics(std::ostream& s) {
     for (auto i : _partition_processors) {
       for (auto j : i->get_metrics())
@@ -280,6 +290,7 @@ public:
       }
     }
   }
+  */
 
   /*
   void output_metrics(std::shared_ptr<kspp::topic_sink<std::string, std::string, kspp::text_codec>> sink) {

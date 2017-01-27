@@ -42,8 +42,9 @@ int main(int argc, char **argv) {
       auto metrics = builder.create_topic_topology();
       auto metrics_sink = metrics->create_topic_sink<kspp::kafka_topic_sink<std::string, std::string, kspp::text_codec>>("kspp_metrics", codec);
 
-      //topology->output_metrics(metrics_sink);
-
+      topology->for_each_metrics([](kspp::metric& m) {
+        //std::cerr << "metrics: " << m.name() << " : " << m.value() << std::endl;
+      });
     }
 
   }

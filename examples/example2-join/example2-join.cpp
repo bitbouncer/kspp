@@ -45,7 +45,9 @@ int main(int argc, char **argv) {
     std::cout << "joins: " << join_count << " t: " << d.count() << "ms\n";
     std::cout << "lookups per sec : " << 1000.0 * join_count / (double)d.count() << std::endl;
 
-    topology->output_metrics(std::cerr);
+    topology->for_each_metrics([](kspp::metric& m) {
+      std::cerr << "metrics: " << m.name() << " : " << m.value() << std::endl;
+    });
   }
   return 0;
 }

@@ -61,6 +61,8 @@ int main(int argc, char **argv) {
       for (auto j : *i)
         std::cerr << j->key << " : " << *j->value << std::endl;
 
-    topology->output_metrics(std::cerr);
+    topology->for_each_metrics([](kspp::metric& m) {
+      std::cerr << "metrics: " << m.name() << " : " << m.value() << std::endl;
+    });
   }
 }

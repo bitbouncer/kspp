@@ -214,7 +214,9 @@ int main(int argc, char **argv) {
     
     topology->start(-2);
     topology->flush();
-    topology->output_metrics(std::cerr);
+    topology->for_each_metrics([](kspp::metric& m) {
+      std::cerr << "metrics: " << m.name() << " : " << m.value() << std::endl;
+    });
     join->commit(); // should we move to topology?
   }
   
