@@ -33,7 +33,7 @@ int main(int argc, char **argv) {
         flat_map->push_back(std::make_shared<krecord<std::string, void>>(*iter));
     });
 
-    auto filtered_stream = topology->create<filter<std::string, void>>(word_stream, [](const auto e)->bool {
+    std::shared_ptr<kspp::partition_source<std::string, void>> filtered_stream = topology->create<filter<std::string, void>>(word_stream, [](const auto e)->bool {
       return (e->key != "hello");
     });
 
