@@ -69,6 +69,7 @@ add_definitions(-D__LINUX__)
 add_definitions(-fPIC)
 add_definitions(-std=c++14)
 add_definitions(-DBOOST_LOG_DYN_LINK)
+add_definitions(-DBOOST_ALL_DYN_LINK)
 add_definitions(-Wno-deprecated)
 
 #boost_thread
