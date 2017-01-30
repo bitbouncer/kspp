@@ -45,7 +45,7 @@ namespace kspp {
       if (existing_value) {
         if (!Deserialize(*existing_value, &existing)) {
           // if existing_value is corrupted, treat it as 0
-          Log(logger, "existing value corruption");
+          BOOST_LOG_TRIVIAL(error) << "UInt64AddOperator::Merge existing_value value corruption";
           existing = 0;
         }
       }
@@ -53,7 +53,7 @@ namespace kspp {
       uint64_t oper;
       if (!Deserialize(value, &oper)) {
         // if operand is corrupted, treat it as 0
-        Log(logger, "operand value corruption");
+        BOOST_LOG_TRIVIAL(error)  <<"UInt64AddOperator::Merge, Deserialize operand value corruption";
         oper = 0;
       }
 
