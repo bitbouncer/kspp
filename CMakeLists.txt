@@ -56,6 +56,26 @@ SET(CSI_ROCKSDB_LIBS rocksdb_lite snappy bz2 z)
 SET(LIBRDKAFKA_LIBS rdkafka++ rdkafka)
 SET(CSI_LIBS kspp ${LIBRDKAFKA_LIBS} ${CSI_ROCKSDB_LIBS} ${CSI_BOOST_LIBS} crypto ssl)
 
+elseif(ALPINE_LINUX)
+SET(CSI_INCLUDE_PATH        ${CMAKE_SOURCE_DIR}/../rocksdb/include)
+SET(CSI_LIBRARY_PATH        ${CMAKE_SOURCE_DIR}/../rocksdb)
+
+set(LIBRARY_OUTPUT_PATH     ${CMAKE_SOURCE_DIR}/lib)
+SET(EXECUTABLE_OUTPUT_PATH  ${CMAKE_SOURCE_DIR}/bin)
+
+add_definitions(-D_FILE_OFFSET_BITS=64 -D_REENTRANT -DEXTERNAL_LOCKS -DMULTITHREAD)
+add_definitions(-D__LINUX__)
+add_definitions(-fPIC)
+add_definitions(-std=c++14)
+add_definitions(-DBOOST_LOG_DYN_LINK)
+add_definitions(-DBOOST_ALL_DYN_LINK)
+add_definitions(-Wno-deprecated)
+
+#boost_thread
+set(CSI_BOOST_LIBS boost_log_setup boost_log-mt boost_date_time boost_timer boost_system boost_program_options boost_filesystem boost_regex boost_chrono boost_iostreams pthread rt c)
+SET(CSI_ROCKSDB_LIBS rocksdb snappy bz2 z)
+SET(LIBRDKAFKA_LIBS rdkafka++ rdkafka)
+SET(CSI_LIBS kspp ${LIBRDKAFKA_LIBS} ${CSI_ROCKSDB_LIBS} ${CSI_BOOST_LIBS} crypto ssl)
 else()
 #LINUX
 SET(CSI_INCLUDE_PATH        ${CMAKE_SOURCE_DIR}/../rocksdb/include)
@@ -69,7 +89,6 @@ add_definitions(-D__LINUX__)
 add_definitions(-fPIC)
 add_definitions(-std=c++14)
 add_definitions(-DBOOST_LOG_DYN_LINK)
-add_definitions(-DBOOST_ALL_DYN_LINK)
 add_definitions(-Wno-deprecated)
 
 #boost_thread
