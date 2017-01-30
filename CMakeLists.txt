@@ -71,7 +71,8 @@ add_definitions(-std=c++14)
 add_definitions(-DBOOST_LOG_DYN_LINK)
 add_definitions(-Wno-deprecated)
 
-set(CSI_BOOST_LIBS boost_log_setup boost_log boost_date_time boost_timer boost_thread boost_system boost_program_options boost_filesystem boost_regex boost_chrono boost_iostreams pthread rt c)
+#boost_thread
+set(CSI_BOOST_LIBS boost_log_setup boost_log boost_date_time boost_timer boost_system boost_program_options boost_filesystem boost_regex boost_chrono boost_iostreams pthread rt c)
 SET(CSI_ROCKSDB_LIBS rocksdb snappy bz2 z)
 SET(LIBRDKAFKA_LIBS rdkafka++ rdkafka)
 SET(CSI_LIBS kspp ${LIBRDKAFKA_LIBS} ${CSI_ROCKSDB_LIBS} ${CSI_BOOST_LIBS} crypto ssl)
