@@ -45,9 +45,6 @@ SET(LIBRDKAFKA_LIBS librdkafkacpp librdkafka lz4)
 SET(CSI_LIBS kspp ${LIBRDKAFKA_LIBS} ${CSI_BOOST_LIBS} ${CSI_ROCKSDB_LIBS} libssl libcrypto ${ZLIB_LIBS} crypt32 Ws2_32 legacy_stdio_definitions)
 
 elseif(APPLE)
-SET(CSI_INCLUDE_PATH        ${CMAKE_SOURCE_DIR}/../rocksdb/include)
-SET(CSI_LIBRARY_PATH        ${CMAKE_SOURCE_DIR}/../rocksdb)
-
 add_definitions(-DBOOST_LOG_DYN_LINK)
 add_definitions(-std=c++14)
 
