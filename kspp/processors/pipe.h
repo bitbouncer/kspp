@@ -11,7 +11,7 @@ class pipe : public partition_source<K, V>
   typedef kspp::krecord<K, V> record_type;
 
   pipe(topology_base& topology)
-    : partition_source<K, V>(NULL, topology.partition()) {
+    : partition_source<K, V>(nullptr, topology.partition()) {
   }
 
   pipe(topology_base& topology, std::shared_ptr<kspp::partition_source<K, V>> upstream)
@@ -53,7 +53,7 @@ class pipe<void, V> : public partition_source<void, V>
   typedef kspp::krecord<void, V> record_type;
 
   pipe(topology_base& topology, size_t partition)
-    : partition_source<void, V>(NULL, topology.partition()) {
+    : partition_source<void, V>(nullptr, topology.partition()) {
   }
 
   pipe(topology_base& topology, std::shared_ptr<kspp::partition_source<void, V>> upstream)
@@ -95,7 +95,7 @@ class pipe<K, void> : public partition_source<K, void>
   typedef kspp::krecord<K, void> record_type;
 
   pipe(topology_base& topology)
-    : partition_source<K, void>(NULL, topology.partition()) {
+    : partition_source<K, void>(nullptr, topology.partition()) {
   }
 
   /*

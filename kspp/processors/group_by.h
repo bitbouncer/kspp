@@ -35,11 +35,11 @@ namespace kspp {
   //  virtual std::shared_ptr<krecord<RK, size_t>> consume() {
   //    auto e = _stream->consume();
   //    if (!e)
-  //      return NULL;
+  //      return nullptr;
   //
   //    // we cannot handle null values???
   //    if (!e->value)
-  //      return NULL;
+  //      return nullptr;
   //
   //    //_value_extractor(e->key, *e->value, )
   //    _value_extractor(*e->value, this);
@@ -63,7 +63,7 @@ namespace kspp {
   //      // join failed
   //    }
   //    */
-  //    return NULL;
+  //    return nullptr;
   //  }
   //
   //  virtual void commit() {

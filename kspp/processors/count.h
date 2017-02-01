@@ -107,7 +107,7 @@ namespace kspp {
       if (count)
         return std::make_shared<krecord<K, V>>(key, count);
       else
-        return NULL;
+        return nullptr;
       */
       return std::make_shared<krecord<K, V>>(key, count);
     }

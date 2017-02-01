@@ -445,7 +445,7 @@ class partition_sink : public partition_processor
   virtual size_t queue_len() = 0;
   protected:
   partition_sink(size_t partition)
-    : partition_processor(NULL, partition) {}
+    : partition_processor(nullptr, partition) {}
 };
 
 // specialisation for void key
@@ -473,7 +473,7 @@ class partition_sink<void, V> : public partition_processor
   virtual size_t queue_len() = 0;
   protected:
   partition_sink(size_t partition)
-    : partition_processor(NULL, partition) {}
+    : partition_processor(nullptr, partition) {}
 };
 
 // specialisation for void value
@@ -501,7 +501,7 @@ class partition_sink<K, void> : public partition_processor
   virtual size_t queue_len() = 0;
   protected:
   partition_sink(size_t partition)
-    : partition_processor(NULL, partition) {}
+    : partition_processor(nullptr, partition) {}
 };
 
 

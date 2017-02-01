@@ -58,7 +58,7 @@ namespace kspp {
 
   protected:
     kafka_source_base(std::string brokers, std::string topic, size_t partition, std::shared_ptr<CODEC> codec)
-      : partition_source<K, V>(NULL, partition)
+      : partition_source<K, V>(nullptr, partition)
       , _codec(codec)
       , _consumer(brokers, topic, partition) {}
 
@@ -81,7 +81,7 @@ namespace kspp {
   protected:
     std::shared_ptr<krecord<K, V>> parse(const std::unique_ptr<RdKafka::Message> & ref) {
       if (!ref)
-        return NULL;
+        return nullptr;
 
       auto res = std::make_shared<krecord<K, V>>();
 
@@ -92,10 +92,10 @@ namespace kspp {
         size_t consumed = this->_codec->decode(ks, res->key);
         if (consumed == 0) {
           LOGPREFIX_ERROR << ", decode key failed, actual key sz:" << ref->key_len();
-          return NULL;
+          return nullptr;
         } else if (consumed != ref->key_len()) {
           LOGPREFIX_ERROR << ", decode key failed, consumed: " << consumed << ", actual: " << ref->key_len();
-          return NULL;
+          return nullptr;
         }
       }
 
@@ -106,10 +106,10 @@ namespace kspp {
         size_t consumed = this->_codec->decode(vs, *res->value);
         if (consumed == 0) {
           LOGPREFIX_ERROR << ", decode value failed, size:" << sz;
-          return NULL;
+          return nullptr;
         } else if (consumed != sz) {
           LOGPREFIX_ERROR << ", decode value failed, consumed: " << consumed << ", actual: " << sz;
-          return NULL;
+          return nullptr;
         }
       }
       return res;
@@ -132,7 +132,7 @@ namespace kspp {
   protected:
     std::shared_ptr<krecord<void, V>> parse(const std::unique_ptr<RdKafka::Message> & ref) {
       if (!ref)
-        return NULL;
+        return nullptr;
       size_t sz = ref->len();
       if (sz) {
         std::istrstream vs((const char*)ref->payload(), sz);
@@ -147,18 +147,18 @@ namespace kspp {
 
         if (consumed == 0) {
           LOGPREFIX_ERROR << ", decode value failed, size:" << sz;
-          return NULL;
+          return nullptr;
         }
 
         LOGPREFIX_ERROR << ", decode value failed, consumed: " << consumed << ", actual: " << sz;
-        return NULL;
+        return nullptr;
       }
-      return NULL; // just parsed an empty message???
+      return nullptr; // just parsed an empty message???
     }
 
   };
 
-  //<KEY, NULL>
+  //<KEY, nullptr>
   template<class K, class CODEC>
   class kafka_source<K, void, CODEC> : public kafka_source_base<K, void, CODEC>
   {
@@ -173,7 +173,7 @@ namespace kspp {
   protected:
     std::shared_ptr<krecord<K, void>> parse(const std::unique_ptr<RdKafka::Message> & ref) {
       if (!ref || ref->key_len() == 0)
-        return NULL;
+        return nullptr;
 
       auto res = std::make_shared<krecord<K, void>>();
 
@@ -183,10 +183,10 @@ namespace kspp {
       size_t consumed = this->_codec->decode(ks, res->key);
       if (consumed == 0) {
         LOGPREFIX_ERROR << ", decode key failed, actual key sz:" << ref->key_len();
-        return NULL;
+        return nullptr;
       } else if (consumed != ref->key_len()) {
         LOGPREFIX_ERROR << ", decode key failed, consumed: " << consumed << ", actual: " << ref->key_len();
-        return NULL;
+        return nullptr;
       }
       return res;
     }

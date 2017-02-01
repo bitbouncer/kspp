@@ -101,7 +101,7 @@ namespace kspp {
 
       virtual std::shared_ptr<krecord<K, V>> item() const {
         if (!_it->Valid())
-          return NULL;
+          return nullptr;
         rocksdb::Slice key = _it->key();
         rocksdb::Slice value = _it->value();
 
@@ -112,11 +112,11 @@ namespace kspp {
 
         std::istrstream isk(key.data(), key.size());
         if (_codec->decode(isk, res->key) == 0)
-          return NULL;
+          return nullptr;
 
         uint64_t count = 0;
         if (!UInt64AddOperator::Deserialize(value, &count)) {
-          return NULL;
+          return nullptr;
         }
         *res->value = (V) count; // TBD byt till V från uint64? eller alltid int64_t?
         return res;
@@ -160,7 +160,7 @@ namespace kspp {
       rocksdb::Options options;
       options.merge_operator.reset(new UInt64AddOperator);
       options.create_if_missing = true;
-      rocksdb::DB* tmp = NULL;
+      rocksdb::DB* tmp = nullptr;
       auto s = rocksdb::DB::Open(options, _storage_path.generic_string(), &tmp);
       _db.reset(tmp);
       if (!s.ok()) {
@@ -170,7 +170,7 @@ namespace kspp {
     }
 
     void close() {
-      _db = NULL;
+      _db = nullptr;
       BOOST_LOG_TRIVIAL(info) << BOOST_CURRENT_FUNCTION << ", " << _name << " close()";
     }
 

@@ -63,8 +63,8 @@ void kafka_consumer::close() {
     _consumer->stop(_rd_topic.get(), 0);
     LOG_INFO("close") << ", consumed " << _msg_cnt << " messages (" << _msg_bytes << " bytes)";
   }
-  _rd_topic = NULL;
-  _consumer = NULL;
+  _rd_topic = nullptr;
+  _consumer = nullptr;
 }
 
 void kafka_consumer::start(int64_t offset) {
@@ -106,6 +106,6 @@ std::unique_ptr<RdKafka::Message> kafka_consumer::consume() {
       _eof = true;
       LOGPREFIX_ERROR << ", consume failed: " << msg->errstr();
   }
-  return NULL;
+  return nullptr;
 }
 }; // namespace

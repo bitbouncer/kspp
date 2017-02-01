@@ -43,7 +43,7 @@ namespace kspp {
 
       virtual std::shared_ptr<krecord<K, V>> item() const {
         if (!_it->Valid())
-          return NULL;
+          return nullptr;
         rocksdb::Slice key = _it->key();
         rocksdb::Slice value = _it->value();
 
@@ -54,11 +54,11 @@ namespace kspp {
 
         std::istrstream isk(key.data(), key.size());
         if (_codec->decode(isk, res->key) == 0)
-          return NULL;
+          return nullptr;
 
         std::istrstream isv(value.data(), value.size());
         if (_codec->decode(isv, *res->value) == 0)
-          return NULL;
+          return nullptr;
         return res;
       }
 
@@ -84,7 +84,7 @@ namespace kspp {
       boost::filesystem::create_directories(boost::filesystem::path(storage_path));
       rocksdb::Options options;
       options.create_if_missing = true;
-      rocksdb::DB* tmp = NULL;
+      rocksdb::DB* tmp = nullptr;
       auto s = rocksdb::DB::Open(options, storage_path.generic_string(), &tmp);
       _db.reset(tmp);
       if (!s.ok()) {
@@ -98,7 +98,7 @@ namespace kspp {
     }
 
     void close() {
-      _db = NULL;
+      _db = nullptr;
     }
 
     void put(const K& key, const V& val) {
@@ -139,7 +139,7 @@ namespace kspp {
       std::string payload;
       rocksdb::Status s = _db->Get(rocksdb::ReadOptions(), rocksdb::Slice(key_buf, ksize), &payload);
       if (!s.ok())
-        return NULL;
+        return nullptr;
       auto  res = std::make_shared<krecord<K, V>>();
       res->key = key;
       res->offset = -1;
@@ -150,10 +150,10 @@ namespace kspp {
         size_t consumed = _codec->decode(is, *res->value);
         if (consumed == 0) {
           BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", decode payload failed, actual sz:" << payload.size();
-          return NULL;
+          return nullptr;
         } else if (consumed != payload.size()) {
           BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", decode payload failed, consumed:" << consumed << ", actual sz:" << payload.size();
-          return NULL;
+          return nullptr;
         }
       }
       return res;

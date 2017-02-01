@@ -82,8 +82,8 @@ void kafka_producer::close() {
     LOG_INFO("closing") << ", waiting for " << _producer->outq_len() << " messages to be written...";
     _producer->poll(1000);
   }
-  _rd_topic = NULL;
-  _producer = NULL;
+  _rd_topic = nullptr;
+  _producer = nullptr;
   LOG_INFO("closed") << ", produced " << _msg_cnt << " messages (" << _msg_bytes << " bytes)";
 }
 

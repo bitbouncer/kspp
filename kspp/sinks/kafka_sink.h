@@ -56,8 +56,13 @@ class kafka_sink_base : public topic_sink<K, V, CODEC>
     return false;
   }
 
+  // need_wait as interface??
+  // in_queue_size() as interface size grow -> process more
+  // out_queue_size() as interface -> size grows sleep more...
+
   virtual bool eof() const {
-    return _impl.queue_len() > 0;
+    return true;
+    //return _impl.queue_len() > 0; # this will cause 100% cpu when we think there is something to process - when we really need to wait...    
   }
 
   protected:
@@ -105,8 +110,8 @@ class kafka_topic_sink : public kafka_sink_base<K, V, CODEC>
   }
 
   virtual int produce(uint32_t partition, std::shared_ptr<krecord<K, V>> r) {
-    void* kp = NULL;
-    void* vp = NULL;
+    void* kp = nullptr;
+    void* vp = nullptr;
     size_t ksize = 0;
     size_t vsize = 0;
 
@@ -136,7 +141,7 @@ class kafka_topic_sink<void, V, CODEC> : public kafka_sink_base<void, V, CODEC>
   }
 
   virtual int produce(uint32_t partition, std::shared_ptr<krecord<void, V>> r) {
-    void* vp = NULL;
+    void* vp = nullptr;
     size_t vsize = 0;
 
     if (r->value) {
@@ -146,11 +151,11 @@ class kafka_topic_sink<void, V, CODEC> : public kafka_sink_base<void, V, CODEC>
       vs.read((char*) vp, vsize);
     }
     ++(this->_count);
-    return this->_impl.produce(partition, kafka_producer::FREE, NULL, 0, vp, vsize);
+    return this->_impl.produce(partition, kafka_producer::FREE, nullptr, 0, vp, vsize);
   }
 };
 
-// <key, NULL>
+// <key, nullptr>
 template<class K, class CODEC>
 class kafka_topic_sink<K, void, CODEC> : public kafka_sink_base<K, void, CODEC>
 {
@@ -166,7 +171,7 @@ class kafka_topic_sink<K, void, CODEC> : public kafka_sink_base<K, void, CODEC>
   }
 
   virtual int produce(std::shared_ptr<krecord<K, void>> r) {
-    void* kp = NULL;
+    void* kp = nullptr;
     size_t ksize = 0;
 
     std::stringstream ks;
@@ -181,7 +186,7 @@ class kafka_topic_sink<K, void, CODEC> : public kafka_sink_base<K, void, CODEC>
   }
 
   virtual int produce(uint32_t partition, std::shared_ptr<krecord<K, void>> r) {
-    void* kp = NULL;
+    void* kp = nullptr;
     size_t ksize = 0;
 
     std::stringstream ks;
@@ -189,7 +194,7 @@ class kafka_topic_sink<K, void, CODEC> : public kafka_sink_base<K, void, CODEC>
     kp = malloc(ksize);
     ks.read((char*) kp, ksize);
     ++(this->_count);
-    return this->_impl.produce(partition, kafka_producer::FREE, kp, ksize, NULL, 0);
+    return this->_impl.produce(partition, kafka_producer::FREE, kp, ksize, nullptr, 0);
   }
 };
 
@@ -236,7 +241,8 @@ class kafka_partition_sink_base : public partition_sink<K, V>
   }
 
   virtual bool eof() const {
-    return _impl.queue_len() > 0;
+    return true;
+    //return _impl.queue_len() > 0; # this will cause 100% cpu when we think there is something to process - when we really need to wait...
   }
 
   protected:
@@ -255,8 +261,8 @@ class kafka_partition_sink : public kafka_partition_sink_base<K, V, CODEC>
   }
 
   virtual int produce(std::shared_ptr<krecord<K, V>> r) {
-    void* kp = NULL;
-    void* vp = NULL;
+    void* kp = nullptr;
+    void* vp = nullptr;
     size_t ksize = 0;
     size_t vsize = 0;
 
@@ -286,7 +292,7 @@ class kafka_partition_sink<void, V, CODEC> : public kafka_partition_sink_base<vo
   }
  
   virtual int produce(std::shared_ptr<krecord<void, V>> r) {
-    void* vp = NULL;
+    void* vp = nullptr;
     size_t vsize = 0;
 
     if (r->value) {
@@ -296,7 +302,7 @@ class kafka_partition_sink<void, V, CODEC> : public kafka_partition_sink_base<vo
       vs.read((char*) vp, vsize);
     }
     ++(this->_count);
-    return this->_impl.produce((uint32_t) this->_fixed_partition, kafka_producer::FREE, NULL, 0, vp, vsize);
+    return this->_impl.produce((uint32_t) this->_fixed_partition, kafka_producer::FREE, nullptr, 0, vp, vsize);
   }
 };
 
@@ -310,7 +316,7 @@ class kafka_partition_sink<K, void, CODEC> : public kafka_partition_sink_base<K,
   }
 
   virtual int produce(std::shared_ptr<krecord<K, void>> r) {
-    void* kp = NULL;
+    void* kp = nullptr;
     size_t ksize = 0;
 
     std::stringstream ks;
@@ -318,7 +324,7 @@ class kafka_partition_sink<K, void, CODEC> : public kafka_partition_sink_base<K,
     kp = malloc(ksize);
     ks.read((char*) kp, ksize);
     ++(this->_count);
-    return this->_impl.produce((uint32_t) this->_fixed_partition, kafka_producer::FREE, kp, ksize, NULL, 0);
+    return this->_impl.produce((uint32_t) this->_fixed_partition, kafka_producer::FREE, kp, ksize, nullptr, 0);
   }
 };
 };

@@ -36,7 +36,7 @@ namespace kspp {
       if (r->value)
         _codec->encode(*r->value, _os);
       else
-        _os << "<NULL>";
+        _os << "<nullptr>";
       _os << std::endl;
       return 0;
     }
@@ -86,7 +86,7 @@ namespace kspp {
     std::shared_ptr<kspp::text_codec> _codec;
   };
 
-  // <key, NULL>
+  // <key, nullptr>
   template<class K>
   class stream_sink<K, void> : public partition_sink<K, void>
   {
