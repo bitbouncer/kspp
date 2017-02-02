@@ -624,7 +624,10 @@ class partition_source : public partition_processor
   using sink_function = typename std::function<void(std::shared_ptr<krecord<K, V>>)>;
 
   partition_source(partition_processor* upstream, size_t partition)
-    : partition_processor(upstream, partition) {}
+    : partition_processor(upstream, partition)
+    , _out_messages("out_message_count") {
+    this->add_metric(&_out_messages);
+  }
 
   virtual std::string key_type_name() const {
     return type_name<K>::get();
@@ -677,10 +680,12 @@ class partition_source : public partition_processor
   virtual void send_to_sinks(std::shared_ptr<krecord<K, V>> p) {
     if (!p)
       return;
+    ++_out_messages;
     for (auto f : _sinks)
       f(p);
   }
 
+  metric_counter             _out_messages;
   std::vector<sink_function> _sinks;
 };
 

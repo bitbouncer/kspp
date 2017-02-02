@@ -15,13 +15,11 @@ namespace kspp {
       : partition_source<RK, RV>(source.get(), source->partition())
       , _source(source)
       , _extractor(f)
-      , _in_count("in_count")
-      , _out_count("out_count") {
+      , _in_count("in_count") {
       _source->add_sink([this](auto r) {
         _queue.push_back(r);
       });
       this->add_metric(&_in_count);
-      this->add_metric(&_out_count);
       this->add_metric(&_lag);
     }
 
@@ -77,7 +75,6 @@ namespace kspp {
     }
 
     void push_back(std::shared_ptr<krecord<RK, RV>> r) {
-      ++_out_count;
       this->send_to_sinks(r);
     }
 
@@ -98,7 +95,6 @@ namespace kspp {
     extractor                                    _extractor;
     std::deque<std::shared_ptr<krecord<SK, SV>>> _queue;
     metric_counter                               _in_count;
-    metric_counter                               _out_count;
     metric_lag                                   _lag;
   };
 
