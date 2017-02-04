@@ -75,8 +75,15 @@ SET(LIBRDKAFKA_LIBS rdkafka++ rdkafka)
 SET(CSI_LIBS kspp ${LIBRDKAFKA_LIBS} ${CSI_ROCKSDB_LIBS} ${CSI_BOOST_LIBS} crypto ssl)
 else()
 #LINUX
-SET(CSI_INCLUDE_PATH        ${CMAKE_SOURCE_DIR}/../rocksdb/include)
-SET(CSI_LIBRARY_PATH        ${CMAKE_SOURCE_DIR}/../rocksdb)
+SET(CSI_INCLUDE_PATH  
+	${CMAKE_SOURCE_DIR}/../rocksdb/include
+    ${CMAKE_SOURCE_DIR}/../boost
+)
+					  
+SET(CSI_LIBRARY_PATH 
+	${CMAKE_SOURCE_DIR}/../rocksdb
+    ${CMAKE_SOURCE_DIR}/../boost/stage/lib
+)
 
 set(LIBRARY_OUTPUT_PATH     ${CMAKE_SOURCE_DIR}/lib)
 SET(EXECUTABLE_OUTPUT_PATH  ${CMAKE_SOURCE_DIR}/bin)
