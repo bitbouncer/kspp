@@ -112,24 +112,20 @@ file(GLOB liblz4_files
   ${CMAKE_CURRENT_SOURCE_DIR}/../lz4/lib/*.c
   ${CMAKE_CURRENT_SOURCE_DIR}/../lz4/lib/*.h
   )
-
-file(GLOB librdkafka_files
-  ${CMAKE_CURRENT_SOURCE_DIR}/../librdkafka/src/*.c
-  ${CMAKE_CURRENT_SOURCE_DIR}/../librdkafka/src/*.h
-  )
-
-file(GLOB librdkafka_cpp_files
-  ${CMAKE_CURRENT_SOURCE_DIR}/../librdkafka/src-cpp/*.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/../librdkafka/src-cpp/*.h
-  )
-
-#list(REMOVE_ITEM librdkafka_files ${CMAKE_CURRENT_SOURCE_DIR}/../librdkafka/src/rdkafka_sasl.c)
-list(REMOVE_ITEM librdkafka_files ${CMAKE_CURRENT_SOURCE_DIR}/../librdkafka/src/rdkafka_sasl_cyrus.c)
-
-
-add_library(librdkafka STATIC ${librdkafka_files})
-add_library(librdkafkacpp STATIC ${librdkafka_cpp_files})
 add_library(lz4 STATIC ${liblz4_files})
+
+#LIBRDKAFA  
+file(GLOB librdkafka_c_files        ${CMAKE_CURRENT_SOURCE_DIR}/../librdkafka/src/*.c)
+list(REMOVE_ITEM librdkafka_c_files ${CMAKE_CURRENT_SOURCE_DIR}/../librdkafka/src/rdkafka_sasl_cyrus.c)
+file(GLOB librdkafka_c_h_files      ${CMAKE_CURRENT_SOURCE_DIR}/../librdkafka/src/*.h)
+file(GLOB librdkafka_cpp_files      ${CMAKE_CURRENT_SOURCE_DIR}/../librdkafka/src-cpp/*.cpp)
+file(GLOB librdkafka_cpp_h_files    ${CMAKE_CURRENT_SOURCE_DIR}/../librdkafka/src-cpp/*.h)
+file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/../include)
+file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/../include/librdkafka)
+file(COPY ${librdkafka_cpp_h_files} DESTINATION ${CMAKE_SOURCE_DIR}/../include/librdkafka)
+file(COPY ${librdkafka_c_h_files} DESTINATION ${CMAKE_SOURCE_DIR}/../include/librdkafka)
+add_library(librdkafka STATIC ${librdkafka_c_files} ${librdkafka_c_h_files})
+add_library(librdkafkacpp STATIC ${librdkafka_cpp_files} ${librdkafka_cpp_h_files})
 endif()
 
 
