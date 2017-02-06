@@ -8,14 +8,14 @@ SET(CSI_INCLUDE_PATH
   ${CMAKE_SOURCE_DIR}/../zlib/build
   ${CMAKE_SOURCE_DIR}/../lz4/lib
   ${CMAKE_SOURCE_DIR}/../openssl/include
-  ${CMAKE_SOURCE_DIR}/../boost_1_62_0
+  ${CMAKE_SOURCE_DIR}/../boost
 )
 
 SET(CSI_LIBRARY_PATH        
 	${CMAKE_SOURCE_DIR}/../openssl
 	${CMAKE_SOURCE_DIR}/../zlib/build
   ${CMAKE_SOURCE_DIR}/../rocksdb/build
-	${CMAKE_SOURCE_DIR}/../boost_1_62_0/stage/lib/$(Platform)/lib
+	${CMAKE_SOURCE_DIR}/../boost/stage/lib/$(Platform)/lib
 )
 SET(LIBRARY_OUTPUT_PATH     ${CMAKE_SOURCE_DIR}/lib/$(Platform))
 SET(EXECUTABLE_OUTPUT_PATH  ${CMAKE_SOURCE_DIR}/bin/$(Platform))
