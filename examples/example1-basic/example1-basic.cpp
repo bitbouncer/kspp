@@ -5,9 +5,9 @@
 #include <kspp/codecs/text_codec.h>
 #include <kspp/topology_builder.h>
 #include <kspp/algorithm.h>
-#include <kspp/impl/kstream_impl.h>
-#include <kspp/impl/ktable_impl.h>
-#include <kspp/sources/kafka_source.h>
+#include <kspp/processors/kstream_impl.h>
+#include <kspp/processors/ktable_impl.h>
+#include <kspp/processors/kafka_source.h>
 #include <kspp/sinks/kafka_sink.h>
 #include <kspp/sinks/stream_sink.h>
 #include <kspp/processors/join.h>

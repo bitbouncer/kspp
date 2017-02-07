@@ -3,7 +3,7 @@
 #include <functional>
 #include <sstream>
 #include <kspp/kspp.h>
-#include "kafka_producer.h"
+#include <kspp/impl/sinks/kafka_producer.h>
 #pragma once
 
 namespace kspp {

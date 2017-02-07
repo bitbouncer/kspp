@@ -4,13 +4,14 @@
 #include <regex>
 #include <kspp/codecs/text_codec.h>
 #include <kspp/topology_builder.h>
+#include <kspp/processors/kafka_source.h>
 #include <kspp/processors/filter.h>
 #include <kspp/processors/transform.h>
 #include <kspp/processors/count.h>
 #include <kspp/processors/pipe.h>
 #include <kspp/algorithm.h>
 #include <kspp/sinks/stream_sink.h>
-#include <kspp/sources/kafka_source.h>
+
 #include <kspp/sinks/kafka_sink.h>
 
 #define PARTITION 0

@@ -1,7 +1,7 @@
 #include <functional>
 #include <deque>
 #include <kspp/kspp.h>
-#include <kspp/state_stores/rocksdb_counter_store.h>
+#include <kspp/impl/state_stores/rocksdb_counter_store.h>
 #pragma once
 
 namespace kspp {

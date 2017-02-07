@@ -1,7 +1,7 @@
 #include <fstream>
 #include <boost/filesystem.hpp>
-#include <kspp/sources/kafka_source.h>
-#include <kspp/state_stores/rocksdb_store.h>
+#include <kspp/processors/kafka_source.h>
+#include <kspp/impl/state_stores/rocksdb_store.h>
 #include <kspp/kspp.h>
 #pragma once
 

@@ -3,8 +3,8 @@
 #include <chrono>
 #include <kspp/codecs/binary_codec.h>
 #include <kspp/topology_builder.h>
-#include <kspp/sources/kafka_source.h>
-#include <kspp/impl/ktable_impl.h>
+#include <kspp/processors/kafka_source.h>
+#include <kspp/processors/ktable_impl.h>
 #include <kspp/processors/join.h>
 
 #define PARTITION 0
