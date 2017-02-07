@@ -23,6 +23,7 @@ int main(int argc, char **argv) {
     auto topology = builder.create_topic_topology();
     auto sink = topology->create_topic_sink<kspp::kafka_topic_sink<int, std::string, kspp::text_codec>>("kspp_example5_usernames", codec);
     kspp::produce(*sink, 1, "user_1");
+    kspp::produce(*sink, 1, "user_1");
     kspp::produce(*sink, 2, "user_2");
     kspp::produce(*sink, 3, "user_3");
     kspp::produce(*sink, 4, "user_4");
