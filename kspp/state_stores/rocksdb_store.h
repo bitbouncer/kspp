@@ -3,9 +3,15 @@
 #include <strstream>
 #include <boost/filesystem.hpp>
 #include <boost/log/trivial.hpp>
-#include <rocksdb/db.h>
+
 #include <kspp/kspp.h>
 #include "kv_store.h"
+
+#ifdef WIN32
+//you dont want to know why this is needed...
+#undef max
+#endif
+#include <rocksdb/db.h>
 
 namespace kspp {
   template<class K, class V, class CODEC>

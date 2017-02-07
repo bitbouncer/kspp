@@ -7,6 +7,8 @@
 #include <kspp/processors/transform.h>
 #include <kspp/processors/count.h>
 #include <kspp/algorithm.h>
+#include <kspp/sources/kafka_source.h>
+#include <kspp/sinks/kafka_sink.h>
 
 #define NR_OF_PARTITIONS 8
 

@@ -5,6 +5,7 @@
 #include <kspp/codecs/binary_codec.h>
 #include <kspp/topology_builder.h>
 #include <kspp/algorithm.h>
+#include <kspp/sinks/kafka_sink.h>
 
 static boost::uuids::uuid to_uuid(int64_t x) {
   boost::uuids::uuid uuid;

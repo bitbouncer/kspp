@@ -1,23 +1,7 @@
-#include "impl/kstream_impl.h"
-#include "impl/ktable_impl.h"
-#include "sinks/kafka_sink.h"
-#include "sinks/stream_sink.h"
-#include "sources/kafka_source.h"
-#include "processors/pipe.h"
-#include "processors/join.h"
-#include "processors/count.h"
-#include "processors/repartition.h"
-#include "processors/filter.h"
-#include "processors/transform.h"
-#include "processors/rate_limiter.h"
-#include "codecs/text_codec.h"
-
+#include <kspp/kspp.h>
 #include <cstdlib>
 #include <boost/filesystem.hpp>
 #include <boost/log/trivial.hpp>
-
-
-
 #pragma once
 
 namespace kspp {
@@ -36,14 +20,6 @@ namespace kspp {
       return p;
     }
 
-   /* template<class pp, typename... Args>
-    typename std::enable_if<std::is_base_of<kspp::partition_processor, pp>::value, std::shared_ptr<pp>>::type
-      create7(Args... args) {
-      auto p = std::make_shared<pp>(*this, args...);
-      _partition_processors.push_back(p);
-      return p;
-    }*/
-
     // this seems to be only sinks???
     template<class pp, typename... Args>
     typename std::enable_if<std::is_base_of<kspp::topic_processor, pp>::value, std::shared_ptr<pp>>::type
@@ -53,7 +29,6 @@ namespace kspp {
       return p;
     }
   };
-
 
   class topic_topology : public topology_base
   {
@@ -125,48 +100,18 @@ namespace kspp {
       _topic_processors.push_back(p);
       return p;
     }
-    
-   /* template<class K, class V>
-    std::vector<std::shared_ptr<kspp::partition_source<K, V>>> create_kafka_sources(std::string topic, size_t nr_of_partitions) {
-      std::vector<std::shared_ptr<kspp::partition_source<K, V>>> result;
-      for (size_t i = 0; i != nr_of_partitions; ++i) {
-        auto p = std::make_shared<kspp::kafka_source<K, V, CODEC>>(_brokers, topic, i, _default_codec);
-        result.push_back(p);
-        _partition_processors.push_back(p);
-      }
-      return result;;
-    }
 
-    template<class K, class V>
-    std::shared_ptr<kspp::partition_sink<K, V>> create_global_kafka_sink(std::string topic) {
-      auto p = kspp::kafka_single_partition_sink<K, V, CODEC>::create(_brokers, topic, 0, _default_codec);
-      _partition_processors.push_back(p);
-      return p;
-    }
-
-    template<class K, class V>
-    std::shared_ptr<kspp::topic_sink<K, V, CODEC>> create_global_kafka_topic_sink(std::vector<std::shared_ptr<kspp::partition_source<K, V>>>& source, std::string topic) {
-      auto p = kspp::kafka_single_partition_sink<K, V, CODEC>::create(_brokers, topic, 0, _default_codec);
-      _partition_processors.push_back(p);
-      for (auto i : source)
+    // this seems to be only sinks???
+    template<class pp, class source, typename... Args>
+    typename std::enable_if<std::is_base_of<kspp::topic_processor, pp>::value, std::shared_ptr<pp>>::type
+      create_topic_sink(std::vector<std::shared_ptr<source>> sources, Args... args) {
+      auto p = std::make_shared<pp>(*this, args...);
+      _topic_processors.push_back(p);
+      for (auto i : sources)
         i->add_sink(p);
       return p;
     }
-  
-    template<class K, class V>
-    std::shared_ptr<kspp::pipe<K, V>> create_global_pipe(std::vector<std::shared_ptr<kspp::partition_source<K, V>>>& sources) {
-      auto pipe = std::make_shared<kspp::pipe<K, V>>(0);
-      _partition_processors.push_back(pipe);
-      for (auto i : sources)
-        i->add_sink([pipe](auto e) {
-        pipe->produce(e);
-      });
-      return pipe;
-    }*/
-
-
   };
-
 
   class topology_builder
   {
