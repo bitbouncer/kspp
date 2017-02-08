@@ -7,10 +7,10 @@
 
 namespace kspp {
   template<class K, class V, class CODEC>
-  class kstream_partition_impl : public kstream_partition<K, V>
+  class kstream_rocksdb : public kstream_partition<K, V>
   {
   public:
-    kstream_partition_impl(topology_base& topology, std::shared_ptr<kspp::partition_source<K, V>> source, std::shared_ptr<CODEC> codec)
+  kstream_rocksdb(topology_base& topology, std::shared_ptr<kspp::partition_source<K, V>> source, std::shared_ptr<CODEC> codec)
       : kstream_partition<K, V>(source.get())
       , _offset_storage_path(get_storage_path(topology.get_storage_path()))
       , _source(source)
@@ -34,15 +34,15 @@ namespace kspp {
 
     }
 
-    virtual ~kstream_partition_impl() {
+    virtual ~kstream_rocksdb() {
       close();
     }
 
     virtual std::string name() const {
-      return   _source->name() + "-kstream";
+      return   _source->name() + "-kstream_rocksdb";
     }
 
-    virtual std::string processor_name() const { return "kstream"; }
+    virtual std::string processor_name() const { return "kstream_rocksdb"; }
 
     virtual void start() {
       if (boost::filesystem::exists(_offset_storage_path)) {

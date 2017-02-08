@@ -5,10 +5,10 @@
 
 namespace kspp {
 template<class K, class V, class CODEC>
-class ktable_partition_impl : public ktable_partition<K, V>
+class ktable_rocksdb : public ktable_partition<K, V>
 {
   public:
-  ktable_partition_impl(topology_base& topology, std::shared_ptr<kspp::partition_source<K, V>> source, std::shared_ptr<CODEC> codec)
+  ktable_rocksdb(topology_base& topology, std::shared_ptr<kspp::partition_source<K, V>> source, std::shared_ptr<CODEC> codec)
     : ktable_partition<K, V>(source.get())
     , _offset_storage_path(get_storage_path(topology.get_storage_path()))
     , _source(source)
@@ -33,15 +33,15 @@ class ktable_partition_impl : public ktable_partition<K, V>
     this->add_metric(&_count);
   }
 
-  virtual ~ktable_partition_impl() {
+  virtual ~ktable_rocksdb() {
     close();
   }
 
   virtual std::string name() const {
-    return   _source->name() + "-ktable";
+    return   _source->name() + "-ktable_rocksb";
   }
 
-  virtual std::string processor_name() const { return "ktable"; }
+  virtual std::string processor_name() const { return "ktable_rocksdb"; }
 
   virtual void start() {
     if (boost::filesystem::exists(_offset_storage_path)) {
