@@ -5,8 +5,8 @@
 #include <kspp/codecs/text_codec.h>
 #include <kspp/topology_builder.h>
 #include <kspp/algorithm.h>
-#include <kspp/processors/kstream_impl.h>
-#include <kspp/processors/ktable_impl.h>
+#include <kspp/processors/kstream_rocksdb.h>
+#include <kspp/processors/ktable_rocksdb.h>
 #include <kspp/processors/kafka_source.h>
 #include <kspp/sinks/kafka_sink.h>
 #include <kspp/sinks/stream_sink.h>
@@ -194,7 +194,7 @@ int main(int argc, char **argv) {
   {
     auto topology = builder.create_topology(PARTITION);
     auto pageviews_source = topology->create_processor<kspp::kafka_source<int64_t, page_view_data, kspp::binary_codec>>("kspp_PageViews", codec);
-    auto pageviews_kstream = topology->create_processor<kspp::kstream_partition_impl<int64_t, page_view_data, kspp::binary_codec>>(pageviews_source, codec);
+    auto pageviews_kstream = topology->create_processor<kspp::kstream_rocksdb<int64_t, page_view_data, kspp::binary_codec>>(pageviews_source, codec);
     auto pw_sink = topology->create_processor<kspp::stream_sink<int64_t, page_view_data>>(pageviews_kstream, &std::cerr);
     topology->start(-2);
     topology->flush();
@@ -204,7 +204,7 @@ int main(int argc, char **argv) {
     auto topology = builder.create_topology(PARTITION);
     auto stream = topology->create_processor<kspp::kafka_source<int64_t, page_view_data, kspp::binary_codec>>("kspp_PageViews", codec);
     auto table_source = topology->create_processor<kspp::kafka_source<int64_t, user_profile_data, kspp::binary_codec>>("kspp_UserProfile", codec);
-    auto table = topology->create_processor<kspp::ktable_partition_impl<int64_t, user_profile_data, kspp::binary_codec>>(table_source, codec);
+    auto table = topology->create_processor<kspp::ktable_rocksdb<int64_t, user_profile_data, kspp::binary_codec>>(table_source, codec);
     auto join = topology->create_processor<kspp::left_join<int64_t, page_view_data, user_profile_data, page_view_decorated>>(
       stream, 
       table, 
@@ -229,7 +229,7 @@ int main(int argc, char **argv) {
   {
     auto topology = builder.create_topology(PARTITION);
     auto table_source = topology->create_processor<kspp::kafka_source<int64_t, user_profile_data, kspp::binary_codec>>("kspp_UserProfile", codec);
-    auto table = topology->create_processor<kspp::ktable_partition_impl<int64_t, user_profile_data, kspp::binary_codec>>(table_source, codec);
+    auto table = topology->create_processor<kspp::ktable_rocksdb<int64_t, user_profile_data, kspp::binary_codec>>(table_source, codec);
     
     topology->start();
     topology->flush();
