@@ -3,6 +3,7 @@
 #include <ostream>
 #include <istream>
 #include <vector>
+#include <typeinfo>
 
 namespace kspp {
   inline size_t binary_encode(const int64_t& a, std::ostream& dst) {

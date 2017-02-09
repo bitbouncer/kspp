@@ -2,6 +2,7 @@
 #include <ostream>
 #include <istream>
 #include <boost/uuid/uuid.hpp>
+#include <typeinfo>
 #pragma once
 
 namespace kspp {
