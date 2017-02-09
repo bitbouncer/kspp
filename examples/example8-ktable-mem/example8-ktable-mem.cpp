@@ -53,17 +53,18 @@ int main(int argc, char **argv) {
     auto word_counts = topology->create_processor<kspp::count_by_key<std::string, int64_t, kspp::binary_codec>>(filtered_stream, 100, binary_codec);
 
     // this should be possible to do in memory
-    auto table = topology->create_processor<kspp::ktable_rocksdb<std::string, int64_t, kspp::binary_codec>>(word_counts, binary_codec);
+    auto table1 = topology->create_processor<kspp::ktable_rocksdb<std::string, int64_t, kspp::binary_codec>>(word_counts, binary_codec);
+    auto table2 = topology->create_processor<kspp::ktable_mem<std::string, int64_t>>(word_counts);
 
     topology->start();
     topology->flush();
 
     std::cerr << "using iterators " << std::endl;
-    for (auto&& i = table->begin(), end = table->end(); i != end; ++i)
-      std::cerr << "item : " << (*i)->key << std::endl;
+    for (auto&& i = table1->begin(), end = table1->end(); i != end; ++i)
+      std::cerr << "item : " << (*i)->key << ": " << *(*i)->value <<std::endl;
 
     std::cerr << "using range iterators " << std::endl;
-    for (auto&& i : *table)
-      std::cerr << "item : " << i->key << std::endl;
+    for (auto&& i : *table2)
+      std::cerr << "item : " << i->key << ": " << *i->value << std::endl;
   }
 }
