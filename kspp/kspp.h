@@ -7,13 +7,12 @@
 #include <mutex>
 #include <thread>
 #include <chrono>
+#include <regex>
 #include <strstream>
 #include <boost/filesystem.hpp>
 #include <boost/uuid/uuid.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/algorithm/string/replace.hpp>
-//#include <boost/algorithm/string.hpp>                                                                                                                                                
-//#include <boost/algorithm/string/regex.hpp>   
 #include "metrics.h"
 #include "type_name.h"
 
@@ -22,6 +21,12 @@ namespace kspp {
 inline int64_t milliseconds_since_epoch() {
   return std::chrono::duration_cast<std::chrono::milliseconds>
     (std::chrono::system_clock::now().time_since_epoch()).count();
+}
+
+inline std::string sanitize_filename(std::string s) {
+  auto e = std::regex("[/?<>\\:*|\"]");
+  s = std::regex_replace(s, e, "_");
+  return s;
 }
 
 template<class K, class V>

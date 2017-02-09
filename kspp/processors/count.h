@@ -124,7 +124,7 @@ namespace kspp {
   private:
   boost::filesystem::path get_storage_path(boost::filesystem::path storage_path) {
     boost::filesystem::path p(storage_path);
-    p /= name();
+    p /= sanitize_filename(name());
     return p;
   }
 
