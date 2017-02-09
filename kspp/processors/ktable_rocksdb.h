@@ -1,3 +1,4 @@
+#include <fstream>
 #include <boost/filesystem.hpp>
 #include <kspp/impl/state_stores/rocksdb_store.h>
 #include <kspp/kspp.h>
