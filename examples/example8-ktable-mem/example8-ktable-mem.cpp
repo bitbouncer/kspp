@@ -59,7 +59,7 @@ int main(int argc, char **argv) {
     topology->flush();
 
     std::cerr << "using iterators " << std::endl;
-    for (auto& i = table->begin(), end = table->end(); i != end; ++i)
+    for (auto&& i = table->begin(), end = table->end(); i != end; ++i)
       std::cerr << "item : " << (*i)->key << std::endl;
 
     std::cerr << "using range iterators " << std::endl;
