@@ -48,6 +48,9 @@ elseif(APPLE)
 add_definitions(-DBOOST_LOG_DYN_LINK)
 add_definitions(-std=c++14)
 
+set(LIBRARY_OUTPUT_PATH     ${CMAKE_SOURCE_DIR}/lib)
+SET(EXECUTABLE_OUTPUT_PATH  ${CMAKE_SOURCE_DIR}/bin)
+
 set(CSI_BOOST_LIBS boost_log_setup boost_log-mt boost_date_time boost_timer boost_thread-mt boost_system boost_program_options boost_filesystem boost_regex boost_chrono boost_iostreams pthread c)
 SET(CSI_ROCKSDB_LIBS rocksdb_lite snappy bz2 z)
 SET(LIBRDKAFKA_LIBS rdkafka++ rdkafka)
