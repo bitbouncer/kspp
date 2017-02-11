@@ -12,7 +12,8 @@
 int main(int argc, char **argv) {
   size_t join_count = 0;
   auto codec = std::make_shared<kspp::binary_codec>();
-  auto builder = kspp::topology_builder("example2-join", "localhost");
+  auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example2-join");
+  auto builder = kspp::topology_builder(app_info, "localhost");
   {
     auto topology = builder.create_topology(PARTITION);
     auto stream = topology->create_processor<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_codec>>("kspp_test0_eventstream", codec);

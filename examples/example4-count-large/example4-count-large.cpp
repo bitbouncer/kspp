@@ -14,8 +14,8 @@
 
 int main(int argc, char **argv) {
   auto codec = std::make_shared<kspp::text_codec>();
-
-  auto text_builder = kspp::topology_builder("example4-count", "localhost");
+  auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example4-count");
+  auto text_builder = kspp::topology_builder(app_info, "localhost");
 
   {
     auto topology = text_builder.create_topic_topology();

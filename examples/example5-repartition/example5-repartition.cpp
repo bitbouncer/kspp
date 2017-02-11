@@ -17,8 +17,8 @@
 
 int main(int argc, char **argv) {
   auto codec = std::make_shared<kspp::text_codec>();
-
-  auto builder = kspp::topology_builder("example5-repartition", "localhost");
+  auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example5-repartition");
+  auto builder = kspp::topology_builder(app_info, "localhost");
   {
     auto topology = builder.create_topic_topology();
     auto sink = topology->create_topic_sink<kspp::kafka_topic_sink<int, std::string, kspp::text_codec>>("kspp_example5_usernames", codec);

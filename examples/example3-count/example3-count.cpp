@@ -15,7 +15,8 @@
 
 int main(int argc, char **argv) {
   auto codec = std::make_shared<kspp::text_codec>();
-  auto builder = kspp::topology_builder("example3-count", "localhost");
+  auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example3-count");
+  auto builder = kspp::topology_builder(app_info, "localhost");
   {
     auto topology = builder.create_topology(PARTITION);
     auto sink = topology->create_processor<kspp::kafka_partition_sink<void, std::string, kspp::text_codec>>("kspp_TextInput", codec);

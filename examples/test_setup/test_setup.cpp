@@ -16,8 +16,8 @@ static boost::uuids::uuid to_uuid(int64_t x) {
 
 int main(int argc, char **argv) {
   auto codec = std::make_shared<kspp::binary_codec>();
-  
-  auto builder     = kspp::topology_builder("test_setup", "localhost");
+  auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "test_setup");
+  auto builder = kspp::topology_builder(app_info, "localhost");
   auto topology = builder.create_topology(-1);
 
   auto partitioner = [](const boost::uuids::uuid& key)->uint32_t { return boost::hash<boost::uuids::uuid>()(key) % 8; };
@@ -29,13 +29,13 @@ int main(int argc, char **argv) {
   std::vector<boost::uuids::uuid> ids;
   for (int i = 0; i != 10000; ++i)
     ids.push_back(to_uuid(i));
-  
+
   std::cerr << "creating " << table_stream->name() << std::endl;
   for (int64_t update_nr = 0; update_nr != 100; ++update_nr) {
     for (auto & i : ids) {
       produce(*table_stream, i, update_nr);
     }
-    while (table_stream->queue_len()>10000)
+    while (table_stream->queue_len() > 10000)
       table_stream->poll(0);
   }
 
@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
     for (auto & i : ids) {
       produce(*event_stream, i, event_nr);
     }
-    while (event_stream->queue_len()>10000) {
+    while (event_stream->queue_len() > 10000) {
       event_stream->poll(0);
     }
   }

@@ -159,7 +159,8 @@ std::string ksource_to_string(const T&  ksource) {
 }
 
 int main(int argc, char **argv) {
-  auto builder = kspp::topology_builder("example1-basic", "localhost");
+  auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example1-basic");
+  auto builder = kspp::topology_builder(app_info, "localhost");
   auto codec = std::make_shared<kspp::binary_codec>();
 
   {

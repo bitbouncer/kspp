@@ -224,11 +224,59 @@ class partition_processor : public processor
   partition_processor*  _upstream;
 };
 
+struct app_info
+{
+  /**
+  * multi instance apps - state stores will be prefixed with instance_id
+  * metrics will have instance_id and app_instance_name tags
+  */
+  app_info(std::string _app_namespace,
+           std::string _app_id,
+           std::string _app_instance_id,
+           std::string _app_instance_name)
+    : app_namespace(_app_namespace)
+    , app_id(_app_id)
+    , app_instance_id(_app_instance_id)
+    , app_instance_name(_app_instance_name) {
+  }
+
+  /**
+  * single instance apps - state stores will not be prefixed with instance_id
+  * metrics will not have instance_id or app_instance_name tag ?? 
+  * maybe they should be marked as single instance?
+  */
+  app_info(std::string _app_namespace,
+           std::string _app_id)
+    : app_namespace(_app_namespace)
+    , app_id(_app_id) {
+  }
+
+  std::string identity() const {
+    if (app_instance_id.size() == 0)
+      return app_namespace + "::" + app_id;
+    else
+      return app_namespace + "::" + app_id + "#" + app_instance_id;
+  }
+
+  const std::string app_namespace;
+  const std::string app_id;
+  const std::string app_instance_id;
+  const std::string app_instance_name;
+};
+
+inline std::string to_string(const app_info& obj) {
+  return obj.identity();
+}
+
 class topology_base
 {
   protected:
-    topology_base(std::string app_id, std::string topology_id, int32_t partition, std::string brokers, boost::filesystem::path root_path)
-    : _app_id(app_id)
+    topology_base(std::shared_ptr<app_info> ai, 
+                  std::string topology_id, 
+                  int32_t partition, 
+                  std::string brokers, 
+                  boost::filesystem::path root_path)
+    : _app_info(ai)
     , _is_init(false)
     , _topology_id(topology_id)
     , _partition(partition)
@@ -244,7 +292,7 @@ class topology_base
 
 public:
   std::string app_id() const { 
-    return _app_id; 
+    return _app_info->identity();
   }
 
   std::string topology_id() const { 
@@ -260,11 +308,11 @@ public:
   }
 
   std::string name() const {
-    return _app_id + "__" + _topology_id + "[p" + std::to_string(_partition) + "]";
+    return "[" + _app_info->identity() + "]" + _topology_id + "[p" + std::to_string(_partition) + "]";
   }
   // the metrics should look like this...
   //cpu_load_short, host=server01, region=us-west value=0.64 1434055562000000000
-  //metric_name,add_id={app_id}},topology={{_topology_id}},depth={{depth}},processor_type={{processor_name()}},record_type="
+  //metric_name,app_id={app_id}},topology={{_topology_id}},depth={{depth}},processor_type={{processor_name()}},record_type="
   //order tags descending
   std::string escape_influx(std::string s) {
     std::string s2 = boost::replace_all_copy(s, " ", "\\ ");
@@ -282,12 +330,14 @@ public:
     for (auto i : _partition_processors) {
       for (auto j : i->get_metrics()) {
         j->_logged_name = j->_simple_name
-          + ",app_id=" + escape_influx(_app_id)
+          + ",app_id=" + escape_influx(_app_info->app_id)
+          + ",app_instance_id=" + escape_influx(_app_info->app_instance_id.size() ? _app_info->app_instance_id : "single-instance")
+          + ",app_instance_name=" + escape_influx(_app_info->app_instance_name.size() ? _app_info->app_instance_name : "noname")
+          + ",app_namespace=" + escape_influx(_app_info->app_namespace)
           + ",depth=" + std::to_string(i->depth())
           + ",key_type=" + escape_influx(i->key_type_name())
           + ",partition=" + std::to_string(i->partition())
           + ",processor_type=" + escape_influx(i->processor_name())
-          //+ ",record_type=" + escape_influx(i->record_type_name())
           + ",topology=" + escape_influx(_topology_id)
           + ",value_type=" + escape_influx(i->value_type_name());
       }
@@ -296,10 +346,12 @@ public:
     for (auto i : _topic_processors) {
       for (auto j : i->get_metrics()) {
         j->_logged_name = j->_simple_name
-          + ",app_id=" + escape_influx(_app_id)
+          + ",app_id=" + escape_influx(_app_info->app_id)
+          + ",app_instance_id=" + escape_influx(_app_info->app_instance_id.size() ? _app_info->app_instance_id : "single-instance")
+          + ",app_instance_name=" + escape_influx(_app_info->app_instance_name.size() ? _app_info->app_instance_name : "noname")
+          + ",app_namespace=" + escape_influx(_app_info->app_namespace)
           + ",key_type=" + escape_influx(i->key_type_name())
           + ",processor_type=" + escape_influx(i->processor_name())
-          //+ ",record_type=" + escape_influx(i->record_type_name())
           + ",topology=" + escape_influx(_topology_id)
           + ",value_type=" + escape_influx(i->value_type_name());
       }
@@ -407,16 +459,22 @@ public:
 
   boost::filesystem::path get_storage_path() {
     boost::filesystem::path top_of_topology(_root_path);
-    top_of_topology /= _app_id;
-    top_of_topology /= _topology_id;
-    BOOST_LOG_TRIVIAL(debug) << "topology << " << name() << ": creating local storage at " << top_of_topology;
-    boost::filesystem::create_directories(top_of_topology);
+    top_of_topology /= sanitize_filename(_app_info->identity());
+    top_of_topology /= sanitize_filename(_topology_id);
+    BOOST_LOG_TRIVIAL(debug) << "topology " << _app_info->identity() << ": creating local storage at " << top_of_topology;
+    auto res = boost::filesystem::create_directories(top_of_topology);
+    // seems to be a bug in boost - always return false...
+    //if (!res)
+    //  BOOST_LOG_TRIVIAL(error) << "topology " << _app_info->identity() << ": failed to create local storage at " << top_of_topology;
+    // so we check if the directory exists after instead...
+    if (!boost::filesystem::exists(top_of_topology))
+      BOOST_LOG_TRIVIAL(error) << "topology " << _app_info->identity() << ": failed to create local storage at " << top_of_topology;
     return top_of_topology;
   }
 
   protected:
   bool                                              _is_init;
-  std::string                                       _app_id;
+  std::shared_ptr<app_info>                         _app_info;
   std::string                                       _topology_id;
   int32_t                                           _partition;
   std::string                                       _brokers;
