@@ -75,8 +75,8 @@ class processor
     return _metrics;
   }
 
-  inline std::string record_type_name() const { 
-    return "[" + key_type_name() + "," + value_type_name() + "]"; 
+  inline std::string record_type_name() const {
+    return "[" + key_type_name() + "," + value_type_name() + "]";
   }
 
   virtual std::string key_type_name() const = 0;
@@ -237,19 +237,17 @@ struct app_info
     : app_namespace(_app_namespace)
     , app_id(_app_id)
     , app_instance_id(_app_instance_id)
-    , app_instance_name(_app_instance_name) {
-  }
+    , app_instance_name(_app_instance_name) {}
 
   /**
   * single instance apps - state stores will not be prefixed with instance_id
-  * metrics will not have instance_id or app_instance_name tag ?? 
+  * metrics will not have instance_id or app_instance_name tag ??
   * maybe they should be marked as single instance?
   */
   app_info(std::string _app_namespace,
            std::string _app_id)
     : app_namespace(_app_namespace)
-    , app_id(_app_id) {
-  }
+    , app_id(_app_id) {}
 
   std::string identity() const {
     if (app_instance_id.size() == 0)
@@ -271,18 +269,18 @@ inline std::string to_string(const app_info& obj) {
 class topology_base
 {
   protected:
-    topology_base(std::shared_ptr<app_info> ai, 
-                  std::string topology_id, 
-                  int32_t partition, 
-                  std::string brokers, 
-                  boost::filesystem::path root_path)
+  topology_base(std::shared_ptr<app_info> ai,
+                std::string topology_id,
+                int32_t partition,
+                std::string brokers,
+                boost::filesystem::path root_path)
     : _app_info(ai)
     , _is_init(false)
     , _topology_id(topology_id)
     , _partition(partition)
     , _brokers(brokers)
     , _root_path(root_path) {
-    BOOST_LOG_TRIVIAL(info) << "topology created, name:" << name() << ", brokers:" << brokers << " , storage_path:" << root_path;
+    BOOST_LOG_TRIVIAL(info) << "topology created, name:" << name();
   }
 
   virtual ~topology_base() {
@@ -290,21 +288,21 @@ class topology_base
     // output stats
   }
 
-public:
-  std::string app_id() const { 
+  public:
+  std::string app_id() const {
     return _app_info->identity();
   }
 
-  std::string topology_id() const { 
+  std::string topology_id() const {
     return _topology_id;
   }
-  
+
   int32_t partition() const {
     return _partition;
   }
 
-  std::string brokers() const { 
-    return _brokers; 
+  std::string brokers() const {
+    return _brokers;
   }
 
   std::string name() const {
@@ -319,7 +317,7 @@ public:
     std::string s3 = boost::replace_all_copy(s2, ",", "\\,");
     std::string s4 = boost::replace_all_copy(s3, "=", "\\=");
     /*
-    static const std::string toReplace = " ,="; // character class that matches . and -                                                                                                          
+    static const std::string toReplace = " ,="; // character class that matches . and -
     std::string replacement = ";";
     std::string processedString = boost::replace_all_regex_copy(someString, boost::regex(toReplace), replacement);
     */
@@ -367,7 +365,7 @@ public:
       for (auto j : i->get_metrics())
         f(*j);
   }
-  
+
   void init() {
     _top_partition_processors.clear();
 
@@ -438,7 +436,7 @@ public:
       i->flush();
   }
   */
-  
+
   void flush() {
     while (!eof())
       if (!process_one()) {
@@ -519,15 +517,15 @@ class partition_sink<void, V> : public partition_processor
   typedef void key_type;
   typedef V value_type;
   typedef kspp::krecord<void, V> record_type;
-  
-  virtual std::string key_type_name() const { 
-    return "void";  
+
+  virtual std::string key_type_name() const {
+    return "void";
   }
 
   virtual std::string value_type_name() const {
     return type_name<V>::get();
   }
-  
+
   virtual int produce(std::shared_ptr<krecord<void, V>> r) = 0;
   inline int produce(const V& value) {
     return produce(std::make_shared<krecord<void, V>>(value));
@@ -605,7 +603,7 @@ class topic_sink_base : public topic_processor
   typedef kspp::krecord<K, V> record_type;
 
   virtual int produce(std::shared_ptr<krecord<K, V>> r) = 0;
-  
+
   virtual std::string key_type_name() const {
     return type_name<K>::get();
   }
@@ -728,7 +726,7 @@ class partition_source : public partition_processor
 
   template<class SINK>
   typename std::enable_if<std::is_base_of<kspp::topic_sink_base<K, V>, SINK>::value, void>::type
-  add_sink(std::shared_ptr<SINK> sink) {
+    add_sink(std::shared_ptr<SINK> sink) {
     add_sink([sink](auto e) {
       sink->produce(e);
     });
