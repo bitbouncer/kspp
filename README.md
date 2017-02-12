@@ -77,6 +77,7 @@ Build
 ```
 wget --no-check-certificate http://downloads.sourceforge.net/project/boost/boost/1.62.0/boost_1_62_0.zip
 unzip boost_1_62_0.zip
+rename boost_1_62_0 boost
 
 git clone https://github.com/facebook/rocksdb.git
 git clone https://github.com/madler/zlib.git
@@ -110,7 +111,7 @@ msbuild zlib.sln
 msbuild zlib.sln /p:Configuration=Release
 cd ../..
 
-cd boost_1_62_0
+cd boost
 call bootstrap.bat
 .\b2.exe -toolset=msvc-%VisualStudioVersion% variant=release,debug link=static address-model=64 architecture=x86 --stagedir=stage\lib\x64 stage -s ZLIB_SOURCE=%CD%\..\zlib headers log_setup log date_time timer thread system program_options filesystem regex chrono
 cd ..
