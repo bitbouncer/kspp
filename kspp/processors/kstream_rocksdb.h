@@ -10,28 +10,14 @@ namespace kspp {
   class kstream_rocksdb : public kstream<K, V>
   {
   public:
-  kstream_rocksdb(topology_base& topology, std::shared_ptr<kspp::partition_source<K, V>> source, std::shared_ptr<CODEC> codec)
+    kstream_rocksdb(topology_base& topology, std::shared_ptr<kspp::partition_source<K, V>> source, std::shared_ptr<CODEC> codec)
       : kstream<K, V>(source.get())
-      , _offset_storage_path(get_storage_path(topology.get_storage_path()))
       , _source(source)
-      , _state_store(get_storage_path(topology.get_storage_path()), codec)
-      , _current_offset(RdKafka::Topic::OFFSET_BEGINNING)
-      , _last_comitted_offset(RdKafka::Topic::OFFSET_BEGINNING)
-      , _last_flushed_offset(RdKafka::Topic::OFFSET_BEGINNING) {
-      boost::filesystem::create_directories(_offset_storage_path);
-      _offset_storage_path /= "kspp_offset.bin";
-
-      // this is probably wrong since why should we delete the row in a kstream??? TBD
-      // for now this is just a copy from ktable...
+      , _state_store(get_storage_path(topology.get_storage_path()), codec) {
       _source->add_sink([this](auto r) {
-        _current_offset = r->offset;
-        if (r->value)
-          _state_store.put(r->key, *r->value);
-        else
-          _state_store.del(r->key);
+        _state_store.insert(r);
         this->send_to_sinks(r);
       });
-
     }
 
     virtual ~kstream_rocksdb() {
@@ -45,26 +31,16 @@ namespace kspp {
     virtual std::string processor_name() const { return "kstream_rocksdb"; }
 
     virtual void start() {
-      if (boost::filesystem::exists(_offset_storage_path)) {
-        std::ifstream is(_offset_storage_path.generic_string(), std::ios::binary);
-        int64_t tmp;
-        is.read((char*)&tmp, sizeof(int64_t));
-        if (is.good()) {
-          _current_offset = tmp;
-          _last_comitted_offset = tmp;
-          _last_flushed_offset = tmp;
-        }
-      }
-      _source->start(_current_offset);
+      _source->start(_state_store.offset());
     }
 
     virtual void start(int64_t offset) {
-      _current_offset = offset;
-      _source->start(_current_offset);
+      _state_store.start(offset);
+      _source->start(offset);
     }
 
     virtual void commit() {
-      _last_comitted_offset = _current_offset;
+      _state_store.commit();
     }
 
     virtual void close() {
@@ -82,16 +58,12 @@ namespace kspp {
     }
 
     virtual void flush_offset() {
-      if (_last_flushed_offset != _last_comitted_offset) {
-        std::ofstream os(_offset_storage_path.generic_string(), std::ios::binary);
-        os.write((char*)&_last_comitted_offset, sizeof(int64_t));
-        _last_flushed_offset = _last_comitted_offset;
-        os.flush();
-      }
+      _state_store.commit();
+      _state_store.flush_offset();
     }
-  
+
     inline int64_t offset() const {
-      return _current_offset;
+      return _state_store.offset();
     }
 
     virtual std::shared_ptr<krecord<K, V>> get(const K& key) {
@@ -99,17 +71,13 @@ namespace kspp {
     }
 
   private:
-  boost::filesystem::path get_storage_path(boost::filesystem::path storage_path) {
-    boost::filesystem::path p(storage_path);
-    p /= sanitize_filename(name());
-    return p;
-  }
+    boost::filesystem::path get_storage_path(boost::filesystem::path storage_path) {
+      boost::filesystem::path p(storage_path);
+      p /= sanitize_filename(name());
+      return p;
+    }
 
-  std::shared_ptr<kspp::partition_source<K, V>> _source;
-  rockdb_store<K, V, CODEC>                     _state_store;
-  boost::filesystem::path                       _offset_storage_path;
-  int64_t                                       _current_offset;
-  int64_t                                       _last_comitted_offset;
-  int64_t                                       _last_flushed_offset;
+    std::shared_ptr<kspp::partition_source<K, V>> _source;
+    rockdb_store<K, V, CODEC>                     _state_store;
   };
 };

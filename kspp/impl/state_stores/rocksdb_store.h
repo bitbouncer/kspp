@@ -86,8 +86,13 @@ namespace kspp {
     };
 
     rockdb_store(boost::filesystem::path storage_path, std::shared_ptr<CODEC> codec)
-      : _codec(codec) {
+      : _offset_storage_path(storage_path)
+      , _codec(codec)
+      , _current_offset(-1)
+      , _last_comitted_offset(-1)
+      , _last_flushed_offset(-1) {
       boost::filesystem::create_directories(boost::filesystem::path(storage_path));
+      _offset_storage_path /= "kspp_offset.bin";
       rocksdb::Options options;
       options.create_if_missing = true;
       rocksdb::DB* tmp = nullptr;
@@ -97,6 +102,17 @@ namespace kspp {
         BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", failed to open rocks db, path:" << storage_path.generic_string();
       }
       assert(s.ok());
+
+      if (boost::filesystem::exists(_offset_storage_path)) {
+        std::ifstream is(_offset_storage_path.generic_string(), std::ios::binary);
+        int64_t tmp;
+        is.read((char*)&tmp, sizeof(int64_t));
+        if (is.good()) {
+          _current_offset = tmp;
+          _last_comitted_offset = tmp;
+          _last_flushed_offset = tmp;
+        }
+      }
     }
 
     ~rockdb_store() {
@@ -105,26 +121,32 @@ namespace kspp {
 
     void close() {
       _db = nullptr;
+      flush_offset();
     }
 
-    void put(const K& key, const V& val) {
+    virtual void insert(std::shared_ptr<krecord<K, V>> record) {
       char key_buf[MAX_KEY_SIZE];
       char val_buf[MAX_VALUE_SIZE];
 
       size_t ksize = 0;
       size_t vsize = 0;
-      {
-        std::strstream s(key_buf, MAX_KEY_SIZE);
-        ksize = _codec->encode(key, s);
+      _current_offset = std::max<int64_t>(_current_offset, record->offset);
+      if (record->value) {
+        {
+          std::strstream s(key_buf, MAX_KEY_SIZE);
+          ksize = _codec->encode(record->key, s);
+        }
+        {
+          std::strstream s(val_buf, MAX_VALUE_SIZE);
+          vsize = _codec->encode(*record->value, s);
+        }
+        rocksdb::Status s = _db->Put(rocksdb::WriteOptions(), rocksdb::Slice((char*)key_buf, ksize), rocksdb::Slice(val_buf, vsize));
+      } else {
+        erase(record->key);
       }
-      {
-        std::strstream s(val_buf, MAX_VALUE_SIZE);
-        vsize = _codec->encode(val, s);
-      }
-      rocksdb::Status s = _db->Put(rocksdb::WriteOptions(), rocksdb::Slice((char*)key_buf, ksize), rocksdb::Slice(val_buf, vsize));
     }
 
-    void del(const K& key) {
+    void erase(const K& key) {
       char key_buf[MAX_KEY_SIZE];
       size_t ksize = 0;
       {
@@ -165,6 +187,38 @@ namespace kspp {
       return res;
     }
 
+    //should we allow writing -2 in store??
+    virtual void start(int64_t offset) {
+      _current_offset = offset;
+      commit();
+      flush_offset();
+    }
+
+    /**
+    * commits the offset
+    */
+    virtual void commit() {
+      _last_comitted_offset = _current_offset;
+      if ((_last_comitted_offset - _last_flushed_offset) > 10000)
+        flush_offset();
+    }
+
+    virtual void flush_offset() {
+      if (_last_flushed_offset != _last_comitted_offset) {
+        std::ofstream os(_offset_storage_path.generic_string(), std::ios::binary);
+        os.write((char*)&_last_comitted_offset, sizeof(int64_t));
+        _last_flushed_offset = _last_comitted_offset;
+        os.flush();
+      }
+    }
+
+    /**
+    * returns last offset
+    */
+    virtual int64_t offset() const {
+      return _current_offset;
+    }
+
     typename kspp::materialized_partition_source<K, V>::iterator begin(void) {
       return typename kspp::materialized_partition_source<K, V>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::BEGIN));
     }
@@ -174,8 +228,12 @@ namespace kspp {
     }
 
   private:
-    std::unique_ptr<rocksdb::DB>          _db;        // maybee this should be a shared ptr since we're letting iterators out...
-    std::shared_ptr<CODEC>                _codec;
+    boost::filesystem::path      _offset_storage_path;
+    std::unique_ptr<rocksdb::DB> _db;        // maybe this should be a shared ptr since we're letting iterators out...
+    std::shared_ptr<CODEC>       _codec;
+    int64_t                      _current_offset;
+    int64_t                      _last_comitted_offset;
+    int64_t                      _last_flushed_offset;
   };
 }
 
