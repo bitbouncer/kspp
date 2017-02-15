@@ -94,8 +94,6 @@ class processor
   }
   */
 
-
-
   //const size_t          _partition; or -1 if not valid??
   //partition_processor*  _upstream;
   std::vector<metric*>  _metrics;
@@ -123,16 +121,12 @@ class topic_processor : public processor
   virtual void flush() {
     while (!eof())
       if (!process_one()) {
-        //using namespace std::chrono_literals;
-        //std::this_thread::sleep_for(10ms);
         ;
       }
     //if (_upstream)   TBD!!!!!
     //  _upstream->flush();
     while (!eof())
       if (!process_one()) {
-        //using namespace std::chrono_literals;
-        //std::this_thread::sleep_for(10ms);
         ;
       }
     punctuate(milliseconds_since_epoch());
@@ -178,16 +172,12 @@ class partition_processor : public processor
   virtual void flush() {
     while (!eof())
       if (!process_one()) {
-        //using namespace std::chrono_literals;
-        //std::this_thread::sleep_for(10ms);
         ;
       }
     if (_upstream)
       _upstream->flush();
     while (!eof())
       if (!process_one()) {
-        //using namespace std::chrono_literals;
-        //std::this_thread::sleep_for(10ms);
         ;
       }
     punctuate(milliseconds_since_epoch());
@@ -273,202 +263,26 @@ class topology_base
                 std::string topology_id,
                 int32_t partition,
                 std::string brokers,
-                boost::filesystem::path root_path)
-    : _app_info(ai)
-    , _is_init(false)
-    , _topology_id(topology_id)
-    , _partition(partition)
-    , _brokers(brokers)
-    , _root_path(root_path) {
-    BOOST_LOG_TRIVIAL(info) << "topology created, name:" << name();
-  }
+                boost::filesystem::path root_path);
 
-  virtual ~topology_base() {
-    BOOST_LOG_TRIVIAL(info) << "topology, name:" << name() << " terminated";
-    // output stats
-  }
+  virtual ~topology_base();
 
   public:
-  std::string app_id() const {
-    return _app_info->identity();
-  }
-
-  std::string topology_id() const {
-    return _topology_id;
-  }
-
-  int32_t partition() const {
-    return _partition;
-  }
-
-  std::string brokers() const {
-    return _brokers;
-  }
-
-  std::string name() const {
-    return "[" + _app_info->identity() + "]" + _topology_id + "[p" + std::to_string(_partition) + "]";
-  }
-  // the metrics should look like this...
-  //cpu_load_short, host=server01, region=us-west value=0.64 1434055562000000000
-  //metric_name,app_id={app_id}},topology={{_topology_id}},depth={{depth}},processor_type={{processor_name()}},record_type="
-  //order tags descending
-  std::string escape_influx(std::string s) {
-    std::string s2 = boost::replace_all_copy(s, " ", "\\ ");
-    std::string s3 = boost::replace_all_copy(s2, ",", "\\,");
-    std::string s4 = boost::replace_all_copy(s3, "=", "\\=");
-    /*
-    static const std::string toReplace = " ,="; // character class that matches . and -
-    std::string replacement = ";";
-    std::string processedString = boost::replace_all_regex_copy(someString, boost::regex(toReplace), replacement);
-    */
-    return s4;
-  }
-
-  void init_metrics() {
-    for (auto i : _partition_processors) {
-      for (auto j : i->get_metrics()) {
-        j->_logged_name = j->_simple_name
-          + ",app_id=" + escape_influx(_app_info->app_id)
-          + ",app_instance_id=" + escape_influx(_app_info->app_instance_id.size() ? _app_info->app_instance_id : "single-instance")
-          + ",app_instance_name=" + escape_influx(_app_info->app_instance_name.size() ? _app_info->app_instance_name : "noname")
-          + ",app_namespace=" + escape_influx(_app_info->app_namespace)
-          + ",depth=" + std::to_string(i->depth())
-          + ",key_type=" + escape_influx(i->key_type_name())
-          + ",partition=" + std::to_string(i->partition())
-          + ",processor_type=" + escape_influx(i->processor_name())
-          + ",topology=" + escape_influx(_topology_id)
-          + ",value_type=" + escape_influx(i->value_type_name());
-      }
-    }
-
-    for (auto i : _topic_processors) {
-      for (auto j : i->get_metrics()) {
-        j->_logged_name = j->_simple_name
-          + ",app_id=" + escape_influx(_app_info->app_id)
-          + ",app_instance_id=" + escape_influx(_app_info->app_instance_id.size() ? _app_info->app_instance_id : "single-instance")
-          + ",app_instance_name=" + escape_influx(_app_info->app_instance_name.size() ? _app_info->app_instance_name : "noname")
-          + ",app_namespace=" + escape_influx(_app_info->app_namespace)
-          + ",key_type=" + escape_influx(i->key_type_name())
-          + ",processor_type=" + escape_influx(i->processor_name())
-          + ",topology=" + escape_influx(_topology_id)
-          + ",value_type=" + escape_influx(i->value_type_name());
-      }
-    }
-  }
-
-  void for_each_metrics(std::function<void(kspp::metric&)> f) {
-    for (auto i : _partition_processors)
-      for (auto j : i->get_metrics())
-        f(*j);
-
-    for (auto i : _topic_processors)
-      for (auto j : i->get_metrics())
-        f(*j);
-  }
-
-  void init() {
-    _top_partition_processors.clear();
-
-    for (auto i : _partition_processors) {
-      bool upstream_of_something = false;
-      for (auto j : _partition_processors) {
-        if (j->is_upstream(i.get()))
-          upstream_of_something = true;
-      }
-      if (!upstream_of_something) {
-        BOOST_LOG_TRIVIAL(info) << "topology << " << name() << ": adding " << i->name() << " to top";
-        _top_partition_processors.push_back(i);
-      } else {
-        BOOST_LOG_TRIVIAL(info) << "topology << " << name() << ": skipping poll of " << i->name();
-      }
-    }
-    _is_init = true;
-  }
-
-  bool eof() {
-    for (auto&& i : _top_partition_processors) {
-      if (!i->eof())
-        return false;
-    }
-    return true;
-  }
-
-  int process_one() {
-    // maybe we should check sinks here an return 0 if we need to wait...
-
-    int res = 0;
-    for (auto&& i : _top_partition_processors) {
-      res += i->process_one();
-    }
-    // is this nessessary??? are those only sinks??
-    for (auto i : _topic_processors)
-      res += i->process_one();
-    return res;
-  }
-
-  void close() {
-    for (auto i : _topic_processors)
-      i->close();
-    for (auto i : _partition_processors)
-      i->close();
-  }
-
-  void start() {
-    if (!_is_init)
-      init();
-    for (auto&& i : _top_partition_processors)
-      i->start();
-    //for (auto i : _topic_processors) // those are only sinks??
-    //  i->start();
-  }
-
-  void start(int offset) {
-    if (!_is_init)
-      init();
-    for (auto&& i : _top_partition_processors)
-      i->start(offset);
-    //for (auto i : _topic_processors) // those are only sinks??
-    //  i->start(offset);
-  }
-
-  /*void flush() {
-    for (auto i : _top_partition_processors)
-      i->flush();
-  }
-  */
-
-  void flush() {
-    while (!eof())
-      if (!process_one()) {
-        //using namespace std::chrono_literals;
-        //std::this_thread::sleep_for(10ms);
-        ;
-      }
-    for (auto i : _top_partition_processors)
-      i->flush();
-
-    while (!eof())
-      if (!process_one()) {
-        //using namespace std::chrono_literals;
-        //std::this_thread::sleep_for(10ms);
-        ;
-      }
-  }
-
-  boost::filesystem::path get_storage_path() {
-    boost::filesystem::path top_of_topology(_root_path);
-    top_of_topology /= sanitize_filename(_app_info->identity());
-    top_of_topology /= sanitize_filename(_topology_id);
-    BOOST_LOG_TRIVIAL(debug) << "topology " << _app_info->identity() << ": creating local storage at " << top_of_topology;
-    auto res = boost::filesystem::create_directories(top_of_topology);
-    // seems to be a bug in boost - always return false...
-    //if (!res)
-    //  BOOST_LOG_TRIVIAL(error) << "topology " << _app_info->identity() << ": failed to create local storage at " << top_of_topology;
-    // so we check if the directory exists after instead...
-    if (!boost::filesystem::exists(top_of_topology))
-      BOOST_LOG_TRIVIAL(error) << "topology " << _app_info->identity() << ": failed to create local storage at " << top_of_topology;
-    return top_of_topology;
-  }
+  std::string             app_id() const;
+  std::string             topology_id() const;
+  int32_t                 partition() const;
+  std::string             brokers() const;
+  std::string             name() const;
+  void                    init_metrics();
+  void                    for_each_metrics(std::function<void(kspp::metric&)> f);
+  void                    init();
+  bool                    eof();
+  int                     process_one();
+  void                    close();
+  void                    start();
+  void                    start(int offset);
+  void                    flush();
+  boost::filesystem::path get_storage_path();
 
   protected:
   bool                                              _is_init;
@@ -792,18 +606,18 @@ class materialized_partition_source : public partition_source<K, V>
 };
 
 template<class K, class V>
-class kstream_partition : public partition_source<K, V>
+class kstream : public partition_source<K, V>
 {
   public:
-  kstream_partition(partition_processor* upstream)
+  kstream(partition_processor* upstream)
     : partition_source<K, V>(upstream, upstream->partition()) {}
 };
 
 template<class K, class V>
-class ktable_partition : public materialized_partition_source<K, V>
+class ktable : public materialized_partition_source<K, V>
 {
   public:
-  ktable_partition(partition_processor* upstream)
+  ktable(partition_processor* upstream)
     : materialized_partition_source<K, V>(upstream, upstream->partition()) {}
 };
 }; // namespace

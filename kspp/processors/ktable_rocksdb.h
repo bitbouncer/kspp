@@ -6,11 +6,11 @@
 
 namespace kspp {
 template<class K, class V, class CODEC>
-class ktable_rocksdb : public ktable_partition<K, V>
+class ktable_rocksdb : public ktable<K, V>
 {
   public:
   ktable_rocksdb(topology_base& topology, std::shared_ptr<kspp::partition_source<K, V>> source, std::shared_ptr<CODEC> codec)
-    : ktable_partition<K, V>(source.get())
+    : ktable<K, V>(source.get())
     , _offset_storage_path(get_storage_path(topology.get_storage_path()))
     , _source(source)
     , _state_store(get_storage_path(topology.get_storage_path()), codec)

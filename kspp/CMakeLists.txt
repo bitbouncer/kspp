@@ -8,6 +8,7 @@ file(GLOB LIB_SRCS
   sinks/stream_sink.h
   codecs/*.h
   processors/*.h
+  impl/*.*
   impl/state_stores/*.*
   impl/sources/*.*
   impl/sinks/*.*

@@ -4,14 +4,14 @@
 
 // should this be a partition_sink, topic_source or partition_processor????
 // nothing is nessessary but check what's best...
-// std::shared_ptr<ktable_partition<K, PK>> routing_table could be a external partition-source and an internal ktable_partition that uses an internal kv-store...
+// std::shared_ptr<ktable<K, PK>> routing_table could be a external partition-source and an internal ktable_partition that uses an internal kv-store...
 
 namespace kspp {
   template<class K, class V, class PK, class CODEC>
   class repartition_by_table : public partition_processor
   {
   public:
-    repartition_by_table(topology_base& topology, std::shared_ptr<partition_source<K, V>> source, std::shared_ptr<ktable_partition<K, PK>> routing_table, std::shared_ptr<topic_sink<K, V, CODEC>> topic_sink)
+    repartition_by_table(topology_base& topology, std::shared_ptr<partition_source<K, V>> source, std::shared_ptr<ktable<K, PK>> routing_table, std::shared_ptr<topic_sink<K, V, CODEC>> topic_sink)
       : partition_processor(source.get(), source->partition())
       , _source(source)
       , _routing_table(routing_table)
@@ -89,7 +89,7 @@ namespace kspp {
   private:
     std::deque<std::shared_ptr<krecord<K, V>>> _queue;
     std::shared_ptr<partition_source<K, V>>    _source;
-    std::shared_ptr<ktable_partition<K, PK>>   _routing_table;
+    std::shared_ptr<ktable<K, PK>>             _routing_table;
     std::shared_ptr<topic_sink<K, V, CODEC>>   _topic_sink;
     metric_lag                                 _lag;
   };

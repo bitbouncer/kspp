@@ -4,7 +4,7 @@
 
 namespace kspp {
   template<class K, class V>
-  class ktable_mem : public ktable_partition<K, V>
+  class ktable_mem : public ktable<K, V>
   {
   public:
     class iterator_impl : public kmaterialized_source_iterator_impl<K, V>
@@ -47,7 +47,7 @@ namespace kspp {
     };
     
     ktable_mem(topology_base& topology, std::shared_ptr<kspp::partition_source<K, V>> source)
-      : ktable_partition<K, V>(source.get())
+      : ktable<K, V>(source.get())
       , _source(source)
       , _current_offset(RdKafka::Topic::OFFSET_BEGINNING)
       , _count("count") {

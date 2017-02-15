@@ -7,11 +7,11 @@
 
 namespace kspp {
   template<class K, class V, class CODEC>
-  class kstream_rocksdb : public kstream_partition<K, V>
+  class kstream_rocksdb : public kstream<K, V>
   {
   public:
   kstream_rocksdb(topology_base& topology, std::shared_ptr<kspp::partition_source<K, V>> source, std::shared_ptr<CODEC> codec)
-      : kstream_partition<K, V>(source.get())
+      : kstream<K, V>(source.get())
       , _offset_storage_path(get_storage_path(topology.get_storage_path()))
       , _source(source)
       , _state_store(get_storage_path(topology.get_storage_path()), codec)
