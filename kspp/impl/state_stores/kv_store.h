@@ -4,9 +4,7 @@ namespace kspp {
   class kv_store
   {
   public:
-    kv_store()
-      : _current_offset(-1) {
-    }
+    //kv_store(boost::filesystem::path storage_path, std::shared_ptr<CODEC> codec) {}
 
     virtual ~kv_store() {}
 
@@ -18,12 +16,15 @@ namespace kspp {
     /**
     * Deletes a key-value pair with the given key
     */
-    virtual void erase(const K& key) = 0;
+    //virtual void erase(const K& key) = 0;
 
     /**
     * commits the offset
     */
     virtual void commit() =0;
+
+    // should be removed
+    virtual void flush_offset() = 0;
 
     /** 
     * returns last offset
@@ -38,9 +39,6 @@ namespace kspp {
     virtual std::shared_ptr<krecord<K, V>> get(const K& key) = 0;
     virtual typename kspp::materialized_partition_source<K, V>::iterator begin(void) = 0;
     virtual typename kspp::materialized_partition_source<K, V>::iterator end() = 0;
-
-  protected:
-    int64_t _current_offset;
   };
 
   //template<class K, class V>

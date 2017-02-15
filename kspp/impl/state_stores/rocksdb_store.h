@@ -15,8 +15,8 @@
 
 namespace kspp {
   template<class K, class V, class CODEC>
-  class rockdb_store : public kv_store<K, V>
-  {
+  class rockdb_store 
+    : public kv_store<K, V> {
   public:
     enum { MAX_KEY_SIZE = 10000, MAX_VALUE_SIZE = 100000 };
 

@@ -1,12 +1,12 @@
  #include "kv_store.h"
  
  namespace kspp {
- template<class K, class V>
-  class mem_kv_store : public kv_store<K, V>
-  {
+ template<class K, class V, class CODEC=void>
+  class mem_kv_store 
+    : public kv_store<K, V> {
   public:
-    class iterator_impl : public kmaterialized_source_iterator_impl<K, V>
-    {
+    class iterator_impl 
+      : public kmaterialized_source_iterator_impl<K, V> {
     public:
       enum seek_pos_e { BEGIN, END };
 
@@ -44,6 +44,9 @@
       typename std::map<K, std::shared_ptr<krecord<K, V>>>::iterator _it;
     };
 
+    mem_kv_store(boost::filesystem::path storage_path){
+    }
+
     virtual ~mem_kv_store() {}
 
     virtual void close() {}
@@ -52,6 +55,7 @@
     * Put a key-value pair
     */
     virtual void insert(std::shared_ptr<krecord<K, V>> record) {
+      _current_offset = std::max<int64_t>(_current_offset, record->offset);
       if (record->value)
         _store[record->key] = record;
       else
@@ -65,6 +69,28 @@
       _store.erase(key);
     }
     
+    /**
+    * commits the offset
+    */
+    virtual void commit() {
+      // noop
+    }
+
+    virtual void flush_offset() {
+      // noop
+    }
+
+    /**
+    * returns last offset
+    */
+    virtual int64_t offset() const {
+      return _current_offset;
+    }
+
+    virtual void start(int64_t offset) {
+      _current_offset = offset;
+    }
+
     /**
     * Returns a key-value pair with the given key
     */
@@ -82,6 +108,7 @@
     }
 
   private:
-    std::map<K, std::shared_ptr<krecord<K, V>>>   _store;
+    std::map<K, std::shared_ptr<krecord<K, V>>> _store;
+    int64_t                                     _current_offset;
   };
  }

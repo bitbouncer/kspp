@@ -8,6 +8,7 @@
 #include <kspp/processors/kafka_source.h>
 #include <kspp/processors/ktable_rocksdb.h>
 #include <kspp/processors/ktable_mem.h>
+#include <kspp/processors/k2.h>
 #include <kspp/processors/filter.h>
 #include <kspp/processors/transform.h>
 #include <kspp/processors/count.h>
@@ -15,6 +16,9 @@
 #include <kspp/algorithm.h>
 #include <kspp/sinks/kafka_sink.h>
 #include <kspp/sinks/stream_sink.h>
+
+#include <kspp/impl/state_stores/mem_kv_store.h>
+#include <kspp/impl/state_stores/windowed_mem_record_store.h>
 
 #define PARTITION 0
 
@@ -56,6 +60,11 @@ int main(int argc, char **argv) {
     // this should be possible to do in memory
     auto table1 = topology->create_processor<kspp::ktable_rocksdb<std::string, int64_t, kspp::binary_codec>>(word_counts, binary_codec);
     auto table2 = topology->create_processor<kspp::ktable_mem<std::string, int64_t>>(word_counts);
+    
+    // this is the future...
+    auto table3 = topology->create_processor<kspp::ktable2<std::string, int64_t, kspp::rockdb_store, kspp::binary_codec>>(word_counts, binary_codec);
+    auto table4 = topology->create_processor<kspp::ktable2<std::string, int64_t, kspp::mem_kv_store>>(word_counts);
+    auto table5 = topology->create_processor<kspp::ktable2<std::string, int64_t, kspp::windowed_mem_store>>(word_counts);
 
     topology->start();
     topology->flush();
@@ -66,6 +75,23 @@ int main(int argc, char **argv) {
 
     std::cerr << "using range iterators " << std::endl;
     for (auto&& i : *table2)
+      std::cerr << "item : " << i->key << ": " << *i->value << std::endl;
+
+
+    std::cerr << "using range iterators " << std::endl;
+    for (auto&& i : *table3)
+      std::cerr << "item : " << i->key << ": " << *i->value << std::endl;
+
+    std::cerr << "using range iterators " << std::endl;
+    for (auto&& i : *table4)
+      std::cerr << "item : " << i->key << ": " << *i->value << std::endl;
+
+    std::cerr << "using iterators " << std::endl;
+    for (auto&& i = table5->begin(), end = table5->end(); i != end; ++i)
+      std::cerr << "item : " << (*i)->key << ": " << *(*i)->value << std::endl;
+
+    std::cerr << "using range iterators " << std::endl;
+    for (auto&& i : *table5)
       std::cerr << "item : " << i->key << ": " << *i->value << std::endl;
   }
 }
