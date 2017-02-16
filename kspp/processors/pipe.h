@@ -43,8 +43,8 @@ class pipe : public partition_source<K, V>
   }
 
   virtual void commit(bool force) {
-    if (_upstream)
-      _upstream->commit(force);
+    if (this->_upstream)
+      this->_upstream->commit(force);
   }
 };
 
@@ -91,8 +91,8 @@ class pipe<void, V> : public partition_source<void, V>
   }
 
   virtual void commit(bool force) {
-    if (_upstream)
-      _upstream->commit(force);
+    if (this->_upstream)
+      this->_upstream->commit(force);
   }
 };
 
@@ -138,8 +138,8 @@ class pipe<K, void> : public partition_source<K, void>
   }
   
   virtual void commit(bool force) {
-    if (_upstream)
-      _upstream->commit(force);
+    if (this->_upstream)
+      this->_upstream->commit(force);
   }
 };
 };
