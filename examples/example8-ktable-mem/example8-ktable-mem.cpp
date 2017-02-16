@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
     // this should be possible to do in memory
     auto word_counts = topology->create_processor<kspp::count_by_key<std::string, int64_t, kspp::binary_codec>>(filtered_stream, 100ms, binary_codec);
    
-    auto table1 = topology->create_processor<kspp::ktable<std::string, int64_t, kspp::rockdb_store, kspp::binary_codec>>(word_counts, binary_codec);
+    auto table1 = topology->create_processor<kspp::ktable<std::string, int64_t, kspp::rocksdb_store, kspp::binary_codec>>(word_counts, binary_codec);
     auto table2 = topology->create_processor<kspp::ktable<std::string, int64_t, kspp::mem_store>>(word_counts);
     auto table3 = topology->create_processor<kspp::ktable<std::string, int64_t, kspp::mem_windowed_store>>(word_counts, 500ms, 10);
 

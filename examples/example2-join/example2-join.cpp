@@ -19,7 +19,7 @@ int main(int argc, char **argv) {
     auto topology = builder.create_topology(PARTITION);
     auto stream = topology->create_processor<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_codec>>("kspp_test0_eventstream", codec);
     auto table_source = topology->create_processor<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_codec>>("kspp_test0_table", codec);
-    auto table = topology->create_processor<kspp::ktable<boost::uuids::uuid, int64_t, kspp::rockdb_store, kspp::binary_codec>>(table_source, codec);
+    auto table = topology->create_processor<kspp::ktable<boost::uuids::uuid, int64_t, kspp::rocksdb_store, kspp::binary_codec>>(table_source, codec);
     auto join = topology->create_processor<kspp::left_join<boost::uuids::uuid, int64_t, int64_t, int64_t>>(
       stream, 
       table, 

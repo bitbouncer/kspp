@@ -196,7 +196,7 @@ int main(int argc, char **argv) {
     auto topology = builder.create_topology(PARTITION);
     auto stream = topology->create_processor<kspp::kafka_source<int64_t, page_view_data, kspp::binary_codec>>("kspp_PageViews", codec);
     auto table_source = topology->create_processor<kspp::kafka_source<int64_t, user_profile_data, kspp::binary_codec>>("kspp_UserProfile", codec);
-    auto table = topology->create_processor<kspp::ktable<int64_t, user_profile_data, kspp::rockdb_store, kspp::binary_codec>>(table_source, codec);
+    auto table = topology->create_processor<kspp::ktable<int64_t, user_profile_data, kspp::rocksdb_store, kspp::binary_codec>>(table_source, codec);
     auto join = topology->create_processor<kspp::left_join<int64_t, page_view_data, user_profile_data, page_view_decorated>>(
       stream, 
       table, 
@@ -221,7 +221,7 @@ int main(int argc, char **argv) {
   {
     auto topology = builder.create_topology(PARTITION);
     auto table_source = topology->create_processor<kspp::kafka_source<int64_t, user_profile_data, kspp::binary_codec>>("kspp_UserProfile", codec);
-    auto table = topology->create_processor<kspp::ktable<int64_t, user_profile_data, kspp::rockdb_store, kspp::binary_codec>>(table_source, codec);
+    auto table = topology->create_processor<kspp::ktable<int64_t, user_profile_data, kspp::rocksdb_store, kspp::binary_codec>>(table_source, codec);
     
     topology->start();
     topology->flush();

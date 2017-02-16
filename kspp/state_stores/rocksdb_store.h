@@ -15,7 +15,7 @@
 
 namespace kspp {
 template<class K, class V, class CODEC>
-class rockdb_store
+class rocksdb_store
   : public kv_store<K, V>
 {
   public:
@@ -86,7 +86,7 @@ class rockdb_store
 
   };
 
-  rockdb_store(boost::filesystem::path storage_path, std::shared_ptr<CODEC> codec)
+  rocksdb_store(boost::filesystem::path storage_path, std::shared_ptr<CODEC> codec)
     : _offset_storage_path(storage_path)
     , _codec(codec)
     , _current_offset(-1)
@@ -116,7 +116,7 @@ class rockdb_store
     }
   }
 
-  ~rockdb_store() {
+  ~rocksdb_store() {
     close();
   }
 

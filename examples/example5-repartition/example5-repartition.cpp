@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
     auto topic_sink = topology->create_topic_sink<kspp::kafka_topic_sink<int, std::string, kspp::text_codec>>("kspp_example5_usernames.per-channel", codec);
     auto sources = topology->create_partition_processors<kspp::kafka_source<int, std::string, kspp::text_codec>>(8, "kspp_example5_usernames", codec);
     auto routing_sources = topology->create_partition_processors<kspp::kafka_source<int, int, kspp::text_codec>>(8, "kspp_example5_user_channel", codec);
-    auto routing_tables = topology->create_partition_processors<kspp::ktable<int, int, kspp::rockdb_store, kspp::text_codec>>(routing_sources, codec);
+    auto routing_tables = topology->create_partition_processors<kspp::ktable<int, int, kspp::rocksdb_store, kspp::text_codec>>(routing_sources, codec);
     auto partition_repartition = topology->create_partition_processors<kspp::repartition_by_table<int, std::string, int, kspp::text_codec>>(sources, routing_tables, topic_sink);
 
     topology->init_metrics();
