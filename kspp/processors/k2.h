@@ -24,22 +24,6 @@ namespace kspp {
       this->add_metric(&_count);
     }
 
-    //ktable2(topology_base& topology, std::shared_ptr<kspp::partition_source<K, V>> source, std::shared_ptr<CODEC> codec)
-    //  : ktable<K, V>(source.get())
-    //  , _source(source)
-    //  , _state_store(get_storage_path(topology.get_storage_path()), codec)
-    //  , _count("count") {
-    //  _source->add_sink([this](auto r) {
-    //    _lag.add_event_time(r->event_time);
-    //    ++_count;
-    //    _state_store.insert(r);
-    //    this->send_to_sinks(r);
-    //  });
-    //  this->add_metric(&_lag);
-    //  this->add_metric(&_count);
-    //}
-
-
     virtual ~ktable2() {
       close();
     }
@@ -86,7 +70,6 @@ namespace kspp {
       return _current_offset;
     }
 
-    // inherited from kmaterialized_source
     virtual std::shared_ptr<krecord<K, V>> get(const K& key) {
       return _state_store.get(key);
     }

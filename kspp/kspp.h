@@ -88,14 +88,6 @@ class processor
     _metrics.push_back(p);
   }
 
-  /*
-  int64_t identity() const {
-    return (int64_t) this;
-  }
-  */
-
-  //const size_t          _partition; or -1 if not valid??
-  //partition_processor*  _upstream;
   std::vector<metric*>  _metrics;
 };
 
@@ -103,7 +95,6 @@ class topic_processor : public processor
 {
   public:
   virtual ~topic_processor() {}
-  //virtual void init(processor_context*) {}
   virtual std::string name() const = 0;
   virtual std::string processor_name() const { return "topic_processor"; }
 

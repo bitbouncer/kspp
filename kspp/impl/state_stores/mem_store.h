@@ -2,7 +2,7 @@
  
  namespace kspp {
  template<class K, class V, class CODEC=void>
-  class mem_kv_store 
+  class mem_store 
     : public kv_store<K, V> {
   public:
     class iterator_impl 
@@ -44,10 +44,10 @@
       typename std::map<K, std::shared_ptr<krecord<K, V>>>::iterator _it;
     };
 
-    mem_kv_store(boost::filesystem::path storage_path){
+    mem_store(boost::filesystem::path storage_path){
     }
 
-    virtual ~mem_kv_store() {}
+    virtual ~mem_store() {}
 
     virtual void close() {}
     

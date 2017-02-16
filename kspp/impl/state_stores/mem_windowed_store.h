@@ -3,7 +3,7 @@
 
 namespace kspp {
   template<class K, class V, class CODEC = void>
-  class windowed_mem_store
+  class mem_windowed_store
     : public kv_store<K, V> {
     
     typedef std::map<K, std::shared_ptr<krecord<K, V>>> bucket_type;
@@ -70,9 +70,9 @@ namespace kspp {
       typename std::map<K, std::shared_ptr<krecord<K, V>>>::iterator                                      _inner_it;
     };
 
-    windowed_mem_store(boost::filesystem::path storage_path) {}
+    mem_windowed_store(boost::filesystem::path storage_path) {}
 
-    virtual ~windowed_mem_store() {}
+    virtual ~mem_windowed_store() {}
 
     virtual void close() {}
 

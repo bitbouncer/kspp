@@ -17,8 +17,8 @@
 #include <kspp/sinks/kafka_sink.h>
 #include <kspp/sinks/stream_sink.h>
 
-#include <kspp/impl/state_stores/mem_kv_store.h>
-#include <kspp/impl/state_stores/windowed_mem_record_store.h>
+#include <kspp/impl/state_stores/mem_store.h>
+#include <kspp/impl/state_stores/mem_windowed_store.h>
 
 #define PARTITION 0
 
@@ -63,8 +63,8 @@ int main(int argc, char **argv) {
     
     // this is the future...
     auto table3 = topology->create_processor<kspp::ktable2<std::string, int64_t, kspp::rockdb_store, kspp::binary_codec>>(word_counts, binary_codec);
-    auto table4 = topology->create_processor<kspp::ktable2<std::string, int64_t, kspp::mem_kv_store>>(word_counts);
-    auto table5 = topology->create_processor<kspp::ktable2<std::string, int64_t, kspp::windowed_mem_store>>(word_counts);
+    auto table4 = topology->create_processor<kspp::ktable2<std::string, int64_t, kspp::mem_store>>(word_counts);
+    auto table5 = topology->create_processor<kspp::ktable2<std::string, int64_t, kspp::mem_windowed_store>>(word_counts);
 
     topology->start();
     topology->flush();
