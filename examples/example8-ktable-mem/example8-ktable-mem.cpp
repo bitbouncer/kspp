@@ -6,8 +6,7 @@
 #include <kspp/codecs/binary_codec.h>
 #include <kspp/topology_builder.h>
 #include <kspp/processors/kafka_source.h>
-#include <kspp/processors/ktable_rocksdb.h>
-#include <kspp/processors/ktable_mem.h>
+#include <kspp/processors/ktable.h>
 #include <kspp/processors/filter.h>
 #include <kspp/processors/transform.h>
 #include <kspp/processors/count.h>
@@ -16,7 +15,13 @@
 #include <kspp/sinks/kafka_sink.h>
 #include <kspp/sinks/stream_sink.h>
 
+#include <kspp/state_stores/rocksdb_store.h>
+#include <kspp/state_stores/mem_store.h>
+#include <kspp/state_stores/mem_windowed_store.h>
+
 #define PARTITION 0
+
+using namespace std::chrono_literals;
 
 int main(int argc, char **argv) {
   auto codec = std::make_shared<kspp::text_codec>();
@@ -51,21 +56,29 @@ int main(int argc, char **argv) {
     auto binary_codec = std::make_shared<kspp::binary_codec>();
 
     // this should be possible to do in memory
-    auto word_counts = topology->create_processor<kspp::count_by_key<std::string, int64_t, kspp::binary_codec>>(filtered_stream, 100, binary_codec);
-
-    // this should be possible to do in memory
-    auto table1 = topology->create_processor<kspp::ktable_rocksdb<std::string, int64_t, kspp::binary_codec>>(word_counts, binary_codec);
-    auto table2 = topology->create_processor<kspp::ktable_mem<std::string, int64_t>>(word_counts);
+    auto word_counts = topology->create_processor<kspp::count_by_key<std::string, int64_t, kspp::binary_codec>>(filtered_stream, 100ms, binary_codec);
+   
+    auto table1 = topology->create_processor<kspp::ktable<std::string, int64_t, kspp::rockdb_store, kspp::binary_codec>>(word_counts, binary_codec);
+    auto table2 = topology->create_processor<kspp::ktable<std::string, int64_t, kspp::mem_store>>(word_counts);
+    auto table3 = topology->create_processor<kspp::ktable<std::string, int64_t, kspp::mem_windowed_store>>(word_counts, 500ms, 10);
 
     topology->start();
     topology->flush();
 
-    std::cerr << "using iterators " << std::endl;
-    for (auto&& i = table1->begin(), end = table1->end(); i != end; ++i)
-      std::cerr << "item : " << (*i)->key << ": " << *(*i)->value <<std::endl;
+    std::cerr << "using range iterators " << std::endl;
+    for (auto&& i : *table1)
+      std::cerr << "item : " << i->key << ": " << *i->value << std::endl;
 
     std::cerr << "using range iterators " << std::endl;
     for (auto&& i : *table2)
+      std::cerr << "item : " << i->key << ": " << *i->value << std::endl;
+
+    std::cerr << "using iterators " << std::endl;
+    for (auto&& i = table3->begin(), end = table3->end(); i != end; ++i)
+      std::cerr << "item : " << (*i)->key << ": " << *(*i)->value << std::endl;
+
+    std::cerr << "using range iterators " << std::endl;
+    for (auto&& i : *table3)
       std::cerr << "item : " << i->key << ": " << *i->value << std::endl;
   }
 }

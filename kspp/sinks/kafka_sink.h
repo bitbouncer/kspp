@@ -53,16 +53,16 @@ class kafka_sink_base : public topic_sink<K, V, CODEC>
 
   // pure sink cannot suck data from upstream...
   virtual bool process_one() {
+    // noop
     return false;
   }
 
-  // need_wait as interface??
-  // in_queue_size() as interface size grow -> process more
-  // out_queue_size() as interface -> size grows sleep more...
+  virtual void commit(bool flush) {
+    // noop
+  }
 
   virtual bool eof() const {
     return true;
-    //return _impl.queue_len() > 0; # this will cause 100% cpu when we think there is something to process - when we really need to wait...    
   }
 
   protected:
@@ -240,9 +240,12 @@ class kafka_partition_sink_base : public partition_sink<K, V>
     return false;
   }
 
+  virtual void commit(bool flush) {
+    // noop
+  }
+
   virtual bool eof() const {
     return true;
-    //return _impl.queue_len() > 0; # this will cause 100% cpu when we think there is something to process - when we really need to wait...
   }
 
   protected:

@@ -12,6 +12,8 @@
 
 #define NR_OF_PARTITIONS 8
 
+using namespace std::chrono_literals;
+
 int main(int argc, char **argv) {
   auto codec = std::make_shared<kspp::text_codec>();
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example4-count");
@@ -53,7 +55,7 @@ int main(int argc, char **argv) {
   { 
     auto topology = text_builder.create_topic_topology();
     auto word_sources = topology->create_partition_processors<kspp::kafka_source<std::string, void, kspp::text_codec>>(NR_OF_PARTITIONS, "test_words", codec);
-    auto word_counts = topology->create_partition_processors<kspp::count_by_key<std::string, size_t, kspp::text_codec>>(word_sources, 10000, codec);
+    auto word_counts = topology->create_partition_processors<kspp::count_by_key<std::string, size_t, kspp::text_codec>>(word_sources, 10s, codec);
     
     topology->init_metrics();
     topology->start(-2);

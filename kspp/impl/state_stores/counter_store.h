@@ -24,7 +24,7 @@ namespace kspp {
     */
     virtual void erase() = 0;
 
-    virtual typename kspp::materialized_partition_source<K, V>::iterator begin(void) = 0;
-    virtual typename kspp::materialized_partition_source<K, V>::iterator end() = 0;
+    virtual typename kspp::materialized_source<K, V>::iterator begin(void) = 0;
+    virtual typename kspp::materialized_source<K, V>::iterator end() = 0;
   };
 };

@@ -28,9 +28,4 @@ template<class K, class V>
 int produce(partition_sink<void, V>& sink, const V& val) {
   return sink.produce(std::make_shared<krecord<void, V>>(std::make_shared<V>(val)));
 }
-
-//template<class K, class V>
-//int produce(partition_sink<K, V>& sink, const K& key) {
-//  return sink.produce(std::move<>(create_krecord<K, V>(key)));
-//}
 };

@@ -27,19 +27,6 @@ namespace kspp {
       close();
     }
 
-    /*
-    static std::vector<std::shared_ptr<partition_source<RK, RV>>> create(std::vector<std::shared_ptr<partition_source<SK, SV>>>& streams, extractor f) {
-      std::vector<std::shared_ptr<partition_source<RK, RV>>> res;
-      for (auto i : streams)
-        res.push_back(std::make_shared<flat_map<SK, SV, RK, RV>>(i, f));
-      return res;
-    }
-
-    static std::shared_ptr<partition_source<RK, RV>> create(std::shared_ptr<partition_source<SK, SV>> source, extractor f) {
-      return std::make_shared<flat_map<SK, SV, RK, RV>>(source, f);
-    }
-    */
-
     std::string name() const {
       return _source->name() + "-flat_map()[" + type_name<RK>::get() + ", " + type_name<RV>::get() + "]"; 
     }
@@ -78,8 +65,8 @@ namespace kspp {
       this->send_to_sinks(r);
     }
 
-    virtual void commit() {
-      _source->commit();
+    virtual void commit(bool flush) {
+      _source->commit(flush);
     }
 
     virtual bool eof() const {
@@ -154,8 +141,8 @@ namespace kspp {
       this->send_to_sinks(r);
     }
 
-    virtual void commit() {
-      _source->commit();
+    virtual void commit(bool flush) {
+      _source->commit(flush);
     }
 
     virtual bool eof() const {

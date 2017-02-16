@@ -38,11 +38,9 @@ namespace kspp {
       return _consumer.eof();
     }
 
-    // TBD lazy commit offsets to kafka
-    virtual void commit() {}
-
-    // TBD hard commit offsets to kafka
-    virtual void flush_offset() {}
+    virtual void commit(bool flush) {
+      // TBD!!!!
+    }
      
     virtual bool process_one() {
       auto p = _consumer.consume();

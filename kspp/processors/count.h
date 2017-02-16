@@ -1,4 +1,5 @@
 #include <functional>
+#include <chrono>
 #include <deque>
 #include <kspp/kspp.h>
 #include <kspp/impl/state_stores/rocksdb_counter_store.h>
@@ -6,14 +7,14 @@
 
 namespace kspp {
   template<class K, class V, class CODEC>
-  class count_by_key : public materialized_partition_source<K, V>
+  class count_by_key : public materialized_source<K, V>
   {
   public:
-    count_by_key(topology_base& topology, std::shared_ptr<partition_source<K, void>> source, int64_t punctuate_intervall, std::shared_ptr<CODEC> codec)
-      : materialized_partition_source<K, V>(source.get(), source->partition())
+    count_by_key(topology_base& topology, std::shared_ptr<partition_source<K, void>> source, std::chrono::milliseconds punctuate_intervall, std::shared_ptr<CODEC> codec)
+      : materialized_source<K, V>(source.get(), source->partition())
       , _stream(source)
       , _counter_store(name(), get_storage_path(topology.get_storage_path()), codec)
-      , _punctuate_intervall(punctuate_intervall)
+      , _punctuate_intervall(punctuate_intervall.count()) // tbd we should use intervalls since epoch similar to windowed 
       , _next_punctuate(0)
       , _dirty(false)
       , _records_count("total_count")
@@ -79,8 +80,8 @@ namespace kspp {
       return processed;
     }
 
-    virtual void commit() {
-      _stream->commit();
+    virtual void commit(bool flush) {
+      _stream->commit(flush);
     }
 
     virtual bool eof() const {
@@ -113,11 +114,11 @@ namespace kspp {
     }
 
 
-    virtual typename kspp::materialized_partition_source<K, V>::iterator begin(void) {
+    virtual typename kspp::materialized_source<K, V>::iterator begin(void) {
       return _counter_store.begin();
     }
 
-    virtual typename kspp::materialized_partition_source<K, V>::iterator end() {
+    virtual typename kspp::materialized_source<K, V>::iterator end() {
       return _counter_store.end();
     }
 

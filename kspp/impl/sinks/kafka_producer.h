@@ -1,4 +1,6 @@
 #include <memory>
+#include <string>
+#include <cstdint>
 #include <librdkafka/rdkafkacpp.h>
 #pragma once
 
