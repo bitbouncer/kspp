@@ -14,7 +14,9 @@ namespace kspp {
       , _source(source)
       , _state_store(get_storage_path(topology.get_storage_path()), args...)
       , _in_count("in_count")
-      , _state_store_count("state_store_count", [this]() { return _state_store.size(); }) {
+      , _state_store_count("state_store_count", [this]() { 
+      return _state_store.size(); 
+    }) {
       _source->add_sink([this](auto r) {
         _lag.add_event_time(r->event_time);
         ++_in_count;

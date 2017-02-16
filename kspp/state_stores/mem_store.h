@@ -97,8 +97,8 @@
       _current_offset = -1;
     }
 
-    virtual size_t size() const       {
-      return 0;
+    virtual size_t size() const {
+      return _store.size();
     }
 
     typename kspp::materialized_source<K, V>::iterator begin(void) {
