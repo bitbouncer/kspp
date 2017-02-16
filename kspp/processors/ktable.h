@@ -23,6 +23,7 @@ namespace kspp {
       });
       this->add_metric(&_lag);
       this->add_metric(&_in_count);
+      this->add_metric(&_state_store_count);
     }
 
     virtual ~ktable() {
