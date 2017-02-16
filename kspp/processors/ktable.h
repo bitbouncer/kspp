@@ -62,8 +62,8 @@ namespace kspp {
       return _source->process_one();
     }
 
-    inline int64_t offset() const {
-      return _current_offset;
+    virtual int64_t offset() const {
+      return _state_store.offset();
     }
 
     virtual std::shared_ptr<krecord<K, V>> get(const K& key) {
