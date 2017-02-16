@@ -17,12 +17,12 @@ namespace kspp {
       , _punctuate_intervall(punctuate_intervall.count()) // tbd we should use intervalls since epoch similar to windowed 
       , _next_punctuate(0)
       , _dirty(false)
-      , _records_count("total_count")
+      , _in_count("in_count")
       , _lag() {
       source->add_sink([this](auto e) {
         _queue.push_back(e);
       });
-      this->add_metric(&_records_count);
+      this->add_metric(&_in_count);
       this->add_metric(&_lag);
     }
 
@@ -71,7 +71,7 @@ namespace kspp {
           _dirty = false;
         }
 
-        ++_records_count;
+        ++_in_count;
         _lag.add_event_time(e->event_time);
         _dirty = true; // aggregated but not committed
         _queue.pop_front();
@@ -135,7 +135,7 @@ namespace kspp {
     int64_t                                         _punctuate_intervall;
     int64_t                                         _next_punctuate;
     bool                                            _dirty;
-    metric_counter                                  _records_count;
+    metric_counter                                  _in_count;
     metric_lag                                      _lag;
   };
 }

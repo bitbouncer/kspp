@@ -13,7 +13,7 @@ class kv_store
 
   virtual ~kv_store() {}
 
-  virtual std::string name() const = 0;
+  //virtual std::string name() const = 0;
 
   virtual void close() = 0;
 
@@ -34,6 +34,8 @@ class kv_store
 
   virtual void start(int64_t offset) = 0;
 
+  virtual size_t size() const = 0;
+  
   //virtual void erase() = 0;
 
   /**

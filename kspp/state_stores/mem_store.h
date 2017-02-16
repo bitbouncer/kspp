@@ -49,10 +49,9 @@
 
     virtual ~mem_store() {}
 
-    virtual std::string name() const {
+    static std::string type_name() {
       return "mem_store";
     }
-
 
     virtual void close() {}
     
@@ -96,6 +95,10 @@
     virtual void clear() {
       _store.clear();
       _current_offset = -1;
+    }
+
+    virtual size_t size() const       {
+      return 0;
     }
 
     typename kspp::materialized_source<K, V>::iterator begin(void) {

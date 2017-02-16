@@ -79,7 +79,7 @@ namespace kspp {
     virtual ~mem_windowed_store() {
     }
 
-    virtual std::string name() const {
+    static std::string type_name() {
       return "mem_windowed_store";
     }
 
@@ -145,6 +145,13 @@ namespace kspp {
       return nullptr; // tbd
       //auto it = _store.find(key);
       //return (it == _store.end()) ? nullptr : it->second;
+    }
+
+    virtual size_t size() const {
+      size_t sz = 0;
+      for (auto&& i : _buckets)
+        sz += i.second->size();
+      return sz;
     }
 
     virtual void clear() {

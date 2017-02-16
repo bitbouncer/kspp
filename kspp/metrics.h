@@ -1,5 +1,6 @@
 #include <string>
 #include <chrono>
+#include <functional>
 
 #pragma once
 
@@ -109,4 +110,22 @@ namespace kspp {
   private:
     int64_t _lag;
   };
+
+  struct metric_evaluator : public metric
+  {
+    using evaluator = std::function<int64_t(void)>;
+
+    metric_evaluator(std::string s, evaluator f)
+      : metric(s)
+      , _f(f) {
+    }
+
+    virtual int64_t value() const {
+      return _f();
+    }
+
+    private:
+    evaluator _f;
+  };
+
 };

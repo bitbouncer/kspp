@@ -70,20 +70,20 @@ class kafka_sink_base : public topic_sink<K, V, CODEC>
     : topic_sink<K, V, CODEC>(codec)
     , _impl(brokers, topic)
     , _partitioner(p)
-    , _count("messages") {
-    this->add_metric(&_count);
+    , _in_count("in_count") {
+    this->add_metric(&_in_count);
   }
 
   kafka_sink_base(std::string brokers, std::string topic, std::shared_ptr<CODEC> codec)
     : topic_sink<K, V, CODEC>(codec)
     , _impl(brokers, topic)
-    , _count("messages") {
-    this->add_metric(&_count);
+    , _in_count("in_count") {
+    this->add_metric(&_in_count);
   }
 
   kafka_producer _impl;
   partitioner    _partitioner;
-  metric_counter _count;
+  metric_counter _in_count;
 };
 
 template<class K, class V, class CODEC>
@@ -126,7 +126,7 @@ class kafka_topic_sink : public kafka_sink_base<K, V, CODEC>
       vp = malloc(vsize);
       vs.read((char*) vp, vsize);
     }
-    ++(this->_count);
+    ++(this->_in_count);
     return this->_impl.produce(partition, kafka_producer::FREE, kp, ksize, vp, vsize);
   }
 };
@@ -150,7 +150,7 @@ class kafka_topic_sink<void, V, CODEC> : public kafka_sink_base<void, V, CODEC>
       vp = malloc(vsize);
       vs.read((char*) vp, vsize);
     }
-    ++(this->_count);
+    ++(this->_in_count);
     return this->_impl.produce(partition, kafka_producer::FREE, nullptr, 0, vp, vsize);
   }
 };
@@ -193,7 +193,7 @@ class kafka_topic_sink<K, void, CODEC> : public kafka_sink_base<K, void, CODEC>
     ksize = this->_codec->encode(r->key, ks);
     kp = malloc(ksize);
     ks.read((char*) kp, ksize);
-    ++(this->_count);
+    ++(this->_in_count);
     return this->_impl.produce(partition, kafka_producer::FREE, kp, ksize, nullptr, 0);
   }
 };
@@ -209,8 +209,8 @@ class kafka_partition_sink_base : public partition_sink<K, V>
     , _codec(codec)
     , _impl(brokers, topic)
     , _fixed_partition(partition)
-    , _count("count") {
-    this->add_metric(&_count);
+    , _in_count("in_count") {
+    this->add_metric(&_in_count);
   }
 
   virtual ~kafka_partition_sink_base() {
@@ -252,7 +252,7 @@ class kafka_partition_sink_base : public partition_sink<K, V>
   kafka_producer          _impl;
   std::shared_ptr<CODEC>  _codec;
   size_t                  _fixed_partition;
-  metric_counter          _count;
+  metric_counter          _in_count;
 };
 
 template<class K, class V, class CODEC>
@@ -280,7 +280,7 @@ class kafka_partition_sink : public kafka_partition_sink_base<K, V, CODEC>
       vp = malloc(vsize);
       vs.read((char*) vp, vsize);
     }
-    ++(this->_count);
+    ++(this->_in_count);
     return this->_impl.produce((uint32_t) this->_fixed_partition, kafka_producer::FREE, kp, ksize, vp, vsize);
   }
 };
@@ -304,7 +304,7 @@ class kafka_partition_sink<void, V, CODEC> : public kafka_partition_sink_base<vo
       vp = malloc(vsize);
       vs.read((char*) vp, vsize);
     }
-    ++(this->_count);
+    ++(this->_in_count);
     return this->_impl.produce((uint32_t) this->_fixed_partition, kafka_producer::FREE, nullptr, 0, vp, vsize);
   }
 };
@@ -326,7 +326,7 @@ class kafka_partition_sink<K, void, CODEC> : public kafka_partition_sink_base<K,
     ksize = this->_codec->encode(r->key, ks);
     kp = malloc(ksize);
     ks.read((char*) kp, ksize);
-    ++(this->_count);
+    ++(this->_in_count);
     return this->_impl.produce((uint32_t) this->_fixed_partition, kafka_producer::FREE, kp, ksize, nullptr, 0);
   }
 };

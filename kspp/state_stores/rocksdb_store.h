@@ -120,8 +120,8 @@ class rockdb_store
     close();
   }
 
-  virtual std::string name() const {
-    return "rockdb_store";
+  static std::string type_name() {
+    return "rocksdb_store";
   }
 
   void close() {
@@ -210,6 +210,13 @@ class rockdb_store
   virtual int64_t offset() const {
     return _current_offset;
   }
+
+  virtual size_t size() const {
+    std::string num;
+    _db->GetProperty("rocksdb.estimate-num-keys", &num);
+    return std::stoll(num);
+  }
+
 
  /* virtual void erase() {
     for (auto it = iterator_impl(_db.get(), _codec, iterator_impl::BEGIN), end_ = iterator_impl(_db.get(), _codec, iterator_impl::END); it != end_; it.next()) {
