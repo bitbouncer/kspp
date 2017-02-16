@@ -9,35 +9,28 @@
 // how do we swap betweeen processing and event time??? TBD
 namespace kspp {
 template<class K, class V>
-class rate_limiter : public partition_source<K, V>
+class thoughput_limiter : public partition_source<K, V>
 {
   public:
-  rate_limiter(topology_base& topology, std::shared_ptr<partition_source<K, V>> source, std::chrono::milliseconds agetime, size_t capacity)
+  thoughput_limiter(topology_base& topology, std::shared_ptr<partition_source<K, V>> source, double messages_per_sec)
     : partition_source<K, V>(source.get(), source->partition())
     , _source(source)
-    , _token_bucket(std::make_shared<mem_token_bucket<K>>(agetime, capacity))
-    , _in_count("in_count")
-    , _out_count("out_count")
-    , _rejection_count("rejection_count") {
+    , _token_bucket(std::make_shared<mem_token_bucket<int>>(std::chrono::milliseconds((int) (1000.0 / messages_per_sec)), 1)) {
     _source->add_sink([this](auto r) {
       _queue.push_back(r);
     });
-    this->add_metric(&_lag);
-    this->add_metric(&_in_count);
-    this->add_metric(&_out_count);
-    this->add_metric(&_rejection_count);
   }
 
-  ~rate_limiter() {
+  ~thoughput_limiter() {
     close();
   }
 
-  virtual std::string processor_name() const { 
-    return "rate_limiter"; 
+  virtual std::string processor_name() const {
+    return "thoughput_limiter";
   }
 
   std::string name() const {
-    return _source->name() + "-rate_limiter";
+    return _source->name() + "-thoughput_limiter";
   }
 
   virtual void start() {
@@ -56,22 +49,19 @@ class rate_limiter : public partition_source<K, V>
   }
 
   virtual bool process_one() {
-    _source->process_one();
-    bool processed = (_queue.size() > 0);
-    while (_queue.size()) {
+    if (_queue.size() == 0)
+      _source->process_one();
+
+    if (_queue.size()) {
       auto r = _queue.front();
-      _queue.pop_front();
-      ++_in_count;
-      // milliseconds_since_epoch for processing time limiter
-      // 
-      if (_token_bucket->consume(r->key, r->event_time)) {
-        ++_out_count;
+      _lag.add_event_time(r->event_time);
+      if (_token_bucket->consume(0, milliseconds_since_epoch())) {
+        _queue.pop_front();
         this->send_to_sinks(r);
-      } else {
-        ++_rejection_count;
+        return true;
       }
     }
-    return processed;
+    return false;
   }
 
   virtual void commit(bool flush) {
@@ -89,10 +79,7 @@ class rate_limiter : public partition_source<K, V>
   private:
   std::shared_ptr<partition_source<K, V>>    _source;
   std::deque<std::shared_ptr<krecord<K, V>>> _queue;
-  std::shared_ptr<token_bucket<K>>           _token_bucket;
+  std::shared_ptr<token_bucket<int>>         _token_bucket;
   metric_lag                                 _lag;
-  metric_counter                             _in_count;
-  metric_counter                             _out_count;
-  metric_counter                             _rejection_count;
 };
-} // namespace
+}; // namespace

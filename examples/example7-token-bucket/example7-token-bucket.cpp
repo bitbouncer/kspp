@@ -9,6 +9,7 @@
 #include <kspp/processors/transform.h>
 #include <kspp/processors/count.h>
 #include <kspp/processors/rate_limiter.h>
+#include <kspp/processors/thoughput_limiter.h>
 #include <kspp/algorithm.h>
 #include <kspp/sinks/kafka_sink.h>
 #include <kspp/sinks/stream_sink.h>

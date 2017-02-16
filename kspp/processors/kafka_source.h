@@ -21,6 +21,10 @@ namespace kspp {
       return "kafka_source(" + _consumer.topic() + "#" + std::to_string(_consumer.partition()) + ")-codec(" + CODEC::name() + ")[" + type_name<K>::get() + ", " + type_name<V>::get() + "]";
     }
 
+    virtual std::string processor_name() const {
+      return "kafka_source";
+    }
+
     virtual void start(int64_t offset) {
       _consumer.start(offset);
     }

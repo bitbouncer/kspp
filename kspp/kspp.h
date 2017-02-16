@@ -80,7 +80,10 @@ class processor
   }
 
   virtual std::string key_type_name() const = 0;
+  
   virtual std::string value_type_name() const = 0;
+
+  virtual std::string processor_name() const = 0;
 
   protected:
   // must be valid for processor lifetime  (cannot be removed)
@@ -96,7 +99,6 @@ class topic_processor : public processor
   public:
   virtual ~topic_processor() {}
   virtual std::string name() const = 0;
-  virtual std::string processor_name() const { return "topic_processor"; }
 
   virtual void poll(int timeout) {}
   virtual bool eof() const = 0;
@@ -131,7 +133,7 @@ class partition_processor : public processor
   public:
   virtual ~partition_processor() {}
   virtual std::string name() const = 0;
-  virtual std::string processor_name() const { return "partition_processor"; }
+  //virtual std::string processor_name() const { return "partition_processor"; }
 
   size_t depth() const {
     return _upstream ? _upstream->depth() + 1 : 0;
