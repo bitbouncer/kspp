@@ -1,5 +1,6 @@
 #include "kv_store.h"
 #include <map>
+#include <chrono>
 
 namespace kspp {
   template<class K, class V, class CODEC = void>
@@ -70,11 +71,20 @@ namespace kspp {
       typename std::map<K, std::shared_ptr<krecord<K, V>>>::iterator                                      _inner_it;
     };
 
-    mem_windowed_store(boost::filesystem::path storage_path) {}
+    mem_windowed_store(boost::filesystem::path storage_path, std::chrono::milliseconds slot_width, size_t nr_of_slots)
+      : _slot_width(slot_width.count())
+      , _nr_of_slots(nr_of_slots) {
+    }
 
-    virtual ~mem_windowed_store() {}
+    virtual ~mem_windowed_store() {
+    }
 
-    virtual void close() {}
+    virtual std::string name() const {
+      return "mem_windowed_store";
+    }
+
+    virtual void close() {
+    }
 
     /**
     * Put a key-value pair
@@ -108,26 +118,12 @@ namespace kspp {
         if (i.first < slot)
           i.second->erase(record->key);
     }
-
-    /**
-    * Deletes a key-value pair with the given key
-    */
-    //virtual void erase(const K& key) {
-    //  //_current_offset = std::max<int64_t>(_current_offset, record->offset);
-    //  int64_t slot = get_slot_index(record->event_time);
-    //  for (auto&& i : _buckets)
-    //    if (i.first <= slot)
-    //      _i.second->erase(record->key);
-    //}
+  
 
     /**
     * commits the offset
     */
-    virtual void commit() {
-      // noop
-    }
-
-    virtual void flush_offset() {
+    virtual void commit(bool flush) {
       // noop
     }
 
@@ -151,12 +147,17 @@ namespace kspp {
       //return (it == _store.end()) ? nullptr : it->second;
     }
 
-    typename kspp::materialized_partition_source<K, V>::iterator begin(void) {
-      return typename kspp::materialized_partition_source<K, V>::iterator(std::make_shared<iterator_impl>(_buckets, iterator_impl::BEGIN));
+    virtual void clear() {
+      _buckets.clear();
+      _current_offset = -1;
     }
 
-    typename kspp::materialized_partition_source<K, V>::iterator end() {
-      return typename kspp::materialized_partition_source<K, V>::iterator(std::make_shared<iterator_impl>(_buckets, iterator_impl::END));
+    typename kspp::materialized_source<K, V>::iterator begin(void) {
+      return typename kspp::materialized_source<K, V>::iterator(std::make_shared<iterator_impl>(_buckets, iterator_impl::BEGIN));
+    }
+
+    typename kspp::materialized_source<K, V>::iterator end() {
+      return typename kspp::materialized_source<K, V>::iterator(std::make_shared<iterator_impl>(_buckets, iterator_impl::END));
     }
 
   private:
@@ -165,8 +166,9 @@ namespace kspp {
     }
     std::shared_ptr<kspp::partition_source<K, V>>   _source;
     std::map<int64_t, std::shared_ptr<bucket_type>> _buckets;
-    int64_t                                         _epoch_slot_index;
+    //int64_t                                         _epoch_slot_index;
     int64_t                                         _slot_width;
+    size_t                                          _nr_of_slots;
     int64_t                                         _current_offset;
   };
 }

@@ -5,12 +5,12 @@
 
 namespace kspp {
   template<class K, class V, template <typename, typename, typename> class STATE_STORE, class CODEC=void>
-  class ktable2 : public ktable<K, V>
+  class ktable : public materialized_source<K, V>
   {
   public:
     template<typename... Args>
-    ktable2(topology_base& topology, std::shared_ptr<kspp::partition_source<K, V>> source, Args... args)
-      : ktable<K, V>(source.get())
+    ktable(topology_base& topology, std::shared_ptr<kspp::partition_source<K, V>> source, Args... args)
+      : materialized_source<K, V>(source.get(), source->partition())
       , _source(source)
       , _state_store(get_storage_path(topology.get_storage_path()), args...)
       , _count("count") {
@@ -24,15 +24,17 @@ namespace kspp {
       this->add_metric(&_count);
     }
 
-    virtual ~ktable2() {
+    virtual ~ktable() {
       close();
     }
 
     virtual std::string name() const {
-      return   _source->name() + "-ktable2";
+      return   _source->name() + "-ktable<" + _state_store.name() + ">";
     }
 
-    virtual std::string processor_name() const { return "ktable2"; }
+    virtual std::string processor_name() const { 
+      return "ktable<" + _state_store.name() + ">"; 
+    }
 
     virtual void start() {
       _source->start(_state_store.offset());
@@ -43,14 +45,13 @@ namespace kspp {
       _source->start(offset);
     }
 
-    virtual void commit() {
-      _state_store.commit();
+    virtual void commit(bool flush) {
+      _state_store.commit(flush);
     }
 
     virtual void close() {
       _source->close();
       _state_store.close();
-      flush_offset();
     }
 
     virtual bool eof() const {
@@ -61,11 +62,6 @@ namespace kspp {
       return _source->process_one();
     }
 
-    virtual void flush_offset() {
-      _state_store.commit();
-      _state_store.flush_offset();
-    }
-
     inline int64_t offset() const {
       return _current_offset;
     }
@@ -74,11 +70,11 @@ namespace kspp {
       return _state_store.get(key);
     }
 
-    virtual typename kspp::materialized_partition_source<K, V>::iterator begin(void) {
+    virtual typename kspp::materialized_source<K, V>::iterator begin(void) {
       return _state_store.begin();
     }
 
-    virtual typename kspp::materialized_partition_source<K, V>::iterator end() {
+    virtual typename kspp::materialized_source<K, V>::iterator end() {
       return _state_store.end();
     }
 

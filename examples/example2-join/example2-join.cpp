@@ -4,8 +4,9 @@
 #include <kspp/codecs/binary_codec.h>
 #include <kspp/topology_builder.h>
 #include <kspp/processors/kafka_source.h>
-#include <kspp/processors/ktable_rocksdb.h>
+#include <kspp/processors/ktable.h>
 #include <kspp/processors/join.h>
+#include <kspp/state_stores/rocksdb_store.h>
 
 #define PARTITION 0
 
@@ -18,7 +19,7 @@ int main(int argc, char **argv) {
     auto topology = builder.create_topology(PARTITION);
     auto stream = topology->create_processor<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_codec>>("kspp_test0_eventstream", codec);
     auto table_source = topology->create_processor<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_codec>>("kspp_test0_table", codec);
-    auto table = topology->create_processor<kspp::ktable_rocksdb<boost::uuids::uuid, int64_t, kspp::binary_codec>>(table_source,  codec);
+    auto table = topology->create_processor<kspp::ktable<boost::uuids::uuid, int64_t, kspp::rockdb_store, kspp::binary_codec>>(table_source, codec);
     auto join = topology->create_processor<kspp::left_join<boost::uuids::uuid, int64_t, int64_t, int64_t>>(
       stream, 
       table, 
@@ -33,7 +34,7 @@ int main(int argc, char **argv) {
     // first sync table
     std::cout << "before sync" << std::endl;
     table->flush();
-    table->commit();
+    table->commit(true);
     std::cout << "after sync" << std::endl;
 
     auto t0 = std::chrono::high_resolution_clock::now();

@@ -1,3 +1,4 @@
+#include <chrono>
 #include <cstdint>
 #include <kspp/kspp.h>
 #include <iostream>
@@ -31,17 +32,17 @@ class token_bucket
   virtual void erase() = 0;
 
   // SHOULD BE IMPLEMENTED
-  //virtual typename kspp::materialized_partition_source<K, size_t>::iterator begin(void) = 0;
-  //virtual typename kspp::materialized_partition_source<K, size_t>::iterator end() = 0;
+  //virtual typename kspp::materialized_source<K, size_t>::iterator begin(void) = 0;
+  //virtual typename kspp::materialized_source<K, size_t>::iterator end() = 0;
 };
 
 template<class K>
 class mem_token_bucket : public token_bucket<K>
 {
   public:
-  mem_token_bucket(int64_t agetime, size_t capacity)
+  mem_token_bucket(std::chrono::milliseconds agetime, size_t capacity)
     : token_bucket<K>()
-    , _config(agetime, capacity) {
+    , _config(agetime.count(), capacity) {
   }
     
   virtual ~mem_token_bucket() {}
@@ -84,8 +85,8 @@ class mem_token_bucket : public token_bucket<K>
     _buckets.clear();
   }
 
-  //virtual typename kspp::materialized_partition_source<K, size_t>::iterator begin(void) {}
-  //virtual typename kspp::materialized_partition_source<K, size_t>::iterator end() {}
+  //virtual typename kspp::materialized_source<K, size_t>::iterator begin(void) {}
+  //virtual typename kspp::materialized_source<K, size_t>::iterator end() {}
 
 
   protected:
@@ -135,8 +136,8 @@ class mem_token_bucket : public token_bucket<K>
       }
     }
 
-      //virtual typename kspp::materialized_partition_source<K, size_t>::iterator begin(void) = 0;
-      //virtual typename kspp::materialized_partition_source<K, size_t>::iterator end() = 0;
+      //virtual typename kspp::materialized_source<K, size_t>::iterator begin(void) = 0;
+      //virtual typename kspp::materialized_source<K, size_t>::iterator end() = 0;
       // global
     size_t  _tokens;
     int64_t _tstamp;

@@ -1,4 +1,5 @@
 #include <kspp/impl/state_stores/token_bucket.h>
+#include <chrono>
 #pragma once
 
 // this should be a template on storage type 
@@ -11,7 +12,7 @@ template<class K, class V>
 class rate_limiter : public partition_source<K, V>
 {
   public:
-  rate_limiter(topology_base& topology, std::shared_ptr<partition_source<K, V>> source, int64_t agetime, size_t capacity)
+  rate_limiter(topology_base& topology, std::shared_ptr<partition_source<K, V>> source, std::chrono::milliseconds agetime, size_t capacity)
     : partition_source<K, V>(source.get(), source->partition())
     , _source(source)
     , _token_bucket(std::make_shared<mem_token_bucket<K>>(agetime, capacity)) {
@@ -25,18 +26,9 @@ class rate_limiter : public partition_source<K, V>
     close();
   }
 
-  virtual std::string processor_name() const { return "rate_limiter"; }
-
-  /*static std::vector<std::shared_ptr<partition_source<K, V>>> create(std::vector<std::shared_ptr<partition_source<K, V>>>& streams, int64_t agetime, size_t capacity) {
-    std::vector<std::shared_ptr<partition_source<K, V>>> res;
-    for (auto i : streams)
-      res.push_back(std::make_shared<rate_limiter<K, V>>(i, agetime, capacity));
-    return res;
+  virtual std::string processor_name() const { 
+    return "rate_limiter"; 
   }
-
-  static std::shared_ptr<partition_source<K, V>> create(std::shared_ptr<partition_source<K, V>> source, int64_t agetime, size_t capacity) {
-    return std::make_shared<rate_limiter<K, V>>(source, agetime, capacity);
-  }*/
 
   std::string name() const {
     return _source->name() + "-rate_limiter";
@@ -71,8 +63,8 @@ class rate_limiter : public partition_source<K, V>
     return processed;
   }
 
-  virtual void commit() {
-    _source->commit();
+  virtual void commit(bool flush) {
+    _source->commit(flush);
   }
 
   virtual bool eof() const {
@@ -97,7 +89,7 @@ class thoughput_limiter : public partition_source<K, V>
   thoughput_limiter(topology_base& topology, std::shared_ptr<partition_source<K, V>> source, double messages_per_sec)
     : partition_source<K, V>(source.get(), source->partition())
     , _source(source)
-    , _token_bucket(std::make_shared<mem_token_bucket<int>>((int64_t) (1000.0/messages_per_sec), 1)) {
+    , _token_bucket(std::make_shared<mem_token_bucket<int>>(std::chrono::milliseconds((int) (1000.0/messages_per_sec)), 1)) {
     _source->add_sink([this](auto r) {
       _queue.push_back(r);
     });
@@ -106,17 +98,6 @@ class thoughput_limiter : public partition_source<K, V>
   ~thoughput_limiter() {
     close();
   }
-
- /* static std::vector<std::shared_ptr<partition_source<K, V>>> create(std::vector<std::shared_ptr<partition_source<K, V>>>& streams, double messages_per_sec) {
-    std::vector<std::shared_ptr<partition_source<K, V>>> res;
-    for (auto i : streams)
-      res.push_back(std::make_shared<thoughput_limiter<K, V>>(i, messages_per_sec));
-    return res;
-  }
-
-  static std::shared_ptr<partition_source<K, V>> create(std::shared_ptr<partition_source<K, V>> source, double messages_per_sec) {
-    return std::make_shared<thoughput_limiter<K, V>>(source, messages_per_sec);
-  }*/
 
   std::string name() const {
     return _source->name() + "-thoughput_limiter";
@@ -153,8 +134,8 @@ class thoughput_limiter : public partition_source<K, V>
     return false;
   }
 
-  virtual void commit() {
-    _source->commit();
+  virtual void commit(bool flush) {
+    _source->commit(flush);
   }
 
   virtual bool eof() const {

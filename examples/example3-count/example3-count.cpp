@@ -13,6 +13,8 @@
 
 #define PARTITION 0
 
+using namespace std::chrono_literals;
+
 int main(int argc, char **argv) {
   auto codec = std::make_shared<kspp::text_codec>();
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example3-count");
@@ -35,7 +37,7 @@ int main(int argc, char **argv) {
         flat_map->push_back(std::make_shared<kspp::krecord<std::string, void>>(*iter));
     });
 
-    auto word_counts = topology->create_processor<kspp::count_by_key<std::string, int, kspp::text_codec>>(word_stream, 2000, codec);
+    auto word_counts = topology->create_processor<kspp::count_by_key<std::string, int, kspp::text_codec>>(word_stream, 2s, codec);
     auto sink = topology->create_processor<kspp::stream_sink<std::string, int>>(word_counts, &std::cerr);
 
     topology->init_metrics();

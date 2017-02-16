@@ -206,26 +206,18 @@ namespace kspp {
       return count;
     }
 
-    /*
-    virtual void erase() {
-      for (auto it = begin(), end_ = end(); it != end_; ++it)         {
-        auto s = _db->Delete(rocksdb::WriteOptions(), it._it->key());
-      }
-    }
-    */
-
     virtual void erase() {
       for (auto it = iterator_impl(_db.get(), _codec, iterator_impl::BEGIN), end_ = iterator_impl(_db.get(), _codec, iterator_impl::END); it!= end_; it.next()) {
         auto s = _db->Delete(rocksdb::WriteOptions(), it._key_slice());
       }
     }
 
-    typename kspp::materialized_partition_source<K, V>::iterator begin(void) {
-      return typename kspp::materialized_partition_source<K, V>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::BEGIN));
+    typename kspp::materialized_source<K, V>::iterator begin(void) {
+      return typename kspp::materialized_source<K, V>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::BEGIN));
     }
 
-    typename kspp::materialized_partition_source<K, V>::iterator end() {
-      return typename kspp::materialized_partition_source<K, V>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::END));
+    typename kspp::materialized_source<K, V>::iterator end() {
+      return typename kspp::materialized_source<K, V>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::END));
     }
 
   private:

@@ -45,6 +45,10 @@ namespace kspp {
       return 0; 
     }
 
+    virtual void commit(bool flush){
+      // noop
+    }
+
   private:
     std::ostream&                     _os;
     std::shared_ptr<kspp::text_codec> _codec;
@@ -81,6 +85,10 @@ namespace kspp {
       return 0;
     }
 
+    virtual void commit(bool flush) {
+      // noop
+    }
+
   private:
     std::ostream&                     _os;
     std::shared_ptr<kspp::text_codec> _codec;
@@ -115,6 +123,10 @@ namespace kspp {
 
     virtual size_t queue_len() {
       return 0;
+    }
+
+    virtual void commit(bool flush) {
+      // noop
     }
 
   private:

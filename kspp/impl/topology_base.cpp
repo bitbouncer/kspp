@@ -168,6 +168,13 @@ topology_base::topology_base(std::shared_ptr<app_info> ai,
   }
   */
 
+  void topology_base::commit(bool force) {
+    if (!_is_init)
+      init();
+    for (auto&& i : _top_partition_processors)
+      i->commit(force);
+  }
+
   void topology_base::flush() {
     while (!eof())
       if (!process_one()) {

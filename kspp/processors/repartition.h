@@ -11,7 +11,10 @@ namespace kspp {
   class repartition_by_table : public partition_processor
   {
   public:
-    repartition_by_table(topology_base& topology, std::shared_ptr<partition_source<K, V>> source, std::shared_ptr<ktable<K, PK>> routing_table, std::shared_ptr<topic_sink<K, V, CODEC>> topic_sink)
+    repartition_by_table(topology_base& topology, 
+                         std::shared_ptr<partition_source<K, V>> source, 
+                         std::shared_ptr<materialized_source<K, PK>> routing_table,
+                         std::shared_ptr<topic_sink<K, V, CODEC>> topic_sink)
       : partition_processor(source.get(), source->partition())
       , _source(source)
       , _routing_table(routing_table)
@@ -59,7 +62,7 @@ namespace kspp {
       if (!_routing_table->eof()) {
         // just eat it... no join since we only joins with events????
         _routing_table->process_one();
-        _routing_table->commit();
+        _routing_table->commit(false);
         return true;
       }
 
@@ -86,12 +89,17 @@ namespace kspp {
       return !_queue.size() && _routing_table->eof() && _source->eof();
     }
 
+    virtual void commit(bool force) {
+      _routing_table->commit(force);
+      _source->commit(force);
+    }
+
   private:
-    std::deque<std::shared_ptr<krecord<K, V>>> _queue;
-    std::shared_ptr<partition_source<K, V>>    _source;
-    std::shared_ptr<ktable<K, PK>>             _routing_table;
-    std::shared_ptr<topic_sink<K, V, CODEC>>   _topic_sink;
-    metric_lag                                 _lag;
+    std::deque<std::shared_ptr<krecord<K, V>>>  _queue;
+    std::shared_ptr<partition_source<K, V>>     _source;
+    std::shared_ptr<materialized_source<K, PK>> _routing_table;
+    std::shared_ptr<topic_sink<K, V, CODEC>>    _topic_sink;
+    metric_lag                                  _lag;
   };
 }
 

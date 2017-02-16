@@ -184,11 +184,9 @@ class partition_processor : public processor
       _upstream->start(offset);
   }
 
-  virtual void commit() {}
-  virtual void flush_offset() {}
+  virtual void commit(bool flush) = 0;
 
   bool is_upstream(const partition_processor* node) const {
-    //return _upstream ? _upstream == node ? true : _upstream->is_upstream(node) : false;
     if (_upstream == nullptr)
       return false;
     if (_upstream == node)
@@ -272,6 +270,7 @@ class topology_base
   void                    close();
   void                    start();
   void                    start(int offset);
+  void                    commit(bool force);
   void                    flush();
   boost::filesystem::path get_storage_path();
 
@@ -568,7 +567,7 @@ class kmaterialized_source_iterator_impl
 };
 
 template<class K, class V>
-class materialized_partition_source : public partition_source<K, V>
+class materialized_source : public partition_source<K, V>
 {
   public:
   class iterator : public std::iterator <
@@ -592,23 +591,24 @@ class materialized_partition_source : public partition_source<K, V>
   virtual iterator end() = 0;
   virtual std::shared_ptr<krecord<K, V>> get(const K& key) = 0;
 
-  materialized_partition_source(partition_processor* upstream, size_t partition)
-    : partition_source<K, V>(upstream, partition) {}
+  materialized_source(partition_processor* upstream, size_t partition)
+    : partition_source<K, V>(upstream, partition) {
+  }
 };
 
-template<class K, class V>
-class kstream : public partition_source<K, V>
-{
-  public:
-  kstream(partition_processor* upstream)
-    : partition_source<K, V>(upstream, upstream->partition()) {}
-};
-
-template<class K, class V>
-class ktable : public materialized_partition_source<K, V>
-{
-  public:
-  ktable(partition_processor* upstream)
-    : materialized_partition_source<K, V>(upstream, upstream->partition()) {}
-};
+//template<class K, class V>
+//class kstream : public partition_source<K, V>
+//{
+//  public:
+//  kstream(partition_processor* upstream)
+//    : partition_source<K, V>(upstream, upstream->partition()) {}
+//};
+//
+//template<class K, class V>
+//class ktable : public materialized_partition_source<K, V>
+//{
+//  public:
+//  ktable(partition_processor* upstream)
+//    : materialized_partition_source<K, V>(upstream, upstream->partition()) {}
+//};
 }; // namespace

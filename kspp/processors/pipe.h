@@ -41,6 +41,11 @@ class pipe : public partition_source<K, V>
   virtual size_t queue_len() {
     return 0;
   }
+
+  virtual void commit(bool force) {
+    if (_upstream)
+      _upstream->commit(force);
+  }
 };
 
 //<null, VALUE>
@@ -84,6 +89,11 @@ class pipe<void, V> : public partition_source<void, V>
   virtual size_t queue_len() {
     return 0;
   }
+
+  virtual void commit(bool force) {
+    if (_upstream)
+      _upstream->commit(force);
+  }
 };
 
 template<class K>
@@ -97,17 +107,7 @@ class pipe<K, void> : public partition_source<K, void>
   pipe(topology_base& topology)
     : partition_source<K, void>(nullptr, topology.partition()) {
   }
-
-  /*
-  pipe(topology_base& topology, kspp::partition_source<K, void>* upstream)
-    : partition_source<K, void>(upstream, upstream->partition()) {
-    if (upstream)
-      upstream->add_sink([this](std::shared_ptr<krecord<K, void>> r) {
-      this->send_to_sinks(r);
-    });
-  }
-  */
-
+  
   pipe(topology_base& topology, std::shared_ptr<kspp::partition_source<K, void>> upstream)
     : partition_source<K, void>(upstream.get(), upstream->partition()) {
     if (upstream)
@@ -135,6 +135,11 @@ class pipe<K, void> : public partition_source<K, void>
 
   virtual size_t queue_len() {
     return 0;
+  }
+  
+  virtual void commit(bool force) {
+    if (_upstream)
+      _upstream->commit(force);
   }
 };
 };

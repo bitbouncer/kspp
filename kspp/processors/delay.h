@@ -56,8 +56,8 @@ namespace kspp {
       return false;
     }
 
-    virtual void commit() {
-      _source->commit();
+    virtual void commit(flush) {
+      _source->commit(flush);
     }
 
     virtual bool eof() const {

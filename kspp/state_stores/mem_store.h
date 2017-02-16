@@ -49,6 +49,11 @@
 
     virtual ~mem_store() {}
 
+    virtual std::string name() const {
+      return "mem_store";
+    }
+
+
     virtual void close() {}
     
     /**
@@ -61,25 +66,14 @@
       else
         _store.erase(record->key);
     }
-    
-    /**
-    * Deletes a key-value pair with the given key
-    */
-    virtual void erase(const K& key) {
-      _store.erase(key);
-    }
-    
+          
     /**
     * commits the offset
     */
-    virtual void commit() {
+    virtual void commit(bool flush) {
       // noop
     }
-
-    virtual void flush_offset() {
-      // noop
-    }
-
+   
     /**
     * returns last offset
     */
@@ -99,12 +93,17 @@
       return (it == _store.end()) ? nullptr : it->second;
     }
 
-    typename kspp::materialized_partition_source<K, V>::iterator begin(void) {
-      return typename kspp::materialized_partition_source<K, V>::iterator(std::make_shared<iterator_impl>(_store, iterator_impl::BEGIN));
+    virtual void clear() {
+      _store.clear();
+      _current_offset = -1;
     }
 
-    typename kspp::materialized_partition_source<K, V>::iterator end() {
-      return typename kspp::materialized_partition_source<K, V>::iterator(std::make_shared<iterator_impl>(_store, iterator_impl::END));
+    typename kspp::materialized_source<K, V>::iterator begin(void) {
+      return typename kspp::materialized_source<K, V>::iterator(std::make_shared<iterator_impl>(_store, iterator_impl::BEGIN));
+    }
+
+    typename kspp::materialized_source<K, V>::iterator end() {
+      return typename kspp::materialized_source<K, V>::iterator(std::make_shared<iterator_impl>(_store, iterator_impl::END));
     }
 
   private:

@@ -15,6 +15,8 @@
 
 #define PARTITION 0
 
+using namespace std::chrono_literals;
+
 int main(int argc, char **argv) {
   auto codec = std::make_shared<kspp::text_codec>();
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example7-token-bucket");
@@ -45,11 +47,11 @@ int main(int argc, char **argv) {
       return (e->key != "hello");
     });
 
-    auto limited_stream = topology->create_processor<kspp::rate_limiter<std::string, void>>(filtered_stream, 1000, 10);
+    auto limited_stream = topology->create_processor<kspp::rate_limiter<std::string, void>>(filtered_stream, 1s, 10);
 
-    auto word_counts = topology->create_processor<kspp::count_by_key<std::string, size_t, kspp::text_codec>>(limited_stream, 2000000, codec); // punctuate every 2000 sec
+    auto word_counts = topology->create_processor<kspp::count_by_key<std::string, size_t, kspp::text_codec>>(limited_stream, 2000s, codec);
     
-    auto thoughput_limited_stream = topology->create_processor<kspp::thoughput_limiter<std::string, size_t>>(word_counts, 10);
+    auto thoughput_limited_stream = topology->create_processor<kspp::thoughput_limiter<std::string, size_t>>(word_counts, 10); // messages per sec
     
     auto sink = topology->create_processor<kspp::stream_sink<std::string, size_t>>(thoughput_limited_stream, &std::cerr);
 
