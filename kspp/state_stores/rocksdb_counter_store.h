@@ -6,31 +6,30 @@
 #include <rocksdb/db.h>
 #include <rocksdb/merge_operator.h>
 #include <kspp/kspp.h>
-#include "counter_store.h"
+#include "state_store.h"
 
 namespace kspp {
-  class UInt64AddOperator : public rocksdb::AssociativeMergeOperator {
+  class Int64AddOperator : public rocksdb::AssociativeMergeOperator {
 
   public:
-    static bool Deserialize(const rocksdb::Slice& slice, uint64_t* value) {
+    static bool Deserialize(const rocksdb::Slice& slice, int64_t* value) {
       if (slice.size() != sizeof(int64_t))
         return false;
       memcpy((void*)value, slice.data(), sizeof(int64_t));
       return true;
     }
 
-    static void Serialize(uint64_t val, std::string* dst) {
-      dst->resize(sizeof(uint64_t));
-      memcpy((void*)dst->data(), &val, sizeof(uint64_t));
+    static void Serialize(int64_t val, std::string* dst) {
+      dst->resize(sizeof(int64_t));
+      memcpy((void*)dst->data(), &val, sizeof(int64_t));
     }
 
-    static bool Deserialize(const std::string& src, uint64_t* value) {
+    static bool Deserialize(const std::string& src, int64_t* value) {
       if (src.size() != sizeof(int64_t))
         return false;
       memcpy((void*)value, src.data(), sizeof(int64_t));
       return true;
     }
-
 
   public:
     virtual bool Merge(
@@ -41,19 +40,19 @@ namespace kspp {
       rocksdb::Logger* logger) const override {
 
       // assuming 0 if no existing value
-      uint64_t existing = 0;
+      int64_t existing = 0;
       if (existing_value) {
         if (!Deserialize(*existing_value, &existing)) {
           // if existing_value is corrupted, treat it as 0
-          BOOST_LOG_TRIVIAL(error) << "UInt64AddOperator::Merge existing_value value corruption";
+          BOOST_LOG_TRIVIAL(error) << "Int64AddOperator::Merge existing_value value corruption";
           existing = 0;
         }
       }
 
-      uint64_t oper;
+      int64_t oper;
       if (!Deserialize(value, &oper)) {
         // if operand is corrupted, treat it as 0
-        BOOST_LOG_TRIVIAL(error)  <<"UInt64AddOperator::Merge, Deserialize operand value corruption";
+        BOOST_LOG_TRIVIAL(error)  <<"Int64AddOperator::Merge, Deserialize operand value corruption";
         oper = 0;
       }
 
@@ -62,12 +61,12 @@ namespace kspp {
     }
 
     virtual const char* Name() const override {
-      return "UInt64AddOperator";
+      return "Int64AddOperator";
     }
   };
 
   template<class K, class V, class CODEC>
-  class rocksdb_counter_store : public counter_store<K, V>
+  class rocksdb_counter_store : public state_store<K, V>
   {
   public:
     enum { MAX_KEY_SIZE = 10000 };
@@ -107,18 +106,18 @@ namespace kspp {
 
         std::shared_ptr<krecord<K, V>> res(std::make_shared<krecord<K, V>>());
         res->offset = -1;
-        res->event_time = -1; // ????
+        //res->event_time = -1; // ????
         res->value = std::make_shared<V>();
 
         std::istrstream isk(key.data(), key.size());
         if (_codec->decode(isk, res->key) == 0)
           return nullptr;
 
-        uint64_t count = 0;
-        if (!UInt64AddOperator::Deserialize(value, &count)) {
+        int64_t count = 0;
+        if (!Int64AddOperator::Deserialize(value, &count)) {
           return nullptr;
         }
-        *res->value = (V) count; // TBD byt till V från uint64? eller alltid int64_t?
+        *res->value = (V) count; 
         return res;
       }
 
@@ -140,12 +139,10 @@ namespace kspp {
     private:
       std::unique_ptr<rocksdb::Iterator> _it;
       std::shared_ptr<CODEC>             _codec;
-
     };
 
-    rocksdb_counter_store(std::string name, boost::filesystem::path storage_path, std::shared_ptr<CODEC> codec)
-      : _name(name + "-(rocksdb_counter_store)")
-      , _storage_path(storage_path)
+    rocksdb_counter_store(boost::filesystem::path storage_path, std::shared_ptr<CODEC> codec)
+      : _storage_path(storage_path)
       , _codec(codec) {
       auto res = _create_db();
       assert(res);
@@ -155,35 +152,46 @@ namespace kspp {
       close();
     }
 
-    bool _create_db() {
-      boost::filesystem::create_directories(boost::filesystem::path(_storage_path));
-      rocksdb::Options options;
-      options.merge_operator.reset(new UInt64AddOperator);
-      options.create_if_missing = true;
-      rocksdb::DB* tmp = nullptr;
-      auto s = rocksdb::DB::Open(options, _storage_path.generic_string(), &tmp);
-      _db.reset(tmp);
-      if (!s.ok()) {
-        BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", " << _name << ", failed to open rocks db, path:" << _storage_path.generic_string();
-      }
-      return s.ok();
+    virtual void garbage_collect(int64_t tick) {
+      // nothing to do
+    }
+
+  
+    /**
+    * commits the offset
+    */
+    virtual void commit(bool flush) {
+      // not implemented
+    }
+
+    static std::string type_name() {
+      return "rocksdb_counter_store";
     }
 
     void close() {
       _db = nullptr;
-      BOOST_LOG_TRIVIAL(info) << BOOST_CURRENT_FUNCTION << ", " << _name << " close()";
+      //BOOST_LOG_TRIVIAL(info) << BOOST_CURRENT_FUNCTION << ", " << _name << " close()";
     }
 
-    void add(const K& key, V val) {
+    /**
+    * Put or delete a record
+    */
+    virtual void insert(std::shared_ptr<krecord<K, V>> record){
       char key_buf[MAX_KEY_SIZE];
       size_t ksize = 0;
       std::strstream s(key_buf, MAX_KEY_SIZE);
-      ksize = _codec->encode(key, s);
-      std::string serialized;
-      UInt64AddOperator::Serialize(val, &serialized);
-      auto status = _db->Merge(rocksdb::WriteOptions(), rocksdb::Slice(key_buf, ksize), serialized);
+      ksize = _codec->encode(record->key, s);
+      if (record->value)
+      {
+        std::string serialized;
+        Int64AddOperator::Serialize((int64_t) *record->value, &serialized);
+        auto status = _db->Merge(rocksdb::WriteOptions(), rocksdb::Slice(key_buf, ksize), serialized);
+      } else {
+        auto status = _db->Delete(rocksdb::WriteOptions(), rocksdb::Slice(key_buf, ksize));
+      }
     }
 
+    /*
     void del(const K& key) {
       char key_buf[MAX_KEY_SIZE];
       size_t ksize = 0;
@@ -191,10 +199,10 @@ namespace kspp {
         std::strstream s(key_buf, MAX_KEY_SIZE);
         ksize = _codec->encode(key, s);
       }
-      auto s = _db->Delete(rocksdb::WriteOptions(), rocksdb::Slice(key_buf, ksize));
     }
+    */
 
-    size_t get(const K& key) {
+   /* size_t get(const K& key) {
       char key_buf[MAX_KEY_SIZE];
       size_t ksize = 0;
       std::ostrstream os(key_buf, MAX_KEY_SIZE);
@@ -204,6 +212,40 @@ namespace kspp {
       uint64_t count = 0;
       bool res = UInt64AddOperator::Deserialize(str, &count);
       return count;
+    }*/
+
+    std::shared_ptr<krecord<K, V>> get(const K& key) {
+      char key_buf[MAX_KEY_SIZE];
+      size_t ksize = 0;
+      std::ostrstream os(key_buf, MAX_KEY_SIZE);
+      ksize = _codec->encode(key, os);
+      std::string str;
+      auto status = _db->Get(rocksdb::ReadOptions(), rocksdb::Slice(key_buf, ksize), &str);
+      int64_t count = 0;
+      if (!Int64AddOperator::Deserialize(str, &count))
+        return nullptr;
+
+      auto res = std::make_shared<krecord<K, V>>(key, std::make_shared<V>((V) count));
+      res->offset = -1;
+      //res->event_time = -1; // ????
+      return res;
+    }
+
+    /**
+    * returns last offset
+    */
+    virtual int64_t offset() const {
+      return -1;
+    }
+
+    virtual void start(int64_t offset) {
+      // noop;
+    }
+
+    virtual size_t size() const {
+      std::string num;
+      _db->GetProperty("rocksdb.estimate-num-keys", &num);
+      return std::stoll(num);
     }
 
     virtual void erase() {
@@ -221,7 +263,21 @@ namespace kspp {
     }
 
   private:
-    std::string                                   _name;     // only used for logging to make sense...
+  bool _create_db() {
+    boost::filesystem::create_directories(boost::filesystem::path(_storage_path));
+    rocksdb::Options options;
+    options.merge_operator.reset(new Int64AddOperator);
+    options.create_if_missing = true;
+    rocksdb::DB* tmp = nullptr;
+    auto s = rocksdb::DB::Open(options, _storage_path.generic_string(), &tmp);
+    _db.reset(tmp);
+    if (!s.ok()) {
+      BOOST_LOG_TRIVIAL(error) << " rocksdb_counter_store, failed to open rocks db, path:" << _storage_path.generic_string();
+    }
+    return s.ok();
+  }
+
+    //std::string                                   _name;     // only used for logging to make sense...
     boost::filesystem::path                       _storage_path;
     std::unique_ptr<rocksdb::DB>                  _db;        // maybee this should be a shared ptr since we're letting iterators out...
     //const std::shared_ptr<rocksdb::ReadOptions>   _read_options;

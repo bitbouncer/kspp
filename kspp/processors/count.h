@@ -2,7 +2,7 @@
 #include <chrono>
 #include <deque>
 #include <kspp/kspp.h>
-#include <kspp/impl/state_stores/rocksdb_counter_store.h>
+#include <kspp/state_stores/rocksdb_counter_store.h>
 #pragma once
 
 namespace kspp {
@@ -13,7 +13,7 @@ namespace kspp {
     count_by_key(topology_base& topology, std::shared_ptr<partition_source<K, void>> source, std::chrono::milliseconds punctuate_intervall, std::shared_ptr<CODEC> codec)
       : materialized_source<K, V>(source.get(), source->partition())
       , _stream(source)
-      , _counter_store(name(), get_storage_path(topology.get_storage_path()), codec)
+      , _counter_store(get_storage_path(topology.get_storage_path()), codec)
       , _punctuate_intervall(punctuate_intervall.count()) // tbd we should use intervalls since epoch similar to windowed 
       , _next_punctuate(0)
       , _dirty(false)
@@ -58,8 +58,8 @@ namespace kspp {
       return _queue.size();
     }
 
-    virtual bool process_one() {
-      _stream->process_one();
+    virtual bool process_one(int64_t tick) {
+      _stream->process_one(tick);
       bool processed = (_queue.size() > 0);
       while (_queue.size()) {
         auto e = _queue.front();
@@ -72,10 +72,10 @@ namespace kspp {
         }
 
         ++_in_count;
-        _lag.add_event_time(e->event_time);
+        _lag.add_event_time(tick, e->event_time);
         _dirty = true; // aggregated but not committed
         _queue.pop_front();
-        _counter_store.add(e->key, 1);
+        _counter_store.insert(std::make_shared<krecord<K, V>>(e->key, 1));
       }
       return processed;
     }
@@ -103,16 +103,8 @@ namespace kspp {
 
     // inherited from kmaterialized_source
     virtual std::shared_ptr<krecord<K, V>> get(const K& key) {
-      V count = (V) _counter_store.get(key); // TBD
-      /*
-      if (count)
-        return std::make_shared<krecord<K, V>>(key, count);
-      else
-        return nullptr;
-      */
-      return std::make_shared<krecord<K, V>>(key, count);
+      return _counter_store.get(key);
     }
-
 
     virtual typename kspp::materialized_source<K, V>::iterator begin(void) {
       return _counter_store.begin();

@@ -85,6 +85,17 @@ class processor
 
   virtual std::string processor_name() const = 0;
 
+  /**
+  * Process an input record
+  */
+  virtual bool process_one(int64_t tick) = 0;
+
+  /**
+  * Do periodic work - will be called infrequently
+  * use this to clean out allocated resources that is no longer needed
+  */
+  virtual void garbage_collect(int64_t tick) {}
+
   protected:
   // must be valid for processor lifetime  (cannot be removed)
   void add_metric(metric* p) {
@@ -103,23 +114,19 @@ class topic_processor : public processor
   virtual void poll(int timeout) {}
   virtual bool eof() const = 0;
 
-  /**
-  * Process an input record
-  */
-  virtual bool process_one() = 0;
   virtual void punctuate(int64_t timestamp) {}
   virtual void close() = 0;
 
 
   virtual void flush() {
     while (!eof())
-      if (!process_one()) {
+      if (!process_one(kspp::milliseconds_since_epoch())) {
         ;
       }
     //if (_upstream)   TBD!!!!!
     //  _upstream->flush();
     while (!eof())
-      if (!process_one()) {
+      if (!process_one(kspp::milliseconds_since_epoch())) {
         ;
       }
     punctuate(milliseconds_since_epoch());
@@ -139,12 +146,12 @@ class partition_processor : public processor
     return _upstream ? _upstream->depth() + 1 : 0;
   }
 
-  /**
-  * Process an input record
-  */
-  virtual bool process_one() {
-    return _upstream ? _upstream->process_one() : false;
-  }
+  ///**
+  //* Process an input record
+  //*/
+  //virtual bool process_one(int64_t tick) {
+  //  return _upstream ? _upstream->process_one(tick) : false;
+  //}
 
   virtual bool eof() const {
     return _upstream ? _upstream->eof() : true;
@@ -164,13 +171,13 @@ class partition_processor : public processor
 
   virtual void flush() {
     while (!eof())
-      if (!process_one()) {
+      if (!process_one(kspp::milliseconds_since_epoch())) {
         ;
       }
     if (_upstream)
       _upstream->flush();
     while (!eof())
-      if (!process_one()) {
+      if (!process_one(kspp::milliseconds_since_epoch())) {
         ;
       }
     punctuate(milliseconds_since_epoch());
@@ -286,6 +293,8 @@ class topology_base
   std::vector<std::shared_ptr<partition_processor>> _partition_processors;
   std::vector<std::shared_ptr<topic_processor>>     _topic_processors;
   std::vector<std::shared_ptr<partition_processor>> _top_partition_processors;
+  int64_t                                           _next_gc_ts;
+  //int64_t                                           _next_gc_loop_count;
 };
 
 

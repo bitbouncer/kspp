@@ -58,20 +58,20 @@ namespace kspp {
       _source->close();
     }
 
-    virtual bool process_one() {
+    virtual bool process_one(int64_t tick) {
       if (!_routing_table->eof()) {
         // just eat it... no join since we only joins with events????
-        _routing_table->process_one();
+        _routing_table->process_one(tick);
         _routing_table->commit(false);
         return true;
       }
 
-      _source->process_one();
+      _source->process_one(tick);
       bool processed = (_queue.size() > 0);
       while (_queue.size()) {
         auto e = _queue.front();
         _queue.pop_front();
-        _lag.add_event_time(e->event_time);
+        _lag.add_event_time(tick, e->event_time);
         auto routing_row = _routing_table->get(e->key);
         if (routing_row) {
           if (routing_row->value) {

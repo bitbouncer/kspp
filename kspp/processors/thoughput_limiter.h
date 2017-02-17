@@ -48,14 +48,14 @@ class thoughput_limiter : public partition_source<K, V>
     _source->close();
   }
 
-  virtual bool process_one() {
+  virtual bool process_one(int64_t tick) {
     if (_queue.size() == 0)
-      _source->process_one();
+      _source->process_one(tick);
 
     if (_queue.size()) {
       auto r = _queue.front();
-      _lag.add_event_time(r->event_time);
-      if (_token_bucket->consume(0, milliseconds_since_epoch())) {
+      _lag.add_event_time(tick, r->event_time);
+      if (_token_bucket->consume(0, tick)) {
         _queue.pop_front();
         this->send_to_sinks(r);
         return true;

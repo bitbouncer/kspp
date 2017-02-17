@@ -55,8 +55,8 @@ class rate_limiter : public partition_source<K, V>
     _source->close();
   }
 
-  virtual bool process_one() {
-    _source->process_one();
+  virtual bool process_one(int64_t tick) {
+    _source->process_one(tick);
     bool processed = (_queue.size() > 0);
     while (_queue.size()) {
       auto r = _queue.front();
@@ -64,7 +64,7 @@ class rate_limiter : public partition_source<K, V>
       ++_in_count;
       // milliseconds_since_epoch for processing time limiter
       // 
-      if (_token_bucket->consume(r->key, r->event_time)) {
+      if (_token_bucket->consume(r->key, r->event_time)) { // TBD tick???
         ++_out_count;
         this->send_to_sinks(r);
       } else {

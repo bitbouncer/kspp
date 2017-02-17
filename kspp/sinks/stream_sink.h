@@ -33,6 +33,11 @@ class stream_sink : public partition_sink<K, V>
     return "stream_sink";
   }
 
+  virtual bool process_one(int64_t tick) {
+    return false;
+    //return _upstream ? _upstream->process_one(tick) : false;
+  }
+
   virtual int produce(std::shared_ptr<krecord<K, V>> r) {
     _os << "ts: " << r->event_time << "  ";
     _codec->encode(r->key, _os);
@@ -82,6 +87,11 @@ class stream_sink<void, V> : public partition_sink<void, V>
     "stream_sink";
   }
 
+  virtual bool process_one(int64_t tick) {
+    return false;
+    //return _upstream ? _upstream->process_one(tick) : false;
+  }
+
   virtual int produce(std::shared_ptr<krecord<void, V>> r) {
     _os << "ts: " << r->event_time << "  ";
     _codec->encode(*r->value, _os);
@@ -124,6 +134,11 @@ class stream_sink<K, void> : public partition_sink<K, void>
 
   virtual std::string processor_name() const {
     return "stream_sink";
+  }
+
+  virtual bool process_one(int64_t tick) {
+    return false;
+    //return _upstream ? _upstream->process_one(tick) : false;
   }
 
   virtual int produce(std::shared_ptr<krecord<K, void>> r) {

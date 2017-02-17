@@ -52,7 +52,7 @@ class kafka_sink_base : public topic_sink<K, V, CODEC>
   }
 
   // pure sink cannot suck data from upstream...
-  virtual bool process_one() {
+  virtual bool process_one(int64_t tick) {
     // noop
     return false;
   }
@@ -236,7 +236,7 @@ class kafka_partition_sink_base : public partition_sink<K, V>
   }
 
   // pure sink cannot suck data from upstream...
-  virtual bool process_one() {
+  virtual bool process_one(int64_t tick) {
     return false;
   }
 

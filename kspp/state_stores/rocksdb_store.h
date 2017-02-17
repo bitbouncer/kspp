@@ -5,7 +5,7 @@
 #include <boost/log/trivial.hpp>
 
 #include <kspp/kspp.h>
-#include "kv_store.h"
+#include "state_store.h"
 
 #ifdef WIN32
 //you dont want to know why this is needed...
@@ -16,7 +16,7 @@
 namespace kspp {
 template<class K, class V, class CODEC>
 class rocksdb_store
-  : public kv_store<K, V>
+  : public state_store<K, V>
 {
   public:
   enum { MAX_KEY_SIZE = 10000, MAX_VALUE_SIZE = 100000 };

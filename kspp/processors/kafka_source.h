@@ -46,7 +46,7 @@ namespace kspp {
       // TBD!!!!
     }
      
-    virtual bool process_one() {
+    virtual bool process_one(int64_t tick) {
       auto p = _consumer.consume();
       if (!p)
         return false;

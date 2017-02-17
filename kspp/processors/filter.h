@@ -38,14 +38,14 @@ namespace kspp {
       _source->close();
     }
 
-    virtual bool process_one() {
+    virtual bool process_one(int64_t tick) {
       if (_queue.size()==0)
-        _source->process_one();
+        _source->process_one(tick);
       bool processed = (_queue.size() > 0);
       while (_queue.size()) {
         auto r = _queue.front();
         _queue.pop_front();
-        _lag.add_event_time(r->event_time);
+        _lag.add_event_time(tick, r->event_time);
         if (_predicate(r)) {
           this->send_to_sinks(r);
         }

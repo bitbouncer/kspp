@@ -89,19 +89,19 @@ namespace kspp {
   struct metric_lag : public metric
   {
     // TBD is this fast enough???
-    static inline int64_t milliseconds_since_epoch() {
+    /*static inline int64_t milliseconds_since_epoch() {
       return std::chrono::duration_cast<std::chrono::milliseconds>
         (std::chrono::system_clock::now().time_since_epoch()).count();
-    }
+    }*/
 
     metric_lag()
       : metric("lag")
       , _lag(-1){
     }
 
-    inline void add_event_time(int64_t event_time) {
+    inline void add_event_time(int64_t tick, int64_t event_time) {
       if (event_time > 0)
-        _lag = milliseconds_since_epoch() - event_time; 
+        _lag = tick - event_time;
     }
 
     virtual int64_t value() const {

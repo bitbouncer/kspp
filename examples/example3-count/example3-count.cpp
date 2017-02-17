@@ -41,8 +41,8 @@ int main(int argc, char **argv) {
     auto sink = topology->create_processor<kspp::stream_sink<std::string, int>>(word_counts, &std::cerr);
 
     topology->init_metrics();
-    word_counts->start(-2);
-    word_counts->flush();
+    topology->start(-2);
+    topology->flush();
 
     {
       auto metrics = builder.create_topic_topology();

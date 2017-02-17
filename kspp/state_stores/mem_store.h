@@ -1,9 +1,9 @@
- #include "kv_store.h"
+ #include "state_store.h"
  
  namespace kspp {
  template<class K, class V, class CODEC=void>
   class mem_store 
-    : public kv_store<K, V> {
+    : public state_store<K, V> {
   public:
     class iterator_impl 
       : public kmaterialized_source_iterator_impl<K, V> {

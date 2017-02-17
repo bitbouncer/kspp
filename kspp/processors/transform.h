@@ -47,13 +47,13 @@ namespace kspp {
       _source->close();
     }
 
-    virtual bool process_one() {
-      _source->process_one();
+    virtual bool process_one(int64_t tick) {
+      _source->process_one(tick);
       bool processed = (_queue.size() > 0);
       while (_queue.size()) {
         auto e = _queue.front();
         _queue.pop_front();
-        _lag.add_event_time(e->event_time);
+        _lag.add_event_time(tick, e->event_time);
         _extractor(e, this);
         ++_in_count;
 
@@ -125,8 +125,8 @@ namespace kspp {
       _source->close();
     }
 
-    virtual bool process_one() {
-      _source->process_one();
+    virtual bool process_one(int64_t tick) {
+      _source->process_one(tick);
       bool processed = (_queue.size() > 0);
       while (_queue.size()) {
         auto e = _queue.front();

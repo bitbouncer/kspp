@@ -56,15 +56,15 @@ namespace kspp {
       return _queue.size();
     }
 
-    virtual bool process_one() {
+    virtual bool process_one(int64_t tick) {
       if (!_table->eof()) {
         // just eat it... no join since we only joins with events????
-        if (_table->process_one())
+        if (_table->process_one(tick))
           _table->commit(false);
         return true;
       }
 
-      _stream->process_one();
+      _stream->process_one(tick);
 
       if (!_queue.size())
         return false;
@@ -72,7 +72,7 @@ namespace kspp {
       while (_queue.size()) {
         auto e = _queue.front();
         _queue.pop_front();
-        _lag.add_event_time(e->event_time);
+        _lag.add_event_time(tick, e->event_time);
         auto table_row = _table->get(e->key);
         if (table_row) {
           if (e->value) {

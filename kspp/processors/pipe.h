@@ -29,6 +29,10 @@ class pipe : public partition_source<K, V>
     return "pipe";
   }
 
+  virtual bool process_one(int64_t tick) {
+    return _upstream ? _upstream->process_one(tick) : false;
+  }
+
   virtual int produce(std::shared_ptr<krecord<K, V>> r) {
     this->send_to_sinks(r);
     return 0;
@@ -77,6 +81,10 @@ class pipe<void, V> : public partition_source<void, V>
     return "pipe";
   }
 
+  virtual bool process_one(int64_t tick) {
+    return _upstream ? _upstream->process_one(tick) : false;
+  }
+
   virtual int produce(std::shared_ptr<krecord<void, V>> r) {
     this->send_to_sinks(r);
     return 0;
@@ -122,6 +130,10 @@ class pipe<K, void> : public partition_source<K, void>
 
   virtual std::string processor_name() const {
     return "pipe";
+  }
+
+  virtual bool process_one(int64_t tick) {
+    return _upstream ? _upstream->process_one(tick) : false;
   }
 
   virtual int produce(std::shared_ptr<krecord<K, void>> r) {

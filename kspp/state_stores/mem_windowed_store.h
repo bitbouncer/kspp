@@ -1,11 +1,11 @@
-#include "kv_store.h"
+#include "state_store.h"
 #include <map>
 #include <chrono>
 
 namespace kspp {
   template<class K, class V, class CODEC = void>
   class mem_windowed_store
-    : public kv_store<K, V> {
+    : public state_store<K, V> {
     
     typedef std::map<K, std::shared_ptr<krecord<K, V>>> bucket_type;
 
@@ -84,6 +84,26 @@ namespace kspp {
     }
 
     virtual void close() {
+    }
+
+    virtual void garbage_collect(int64_t tick) {
+      int64_t oldest_kept_slot = get_slot_index(tick) - _nr_of_slots;
+      auto upper_bound = _buckets.upper_bound(oldest_kept_slot);
+
+      if (this->_sink) {
+        std::vector<std::shared_ptr<krecord<K, V>>> tombstones;
+        for (auto i = _buckets.begin(); i != upper_bound; ++i) {
+          std::cerr << "bucket " << i->first << " sent to ax" << std::endl;
+          for (auto&& j : *i->second)
+            this->_sink(std::make_shared<krecord<K, V>>(j.first));
+        }
+      }
+      _buckets.erase(_buckets.begin(), upper_bound);
+
+      std::cerr << "kept [";
+      for (auto i : _buckets)
+        std::cerr << i.first << ", ";
+      std::cerr << "]";
     }
 
     /**
@@ -169,7 +189,7 @@ namespace kspp {
 
   private:
     inline int64_t get_slot_index(int64_t timestamp) {
-      return timestamp % _slot_width;
+      return timestamp / _slot_width;
     }
     std::shared_ptr<kspp::partition_source<K, V>>   _source;
     std::map<int64_t, std::shared_ptr<bucket_type>> _buckets;
