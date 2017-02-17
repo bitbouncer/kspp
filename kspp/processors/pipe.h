@@ -30,7 +30,7 @@ class pipe : public partition_source<K, V>
   }
 
   virtual bool process_one(int64_t tick) {
-    return _upstream ? _upstream->process_one(tick) : false;
+    return this->_upstream ? this->_upstream->process_one(tick) : false;
   }
 
   virtual int produce(std::shared_ptr<krecord<K, V>> r) {
