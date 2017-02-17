@@ -62,6 +62,7 @@ class rate_limiter : public partition_source<K, V>
       auto r = _queue.front();
       _queue.pop_front();
       ++_in_count;
+      _lag.add_event_time(tick, r->event_time);
       // milliseconds_since_epoch for processing time limiter
       // 
       if (_token_bucket->consume(r->key, r->event_time)) { // TBD tick???

@@ -93,17 +93,11 @@ namespace kspp {
       if (this->_sink) {
         std::vector<std::shared_ptr<krecord<K, V>>> tombstones;
         for (auto i = _buckets.begin(); i != upper_bound; ++i) {
-          std::cerr << "bucket " << i->first << " sent to ax" << std::endl;
           for (auto&& j : *i->second)
             this->_sink(std::make_shared<krecord<K, V>>(j.first));
         }
       }
       _buckets.erase(_buckets.begin(), upper_bound);
-
-      std::cerr << "kept [";
-      for (auto i : _buckets)
-        std::cerr << i.first << ", ";
-      std::cerr << "]";
     }
 
     /**
@@ -162,6 +156,11 @@ namespace kspp {
     * Returns a key-value pair with the given key
     */
     virtual std::shared_ptr<krecord<K, V>> get(const K& key) {
+      for (auto&& i : _buckets) {
+        auto item = i.second->find(key);
+        if (item != i.second->end())
+          return item->second;
+      }
       return nullptr; // tbd
       //auto it = _store.find(key);
       //return (it == _store.end()) ? nullptr : it->second;
