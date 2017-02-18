@@ -43,11 +43,24 @@ class topic_topology : public topology_base
     return p;
   }
 
+  //// to be deleted...
+  //template<class pp, typename... Args>
+  //typename std::enable_if<std::is_base_of<kspp::partition_processor, pp>::value, std::vector<std::shared_ptr<pp>>>::type
+  //  create_partition_processors(size_t count, Args... args) {
+  //  std::vector<std::shared_ptr<pp>> result;
+  //  for (size_t i = 0; i != count; ++i) {
+  //    auto p = std::make_shared<pp>(*this, i, args...);
+  //    _partition_processors.push_back(p);
+  //    result.push_back(p);
+  //  }
+  //  return result;
+  //}
+
   template<class pp, typename... Args>
   typename std::enable_if<std::is_base_of<kspp::partition_processor, pp>::value, std::vector<std::shared_ptr<pp>>>::type
-    create_partition_processors(size_t count, Args... args) {
+    create_partition_processors(std::vector<int> partition_list, Args... args) {
     std::vector<std::shared_ptr<pp>> result;
-    for (size_t i = 0; i != count; ++i) {
+    for (auto i : partition_list) {
       auto p = std::make_shared<pp>(*this, i, args...);
       _partition_processors.push_back(p);
       result.push_back(p);

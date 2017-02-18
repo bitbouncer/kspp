@@ -7,7 +7,6 @@
 #include <mutex>
 #include <thread>
 #include <chrono>
-#include <regex>
 #include <strstream>
 #include <boost/filesystem.hpp>
 #include <boost/uuid/uuid.hpp>
@@ -23,11 +22,8 @@ inline int64_t milliseconds_since_epoch() {
     (std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
-inline std::string sanitize_filename(std::string s) {
-  auto e = std::regex("[/?<>\\:*|\"]");
-  s = std::regex_replace(s, e, "_");
-  return s;
-}
+std::string      sanitize_filename(std::string s);
+std::vector<int> parse_partition_list(std::string s);
 
 template<class K, class V>
 struct krecord
