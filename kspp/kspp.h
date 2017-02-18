@@ -453,10 +453,16 @@ class topic_sink<void, V, CODEC> : public topic_sink_base<void, V>
   public:
   virtual int produce(std::shared_ptr<krecord<void, V>> r) = 0;
   virtual int produce(uint32_t partition_hash, std::shared_ptr<krecord<void, V>> r) = 0;
-  inline  int produce(uint32_t partition_hash, const V& value) {
+  
+  // why are those hidden if we remove the 2??
+  inline  int produce2(uint32_t partition_hash, const V& value) {
     return produce(partition_hash, std::make_shared<krecord<void, V>>(value));
   }
 
+  inline  int produce2(const V& value) {
+    return produce(std::make_shared<krecord<void, V>>(value));
+  }
+  
   inline std::shared_ptr<CODEC> codec() {
     return _codec;
   }

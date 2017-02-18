@@ -162,6 +162,7 @@ int main(int argc, char **argv) {
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example1-basic");
   auto builder = kspp::topology_builder(app_info, "localhost");
   auto codec = std::make_shared<kspp::binary_codec>();
+  auto partition_list = kspp::parse_partition_list("[0,1,2,3,4,5,6,7]");
 
   {
     auto topology = builder.create_topology(PARTITION);

@@ -8,21 +8,21 @@
 #include <kspp/processors/join.h>
 #include <kspp/state_stores/rocksdb_store.h>
 
-#define PARTITION 0
-
 int main(int argc, char **argv) {
   size_t join_count = 0;
   auto codec = std::make_shared<kspp::binary_codec>();
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example2-join");
   auto builder = kspp::topology_builder(app_info, "localhost");
+  auto partition_list = kspp::parse_partition_list("[0,1,2,3,4,5,6,7]");
+
   {
-    auto topology = builder.create_topology(PARTITION);
-    auto stream = topology->create_processor<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_codec>>("kspp_test0_eventstream", codec);
-    auto table_source = topology->create_processor<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_codec>>("kspp_test0_table", codec);
-    auto table = topology->create_processor<kspp::ktable<boost::uuids::uuid, int64_t, kspp::rocksdb_store, kspp::binary_codec>>(table_source, codec);
-    auto join = topology->create_processor<kspp::left_join<boost::uuids::uuid, int64_t, int64_t, int64_t>>(
-      stream, 
-      table, 
+    auto topology = builder.create_topic_topology();
+    auto streams = topology->create_partition_processors<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_codec>>(partition_list, "kspp_test0_eventstream", codec);
+    auto table_sources = topology->create_partition_processors<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_codec>>(partition_list, "kspp_test0_table", codec);
+    auto tables = topology->create_partition_processors<kspp::ktable<boost::uuids::uuid, int64_t, kspp::rocksdb_store, kspp::binary_codec>>(table_sources, codec);
+    auto joins = topology->create_partition_processors<kspp::left_join<boost::uuids::uuid, int64_t, int64_t, int64_t>>(
+      streams, 
+      tables, 
       [&join_count](const boost::uuids::uuid& key, const int64_t& left, const int64_t& right, int64_t& row) {
       row = right;
       join_count++;
@@ -33,8 +33,10 @@ int main(int argc, char **argv) {
 
     // first sync table
     std::cout << "before sync" << std::endl;
-    table->flush();
-    table->commit(true);
+    for (auto&& i : tables) {
+      i->flush();
+      i->commit(true);
+    }
     std::cout << "after sync" << std::endl;
 
     auto t0 = std::chrono::high_resolution_clock::now();

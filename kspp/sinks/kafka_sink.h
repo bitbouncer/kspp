@@ -140,6 +140,12 @@ class kafka_topic_sink<void, V, CODEC> : public kafka_sink_base<void, V, CODEC>
     : kafka_sink_base<void, V, CODEC>(topology.brokers(), topic, codec) {
   }
 
+  virtual int produce(std::shared_ptr<krecord<void, V>> r) {
+    static uint32_t partition = 0;
+    // it does not matter that this is not thread safe since we really does not care where the message goes
+    return produce(++partition, r);
+  }
+
   virtual int produce(uint32_t partition, std::shared_ptr<krecord<void, V>> r) {
     void* vp = nullptr;
     size_t vsize = 0;

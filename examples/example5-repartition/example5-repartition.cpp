@@ -22,7 +22,6 @@ int main(int argc, char **argv) {
   auto codec = std::make_shared<kspp::text_codec>();
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example5-repartition");
   auto builder = kspp::topology_builder(app_info, "localhost");
-  
   auto partition_list = kspp::parse_partition_list("[0,1,2,3,4,5,6,7]"); // tmp fix waiting for partition data in topology_builder.../ topology
 
   {

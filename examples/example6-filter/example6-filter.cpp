@@ -14,37 +14,38 @@
 
 #include <kspp/sinks/kafka_sink.h>
 
-#define PARTITION 0
+
 using namespace kspp;
 
 int main(int argc, char **argv) {
   auto codec = std::make_shared<text_codec>();
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example6-filter");
   auto builder = topology_builder(app_info, "localhost");
+  auto partition_list = kspp::parse_partition_list("[0,1,2,3,4,5,6,7]");
   {
-    auto topology = builder.create_topology(PARTITION);
-    auto sink = topology->create_processor<kafka_partition_sink<void, std::string, text_codec>>("kspp_TextInput", codec);
-    kspp::produce<void, std::string>(*sink, "hello kafka streams");
+    auto topology = builder.create_topic_topology();
+    auto sink = topology->create_topic_sink<kspp::kafka_topic_sink<void, std::string, kspp::text_codec>>("kspp_TextInput", codec);
+    sink->produce2("hello kafka streams");
   }
 
   {
-    auto topology = builder.create_topology(PARTITION);
-    auto source = topology->create_processor<kafka_source<void, std::string, text_codec>>("kspp_TextInput", codec);
+    auto topology = builder.create_topic_topology();
+    auto sources = topology->create_partition_processors<kafka_source<void, std::string, text_codec>>(partition_list, "kspp_TextInput", codec);
 
     std::regex rgx("\\s+");
-    auto word_stream = topology->create_processor<flat_map<void, std::string, std::string, void>>(source, [&rgx](const auto e, auto flat_map) {
+    auto word_streams = topology->create_partition_processors<flat_map<void, std::string, std::string, void>>(sources, [&rgx](const auto e, auto flat_map) {
       std::sregex_token_iterator iter(e->value->begin(), e->value->end(), rgx, -1);
       std::sregex_token_iterator end;
       for (; iter != end; ++iter)
         flat_map->push_back(std::make_shared<krecord<std::string, void>>(*iter));
     });
 
-    std::shared_ptr<kspp::partition_source<std::string, void>> filtered_stream = topology->create_processor<filter<std::string, void>>(word_stream, [](const auto e)->bool {
+    std::shared_ptr<kspp::partition_source<std::string, void>> filtered_stream = topology->create_partition_processors<filter<std::string, void>>(word_streams, [](const auto e)->bool {
       return (e->key != "hello");
     });
 
-    auto mypipe = topology->create_processor<kspp::pipe<std::string, void>>(filtered_stream);
-    auto sink = topology->create_processor<stream_sink<std::string, void>>(mypipe, &std::cerr);
+    auto mypipe = topology->create_partition_processors<kspp::pipe<std::string, void>>(filtered_stream);
+    auto sink = topology->create_partition_processors<stream_sink<std::string, void>>(mypipe, &std::cerr);
     mypipe->produce("extra message injected");
     topology->start(-2);
     topology->flush();
