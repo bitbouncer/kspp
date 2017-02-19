@@ -11,8 +11,10 @@
 #include <kspp/sinks/stream_sink.h>
 #include <kspp/processors/join.h>
 #include <kspp/state_stores/rocksdb_store.h>
+#include <kspp/state_stores/mem_windowed_store.h>
 
 #define PARTITION 0
+using namespace std::chrono_literals;
 
 struct page_view_data
 {
@@ -150,7 +152,7 @@ template<> size_t text_codec::encode(const page_view_decorated& src, std::ostrea
 
 template<class T>
 std::string ksource_to_string(const T&  ksource) {
-  std::string res = std::to_string(ksource.event_time) 
+  std::string res = "ts: " + std::to_string(ksource.event_time) 
     + ", " 
     + std::to_string(ksource.key) 
     + ", " 
@@ -223,17 +225,33 @@ int main(int argc, char **argv) {
   {
     auto topology = builder.create_partition_topology(PARTITION);
     auto table_source = topology->create_processor<kspp::kafka_source<int64_t, user_profile_data, kspp::binary_codec>>("kspp_UserProfile", codec);
-    auto table = topology->create_processor<kspp::ktable<int64_t, user_profile_data, kspp::rocksdb_store, kspp::binary_codec>>(table_source, codec);
-    
+    auto table1 = topology->create_processor<kspp::ktable<int64_t, user_profile_data, kspp::rocksdb_store, kspp::binary_codec>>(table_source, codec);
+    auto table2 = topology->create_processor<kspp::ktable<int64_t, user_profile_data, kspp::mem_windowed_store>>(table_source, 500ms, 10); // 500ms slots and 10 of them...
     topology->start();
     topology->flush();
 
     std::cerr << "using iterators " << std::endl;
-    for (auto it = table->begin(), end = table->end(); it != end; ++it)
+    for (auto it = table1->begin(), end = table1->end(); it != end; ++it)
       std::cerr << "item : " << ksource_to_string(**it) << std::endl;
 
     std::cerr << "using range iterators " << std::endl;
-    for (auto i : *table)
+    for (auto i : *table1)
+      std::cerr << "item : " << ksource_to_string(*i) << std::endl;
+
+    std::cerr << "using range iterators " << std::endl;
+    for (auto i : *table2)
+      std::cerr << "item : " << ksource_to_string(*i) << std::endl;
+
+    //wait a little an see what in there now...
+    std::this_thread::sleep_for(10s);
+    topology->flush();
+
+    std::cerr << "using range iterators " << std::endl;
+    for (auto i : *table1)
+      std::cerr << "item : " << ksource_to_string(*i) << std::endl;
+
+    std::cerr << "using range iterators " << std::endl;
+    for (auto i : *table2)
       std::cerr << "item : " << ksource_to_string(*i) << std::endl;
   }
   return 0;
