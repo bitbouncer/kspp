@@ -35,27 +35,7 @@ class topic_topology : public topology_base
   topic_topology(std::shared_ptr<app_info> info, std::string topology_id, std::string brokers, boost::filesystem::path root_path)
     : topology_base(info, topology_id, -1, brokers, root_path) {}
 
-  template<class pp, typename... Args>
-  typename std::enable_if<std::is_base_of<kspp::partition_processor, pp>::value, std::shared_ptr<pp>>::type
-    create_partition_processor(Args... args) {
-    auto p = std::make_shared<pp>(*this, args...);
-    _partition_processors.push_back(p);
-    return p;
-  }
-
-  //// to be deleted...
-  //template<class pp, typename... Args>
-  //typename std::enable_if<std::is_base_of<kspp::partition_processor, pp>::value, std::vector<std::shared_ptr<pp>>>::type
-  //  create_partition_processors(size_t count, Args... args) {
-  //  std::vector<std::shared_ptr<pp>> result;
-  //  for (size_t i = 0; i != count; ++i) {
-  //    auto p = std::make_shared<pp>(*this, i, args...);
-  //    _partition_processors.push_back(p);
-  //    result.push_back(p);
-  //  }
-  //  return result;
-  //}
-
+  // top level factory
   template<class pp, typename... Args>
   typename std::enable_if<std::is_base_of<kspp::partition_processor, pp>::value, std::vector<std::shared_ptr<pp>>>::type
     create_partition_processors(std::vector<int> partition_list, Args... args) {
@@ -68,7 +48,16 @@ class topic_topology : public topology_base
     return result;
   }
 
-  // for flat map???
+  // should this be removed??
+  template<class pp, typename... Args>
+  typename std::enable_if<std::is_base_of<kspp::partition_processor, pp>::value, std::shared_ptr<pp>>::type
+    create_partition_processor(Args... args) {
+    auto p = std::make_shared<pp>(*this, args...);
+    _partition_processors.push_back(p);
+    return p;
+  }
+
+  // when you have a vector of partitions - lets create a new processor layer
   template<class pp, class ps, typename... Args>
   typename std::enable_if<std::is_base_of<kspp::partition_processor, pp>::value, std::vector<std::shared_ptr<pp>>>::type
     create_partition_processors(std::vector<std::shared_ptr<ps>> sources, Args... args) {
@@ -80,7 +69,7 @@ class topic_topology : public topology_base
     }
     return result;
   }
-
+   
   /**
     joins between two arrays
     we could probably have stricter contrainst on the types of v1 and v2

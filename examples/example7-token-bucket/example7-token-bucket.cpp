@@ -6,7 +6,7 @@
 #include <kspp/topology_builder.h>
 #include <kspp/processors/kafka_source.h>
 #include <kspp/processors/filter.h>
-#include <kspp/processors/transform.h>
+#include <kspp/processors/flat_map.h>
 #include <kspp/processors/count.h>
 #include <kspp/processors/rate_limiter.h>
 #include <kspp/processors/thoughput_limiter.h>

@@ -5,32 +5,34 @@
 #pragma once
 
 namespace kspp {
-  template<class K, class SV, class RV>
-  class transform_value : public partition_source<K, RV>
+  template<class SK, class SV, class RK, class RV>
+  class flat_map : public partition_source<RK, RV>
   {
   public:
-    typedef std::function<void(std::shared_ptr<krecord<K, SV>> record, transform_value* self)> extractor; // maybee better to pass this and send() directrly
+    typedef std::function<void(std::shared_ptr<krecord<SK, SV>> record, flat_map* self)> extractor; // maybe better to pass this and send() directrly
 
-    transform_value(topology_base& topology, std::shared_ptr<partition_source<K, SV>> source, extractor f)
-      : partition_source<K, RV>(source.get(), source->partition())
+    flat_map(topology_base& topology, std::shared_ptr<partition_source<SK, SV>> source, extractor f)
+      : partition_source<RK, RV>(source.get(), source->partition())
       , _source(source)
-      , _extractor(f) {
+      , _extractor(f)
+      , _in_count("in_count") {
       _source->add_sink([this](auto r) {
         _queue.push_back(r);
       });
+      this->add_metric(&_in_count);
       this->add_metric(&_lag);
     }
 
-    ~transform_value() {
+    ~flat_map() {
       close();
     }
- 
+
     std::string name() const {
-      return _source->name() + "-transform_value";
+      return _source->name() + "-flat_map()[" + type_name<RK>::get() + ", " + type_name<RV>::get() + "]";
     }
 
     virtual std::string processor_name() const {
-      return "transform_value";
+      return "flat_map";
     }
 
     virtual void start() {
@@ -50,14 +52,16 @@ namespace kspp {
       bool processed = (_queue.size() > 0);
       while (_queue.size()) {
         auto e = _queue.front();
-        _lag.add_event_time(e->event_time);
         _queue.pop_front();
+        _lag.add_event_time(tick, e->event_time);
         _extractor(e, this);
+        ++_in_count;
+
       }
       return processed;
     }
 
-    void push_back(std::shared_ptr<krecord<K, RV>> r) {
+    void push_back(std::shared_ptr<krecord<RK, RV>> r) {
       this->send_to_sinks(r);
     }
 
@@ -74,10 +78,11 @@ namespace kspp {
     }
 
   private:
-    std::shared_ptr<partition_source<K, SV>>    _source;
-    extractor                                   _extractor;
-    std::deque<std::shared_ptr<krecord<K, SV>>> _queue;
-    metric_lag                                  _lag;
+    std::shared_ptr<partition_source<SK, SV>>    _source;
+    extractor                                    _extractor;
+    std::deque<std::shared_ptr<krecord<SK, SV>>> _queue;
+    metric_counter                               _in_count;
+    metric_lag                                   _lag;
   };
 }
 

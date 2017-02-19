@@ -6,8 +6,7 @@
 #include <kspp/topology_builder.h>
 #include <kspp/processors/kafka_source.h>
 #include <kspp/processors/filter.h>
-#include <kspp/processors/transform.h>
-#include <kspp/processors/count.h>
+#include <kspp/processors/flat_map.h>
 #include <kspp/processors/pipe.h>
 #include <kspp/algorithm.h>
 #include <kspp/sinks/stream_sink.h>
@@ -16,6 +15,7 @@
 
 
 using namespace kspp;
+using namespace std::chrono_literals;
 
 int main(int argc, char **argv) {
   auto codec = std::make_shared<text_codec>();
@@ -40,13 +40,14 @@ int main(int argc, char **argv) {
         flat_map->push_back(std::make_shared<krecord<std::string, void>>(*iter));
     });
 
-    std::shared_ptr<kspp::partition_source<std::string, void>> filtered_stream = topology->create_partition_processors<filter<std::string, void>>(word_streams, [](const auto e)->bool {
+    auto filtered_streams = topology->create_partition_processors<kspp::filter<std::string, void>>(word_streams, [](const auto e)->bool {
       return (e->key != "hello");
     });
 
-    auto mypipe = topology->create_partition_processors<kspp::pipe<std::string, void>>(filtered_stream);
-    auto sink = topology->create_partition_processors<stream_sink<std::string, void>>(mypipe, &std::cerr);
-    mypipe->produce("extra message injected");
+    auto mypipes = topology->create_partition_processors<kspp::pipe<std::string, void>>(filtered_streams);
+    auto sinks = topology->create_partition_processors<stream_sink<std::string, void>>(mypipes, &std::cerr);
+    for (auto i : mypipes)
+      i->produce("extra message injected");
     topology->start(-2);
     topology->flush();
   }

@@ -9,11 +9,13 @@ namespace kspp {
     filter(topology_base& topology, std::shared_ptr<partition_source<K, V>> source, predicate f)
       : partition_source<K, V>(source.get(), source->partition())
       , _source(source)
-      , _predicate(f) {
+      , _predicate(f)
+      , _predicate_false("predicate_false") {
       _source->add_sink([this](auto r) {
         _queue.push_back(r);
       });
       this->add_metric(&_lag);
+      this->add_metric(&_predicate_false);
     }
 
     ~filter() {
@@ -48,6 +50,8 @@ namespace kspp {
         _lag.add_event_time(tick, r->event_time);
         if (_predicate(r)) {
           this->send_to_sinks(r);
+        } else {
+          ++_predicate_false;
         }
       }
       return processed;
@@ -70,5 +74,6 @@ namespace kspp {
     predicate                                  _predicate;
     std::deque<std::shared_ptr<krecord<K, V>>> _queue;
     metric_lag                                 _lag;
+    metric_counter                             _predicate_false;
   };
 } // namespace
