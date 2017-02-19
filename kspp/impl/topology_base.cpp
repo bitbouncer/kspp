@@ -173,12 +173,6 @@ void topology_base::start(int offset) {
   //  i->start(offset);
 }
 
-/*void flush() {
-for (auto i : _top_partition_processors)
-i->flush();
-}
-*/
-
 void topology_base::commit(bool force) {
   if (!_is_init)
     init();
@@ -187,21 +181,19 @@ void topology_base::commit(bool force) {
 }
 
 void topology_base::flush() {
-  while (!eof())
-    if (!process_one()) {
-      //using namespace std::chrono_literals;
-      //std::this_thread::sleep_for(10ms);
-      ;
-    }
+  while (true)
+  {
+    if (!process_one() && eof())
+      break;
+  }
+
   for (auto i : _top_partition_processors)
     i->flush();
 
-  while (!eof())
-    if (!process_one()) {
-      //using namespace std::chrono_literals;
-      //std::this_thread::sleep_for(10ms);
-      ;
-    }
+  while (true) {
+    if (!process_one() && eof())
+      break;
+  }
 }
 
 boost::filesystem::path topology_base::get_storage_path() {
