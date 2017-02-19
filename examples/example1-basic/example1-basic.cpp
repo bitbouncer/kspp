@@ -4,10 +4,10 @@
 #include <kspp/codecs/binary_codec.h>
 #include <kspp/codecs/text_codec.h>
 #include <kspp/topology_builder.h>
-#include <kspp/algorithm.h>
 #include <kspp/processors/ktable.h>
 #include <kspp/processors/kafka_source.h>
 #include <kspp/sinks/kafka_sink.h>
+#include <kspp/sinks/kafka_partition_sink.h>
 #include <kspp/sinks/stream_sink.h>
 #include <kspp/processors/join.h>
 #include <kspp/state_stores/rocksdb_store.h>
@@ -167,20 +167,21 @@ int main(int argc, char **argv) {
   {
     auto topology = builder.create_partition_topology(PARTITION);
     auto sink = topology->create_processor<kspp::kafka_partition_sink<int64_t, page_view_data, kspp::binary_codec>>("kspp_PageViews", codec);
-    kspp::produce<int64_t, page_view_data>(*sink, 1, {1440557383335, 1, "/home?user=1"});
-    kspp::produce<int64_t, page_view_data>(*sink, 5, {1440557383345, 5, "/home?user=5"});
-    kspp::produce<int64_t, page_view_data>(*sink, 2, {1440557383456, 2, "/profile?user=2"});
-    kspp::produce<int64_t, page_view_data>(*sink, 1, {1440557385365, 1, "/profile?user=1"});
-    kspp::produce<int64_t, page_view_data>(*sink, 1, {1440557385368, 1, "/profile?user=1"});
+    sink->produce(1, { 1440557383335, 1, "/home?user=1" });
+    sink->produce(1, { 1440557383335, 1, "/home?user=1" });
+    sink->produce(5, {1440557383345, 5, "/home?user=5"});
+    sink->produce(2, {1440557383456, 2, "/profile?user=2"});
+    sink->produce(1, {1440557385365, 1, "/profile?user=1"});
+    sink->produce(1, {1440557385368, 1, "/profile?user=1"});
   }
 
   {
     auto topology = builder.create_partition_topology(PARTITION);
     auto sink = topology->create_processor<kspp::kafka_partition_sink<int64_t, user_profile_data, kspp::binary_codec>>("kspp_UserProfile", codec);
-    kspp::produce<int64_t, user_profile_data>(*sink, 1, {1440557383335, 1, "user1@aol.com"});
-    kspp::produce<int64_t, user_profile_data>(*sink, 5, {1440557383345, 5, "user5@gmail.com"});
-    kspp::produce<int64_t, user_profile_data>(*sink, 2, {1440557383456, 2, "user2@yahoo.com"});
-    kspp::produce<int64_t, user_profile_data>(*sink, 1, {1440557385365, 1, "user1-new-email-addr@comcast.com"});
+    sink->produce(1, {1440557383335, 1, "user1@aol.com"});
+    sink->produce(5, {1440557383345, 5, "user5@gmail.com"});
+    sink->produce(2, {1440557383456, 2, "user2@yahoo.com"});
+    sink->produce(1, {1440557385365, 1, "user1-new-email-addr@comcast.com"});
   }
 
   {

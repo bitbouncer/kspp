@@ -8,7 +8,6 @@
 #include <kspp/processors/filter.h>
 #include <kspp/processors/flat_map.h>
 #include <kspp/processors/pipe.h>
-#include <kspp/algorithm.h>
 #include <kspp/sinks/stream_sink.h>
 
 #include <kspp/sinks/kafka_sink.h>
@@ -25,7 +24,7 @@ int main(int argc, char **argv) {
   {
     auto topology = builder.create_topology();
     auto sink = topology->create_sink<kspp::kafka_topic_sink<void, std::string, kspp::text_codec>>("kspp_TextInput", codec);
-    sink->produce2("hello kafka streams");
+    sink->produce("hello kafka streams");
   }
 
   {

@@ -11,7 +11,6 @@
 #include <kspp/processors/flat_map.h>
 #include <kspp/processors/count.h>
 #include <kspp/processors/rate_limiter.h>
-#include <kspp/algorithm.h>
 #include <kspp/sinks/kafka_sink.h>
 #include <kspp/sinks/stream_sink.h>
 
@@ -30,9 +29,9 @@ int main(int argc, char **argv) {
     auto topology = builder.create_topology();
     auto sink = topology->create_sink<kspp::kafka_topic_sink<void, std::string, kspp::text_codec>>("kspp_TextInput", codec);
     for (int i = 0; i != 100; ++i) {
-      sink->produce2("hello kafka streams");
-      sink->produce2("more text to parse");
-      sink->produce2("even more");
+      sink->produce("hello kafka streams");
+      sink->produce("more text to parse");
+      sink->produce("even more");
     }
   }
 

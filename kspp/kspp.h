@@ -294,10 +294,6 @@ class partition_sink : public partition_processor
   typedef V value_type;
   typedef kspp::krecord<K, V> record_type;
 
-  virtual int produce(std::shared_ptr<krecord<K, V>> r) = 0;
-  inline int produce(const K& key, const V& value) {
-    return produce(std::make_shared<krecord<K, V>>(key, value));
-  }
   virtual std::string key_type_name() const {
     return type_name<K>::get();
   }
@@ -307,9 +303,20 @@ class partition_sink : public partition_processor
   }
 
   virtual size_t queue_len() = 0;
-  protected:
+
+  inline int produce(std::shared_ptr<krecord<K, V>> r) {
+    return _produce(r);
+  }
+
+  inline  int produce(const K& key, const V& value) {
+    return _produce(std::make_shared<krecord<K, V>>(key, value));
+  }
+
+protected:
   partition_sink(size_t partition)
     : partition_processor(nullptr, partition) {}
+  
+  virtual int _produce(std::shared_ptr<krecord<K, V>> r) = 0;
 };
 
 // specialisation for void key
@@ -329,15 +336,21 @@ class partition_sink<void, V> : public partition_processor
     return type_name<V>::get();
   }
 
-  virtual int produce(std::shared_ptr<krecord<void, V>> r) = 0;
-  inline int produce(const V& value) {
-    return produce(std::make_shared<krecord<void, V>>(value));
+  virtual size_t queue_len() = 0;
+
+  inline int produce(std::shared_ptr<krecord<void, V>> r) {
+    return _produce(r);
   }
 
-  virtual size_t queue_len() = 0;
+  inline  int produce(const V& value) {
+    return _produce(std::make_shared<krecord<void, V>>(key, value));
+  }
+
   protected:
   partition_sink(size_t partition)
     : partition_processor(nullptr, partition) {}
+
+  virtual int _produce(std::shared_ptr<krecord<void, V>> r) = 0;
 };
 
 // specialisation for void value
@@ -356,16 +369,22 @@ class partition_sink<K, void> : public partition_processor
   virtual std::string value_type_name() const {
     return "void";
   }
+  
+  virtual size_t queue_len() = 0;
 
-  virtual int produce(std::shared_ptr<krecord<K, void>> r) = 0;
-  inline int produce(const K& key) {
-    return produce(std::make_shared<krecord<K, void>>(key));
+  inline int produce(std::shared_ptr<krecord<K, void>> r) {
+    return _produce(r);
   }
 
-  virtual size_t queue_len() = 0;
+  inline  int produce(const K& key) {
+    return _produce(std::make_shared<krecord<K, void>>(key));
+  }
+
   protected:
   partition_sink(size_t partition)
     : partition_processor(nullptr, partition) {}
+
+  virtual int _produce(std::shared_ptr<krecord<K, void>> r) = 0;
 };
 
 inline uint32_t djb_hash(const char *str, size_t len) {
@@ -397,14 +416,12 @@ inline uint32_t get_partition(const PK& key, size_t nr_of_partitions, std::share
   we need this class to get rid of the codec for templates..
 */
 template<class K, class V>
-class topic_sink_base : public topic_processor
+class topic_sink : public topic_processor
 {
-  public:
+public:
   typedef K key_type;
   typedef V value_type;
   typedef kspp::krecord<K, V> record_type;
-
-  virtual int produce(std::shared_ptr<krecord<K, V>> r) = 0;
 
   virtual std::string key_type_name() const {
     return type_name<K>::get();
@@ -414,77 +431,172 @@ class topic_sink_base : public topic_processor
     return type_name<V>::get();
   }
 
-  virtual size_t queue_len() = 0;
-};
+  virtual size_t   queue_len() = 0;
 
-template<class K, class V, class CODEC>
-class topic_sink : public topic_sink_base<K, V>
-{
-  public:
-  virtual int produce(std::shared_ptr<krecord<K, V>> r) = 0;
-  virtual int produce(uint32_t partition_hash, std::shared_ptr<krecord<K, V>> r) = 0;
+  inline int produce(std::shared_ptr<krecord<K, V>> r) {
+    return _produce(r);
+  }
+
+  inline int produce(uint32_t partition_hash, std::shared_ptr<krecord<K, V>> r) {
+    return _produce(partition_hash, r);
+  }
+
+  inline  int produce(const K& key, const V& value) {
+    return _produce(std::make_shared<krecord<K, V>>(key, value));
+  }
+
   inline  int produce(uint32_t partition_hash, const K& key, const V& value) {
-    return produce(partition_hash, std::make_shared<krecord<K, V>>(key, value));
+    return _produce(partition_hash, std::make_shared<krecord<K, V>>(key, value));
   }
 
-  inline std::shared_ptr<CODEC> codec() {
-    return _codec;
-  }
-  protected:
-  topic_sink(std::shared_ptr<CODEC> codec)
-    :_codec(codec) {}
-
-  std::shared_ptr<CODEC> _codec;
+protected:
+  virtual int _produce(std::shared_ptr<krecord<K, V>> r) = 0;
+  virtual int _produce(uint32_t partition_hash, std::shared_ptr<krecord<K, V>> r) = 0;
 };
 
-// specialisation for void key
-template<class V, class CODEC>
-class topic_sink<void, V, CODEC> : public topic_sink_base<void, V>
+// spec for void key
+template<class V>
+class topic_sink<void, V> : public topic_processor
 {
-  public:
-  virtual int produce(std::shared_ptr<krecord<void, V>> r) = 0;
-  virtual int produce(uint32_t partition_hash, std::shared_ptr<krecord<void, V>> r) = 0;
-  
-  // why are those hidden if we remove the 2??
-  inline  int produce2(uint32_t partition_hash, const V& value) {
-    return produce(partition_hash, std::make_shared<krecord<void, V>>(value));
+public:
+  typedef void key_type;
+  typedef V value_type;
+  typedef kspp::krecord<void, V> record_type;
+
+  virtual std::string key_type_name() const {
+    return "void";
   }
 
-  inline  int produce2(const V& value) {
-    return produce(std::make_shared<krecord<void, V>>(value));
-  }
-  
-  inline std::shared_ptr<CODEC> codec() {
-    return _codec;
+  virtual std::string value_type_name() const {
+    return type_name<V>::get();
   }
 
-  protected:
-  topic_sink(std::shared_ptr<CODEC> codec)
-    :_codec(codec) {}
+  virtual size_t queue_len() = 0;
 
-  std::shared_ptr<CODEC> _codec;
+  inline int produce(std::shared_ptr<krecord<void, V>> r) {
+    return _produce(r);
+  }
+
+  inline int produce(uint32_t partition_hash, std::shared_ptr<krecord<void, V>> r) {
+    return _produce(partition_hash, r);
+  }
+
+  inline  int produce(const V& value) {
+    return _produce(std::make_shared<krecord<void, V>>(value));
+  }
+
+  inline  int produce(uint32_t partition_hash, const V& value) {
+    return _produce(partition_hash, std::make_shared<krecord<void, V>>(value));
+  }
+
+protected:
+  virtual int _produce(std::shared_ptr<krecord<void, V>> r) = 0;
+  virtual int _produce(uint32_t partition_hash, std::shared_ptr<krecord<void, V>> r) = 0;
 };
 
-// specialisation for void value
-template<class K, class CODEC>
-class topic_sink<K, void, CODEC> : public topic_sink_base<K, void>
+// spec for void value
+template<class K>
+class topic_sink<K, void> : public topic_processor
 {
-  public:
-  virtual int produce(std::shared_ptr<krecord<K, void>> r) = 0;
+public:
+  typedef K key_type;
+  typedef void value_type;
+  typedef kspp::krecord<K, void> record_type;
+
+  virtual std::string key_type_name() const {
+    return type_name<K>::get();
+  }
+
+  virtual std::string value_type_name() const {
+    return "void";
+  }
+
+  virtual size_t   queue_len() = 0;
+
+  inline int produce(std::shared_ptr<krecord<K, void>> r) {
+    return _produce(r);
+  }
+
+  inline int produce(uint32_t partition_hash, std::shared_ptr<krecord<K, void>> r) {
+    return _produce(partition_hash, r);
+  }
+
+  inline  int produce(const K& key) {
+    return _produce(std::make_shared<krecord<K, void>>(key));
+  }
+
   inline  int produce(uint32_t partition_hash, const K& key) {
-    return produce(partition_hash, std::make_shared<krecord<K, void>>(key));
+    return _produce(partition_hash, std::make_shared<krecord<K, void>>(key));
   }
 
-  inline std::shared_ptr<CODEC> codec() {
-    return _codec;
-  }
-
-  protected:
-  topic_sink(std::shared_ptr<CODEC> codec)
-    :_codec(codec) {}
-
-  std::shared_ptr<CODEC> _codec;
+protected:
+  virtual int _produce(std::shared_ptr<krecord<K, void>> r) = 0;
+  virtual int _produce(uint32_t partition_hash, std::shared_ptr<krecord<K, void>> r) = 0;
 };
+
+//template<class K, class V, class CODEC>
+//class topic_sink : public topic_sink_base<K, V>
+//{
+//public:
+//  inline std::shared_ptr<CODEC> codec() {
+//    return _codec;
+//  }
+//
+//protected:
+//  topic_sink(std::shared_ptr<CODEC> codec)
+//    :_codec(codec) {}
+//
+//  std::shared_ptr<CODEC> _codec;
+//};
+
+//// specialisation for void key
+//template<class V, class CODEC>
+//class topic_sink<void, V, CODEC> : public topic_sink_base<void, V>
+//{
+//  public:
+//  //virtual int produce(std::shared_ptr<krecord<void, V>> r) = 0;
+//  //virtual int produce(uint32_t partition_hash, std::shared_ptr<krecord<void, V>> r) = 0;
+//  
+//  // why are those hidden if we remove the 2??
+//  inline  int produce2(uint32_t partition_hash, const V& value) {
+//    return produce(partition_hash, std::make_shared<krecord<void, V>>(value));
+//  }
+//
+//  inline  int produce2(const V& value) {
+//    return produce(std::make_shared<krecord<void, V>>(value));
+//  }
+//  
+//  inline std::shared_ptr<CODEC> codec() {
+//    return _codec;
+//  }
+//
+//  protected:
+//  topic_sink(std::shared_ptr<CODEC> codec)
+//    :_codec(codec) {}
+//
+//  std::shared_ptr<CODEC> _codec;
+//};
+//
+//// specialisation for void value
+//template<class K, class CODEC>
+//class topic_sink<K, void, CODEC> : public topic_sink_base<K, void>
+//{
+//  public:
+//  virtual int produce(std::shared_ptr<krecord<K, void>> r) = 0;
+//  inline  int produce(uint32_t partition_hash, const K& key) {
+//    return produce(partition_hash, std::make_shared<krecord<K, void>>(key));
+//  }
+//
+//  inline std::shared_ptr<CODEC> codec() {
+//    return _codec;
+//  }
+//
+//  protected:
+//  topic_sink(std::shared_ptr<CODEC> codec)
+//    :_codec(codec) {}
+//
+//  std::shared_ptr<CODEC> _codec;
+//};
 
 template<class K, class V>
 class partition_source : public partition_processor
@@ -523,7 +635,7 @@ class partition_source : public partition_processor
   }
 
   template<class SINK>
-  typename std::enable_if<std::is_base_of<kspp::topic_sink_base<K, V>, SINK>::value, void>::type
+  typename std::enable_if<std::is_base_of<kspp::topic_sink<K, V>, SINK>::value, void>::type
     add_sink(std::shared_ptr<SINK> sink) {
     add_sink([sink](auto e) {
       sink->produce(e);

@@ -2,38 +2,36 @@
 #include <kspp/kspp.h>
 #pragma once
 
-// should this be a partition_sink, topic_source or partition_processor????
-// nothing is nessessary but check what's best...
-// std::shared_ptr<ktable<K, PK>> routing_table could be a external partition-source and an internal ktable_partition that uses an internal kv-store...
-
 namespace kspp {
-  template<class K, class V, class PK, class CODEC>
-  class repartition_by_table : public partition_processor
+  template<class K, class V, class FOREIGN_KEY, class CODEC>
+  class repartition_by_foreign_key : public partition_processor
   {
   public:
-    repartition_by_table(topology_base& topology, 
+    repartition_by_foreign_key(topology_base& topology,
                          std::shared_ptr<partition_source<K, V>> source, 
-                         std::shared_ptr<materialized_source<K, PK>> routing_table,
-                         std::shared_ptr<topic_sink<K, V, CODEC>> topic_sink)
+                         std::shared_ptr<materialized_source<K, FOREIGN_KEY>> routing_table,
+                         std::shared_ptr<topic_sink<K, V>> topic_sink,
+                         std::shared_ptr<CODEC> repartition_codec)
       : partition_processor(source.get(), source->partition())
       , _source(source)
       , _routing_table(routing_table)
-      , _topic_sink(topic_sink) {
+      , _topic_sink(topic_sink)
+      , _repartition_codec(repartition_codec) {
       _source->add_sink([this](auto r) {
         _queue.push_back(r);
       });
       this->add_metric(&_lag);
     }
 
-    ~repartition_by_table() {
+    ~repartition_by_foreign_key() {
       close();
     }
 
     std::string name() const { 
-      return _source->name() + "-repartition_by_value(" + _routing_table->name() + ")"; 
+      return _source->name() + "-repartition_by_foreign_key(" + _routing_table->name() + ")"; 
     }
 
-    virtual std::string processor_name() const { return "repartition_by_table"; }
+    virtual std::string processor_name() const { return "repartition_by_foreign_key"; }
 
     virtual std::string key_type_name() const {
       return type_name<K>::get();
@@ -75,7 +73,7 @@ namespace kspp {
         auto routing_row = _routing_table->get(e->key);
         if (routing_row) {
           if (routing_row->value) {
-            uint32_t hash = get_partition_hash<PK, CODEC>(*routing_row->value, _topic_sink->codec());
+            uint32_t hash = kspp::get_partition_hash<FOREIGN_KEY, CODEC>(*routing_row->value, _repartition_codec);
             _topic_sink->produce(hash, e);
           }
         } else {
@@ -95,11 +93,12 @@ namespace kspp {
     }
 
   private:
-    std::deque<std::shared_ptr<krecord<K, V>>>  _queue;
-    std::shared_ptr<partition_source<K, V>>     _source;
-    std::shared_ptr<materialized_source<K, PK>> _routing_table;
-    std::shared_ptr<topic_sink<K, V, CODEC>>    _topic_sink;
-    metric_lag                                  _lag;
+    std::deque<std::shared_ptr<krecord<K, V>>>           _queue;
+    std::shared_ptr<partition_source<K, V>>              _source;
+    std::shared_ptr<materialized_source<K, FOREIGN_KEY>> _routing_table;
+    std::shared_ptr<topic_sink<K, V>>                    _topic_sink;
+    std::shared_ptr<CODEC>                               _repartition_codec;
+    metric_lag                                           _lag;
   };
 }
 

@@ -7,7 +7,6 @@
 #include <kspp/processors/flat_map.h>
 #include <kspp/processors/count.h>
 #include <kspp/processors/kafka_source.h>
-#include <kspp/algorithm.h>
 #include <kspp/sinks/kafka_sink.h>
 
 using namespace std::chrono_literals;
