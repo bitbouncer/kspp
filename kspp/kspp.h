@@ -343,7 +343,7 @@ class partition_sink<void, V> : public partition_processor
   }
 
   inline  int produce(const V& value) {
-    return _produce(std::make_shared<krecord<void, V>>(key, value));
+    return _produce(std::make_shared<krecord<void, V>>(value));
   }
 
   protected:
