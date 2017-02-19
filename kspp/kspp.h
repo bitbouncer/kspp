@@ -136,18 +136,10 @@ class partition_processor : public processor
   public:
   virtual ~partition_processor() {}
   virtual std::string name() const = 0;
-  //virtual std::string processor_name() const { return "partition_processor"; }
 
   size_t depth() const {
     return _upstream ? _upstream->depth() + 1 : 0;
   }
-
-  ///**
-  //* Process an input record
-  //*/
-  //virtual bool process_one(int64_t tick) {
-  //  return _upstream ? _upstream->process_one(tick) : false;
-  //}
 
   virtual bool eof() const {
     return _upstream ? _upstream->eof() : true;
@@ -376,7 +368,6 @@ class partition_sink<K, void> : public partition_processor
     : partition_processor(nullptr, partition) {}
 };
 
-
 inline uint32_t djb_hash(const char *str, size_t len) {
   uint32_t hash = 5381;
   for (size_t i = 0; i < len; i++)
@@ -514,17 +505,7 @@ class partition_source : public partition_processor
   virtual std::string value_type_name() const {
     return type_name<V>::get();
   }
-
-
-  /*
-  void add_sink(std::shared_ptr<partition_sink<K, V>> sink) {
-    assert(sink.get() != nullptr);
-    add_sink([sink](auto e) {
-      sink->produce(e);
-    });
-  }
-  */
-
+  
   template<class SINK>
   typename std::enable_if<std::is_base_of<kspp::partition_sink<K, V>, SINK>::value, void>::type
     add_sink(SINK* sink) {
@@ -608,20 +589,4 @@ class materialized_source : public partition_source<K, V>
     : partition_source<K, V>(upstream, partition) {
   }
 };
-
-//template<class K, class V>
-//class kstream : public partition_source<K, V>
-//{
-//  public:
-//  kstream(partition_processor* upstream)
-//    : partition_source<K, V>(upstream, upstream->partition()) {}
-//};
-//
-//template<class K, class V>
-//class ktable : public materialized_partition_source<K, V>
-//{
-//  public:
-//  ktable(partition_processor* upstream)
-//    : materialized_partition_source<K, V>(upstream, upstream->partition()) {}
-//};
 }; // namespace

@@ -16,11 +16,11 @@ int main(int argc, char **argv) {
   auto partition_list = kspp::parse_partition_list("[0,1,2,3,4,5,6,7]");
 
   {
-    auto topology = builder.create_topic_topology();
-    auto streams = topology->create_partition_processors<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_codec>>(partition_list, "kspp_test0_eventstream", codec);
-    auto table_sources = topology->create_partition_processors<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_codec>>(partition_list, "kspp_test0_table", codec);
-    auto tables = topology->create_partition_processors<kspp::ktable<boost::uuids::uuid, int64_t, kspp::rocksdb_store, kspp::binary_codec>>(table_sources, codec);
-    auto joins = topology->create_partition_processors<kspp::left_join<boost::uuids::uuid, int64_t, int64_t, int64_t>>(
+    auto topology = builder.create_topology();
+    auto streams = topology->create_processors<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_codec>>(partition_list, "kspp_test0_eventstream", codec);
+    auto table_sources = topology->create_processors<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_codec>>(partition_list, "kspp_test0_table", codec);
+    auto tables = topology->create_processors<kspp::ktable<boost::uuids::uuid, int64_t, kspp::rocksdb_store, kspp::binary_codec>>(table_sources, codec);
+    auto joins = topology->create_processors<kspp::left_join<boost::uuids::uuid, int64_t, int64_t, int64_t>>(
       streams, 
       tables, 
       [&join_count](const boost::uuids::uuid& key, const int64_t& left, const int64_t& right, int64_t& row) {

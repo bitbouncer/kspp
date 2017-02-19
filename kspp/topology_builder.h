@@ -38,7 +38,7 @@ class topic_topology : public topology_base
   // top level factory
   template<class pp, typename... Args>
   typename std::enable_if<std::is_base_of<kspp::partition_processor, pp>::value, std::vector<std::shared_ptr<pp>>>::type
-    create_partition_processors(std::vector<int> partition_list, Args... args) {
+    create_processors(std::vector<int> partition_list, Args... args) {
     std::vector<std::shared_ptr<pp>> result;
     for (auto i : partition_list) {
       auto p = std::make_shared<pp>(*this, i, args...);
@@ -60,7 +60,7 @@ class topic_topology : public topology_base
   // when you have a vector of partitions - lets create a new processor layer
   template<class pp, class ps, typename... Args>
   typename std::enable_if<std::is_base_of<kspp::partition_processor, pp>::value, std::vector<std::shared_ptr<pp>>>::type
-    create_partition_processors(std::vector<std::shared_ptr<ps>> sources, Args... args) {
+    create_processors(std::vector<std::shared_ptr<ps>> sources, Args... args) {
     std::vector<std::shared_ptr<pp>> result;
     for (auto i : sources) {
       auto p = std::make_shared<pp>(*this, i, args...);
@@ -76,7 +76,7 @@ class topic_topology : public topology_base
   */
   template<class pp, class sourceT, class leftT, typename... Args>
   typename std::enable_if<std::is_base_of<kspp::partition_processor, pp>::value, std::vector<std::shared_ptr<pp>>>::type
-    create_partition_processors(
+    create_processors(
     std::vector<std::shared_ptr<sourceT>> v1,
     std::vector<std::shared_ptr<leftT>> v2,
     Args... args) {
@@ -95,7 +95,7 @@ class topic_topology : public topology_base
   // this seems to be only sinks???
   template<class pp, typename... Args>
   typename std::enable_if<std::is_base_of<kspp::topic_processor, pp>::value, std::shared_ptr<pp>>::type
-    create_topic_sink(Args... args) {
+    create_sink(Args... args) {
     auto p = std::make_shared<pp>(*this, args...);
     _topic_processors.push_back(p);
     return p;
@@ -104,7 +104,7 @@ class topic_topology : public topology_base
   // this seems to be only sinks???
   template<class pp, class source, typename... Args>
   typename std::enable_if<std::is_base_of<kspp::topic_processor, pp>::value, std::shared_ptr<pp>>::type
-    create_topic_sink(std::vector<std::shared_ptr<source>> sources, Args... args) {
+    create_sink(std::vector<std::shared_ptr<source>> sources, Args... args) {
     auto p = std::make_shared<pp>(*this, args...);
     _topic_processors.push_back(p);
     for (auto i : sources)
@@ -139,17 +139,17 @@ class topology_builder
     BOOST_LOG_TRIVIAL(info) << "topology_builder created, " << to_string(*_app_info) << ", kafka_brokers:" << brokers << ", root_path:" << root_path;
   }
 
-  std::shared_ptr<partition_topology> create_topology(std::string id, int32_t partition) {
+  std::shared_ptr<partition_topology> create_partition_topology(std::string id, int32_t partition) {
     return std::make_shared<partition_topology>(_app_info, id, partition, _brokers, _root_path);
   }
 
-  std::shared_ptr<partition_topology> create_topology(int32_t partition) {
+  std::shared_ptr<partition_topology> create_partition_topology(int32_t partition) {
     std::string id = "topology-" + std::to_string(_next_topology_id);
     _next_topology_id++;
     return std::make_shared<partition_topology>(_app_info, id, partition, _brokers, _root_path);
   }
 
-  std::shared_ptr<topic_topology> create_topic_topology() {
+  std::shared_ptr<topic_topology> create_topology() {
     std::string id = "topology-" + std::to_string(_next_topology_id);
     _next_topology_id++;
     return std::make_shared<topic_topology>(_app_info, id, _brokers, _root_path);
