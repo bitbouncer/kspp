@@ -5,10 +5,9 @@
 #include <kspp/topology_builder.h>
 #include <kspp/processors/kafka_source.h>
 #include <kspp/processors/flat_map.h>
-#include <kspp/processors/count.h>
 #include <kspp/processors/repartition.h>
 #include <kspp/processors/ktable.h>
-#include <kspp/state_stores/rocksdb_store.h>
+#include <kspp/state_stores/mem_store.h>
 #include <kspp/sinks/kafka_sink.h>
 #include <kspp/sinks/stream_sink.h>
 #include <assert.h>
@@ -75,7 +74,7 @@ int main(int argc, char **argv) {
     auto topic_sink = topology->create_sink<kspp::kafka_topic_sink<int, std::string, kspp::text_codec>>("kspp_example5_usernames.per-channel", codec);
     auto sources = topology->create_processors<kspp::kafka_source<int, std::string, kspp::text_codec>>(partition_list, "kspp_example5_usernames", codec);
     auto routing_sources = topology->create_processors<kspp::kafka_source<int, int, kspp::text_codec>>(partition_list, "kspp_example5_user_channel", codec);
-    auto routing_tables = topology->create_processors<kspp::ktable<int, int, kspp::rocksdb_store, kspp::text_codec>>(routing_sources, codec);
+    auto routing_tables = topology->create_processors<kspp::ktable<int, int, kspp::mem_store>>(routing_sources);
     auto repartitions = topology->create_processors<kspp::repartition_by_foreign_key<int, std::string, int, kspp::text_codec>>(sources, routing_tables, topic_sink, codec);
 
     topology->init_metrics();

@@ -7,3 +7,7 @@ add_subdirectory(example5-repartition)
 add_subdirectory(example6-filter)
 add_subdirectory(example7-token-bucket)
 add_subdirectory(example8-ktable-mem)
+
+if (ENABLE_ROCKSDB)
+add_subdirectory(example8-ktable-rocksdb)
+endif()

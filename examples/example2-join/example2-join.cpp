@@ -6,7 +6,9 @@
 #include <kspp/processors/kafka_source.h>
 #include <kspp/processors/ktable.h>
 #include <kspp/processors/join.h>
-#include <kspp/state_stores/rocksdb_store.h>
+#include <kspp/state_stores/mem_store.h>
+
+using namespace std::chrono_literals;
 
 int main(int argc, char **argv) {
   size_t join_count = 0;
@@ -19,7 +21,7 @@ int main(int argc, char **argv) {
     auto topology = builder.create_topology();
     auto streams = topology->create_processors<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_codec>>(partition_list, "kspp_test0_eventstream", codec);
     auto table_sources = topology->create_processors<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_codec>>(partition_list, "kspp_test0_table", codec);
-    auto tables = topology->create_processors<kspp::ktable<boost::uuids::uuid, int64_t, kspp::rocksdb_store, kspp::binary_codec>>(table_sources, codec);
+    auto tables = topology->create_processors<kspp::ktable<boost::uuids::uuid, int64_t, kspp::mem_store>>(table_sources);
     auto joins = topology->create_processors<kspp::left_join<boost::uuids::uuid, int64_t, int64_t, int64_t>>(
       streams, 
       tables, 

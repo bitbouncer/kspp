@@ -9,6 +9,7 @@
 #include <kspp/processors/ktable.h>
 #include <kspp/processors/filter.h>
 #include <kspp/processors/flat_map.h>
+#include <kspp/processors/count.h>
 #include <kspp/processors/rate_limiter.h>
 #include <kspp/sinks/kafka_sink.h>
 #include <kspp/sinks/stream_sink.h>

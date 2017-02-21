@@ -1,5 +1,6 @@
- #include "state_store.h"
- 
+#include "state_store.h"
+#include <map> 
+
  namespace kspp {
  template<class K, class V, class CODEC=void>
   class mem_store 

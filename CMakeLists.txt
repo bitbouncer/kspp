@@ -1,22 +1,28 @@
 cmake_minimum_required(VERSION 2.8.11)
 
+option(ENABLE_ROCKSDB "enable rocksdb support" ON)
+option(BUILD_SAMPLES  "build examples" ON)
+
 if(WIN32)
 SET(CSI_INCLUDE_PATH
   ${CMAKE_SOURCE_DIR}/../include
-  ${CMAKE_SOURCE_DIR}/../rocksdb/include
   ${CMAKE_SOURCE_DIR}/../zlib
   ${CMAKE_SOURCE_DIR}/../zlib/build
   ${CMAKE_SOURCE_DIR}/../lz4/lib
   ${CMAKE_SOURCE_DIR}/../openssl/include
   ${CMAKE_SOURCE_DIR}/../boost
 )
-
 SET(CSI_LIBRARY_PATH        
 	${CMAKE_SOURCE_DIR}/../openssl
 	${CMAKE_SOURCE_DIR}/../zlib/build
-  ${CMAKE_SOURCE_DIR}/../rocksdb/build
 	${CMAKE_SOURCE_DIR}/../boost/stage/lib/$(Platform)/lib
 )
+
+if (ENABLE_ROCKSDB)
+SET(CSI_INCLUDE_PATH ${CSI_INCLUDE_PATH} ${CMAKE_SOURCE_DIR}/../rocksdb/include) 
+SET(CSI_LIBRARY_PATH ${CSI_LIBRARY_PATH} ${CMAKE_SOURCE_DIR}/../rocksdb/build) 
+endif()
+
 SET(LIBRARY_OUTPUT_PATH     ${CMAKE_SOURCE_DIR}/lib/$(Platform))
 SET(EXECUTABLE_OUTPUT_PATH  ${CMAKE_SOURCE_DIR}/bin/$(Platform))
 
@@ -39,7 +45,9 @@ add_definitions(/wd4200) #nonstandard extension used : zero-sized array in struc
 add_definitions(-DLIBRDKAFKA_STATICLIB)
 add_definitions(-DBOOST_ALL_STATIC_LINK)
 
+if (ENABLE_ROCKSDB)
 SET(CSI_ROCKSDB_LIBS rocksdb rocksdblib Rpcrt4)
+endif()
 SET(ZLIB_LIBS debug zlibstaticd optimized zlibstatic)
 SET(LIBRDKAFKA_LIBS librdkafkacpp librdkafka lz4)
 SET(CSI_LIBS kspp ${LIBRDKAFKA_LIBS} ${CSI_BOOST_LIBS} ${CSI_ROCKSDB_LIBS} libssl libcrypto ${ZLIB_LIBS} crypt32 Ws2_32 legacy_stdio_definitions)
@@ -52,13 +60,17 @@ set(LIBRARY_OUTPUT_PATH     ${CMAKE_SOURCE_DIR}/lib)
 SET(EXECUTABLE_OUTPUT_PATH  ${CMAKE_SOURCE_DIR}/bin)
 
 set(CSI_BOOST_LIBS boost_log_setup boost_log-mt boost_date_time boost_timer boost_thread-mt boost_system boost_program_options boost_filesystem boost_regex boost_chrono boost_iostreams pthread c)
+if (ENABLE_ROCKSDB)
 SET(CSI_ROCKSDB_LIBS rocksdb_lite snappy bz2 z)
+endif()
 SET(LIBRDKAFKA_LIBS rdkafka++ rdkafka)
 SET(CSI_LIBS kspp ${LIBRDKAFKA_LIBS} ${CSI_ROCKSDB_LIBS} ${CSI_BOOST_LIBS} crypto ssl)
 
 elseif(ALPINE_LINUX)
-SET(CSI_INCLUDE_PATH        ${CMAKE_SOURCE_DIR}/../rocksdb/include)
-SET(CSI_LIBRARY_PATH        ${CMAKE_SOURCE_DIR}/../rocksdb)
+if (ENABLE_ROCKSDB)
+SET(CSI_INCLUDE_PATH ${CMAKE_SOURCE_DIR}/../rocksdb/include)
+SET(CSI_LIBRARY_PATH ${CMAKE_SOURCE_DIR}/../rocksdb)
+endif()
 
 set(LIBRARY_OUTPUT_PATH     ${CMAKE_SOURCE_DIR}/lib)
 SET(EXECUTABLE_OUTPUT_PATH  ${CMAKE_SOURCE_DIR}/bin)
@@ -72,20 +84,20 @@ add_definitions(-Wno-deprecated)
 
 #boost_thread
 set(CSI_BOOST_LIBS boost_log_setup boost_log-mt boost_date_time boost_timer boost_system boost_program_options boost_filesystem boost_regex boost_chrono boost_iostreams pthread rt c)
+if (ENABLE_ROCKSDB)
 SET(CSI_ROCKSDB_LIBS rocksdb snappy bz2 z)
+endif()
 SET(LIBRDKAFKA_LIBS rdkafka++ rdkafka)
 SET(CSI_LIBS kspp ${LIBRDKAFKA_LIBS} ${CSI_ROCKSDB_LIBS} ${CSI_BOOST_LIBS} crypto ssl)
 else()
 #LINUX
-SET(CSI_INCLUDE_PATH  
-	${CMAKE_SOURCE_DIR}/../rocksdb/include
-    ${CMAKE_SOURCE_DIR}/../boost
-)
-					  
-SET(CSI_LIBRARY_PATH 
-	${CMAKE_SOURCE_DIR}/../rocksdb
-    ${CMAKE_SOURCE_DIR}/../boost/stage/lib
-)
+SET(CSI_INCLUDE_PATH ${CMAKE_SOURCE_DIR}/../boost)
+SET(CSI_LIBRARY_PATH ${CMAKE_SOURCE_DIR}/../boost/stage/lib)
+
+if (ENABLE_ROCKSDB)	
+SET(CSI_INCLUDE_PATH ${CSI_INCLUDE_PATH} ${CMAKE_SOURCE_DIR}/../rocksdb/include)
+SET(CSI_LIBRARY_PATH ${CSI_LIBRARY_PATH} ${CMAKE_SOURCE_DIR}/../rocksdb)
+endif()
 
 set(LIBRARY_OUTPUT_PATH     ${CMAKE_SOURCE_DIR}/lib)
 SET(EXECUTABLE_OUTPUT_PATH  ${CMAKE_SOURCE_DIR}/bin)
@@ -98,7 +110,9 @@ add_definitions(-Wno-deprecated)
 
 #boost_thread
 set(CSI_BOOST_LIBS boost_log_setup boost_log boost_date_time boost_timer boost_system boost_program_options boost_filesystem boost_regex boost_chrono boost_iostreams pthread rt c)
+if (ENABLE_ROCKSDB)	
 SET(CSI_ROCKSDB_LIBS rocksdb snappy bz2 z)
+endif()
 SET(LIBRDKAFKA_LIBS rdkafka++ rdkafka)
 SET(CSI_LIBS kspp ${LIBRDKAFKA_LIBS} ${CSI_ROCKSDB_LIBS} ${CSI_BOOST_LIBS} crypto ssl)
 endif() 
