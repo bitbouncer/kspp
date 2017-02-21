@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.8.11)
 
 option(ENABLE_ROCKSDB "enable rocksdb support" ON)
 option(BUILD_SAMPLES  "build examples" ON)
+option(BUILD_TESTS    "build tests" ON)
 
 if(WIN32)
 SET(CSI_INCLUDE_PATH
@@ -146,5 +147,12 @@ endif()
 
 add_subdirectory(kspp)
 add_subdirectory(examples)
+
+if (BUILD_TESTS)
+SET(EXECUTABLE_OUTPUT_PATH  bin)
+include(CTest)
+enable_testing()
 add_subdirectory(tests)
+endif()
+
 
