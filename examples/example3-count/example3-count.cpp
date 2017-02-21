@@ -7,6 +7,7 @@
 #include <kspp/processors/flat_map.h>
 #include <kspp/processors/count.h>
 #include <kspp/processors/kafka_source.h>
+#include <kspp/state_stores/mem_counter_store.h>
 #include <kspp/sinks/kafka_sink.h>
 #include <kspp/sinks/stream_sink.h>
 
@@ -36,21 +37,11 @@ int main(int argc, char **argv) {
         flat_map->push_back(std::make_shared<kspp::krecord<std::string, void>>(*iter));
     });
 
-    auto word_counts = topology->create_processors<kspp::count_by_key<std::string, int, kspp::text_codec>>(word_stream, 2s, codec);
+    auto word_counts = topology->create_processors<kspp::count_by_key<std::string, int, kspp::mem_counter_store>>(word_stream, 2s);
     auto sink = topology->create_processors<kspp::stream_sink<std::string, int>>(word_counts, &std::cerr);
 
     topology->init_metrics();
     topology->start(-2);
     topology->flush();
-
-    {
-      auto metrics = builder.create_topology();
-      auto metrics_sink = metrics->create_sink<kspp::kafka_topic_sink<std::string, std::string, kspp::text_codec>>("kspp_metrics", codec);
-
-      topology->for_each_metrics([](kspp::metric& m) {
-        //std::cerr << "metrics: " << m.name() << " : " << m.value() << std::endl;
-      });
-    }
-
   }
 }

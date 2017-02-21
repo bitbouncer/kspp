@@ -39,7 +39,8 @@ class state_store
 
   virtual size_t size() const = 0;
 
-  //virtual void erase() = 0;
+  // TBD really needed for counter store
+  virtual void clear() = 0;
 
   void set_sink(sink_function f) {
     _sink = f;

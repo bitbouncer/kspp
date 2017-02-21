@@ -1,4 +1,9 @@
 #include <kspp/kspp.h>
+#include <thread>
+#include <chrono>
+#include <iostream>
+
+using namespace std::chrono_literals;
 
 namespace kspp {
 topology_base::topology_base(std::shared_ptr<app_info> ai,
@@ -40,7 +45,8 @@ std::string topology_base::brokers() const {
 std::string topology_base::name() const {
   return "[" + _app_info->identity() + "]" + _topology_id + "[p" + std::to_string(_partition) + "]";
 }
-// the metrics should look like this...
+
+//the metrics should look like this...
 //cpu_load_short, host=server01, region=us-west value=0.64 1434055562000000000
 //metric_name,app_id={app_id}},topology={{_topology_id}},depth={{depth}},processor_type={{processor_name()}},record_type="
 //order tags descending
@@ -48,11 +54,6 @@ static std::string escape_influx(std::string s) {
   std::string s2 = boost::replace_all_copy(s, " ", "\\ ");
   std::string s3 = boost::replace_all_copy(s2, ",", "\\,");
   std::string s4 = boost::replace_all_copy(s3, "=", "\\=");
-  /*
-  static const std::string toReplace = " ,="; // character class that matches . and -
-  std::string replacement = ";";
-  std::string processedString = boost::replace_all_regex_copy(someString, boost::regex(toReplace), replacement);
-  */
   return s4;
 }
 
@@ -126,7 +127,15 @@ bool topology_base::eof() {
 }
 
 int topology_base::process_one() {
-  // maybe we should check sinks here an return 0 if we need to wait...
+  // check sinks here an return 0 if we need to wait...
+  // we should not check every loop
+  // check every 1000 run?
+  size_t sink_queue_len = 0;
+  for (auto i : _topic_processors)
+    sink_queue_len += i->queue_len();
+  if (sink_queue_len > 50000)
+    return 0;
+
   int64_t tick = milliseconds_since_epoch();
 
   int res = 0;
@@ -183,15 +192,25 @@ void topology_base::commit(bool force) {
 void topology_base::flush() {
   while (true)
   {
-    if (!process_one() && eof())
-      break;
+    auto sz = process_one();
+    if (sz)
+      continue;
+    if (sz==0 && !eof())
+      std::this_thread::sleep_for(10ms);
+    else
+      break; 
   }
 
   for (auto i : _top_partition_processors)
     i->flush();
 
   while (true) {
-    if (!process_one() && eof())
+    auto sz = process_one();
+    if (sz)
+      continue;
+    if (sz == 0 && !eof())
+      std::this_thread::sleep_for(10ms);
+    else
       break;
   }
 }

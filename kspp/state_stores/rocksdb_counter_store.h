@@ -142,35 +142,50 @@ namespace kspp {
     };
 
     rocksdb_counter_store(boost::filesystem::path storage_path, std::shared_ptr<CODEC> codec)
-      : _storage_path(storage_path)
-      , _codec(codec) {
-      auto res = _create_db();
-      assert(res);
+      : _offset_storage_path(storage_path)
+      , _codec(codec)
+      , _current_offset(-1)
+      , _last_comitted_offset(-1)
+      , _last_flushed_offset(-1) {
+      boost::filesystem::create_directories(boost::filesystem::path(storage_path));
+      _offset_storage_path /= "kspp_offset.bin";
+      rocksdb::Options options;
+      options.merge_operator.reset(new Int64AddOperator);
+      options.create_if_missing = true;
+      rocksdb::DB* tmp = nullptr;
+      auto s = rocksdb::DB::Open(options, storage_path.generic_string(), &tmp);
+      _db.reset(tmp);
+      if (!s.ok()) {
+        BOOST_LOG_TRIVIAL(error) << " rocksdb_counter_store, failed to open rocks db, path:" << storage_path.generic_string();
+      }
+
+      if (boost::filesystem::exists(_offset_storage_path)) {
+        std::ifstream is(_offset_storage_path.generic_string(), std::ios::binary);
+        int64_t tmp;
+        is.read((char*) &tmp, sizeof(int64_t));
+        if (is.good()) {
+          _current_offset = tmp;
+          _last_comitted_offset = tmp;
+          _last_flushed_offset = tmp;
+        }
+      }
     }
 
     ~rocksdb_counter_store() {
       close();
     }
 
+    void close() {
+      _db = nullptr;
+      //BOOST_LOG_TRIVIAL(info) << BOOST_CURRENT_FUNCTION << ", " << _name << " close()";
+    }
+
     virtual void garbage_collect(int64_t tick) {
       // nothing to do
     }
 
-  
-    /**
-    * commits the offset
-    */
-    virtual void commit(bool flush) {
-      // not implemented
-    }
-
     static std::string type_name() {
       return "rocksdb_counter_store";
-    }
-
-    void close() {
-      _db = nullptr;
-      //BOOST_LOG_TRIVIAL(info) << BOOST_CURRENT_FUNCTION << ", " << _name << " close()";
     }
 
     /**
@@ -190,29 +205,6 @@ namespace kspp {
         auto status = _db->Delete(rocksdb::WriteOptions(), rocksdb::Slice(key_buf, ksize));
       }
     }
-
-    /*
-    void del(const K& key) {
-      char key_buf[MAX_KEY_SIZE];
-      size_t ksize = 0;
-      {
-        std::strstream s(key_buf, MAX_KEY_SIZE);
-        ksize = _codec->encode(key, s);
-      }
-    }
-    */
-
-   /* size_t get(const K& key) {
-      char key_buf[MAX_KEY_SIZE];
-      size_t ksize = 0;
-      std::ostrstream os(key_buf, MAX_KEY_SIZE);
-      ksize = _codec->encode(key, os);
-      std::string str;
-      auto status = _db->Get(rocksdb::ReadOptions(), rocksdb::Slice(key_buf, ksize), &str);
-      uint64_t count = 0;
-      bool res = UInt64AddOperator::Deserialize(str, &count);
-      return count;
-    }*/
 
     std::shared_ptr<krecord<K, V>> get(const K& key) {
       char key_buf[MAX_KEY_SIZE];
@@ -235,11 +227,28 @@ namespace kspp {
     * returns last offset
     */
     virtual int64_t offset() const {
-      return -1;
+      return _current_offset;
     }
 
+    //should we allow writing -2 in store??
     virtual void start(int64_t offset) {
-      // noop;
+      _current_offset = offset;
+      commit(true);
+    }
+
+    /**
+    * commits the offset
+    */
+    virtual void commit(bool flush) {
+      _last_comitted_offset = _current_offset;
+      if (flush || ((_last_comitted_offset - _last_flushed_offset) > 10000)) {
+        if (_last_flushed_offset != _last_comitted_offset) {
+          std::ofstream os(_offset_storage_path.generic_string(), std::ios::binary);
+          os.write((char*) &_last_comitted_offset, sizeof(int64_t));
+          _last_flushed_offset = _last_comitted_offset;
+          os.flush();
+        }
+      }
     }
 
     virtual size_t size() const {
@@ -248,7 +257,7 @@ namespace kspp {
       return std::stoll(num);
     }
 
-    virtual void erase() {
+    virtual void clear() {
       for (auto it = iterator_impl(_db.get(), _codec, iterator_impl::BEGIN), end_ = iterator_impl(_db.get(), _codec, iterator_impl::END); it!= end_; it.next()) {
         auto s = _db->Delete(rocksdb::WriteOptions(), it._key_slice());
       }
@@ -263,25 +272,13 @@ namespace kspp {
     }
 
   private:
-  bool _create_db() {
-    boost::filesystem::create_directories(boost::filesystem::path(_storage_path));
-    rocksdb::Options options;
-    options.merge_operator.reset(new Int64AddOperator);
-    options.create_if_missing = true;
-    rocksdb::DB* tmp = nullptr;
-    auto s = rocksdb::DB::Open(options, _storage_path.generic_string(), &tmp);
-    _db.reset(tmp);
-    if (!s.ok()) {
-      BOOST_LOG_TRIVIAL(error) << " rocksdb_counter_store, failed to open rocks db, path:" << _storage_path.generic_string();
-    }
-    return s.ok();
-  }
-
-    //std::string                                   _name;     // only used for logging to make sense...
-    boost::filesystem::path                       _storage_path;
-    std::unique_ptr<rocksdb::DB>                  _db;        // maybee this should be a shared ptr since we're letting iterators out...
-    //const std::shared_ptr<rocksdb::ReadOptions>   _read_options;
-    //const std::shared_ptr<rocksdb::WriteOptions>  _write_options;
-    std::shared_ptr<CODEC>                        _codec;
+  boost::filesystem::path      _offset_storage_path;
+  std::unique_ptr<rocksdb::DB> _db;    // maybe this should be a shared ptr since we're letting iterators out...
+  std::shared_ptr<CODEC>       _codec;
+  int64_t                      _current_offset;
+  int64_t                      _last_comitted_offset;
+  int64_t                      _last_flushed_offset;
+  //const std::shared_ptr<rocksdb::ReadOptions>   _read_options;
+  //const std::shared_ptr<rocksdb::WriteOptions>  _write_options;
   };
 };

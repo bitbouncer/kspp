@@ -12,6 +12,7 @@
 #include <kspp/processors/thoughput_limiter.h>
 #include <kspp/sinks/kafka_sink.h>
 #include <kspp/sinks/stream_sink.h>
+#include <kspp/state_stores/mem_counter_store.h>
 
 #define PARTITION 0
 
@@ -50,13 +51,9 @@ int main(int argc, char **argv) {
     });
 
     auto limited_streams = topology->create_processors<kspp::rate_limiter<std::string, void>>(filtered_streams, 1s, 10);
-
-    auto word_counts = topology->create_processors<kspp::count_by_key<std::string, size_t, kspp::text_codec>>(limited_streams, 2000s, codec);
-    
+    auto word_counts = topology->create_processors<kspp::count_by_key<std::string, size_t, kspp::mem_counter_store>>(limited_streams, 2000s);
     auto thoughput_limited_streams = topology->create_processors<kspp::thoughput_limiter<std::string, size_t>>(word_counts, 10); // messages per sec
-    
     auto sinks = topology->create_processors<kspp::stream_sink<std::string, size_t>>(thoughput_limited_streams, &std::cerr);
-
     topology->start(-2);
     topology->flush();
   }

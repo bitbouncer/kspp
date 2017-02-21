@@ -45,6 +45,10 @@ namespace kspp {
     virtual void commit(bool flush) {
       // TBD!!!!
     }
+
+    virtual size_t queue_len() {
+      return 0;
+    }
      
     virtual bool process_one(int64_t tick) {
       auto p = _consumer.consume();

@@ -1,8 +1,8 @@
-project(example8-ktable-mem)
+project(example9-ktable-rocksdb)
 
 SET(SRCS
-example8-ktable-mem.cpp
+example9-ktable-rocksdb.cpp
 )
 
-add_executable(example8-ktable-mem ${SRCS})
-target_link_libraries(example8-ktable-mem ${CSI_LIBS})
+add_executable(example9-ktable-rocksdb ${SRCS})
+target_link_libraries(example9-ktable-rocksdb ${CSI_LIBS})

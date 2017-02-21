@@ -75,6 +75,10 @@ namespace kspp {
       return _state_store.offset();
     }
 
+    virtual size_t queue_len() {
+      return 0;
+    }
+
     virtual std::shared_ptr<krecord<K, V>> get(const K& key) {
       return _state_store.get(key);
     }

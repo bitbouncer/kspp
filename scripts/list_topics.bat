@@ -1,0 +1,1 @@
+kafka-topics.bat --list --zookeeper localhost

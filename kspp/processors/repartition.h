@@ -83,6 +83,10 @@ namespace kspp {
       return processed;
     }
 
+    virtual size_t queue_len() {
+      return _queue.size();
+    }
+
     virtual bool eof() const {
       return !_queue.size() && _routing_table->eof() && _source->eof();
     }

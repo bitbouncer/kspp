@@ -80,6 +80,10 @@ class rocksdb_store
       return false;
     }
 
+    inline rocksdb::Slice _key_slice() const {
+      return _it->key();
+    }
+
     private:
     std::unique_ptr<rocksdb::Iterator> _it;
     std::shared_ptr<CODEC>             _codec;
@@ -217,13 +221,13 @@ class rocksdb_store
     return std::stoll(num);
   }
 
-
- /* virtual void erase() {
+  virtual void clear() {
     for (auto it = iterator_impl(_db.get(), _codec, iterator_impl::BEGIN), end_ = iterator_impl(_db.get(), _codec, iterator_impl::END); it != end_; it.next()) {
-      auto status = _db->Delete(rocksdb::WriteOptions(), it._it.key());
+      auto s = _db->Delete(rocksdb::WriteOptions(), it._key_slice());
     }
     _current_offset = -1;
-  }*/
+  }
+
 
   typename kspp::materialized_source<K, V>::iterator begin(void) {
     return typename kspp::materialized_source<K, V>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::BEGIN));

@@ -2,19 +2,9 @@
 #include "kafka_producer.h"
 
 #define LOGPREFIX_ERROR BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", topic:" << _topic
-//#define LOGPREFIX_INFO  BOOST_LOG_TRIVIAL(info) << BOOST_CURRENT_FUNCTION << ", topic:" << _topic
 #define LOG_INFO(EVENT)  BOOST_LOG_TRIVIAL(info) << "kafka_producer: " << EVENT << ", topic:" << _topic
 
 namespace kspp {
-  /*
-  static inline unsigned int djb_hash(const char *str, size_t len) {
-    unsigned int hash = 5381;
-    for (size_t i = 0; i < len; i++)
-      hash = ((hash << 5) + hash) + str[i];
-    return hash;
-  }
-  */
-
   int32_t kafka_producer::MyHashPartitionerCb::partitioner_cb(const RdKafka::Topic *topic, const std::string *key, int32_t partition_cnt, void *msg_opaque) {
     uintptr_t partition_hash = (uintptr_t) msg_opaque;
     return partition_hash % partition_cnt;

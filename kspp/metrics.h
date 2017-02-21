@@ -5,127 +5,121 @@
 #pragma once
 
 namespace kspp {
-  struct metric
-  {
-    metric(std::string s)
-      : _simple_name(s)
-      , _logged_name(s) {
-    }
+struct metric
+{
+  metric(std::string s)
+    : _simple_name(s)
+    , _logged_name(s) {}
 
-    virtual int64_t value() const = 0;
-    
-    inline std::string name() {
-      return _logged_name;
-    }
+  virtual int64_t value() const = 0;
 
-    std::string _simple_name;
-    std::string _logged_name;
-  };
-  
-  struct metric_counter : public metric
-  {
-    metric_counter(std::string s)
-      : metric(s)
-      , _value(0) {
-    }
+  inline std::string name() {
+    return _logged_name;
+  }
 
-    virtual int64_t value() const {
-      return _value;
-    }
+  std::string _simple_name;
+  std::string _logged_name;
+};
 
-    inline metric_counter& operator=(int64_t v) {
-      _value = v;
-      return *this;
-    }
+struct metric_counter : public metric
+{
+  metric_counter(std::string s)
+    : metric(s)
+    , _value(0) {}
 
-    inline metric_counter& operator++() {
-      _value++;
-      return *this;
-    }
+  virtual int64_t value() const {
+    return _value;
+  }
 
-    inline metric_counter& operator+=(int64_t v) {
-      _value = _value + v;
-      return *this;
-    }
+  inline metric_counter& operator=(int64_t v) {
+    _value = v;
+    return *this;
+  }
 
-    inline metric_counter& operator--() {
-      _value--;
-      return *this;
-    }
+  inline metric_counter& operator++() {
+    _value++;
+    return *this;
+  }
 
-    inline metric_counter& operator-=(int64_t v) {
-      _value = _value - v;
-      return *this;
-    }
-    int64_t _value;
-  };
+  inline metric_counter& operator+=(int64_t v) {
+    _value = _value + v;
+    return *this;
+  }
 
-  struct metric_average : public metric
-  {
-    metric_average(std::string s)
-      : metric(s)
-      , _sum(0)
-      , _count(0) 
-    {}
+  inline metric_counter& operator--() {
+    _value--;
+    return *this;
+  }
 
-    void add_measurement(int64_t v) {
-      _sum += v; 
-      ++_count;
-    }
+  inline metric_counter& operator-=(int64_t v) {
+    _value = _value - v;
+    return *this;
+  }
+  int64_t _value;
+};
 
-    virtual int64_t value() const {
-      return _count ? _sum / _count : 0;
-    }
+struct metric_average : public metric
+{
+  metric_average(std::string s)
+    : metric(s)
+    , _sum(0)
+    , _count(0) {}
 
-    void clear() {
-      _sum = 0;
-      _count = 0;
-    }
+  void add_measurement(int64_t v) {
+    _sum += v;
+    ++_count;
+  }
 
-    int64_t _sum;
-    int64_t _count;
-  };
+  virtual int64_t value() const {
+    return _count ? _sum / _count : 0;
+  }
 
-  struct metric_lag : public metric
-  {
-    // TBD is this fast enough???
-    /*static inline int64_t milliseconds_since_epoch() {
-      return std::chrono::duration_cast<std::chrono::milliseconds>
-        (std::chrono::system_clock::now().time_since_epoch()).count();
-    }*/
+  void clear() {
+    _sum = 0;
+    _count = 0;
+  }
 
-    metric_lag()
-      : metric("lag")
-      , _lag(-1){
-    }
+  int64_t _sum;
+  int64_t _count;
+};
 
-    inline void add_event_time(int64_t tick, int64_t event_time) {
-      if (event_time > 0)
-        _lag = tick - event_time;
-    }
+struct metric_lag : public metric
+{
+  // TBD is this fast enough???
+  /*static inline int64_t milliseconds_since_epoch() {
+    return std::chrono::duration_cast<std::chrono::milliseconds>
+      (std::chrono::system_clock::now().time_since_epoch()).count();
+  }*/
 
-    virtual int64_t value() const {
-      return _lag;
-    }
+  metric_lag()
+    : metric("lag")
+    , _lag(-1) {}
+
+  inline void add_event_time(int64_t tick, int64_t event_time) {
+    if (event_time > 0)
+      _lag = tick - event_time;
+  }
+
+  virtual int64_t value() const {
+    return _lag;
+  }
   private:
-    int64_t _lag;
-  };
+  int64_t _lag;
+};
 
-  struct metric_evaluator : public metric
-  {
-    using evaluator = std::function<int64_t(void)>;
+struct metric_evaluator : public metric
+{
+  using evaluator = std::function<int64_t(void)>;
 
-    metric_evaluator(std::string s, evaluator f)
-      : metric(s)
-      , _f(f) {
-    }
+  metric_evaluator(std::string s, evaluator f)
+    : metric(s)
+    , _f(f) {}
 
-    virtual int64_t value() const {
-      return _f();
-    }
+  virtual int64_t value() const {
+    return _f();
+  }
 
-    private:
-    evaluator _f;
-  };
-
+  private:
+  evaluator _f;
+};
 };
