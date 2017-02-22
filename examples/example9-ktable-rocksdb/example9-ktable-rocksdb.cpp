@@ -2,8 +2,8 @@
 #include <string>
 #include <chrono>
 #include <regex>
-#include <kspp/codecs/text_codec.h>
-#include <kspp/codecs/binary_codec.h>
+#include <kspp/impl/serdes/text_codec.h>
+#include <kspp/impl/serdes/binary_codec.h>
 #include <kspp/topology_builder.h>
 #include <kspp/processors/kafka_source.h>
 #include <kspp/processors/ktable.h>

@@ -3,7 +3,7 @@
 #include <functional>
 #include <sstream>
 #include <kspp/kspp.h>
-#include <kspp/codecs/text_codec.h>
+#include <kspp/impl/serdes/text_codec.h>
 #pragma once
 
 namespace kspp {

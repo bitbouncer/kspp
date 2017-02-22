@@ -2,7 +2,7 @@
 #include <chrono>
 #include <boost/uuid/uuid.hpp>
 #include <boost/functional/hash.hpp>
-#include <kspp/codecs/binary_codec.h>
+#include <kspp/impl/serdes/binary_codec.h>
 #include <kspp/topology_builder.h>
 #include <kspp/sinks/kafka_sink.h>
 
