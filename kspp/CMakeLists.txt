@@ -11,6 +11,7 @@ file(GLOB LIB_SRCS
   impl/state_stores/*.*
   impl/sources/*.*
   impl/sinks/*.*
+  impl/serdes/*.*
   )
 	
 add_library (kspp STATIC ${LIB_SRCS})

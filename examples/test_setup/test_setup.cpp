@@ -2,7 +2,7 @@
 #include <chrono>
 #include <boost/uuid/uuid.hpp>
 #include <boost/functional/hash.hpp>
-#include <kspp/impl/serdes/binary_codec.h>
+#include <kspp/impl/serdes/binary_serdes.h>
 #include <kspp/topology_builder.h>
 #include <kspp/sinks/kafka_sink.h>
 
@@ -14,14 +14,13 @@ static boost::uuids::uuid to_uuid(int64_t x) {
 }
 
 int main(int argc, char **argv) {
-  auto codec = std::make_shared<kspp::binary_codec>();
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "test_setup");
   auto builder = kspp::topology_builder(app_info, "localhost");
   auto topology = builder.create_partition_topology(-1);
 
   auto partitioner = [](const boost::uuids::uuid& key)->uint32_t { return boost::hash<boost::uuids::uuid>()(key) % 8; };
-  auto table_stream = topology->create_topic_sink<kspp::kafka_topic_sink<boost::uuids::uuid, int64_t, kspp::binary_codec>>("kspp_test0_table", partitioner, codec);
-  auto event_stream = topology->create_topic_sink<kspp::kafka_topic_sink<boost::uuids::uuid, int64_t, kspp::binary_codec>>("kspp_test0_eventstream", partitioner, codec);
+  auto table_stream = topology->create_topic_sink<kspp::kafka_topic_sink<boost::uuids::uuid, int64_t, kspp::binary_serdes>>("kspp_test0_table", partitioner);
+  auto event_stream = topology->create_topic_sink<kspp::kafka_topic_sink<boost::uuids::uuid, int64_t, kspp::binary_serdes>>("kspp_test0_eventstream", partitioner);
 
   topology->init_metrics();
 

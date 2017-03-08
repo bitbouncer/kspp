@@ -78,10 +78,10 @@ namespace kspp {
   class kafka_source : public kafka_source_base<K, V, CODEC>
   {
   public:
-    kafka_source(topology_base& topology, std::string topic, std::shared_ptr<CODEC> codec)
+    kafka_source(topology_base& topology, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
       : kafka_source_base<K, V, CODEC>(topology.brokers(), topic, topology.partition(), codec) {}
 
-    kafka_source(topology_base& topology, size_t partition, std::string topic, std::shared_ptr<CODEC> codec)
+    kafka_source(topology_base& topology, size_t partition, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
       : kafka_source_base<K, V, CODEC>(topology.brokers(), topic, partition, codec) {}
 
   protected:
@@ -127,11 +127,11 @@ namespace kspp {
   class kafka_source<void, V, CODEC> : public kafka_source_base<void, V, CODEC>
   {
   public:
-    kafka_source(topology_base& topology, std::string topic, std::shared_ptr<CODEC> codec)
+    kafka_source(topology_base& topology, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
       : kafka_source_base<void, V, CODEC>(topology.brokers(), topic, topology.partition(), codec) {
     }
 
-    kafka_source(topology_base& topology, size_t partition, std::string topic, std::shared_ptr<CODEC> codec)
+    kafka_source(topology_base& topology, size_t partition, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
       : kafka_source_base<void, V, CODEC>(topology.brokers(), topic, partition, codec) {
     }
 
@@ -169,10 +169,10 @@ namespace kspp {
   class kafka_source<K, void, CODEC> : public kafka_source_base<K, void, CODEC>
   {
   public:
-    kafka_source(topology_base& topology, std::string topic, std::shared_ptr<CODEC> codec)
+    kafka_source(topology_base& topology, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
       : kafka_source_base<K, void, CODEC>(topology.brokers(), topic, topology.partition(), codec) {}
 
-    kafka_source(topology_base& topology, size_t partition, std::string topic, std::shared_ptr<CODEC> codec)
+    kafka_source(topology_base& topology, size_t partition, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
       : kafka_source_base<K, void, CODEC>(topology.brokers(), topic, partition, codec) {
     }
 

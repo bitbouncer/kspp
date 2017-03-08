@@ -101,11 +101,11 @@ class kafka_topic_sink : public kafka_sink_base<K, V, CODEC>
 
   using partitioner = typename kafka_partitioner_base<K>::partitioner;
 
-  kafka_topic_sink(topology_base& topology, std::string topic, partitioner p, std::shared_ptr<CODEC> codec)
+  kafka_topic_sink(topology_base& topology, std::string topic, partitioner p, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
     : kafka_sink_base<K, V, CODEC>(topology.brokers(), topic, p, codec) {
   }
 
-  kafka_topic_sink(topology_base& topology, std::string topic, std::shared_ptr<CODEC> codec)
+  kafka_topic_sink(topology_base& topology, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
     : kafka_sink_base<K, V, CODEC>(topology.brokers(), topic, codec) {
   }
    
@@ -144,7 +144,7 @@ template<class V, class CODEC>
 class kafka_topic_sink<void, V, CODEC> : public kafka_sink_base<void, V, CODEC>
 {
   public:
-  kafka_topic_sink(topology_base& topology, std::string topic, std::shared_ptr<CODEC> codec)
+  kafka_topic_sink(topology_base& topology, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
     : kafka_sink_base<void, V, CODEC>(topology.brokers(), topic, codec) {
   }
 
@@ -177,11 +177,11 @@ class kafka_topic_sink<K, void, CODEC> : public kafka_sink_base<K, void, CODEC>
   public:
   using partitioner = typename kafka_partitioner_base<K>::partitioner;
 
-  kafka_topic_sink(topology_base& topology, std::string topic, partitioner p, std::shared_ptr<CODEC> codec)
+  kafka_topic_sink(topology_base& topology, std::string topic, partitioner p, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
     : kafka_sink_base<K, void, CODEC>(topology.brokers(), topic, p, codec) {
   }
 
-  kafka_topic_sink(topology_base& topology, std::string topic, std::shared_ptr<CODEC> codec)
+  kafka_topic_sink(topology_base& topology, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
     : kafka_sink_base<K, void, CODEC>(topology.brokers(), topic, codec) {
   }
 

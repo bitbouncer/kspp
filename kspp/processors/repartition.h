@@ -11,7 +11,7 @@ namespace kspp {
                          std::shared_ptr<partition_source<K, V>> source, 
                          std::shared_ptr<materialized_source<K, FOREIGN_KEY>> routing_table,
                          std::shared_ptr<topic_sink<K, V>> topic_sink,
-                         std::shared_ptr<CODEC> repartition_codec)
+                         std::shared_ptr<CODEC> repartition_codec = std::make_shared<CODEC>())
       : partition_processor(source.get(), source->partition())
       , _source(source)
       , _routing_table(routing_table)

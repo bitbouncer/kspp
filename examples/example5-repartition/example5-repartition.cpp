@@ -1,7 +1,7 @@
 #include <iostream>
 #include <string>
 #include <chrono>
-#include <kspp/impl/serdes/text_codec.h>
+#include <kspp/impl/serdes/text_serdes.h>
 #include <kspp/topology_builder.h>
 #include <kspp/processors/kafka_source.h>
 #include <kspp/processors/flat_map.h>
@@ -17,14 +17,12 @@
 
 
 int main(int argc, char **argv) {
-  auto codec = std::make_shared<kspp::text_codec>();
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example5-repartition");
   auto builder = kspp::topology_builder(app_info, "localhost");
   auto partition_list = kspp::parse_partition_list("[0,1,2,3,4,5,6,7]"); // tmp fix waiting for partition data in topology_builder.../ topology
-
   {
     auto topology = builder.create_topology();
-    auto sink = topology->create_sink<kspp::kafka_topic_sink<int, std::string, kspp::text_codec>>("kspp_example5_usernames", codec);
+    auto sink = topology->create_sink<kspp::kafka_topic_sink<int, std::string, kspp::text_serdes>>("kspp_example5_usernames");
     sink->produce(1, "user_1");
     sink->produce(1, "user_1");
     sink->produce(2, "user_2");
@@ -40,7 +38,7 @@ int main(int argc, char **argv) {
 
   {
     auto topology = builder.create_topology();
-    auto sink = topology->create_sink<kspp::kafka_topic_sink<int, int, kspp::text_codec>>("kspp_example5_user_channel", codec); // <user_id, channel_id>
+    auto sink = topology->create_sink<kspp::kafka_topic_sink<int, int, kspp::text_serdes>>("kspp_example5_user_channel"); // <user_id, channel_id>
     sink->produce(1, 1);
     sink->produce(2, 1);
     sink->produce(3, 1);
@@ -55,14 +53,14 @@ int main(int argc, char **argv) {
 
   {
     auto topology = builder.create_topology();
-    auto sink = topology->create_sink<kspp::kafka_topic_sink<int, std::string, kspp::text_codec>>("kspp_example5_channel_names", codec);
+    auto sink = topology->create_sink<kspp::kafka_topic_sink<int, std::string, kspp::text_serdes>>("kspp_example5_channel_names");
     sink->produce(1, "channel1");
     sink->produce(2, "channel2");
   }
 
   {
     auto topology = builder.create_topology();
-    auto sources = topology->create_processors<kspp::kafka_source<int, std::string, kspp::text_codec>>(partition_list, "kspp_example5_usernames", codec);
+    auto sources = topology->create_processors<kspp::kafka_source<int, std::string, kspp::text_serdes>>(partition_list, "kspp_example5_usernames");
     topology->create_processors<kspp::stream_sink<int, std::string>>(sources, &std::cerr);
     topology->start(-2);
     topology->flush();
@@ -71,11 +69,11 @@ int main(int argc, char **argv) {
 
   {
     auto topology = builder.create_topology();
-    auto topic_sink = topology->create_sink<kspp::kafka_topic_sink<int, std::string, kspp::text_codec>>("kspp_example5_usernames.per-channel", codec);
-    auto sources = topology->create_processors<kspp::kafka_source<int, std::string, kspp::text_codec>>(partition_list, "kspp_example5_usernames", codec);
-    auto routing_sources = topology->create_processors<kspp::kafka_source<int, int, kspp::text_codec>>(partition_list, "kspp_example5_user_channel", codec);
+    auto topic_sink = topology->create_sink<kspp::kafka_topic_sink<int, std::string, kspp::text_serdes>>("kspp_example5_usernames.per-channel");
+    auto sources = topology->create_processors<kspp::kafka_source<int, std::string, kspp::text_serdes>>(partition_list, "kspp_example5_usernames");
+    auto routing_sources = topology->create_processors<kspp::kafka_source<int, int, kspp::text_serdes>>(partition_list, "kspp_example5_user_channel");
     auto routing_tables = topology->create_processors<kspp::ktable<int, int, kspp::mem_store>>(routing_sources);
-    auto repartitions = topology->create_processors<kspp::repartition_by_foreign_key<int, std::string, int, kspp::text_codec>>(sources, routing_tables, topic_sink, codec);
+    auto repartitions = topology->create_processors<kspp::repartition_by_foreign_key<int, std::string, int, kspp::text_serdes>>(sources, routing_tables, topic_sink);
 
     topology->init_metrics();
     topology->start(-2);
@@ -88,7 +86,7 @@ int main(int argc, char **argv) {
 
   {
     auto topology = builder.create_topology();
-    auto sources = topology->create_processors<kspp::kafka_source<int, std::string, kspp::text_codec>>(partition_list, "kspp_example5_usernames.per-channel", codec);
+    auto sources = topology->create_processors<kspp::kafka_source<int, std::string, kspp::text_serdes>>(partition_list, "kspp_example5_usernames.per-channel");
     topology->create_processors<kspp::stream_sink<int, std::string>>(sources, &std::cerr);
     topology->start(-2);
     topology->flush();

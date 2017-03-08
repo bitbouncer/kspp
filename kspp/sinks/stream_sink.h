@@ -3,7 +3,7 @@
 #include <functional>
 #include <sstream>
 #include <kspp/kspp.h>
-#include <kspp/impl/serdes/text_codec.h>
+#include <kspp/impl/serdes/text_serdes.h>
 #pragma once
 
 namespace kspp {
@@ -17,7 +17,7 @@ namespace kspp {
     stream_sink(topology_base& topology, std::shared_ptr<partition_source<K, V>> source, std::ostream* os)
       : partition_sink<K, V>(source->partition())
       , _os(*os)
-      , _codec(std::make_shared<kspp::text_codec>()) {
+      , _codec(std::make_shared<kspp::text_serdes>()) {
       source->add_sink(this);
     }
 
@@ -60,8 +60,8 @@ namespace kspp {
     }
 
   private:
-    std::ostream&                     _os;
-    std::shared_ptr<kspp::text_codec> _codec;
+    std::ostream&                      _os;
+    std::shared_ptr<kspp::text_serdes> _codec;
   };
 
   //<null, VALUE>
@@ -72,7 +72,7 @@ namespace kspp {
     stream_sink(topology_base& topology, std::shared_ptr<partition_source<void, V>> source, std::ostream* os)
       : partition_sink<void, V>(source.partition())
       , _os(*os)
-      , _codec(std::make_shared<kspp::text_codec>()) {
+      , _codec(std::make_shared<kspp::text_serdes>()) {
       source->add_sink(this);
     }
 
@@ -112,7 +112,7 @@ namespace kspp {
 
   private:
     std::ostream&                     _os;
-    std::shared_ptr<kspp::text_codec> _codec;
+    std::shared_ptr<kspp::text_serdes> _codec;
   };
 
   // <key, nullptr>
@@ -123,7 +123,7 @@ namespace kspp {
     stream_sink(topology_base& topology, std::shared_ptr<partition_source<K, void>> source, std::ostream* os)
       : partition_sink<K, void>(source->partition())
       , _os(*os)
-      , _codec(std::make_shared<kspp::text_codec>()) {
+      , _codec(std::make_shared<kspp::text_serdes>()) {
       source->add_sink(this);
     }
 
@@ -162,7 +162,7 @@ namespace kspp {
 
   private:
     std::ostream&                     _os;
-    std::shared_ptr<kspp::text_codec> _codec;
+    std::shared_ptr<kspp::text_serdes> _codec;
   };
 
 };

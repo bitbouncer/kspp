@@ -1,7 +1,7 @@
 #include <iostream>
 #include <string>
 #include <chrono>
-#include <kspp/impl/serdes/binary_codec.h>
+#include <kspp/impl/serdes/binary_serdes.h>
 #include <kspp/topology_builder.h>
 #include <kspp/processors/kafka_source.h>
 #include <kspp/processors/ktable.h>
@@ -12,15 +12,13 @@ using namespace std::chrono_literals;
 
 int main(int argc, char **argv) {
   size_t join_count = 0;
-  auto codec = std::make_shared<kspp::binary_codec>();
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example2-join");
   auto builder = kspp::topology_builder(app_info, "localhost");
   auto partition_list = kspp::parse_partition_list("[0,1,2,3,4,5,6,7]");
-
   {
     auto topology = builder.create_topology();
-    auto streams = topology->create_processors<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_codec>>(partition_list, "kspp_test0_eventstream", codec);
-    auto table_sources = topology->create_processors<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_codec>>(partition_list, "kspp_test0_table", codec);
+    auto streams = topology->create_processors<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_serdes>>(partition_list, "kspp_test0_eventstream");
+    auto table_sources = topology->create_processors<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_serdes>>(partition_list, "kspp_test0_table");
     auto tables = topology->create_processors<kspp::ktable<boost::uuids::uuid, int64_t, kspp::mem_store>>(table_sources);
     auto joins = topology->create_processors<kspp::left_join<boost::uuids::uuid, int64_t, int64_t, int64_t>>(
       streams, 

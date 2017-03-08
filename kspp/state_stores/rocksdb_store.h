@@ -90,7 +90,7 @@ class rocksdb_store
 
   };
 
-  rocksdb_store(boost::filesystem::path storage_path, std::shared_ptr<CODEC> codec)
+  rocksdb_store(boost::filesystem::path storage_path, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
     : _offset_storage_path(storage_path)
     , _codec(codec)
     , _current_offset(-1)

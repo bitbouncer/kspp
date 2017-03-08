@@ -68,7 +68,7 @@ namespace kspp {
   class kafka_partition_sink : public kafka_partition_sink_base<K, V, CODEC>
   {
   public:
-    kafka_partition_sink(topology_base& topology, std::string topic, std::shared_ptr<CODEC> codec)
+    kafka_partition_sink(topology_base& topology, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
       : kafka_partition_sink_base<K, V, CODEC>(topology.brokers(), topic, topology.partition(), codec) {}
 
   protected:
@@ -99,7 +99,7 @@ namespace kspp {
   class kafka_partition_sink<void, V, CODEC> : public kafka_partition_sink_base<void, V, CODEC>
   {
   public:
-    kafka_partition_sink(topology_base& topology, std::string topic, std::shared_ptr<CODEC> codec)
+    kafka_partition_sink(topology_base& topology, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
       : kafka_partition_sink_base<void, V, CODEC>(topology.brokers(), topic, topology.partition(), codec) {}
 
   protected:
@@ -123,7 +123,7 @@ namespace kspp {
   class kafka_partition_sink<K, void, CODEC> : public kafka_partition_sink_base<K, void, CODEC>
   {
   public:
-    kafka_partition_sink(topology_base& topology, std::string topic, std::shared_ptr<CODEC> codec)
+    kafka_partition_sink(topology_base& topology, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
       : kafka_partition_sink_base<K, void, CODEC>(topology.brokers(), topic, topology.partition(), codec) {}
 
   protected:

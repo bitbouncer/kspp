@@ -1,8 +1,8 @@
 #include <iostream>
 #include <string>
 #include <chrono>
-#include <kspp/impl/serdes/binary_codec.h>
-#include <kspp/impl/serdes/text_codec.h>
+#include <kspp/impl/serdes/binary_serdes.h>
+#include <kspp/impl/serdes/text_serdes.h>
 #include <kspp/topology_builder.h>
 #include <kspp/processors/ktable.h>
 #include <kspp/processors/kafka_source.h>
@@ -67,83 +67,83 @@ std::string to_string(const page_view_decorated& pd) {
 }
 
 namespace kspp {
-template<> size_t binary_codec::encode(const page_view_data& src, std::ostream& dst) {
+template<> size_t binary_serdes::encode(const page_view_data& src, std::ostream& dst) {
   size_t sz = 0;
-  sz += kspp::binary_encode(src.time, dst);
-  sz += kspp::binary_encode(src.user_id, dst);
-  sz += kspp::binary_encode(src.url, dst);
+  sz += binary_serdes::encode(src.time, dst);
+  sz += binary_serdes::encode(src.user_id, dst);
+  sz += binary_serdes::encode(src.url, dst);
   return dst.good() ? sz : 0;
 }
 
-template<> size_t binary_codec::decode(std::istream& src, page_view_data& dst) {
+template<> size_t binary_serdes::decode(std::istream& src, page_view_data& dst) {
   size_t sz = 0;
-  sz += kspp::binary_decode(src, dst.time);
-  sz += kspp::binary_decode(src, dst.user_id);
-  sz += kspp::binary_decode(src, dst.url);
+  sz += binary_serdes::decode(src, dst.time);
+  sz += binary_serdes::decode(src, dst.user_id);
+  sz += binary_serdes::decode(src, dst.url);
   return src.good() ? sz : 0;
 }
 
-template<> size_t binary_codec::encode(const user_profile_data& src, std::ostream& dst) {
+template<> size_t binary_serdes::encode(const user_profile_data& src, std::ostream& dst) {
   size_t sz = 0;
-  sz += kspp::binary_encode(src.last_modified_time, dst);
-  sz += kspp::binary_encode(src.user_id, dst);
-  sz += kspp::binary_encode(src.email, dst);
+  sz += binary_serdes::encode(src.last_modified_time, dst);
+  sz += binary_serdes::encode(src.user_id, dst);
+  sz += binary_serdes::encode(src.email, dst);
   return dst.good() ? sz : 0;
 }
 
-template<> size_t binary_codec::decode(std::istream& src, user_profile_data& dst) {
+template<> size_t binary_serdes::decode(std::istream& src, user_profile_data& dst) {
   size_t sz = 0;
-  sz += kspp::binary_decode(src, dst.last_modified_time);
-  sz += kspp::binary_decode(src, dst.user_id);
-  sz += kspp::binary_decode(src, dst.email);
+  sz += binary_serdes::decode(src, dst.last_modified_time);
+  sz += binary_serdes::decode(src, dst.user_id);
+  sz += binary_serdes::decode(src, dst.email);
   return src.good() ? sz : 0;
 }
 
-template<> size_t binary_codec::encode(const std::pair<int64_t, int64_t>& src, std::ostream& dst) {
+template<> size_t binary_serdes::encode(const std::pair<int64_t, int64_t>& src, std::ostream& dst) {
   size_t sz = 0;
-  sz += kspp::binary_encode(src.first, dst);
-  sz += kspp::binary_encode(src.second, dst);
+  sz += binary_serdes::encode(src.first, dst);
+  sz += binary_serdes::encode(src.second, dst);
   return dst.good() ? sz : 0;
 }
 
-template<> size_t binary_codec::decode(std::istream& src, std::pair<int64_t, int64_t>& dst) {
+template<> size_t binary_serdes::decode(std::istream& src, std::pair<int64_t, int64_t>& dst) {
   size_t sz = 0;
-  sz += kspp::binary_decode(src, dst.first);
-  sz += kspp::binary_decode(src, dst.second);
+  sz += binary_serdes::decode(src, dst.first);
+  sz += binary_serdes::decode(src, dst.second);
   return src.good() ? sz : 0;
 }
 
-template<> size_t binary_codec::encode(const page_view_decorated& src, std::ostream& dst) {
+template<> size_t binary_serdes::encode(const page_view_decorated& src, std::ostream& dst) {
   size_t sz = 0;
-  sz += kspp::binary_encode(src.time, dst);
-  sz += kspp::binary_encode(src.user_id, dst);
-  sz += kspp::binary_encode(src.url, dst);
-  sz += kspp::binary_encode(src.email, dst);
+  sz += binary_serdes::encode(src.time, dst);
+  sz += binary_serdes::encode(src.user_id, dst);
+  sz += binary_serdes::encode(src.url, dst);
+  sz += binary_serdes::encode(src.email, dst);
   return dst.good() ? sz : 0;
 }
 
-template<> size_t binary_codec::decode(std::istream& src, page_view_decorated& dst) {
+template<> size_t binary_serdes::decode(std::istream& src, page_view_decorated& dst) {
   size_t sz = 0;
-  sz += kspp::binary_decode(src, dst.time);
-  sz += kspp::binary_decode(src, dst.user_id);
-  sz += kspp::binary_decode(src, dst.url);
-  sz += kspp::binary_decode(src, dst.email);
+  sz += binary_serdes::decode(src, dst.time);
+  sz += binary_serdes::decode(src, dst.user_id);
+  sz += binary_serdes::decode(src, dst.url);
+  sz += binary_serdes::decode(src, dst.email);
   return src.good() ? sz : 0;
 }
 
-template<> size_t text_codec::encode(const page_view_data& src, std::ostream& dst) {
+template<> size_t text_serdes::encode(const page_view_data& src, std::ostream& dst) {
   auto s = to_string(src);
   dst << s;
   return s.size();
 }
 
-template<> size_t text_codec::encode(const user_profile_data& src, std::ostream& dst) {
+template<> size_t text_serdes::encode(const user_profile_data& src, std::ostream& dst) {
   auto s = to_string(src);
   dst << s;
   return s.size();
 }
 
-template<> size_t text_codec::encode(const page_view_decorated& src, std::ostream& dst) {
+template<> size_t text_serdes::encode(const page_view_decorated& src, std::ostream& dst) {
   auto s = to_string(src);
   dst << s;
   return s.size();
@@ -163,14 +163,12 @@ std::string ksource_to_string(const T&  ksource) {
 int main(int argc, char **argv) {
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example1-basic");
   auto builder = kspp::topology_builder(app_info, "localhost");
-  auto codec = std::make_shared<kspp::binary_codec>();
   auto partition_list = kspp::parse_partition_list("[0,1,2,3,4,5,6,7]");
-
   {
     auto topology = builder.create_partition_topology(PARTITION);
-    auto sink = topology->create_processor<kspp::kafka_partition_sink<int64_t, page_view_data, kspp::binary_codec>>("kspp_PageViews", codec);
-    sink->produce(1, { 1440557383335, 1, "/home?user=1" });
-    sink->produce(1, { 1440557383335, 1, "/home?user=1" });
+    auto sink = topology->create_processor<kspp::kafka_partition_sink<int64_t, page_view_data, kspp::binary_serdes>>("kspp_PageViews");
+    sink->produce(1, {1440557383335, 1, "/home?user=1" });
+    sink->produce(1, {1440557383335, 1, "/home?user=1" });
     sink->produce(5, {1440557383345, 5, "/home?user=5"});
     sink->produce(2, {1440557383456, 2, "/profile?user=2"});
     sink->produce(1, {1440557385365, 1, "/profile?user=1"});
@@ -179,7 +177,7 @@ int main(int argc, char **argv) {
 
   {
     auto topology = builder.create_partition_topology(PARTITION);
-    auto sink = topology->create_processor<kspp::kafka_partition_sink<int64_t, user_profile_data, kspp::binary_codec>>("kspp_UserProfile", codec);
+    auto sink = topology->create_processor<kspp::kafka_partition_sink<int64_t, user_profile_data, kspp::binary_serdes>>("kspp_UserProfile");
     sink->produce(1, {1440557383335, 1, "user1@aol.com"});
     sink->produce(5, {1440557383345, 5, "user5@gmail.com"});
     sink->produce(2, {1440557383456, 2, "user2@yahoo.com"});
@@ -188,8 +186,8 @@ int main(int argc, char **argv) {
 
   {
     auto topology = builder.create_partition_topology(PARTITION);
-    auto pageviews = topology->create_processor<kspp::kafka_source<int64_t, page_view_data, kspp::binary_codec>>("kspp_PageViews", codec);
-    auto userprofiles = topology->create_processor<kspp::kafka_source<int64_t, user_profile_data, kspp::binary_codec>>("kspp_UserProfile", codec);
+    auto pageviews = topology->create_processor<kspp::kafka_source<int64_t, page_view_data, kspp::binary_serdes>>("kspp_PageViews");
+    auto userprofiles = topology->create_processor<kspp::kafka_source<int64_t, user_profile_data, kspp::binary_serdes>>("kspp_UserProfile");
     auto pw_sink = topology->create_processor<kspp::stream_sink<int64_t, page_view_data>>(pageviews, &std::cerr);
     auto up_sink = topology->create_processor<kspp::stream_sink<int64_t, user_profile_data>>(userprofiles, &std::cerr);
     topology->start(-2);
@@ -198,8 +196,8 @@ int main(int argc, char **argv) {
 
   {
     auto topology = builder.create_partition_topology(PARTITION);
-    auto stream = topology->create_processor<kspp::kafka_source<int64_t, page_view_data, kspp::binary_codec>>("kspp_PageViews", codec);
-    auto table_source = topology->create_processor<kspp::kafka_source<int64_t, user_profile_data, kspp::binary_codec>>("kspp_UserProfile", codec);
+    auto stream = topology->create_processor<kspp::kafka_source<int64_t, page_view_data, kspp::binary_serdes>>("kspp_PageViews");
+    auto table_source = topology->create_processor<kspp::kafka_source<int64_t, user_profile_data, kspp::binary_serdes>>("kspp_UserProfile");
     auto table = topology->create_processor<kspp::ktable<int64_t, user_profile_data, kspp::mem_store>>(table_source);
     auto join = topology->create_processor<kspp::left_join<int64_t, page_view_data, user_profile_data, page_view_decorated>>(
       stream, 
@@ -210,7 +208,7 @@ int main(int argc, char **argv) {
       row.time = left.time;
       row.url = left.url;
     });
-    auto sink = topology->create_processor<kspp::kafka_partition_sink<int64_t, page_view_decorated, kspp::binary_codec>>("kspp_PageViewsDecorated", codec);
+    auto sink = topology->create_processor<kspp::kafka_partition_sink<int64_t, page_view_decorated, kspp::binary_serdes>>("kspp_PageViewsDecorated");
     topology->init_metrics();
     join->add_sink(sink);
     
@@ -224,7 +222,7 @@ int main(int argc, char **argv) {
   
   {
     auto topology = builder.create_partition_topology(PARTITION);
-    auto table_source = topology->create_processor<kspp::kafka_source<int64_t, user_profile_data, kspp::binary_codec>>("kspp_UserProfile", codec);
+    auto table_source = topology->create_processor<kspp::kafka_source<int64_t, user_profile_data, kspp::binary_serdes>>("kspp_UserProfile");
     auto table1 = topology->create_processor<kspp::ktable<int64_t, user_profile_data, kspp::mem_store>>(table_source); 
     auto table2 = topology->create_processor<kspp::ktable<int64_t, user_profile_data, kspp::mem_windowed_store>>(table_source, 500ms, 10); // 500ms slots and 10 of them...
     topology->start();

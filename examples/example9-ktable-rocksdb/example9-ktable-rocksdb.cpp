@@ -2,8 +2,8 @@
 #include <string>
 #include <chrono>
 #include <regex>
-#include <kspp/impl/serdes/text_codec.h>
-#include <kspp/impl/serdes/binary_codec.h>
+#include <kspp/impl/serdes/text_serdes.h>
+#include <kspp/impl/serdes/binary_serdes.h>
 #include <kspp/topology_builder.h>
 #include <kspp/processors/kafka_source.h>
 #include <kspp/processors/ktable.h>
@@ -22,13 +22,12 @@
 using namespace std::chrono_literals;
 
 int main(int argc, char **argv) {
-  auto codec = std::make_shared<kspp::text_codec>();
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example8-ktable-mem");
   auto builder = kspp::topology_builder(app_info, "localhost");
   auto partition_list = kspp::parse_partition_list("[0,1,2,3,4,5,6,7]");
   {
     auto topology = builder.create_topology();
-    auto sink = topology->create_sink<kspp::kafka_topic_sink<void, std::string, kspp::text_codec>>("kspp_TextInput", codec);
+    auto sink = topology->create_sink<kspp::kafka_topic_sink<void, std::string, kspp::text_serdes>>("kspp_TextInput");
     for (int i = 0; i != 100; ++i) {
       sink->produce("hello kafka streams");
       sink->produce("more text to parse");
@@ -38,7 +37,7 @@ int main(int argc, char **argv) {
 
   {
     auto topology = builder.create_topology();
-    auto sources = topology->create_processors<kspp::kafka_source<void, std::string, kspp::text_codec>>(partition_list, "kspp_TextInput", codec);
+    auto sources = topology->create_processors<kspp::kafka_source<void, std::string, kspp::text_serdes>>(partition_list, "kspp_TextInput");
 
     std::regex rgx("\\s+");
     auto word_streams = topology->create_processors<kspp::flat_map<void, std::string, std::string, void>>(sources, [&rgx](const auto e, auto flat_map) {
@@ -52,12 +51,12 @@ int main(int argc, char **argv) {
       return (e->key != "hello");
     });
     
-    auto binary_codec = std::make_shared<kspp::binary_codec>();
+    auto binary_serdes = std::make_shared<kspp::binary_serdes>();
 
     // this should be possible to do in memory
-    auto word_counts = topology->create_processors<kspp::count_by_key<std::string, int64_t, kspp::rocksdb_counter_store, kspp::binary_codec>>(filtered_streams, 100ms, binary_codec);
+    auto word_counts = topology->create_processors<kspp::count_by_key<std::string, int64_t, kspp::rocksdb_counter_store, kspp::binary_serdes>>(filtered_streams, 100ms, binary_serdes);
    
-    auto ex1 = topology->create_processors<kspp::ktable<std::string, int64_t, kspp::rocksdb_store, kspp::binary_codec>>(word_counts, binary_codec);
+    auto ex1 = topology->create_processors<kspp::ktable<std::string, int64_t, kspp::rocksdb_store, kspp::binary_serdes>>(word_counts, binary_serdes);
     auto ex2 = topology->create_processors<kspp::ktable<std::string, int64_t, kspp::mem_store>>(word_counts);
     auto ex3 = topology->create_processors<kspp::ktable<std::string, int64_t, kspp::mem_windowed_store>>(word_counts, 500ms, 10);
 
