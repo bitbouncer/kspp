@@ -1,6 +1,7 @@
 #include <memory>
 #include <string>
 #include <cstdint>
+#include <map>
 #include <librdkafka/rdkafkacpp.h>
 #pragma once
 
@@ -11,13 +12,15 @@ namespace kspp {
     enum rdkafka_memory_management_mode { NO_COPY = 0, FREE = 1, COPY = 2 };
 
     kafka_producer(std::string brokers, std::string topic);
+    
     ~kafka_producer();
+    
+    void close();
 
     /**
     produce a message to partition -> (partition_hash % partition_cnt)
     */
     int produce(uint32_t partition_hash, rdkafka_memory_management_mode mode, void* key, size_t keysz, void* value, size_t valuesz);
-    void close();
 
     inline std::string topic() const {
       return _topic;
@@ -31,10 +34,28 @@ namespace kspp {
       _producer->poll(timeout);
     }
 
+    inline bool good() const {
+      return (_delivery_report_cb.status() == RdKafka::ErrorCode::ERR_NO_ERROR);
+    }
+
   private:
     class MyHashPartitionerCb : public RdKafka::PartitionerCb {
     public:
       int32_t partitioner_cb(const RdKafka::Topic *topic, const std::string *key, int32_t partition_cnt, void *msg_opaque);
+    };
+
+    // better to have a static config of nr of parititions
+    class MyDeliveryReportCb : public RdKafka::DeliveryReportCb {
+      public:
+      MyDeliveryReportCb();
+      virtual void dr_cb(RdKafka::Message &message);
+      inline RdKafka::ErrorCode status() const { 
+        return _status; 
+      }
+      int64_t cursor() const;
+      private:
+      std::map<int32_t, int64_t> _cursor;
+      RdKafka::ErrorCode         _status;
     };
 
     const std::string                  _topic;
@@ -44,6 +65,7 @@ namespace kspp {
     uint64_t                           _msg_cnt;
     uint64_t                           _msg_bytes;
     MyHashPartitionerCb                _default_partitioner;
+    MyDeliveryReportCb                 _delivery_report_cb;
   };
 }; // namespace
 
