@@ -31,6 +31,8 @@ struct krecord
   krecord() : event_time(-1), offset(-1) {}
   krecord(const K& k) : event_time(milliseconds_since_epoch()), offset(-1), key(k) {}
   krecord(const K& k, const V& v) : event_time(milliseconds_since_epoch()), offset(-1), key(k), value(std::make_shared<V>(v)) {}
+  krecord(const K& k, const V& v, int64_t ts) : event_time(ts), offset(-1), key(k), value(std::make_shared<V>(v)) {}
+  krecord(const K& k, std::nullptr_t nullp, int64_t ts) : event_time(ts), offset(-1), key(k), value(nullptr) {}
   krecord(const K& k, std::shared_ptr<V> v) : event_time(milliseconds_since_epoch()), offset(-1), key(k), value(v) {}
   krecord(const K& k, std::shared_ptr<V> v, int64_t ts) : event_time(ts), offset(-1), key(k), value(v) {}
 

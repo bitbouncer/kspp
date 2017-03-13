@@ -88,7 +88,7 @@ namespace kspp {
 
     virtual void garbage_collect(int64_t tick) {
       int64_t oldest_kept_slot = get_slot_index(tick) - _nr_of_slots;
-      auto upper_bound = _buckets.upper_bound(oldest_kept_slot);
+      auto upper_bound = _buckets.lower_bound(oldest_kept_slot);
 
       if (this->_sink) {
         std::vector<std::shared_ptr<krecord<K, V>>> tombstones;
@@ -103,36 +103,61 @@ namespace kspp {
     /**
     * Put a key-value pair
     */
+
     virtual void insert(std::shared_ptr<krecord<K, V>> record) {
       _current_offset = std::max<int64_t>(_current_offset, record->offset);
-      int64_t slot = get_slot_index(record->event_time);
-
-      if (record->value) {
-        auto bucket_it = _buckets.find(slot);
-        if (bucket_it == _buckets.end()) {
-          auto it = _buckets.insert(std::pair<int64_t, std::shared_ptr<bucket_type>>(slot, std::make_shared<bucket_type>()));
-          std::shared_ptr<bucket_type> bucket = it.first->second;
-          (*bucket)[record->key] = record;
-        } else {
-          (*bucket_it->second)[record->key] = record;
+      auto old_record = get(record->key);
+      int64_t new_slot = get_slot_index(record->event_time);
+      
+      if (old_record == nullptr) {
+        if (record->value) {
+          auto bucket_it = _buckets.find(new_slot);
+          if (bucket_it == _buckets.end()) {
+            auto it = _buckets.insert(std::pair<int64_t, std::shared_ptr<bucket_type>>(new_slot, std::make_shared<bucket_type>()));
+            std::shared_ptr<bucket_type> bucket = it.first->second;
+            (*bucket)[record->key] = record;
+          }
+        
         }
-      } else {
-        auto bucket_it = _buckets.find(slot);
-        if (bucket_it != _buckets.end())
-          bucket_it->second->erase(record->key);
+        return;
       }
 
-      // now we have to erase the value from all buckets with less slot than the found one
-      // it this better than garbage collection when we close a bucket?
-      // - insert is more costly
-      // + less memory
-      // + simple garbage - just send tombstones on all in the expired bucket
+      // skip if we have a newer value
+      if (old_record->event_time > record->event_time)
+        return;
 
-      for (auto&& i : _buckets)
-        if (i.first < slot)
-          i.second->erase(record->key);
+      int64_t old_slot = get_slot_index(old_record->event_time);
+
+      if (record->value==nullptr) {
+        auto bucket_it = _buckets.find(old_slot);
+        assert(bucket_it != _buckets.end()); // should never fail - we know we have an old value
+        if (bucket_it != _buckets.end()) 
+          bucket_it->second->erase(record->key);
+        return;
+      }
+
+      if (new_slot == old_slot) { // same slot
+        auto bucket_it = _buckets.find(old_slot);
+        assert(bucket_it != _buckets.end()); // should never fail - we know we have an old value
+        if (bucket_it != _buckets.end())
+          (*bucket_it->second)[record->key] = record;
+      } else { // not same slot 
+        // kill old value
+        auto bucket_it = _buckets.find(old_slot);
+        assert(bucket_it != _buckets.end()); // should never fail - we know we have an old value
+        if (bucket_it != _buckets.end())
+          (*bucket_it->second).erase(record->key);
+        // insert new value
+        bucket_it = _buckets.find(new_slot);
+        if (bucket_it == _buckets.end()) {  // new slot  
+          auto it = _buckets.insert(std::pair<int64_t, std::shared_ptr<bucket_type>>(new_slot, std::make_shared<bucket_type>()));
+          std::shared_ptr<bucket_type> bucket = it.first->second;
+          (*bucket)[record->key] = record;
+        } else { // existing slot 
+          (*bucket_it->second)[record->key] = record;
+        }
+      }
     }
-  
 
     /**
     * commits the offset
@@ -190,9 +215,23 @@ namespace kspp {
     inline int64_t get_slot_index(int64_t timestamp) {
       return timestamp / _slot_width;
     }
+
+    //virtual std::shared_ptr<krecord<K, V>> get_from_slot(const K& key, int64_t slot_begin, int64_t slot_end) {
+    //  for (auto&& i : _buckets) {
+    //    if (i.first >= slot_begin && i.first < slot_end) {
+    //      auto item = i.second->find(key);
+    //      if (item != i.second->end())
+    //        return item->second;
+    //    }
+    //  }
+    //  return nullptr; // tbd
+    //                  //auto it = _store.find(key);
+    //                  //return (it == _store.end()) ? nullptr : it->second;
+    //}
+
+
     std::shared_ptr<kspp::partition_source<K, V>>   _source;
     std::map<int64_t, std::shared_ptr<bucket_type>> _buckets;
-    //int64_t                                         _epoch_slot_index;
     int64_t                                         _slot_width;
     size_t                                          _nr_of_slots;
     int64_t                                         _current_offset;

@@ -61,15 +61,28 @@
     */
     virtual void insert(std::shared_ptr<krecord<K, V>> record) {
       _current_offset = std::max<int64_t>(_current_offset, record->offset);
-      if (record->value) {
-        std::shared_ptr<krecord<K, V>>& ref = _store[record->key];
-        if (ref == nullptr) 
-          ref = record; // not exising -> initialize
-        else 
-          *(ref->value) += *(record->value); // if existing add
-      } else {
-        _store.erase(record->key);
+      
+      auto item = _store.find(record->key);
+
+      // non existing - create - TBD should we keep a tombstone???
+      if (item == _store.end()) {
+        if (record->value)
+          _store[record->key] = record;
+        return;
       }
+
+      // we accept aggregation on old timestamps
+      if (record->value) {
+        *(item->second->value) += *(record->value); // if existing aggregate
+        item->second->event_time = std::max<int64_t>(item->second->event_time, record->event_time);
+        return;
+      } 
+
+      // do not delete if we have a newer value
+      if (item->second->event_time > record->event_time)
+        return;
+      
+      _store.erase(record->key);
     }
           
     /**

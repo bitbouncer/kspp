@@ -57,12 +57,25 @@
     virtual void close() {}
     
     /**
-    * Put a key-value pair
+    * Put a key-value pair if timestamp is greater or equal to existing record
     */
     virtual void insert(std::shared_ptr<krecord<K, V>> record) {
       _current_offset = std::max<int64_t>(_current_offset, record->offset);
+      auto item = _store.find(record->key);
+
+      // non existing - TBD should we keep a tombstone???
+      if (item == _store.end()) {
+        if (record->value)
+          _store[record->key] = record;
+        return;
+      }
+
+      // skip if we have a newer value
+      if (item->second->event_time > record->event_time)
+        return;
+
       if (record->value)
-        _store[record->key] = record;
+        item->second = record;
       else
         _store.erase(record->key);
     }

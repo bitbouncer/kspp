@@ -56,16 +56,24 @@ class rocksdb_store
 
       std::shared_ptr<krecord<K, V>> res(std::make_shared<krecord<K, V>>());
       res->offset = -1;
-      res->event_time = -1; // ????
       res->value = std::make_shared<V>();
 
       std::istrstream isk(key.data(), key.size());
       if (_codec->decode(isk, res->key) == 0)
         return nullptr;
 
-      std::istrstream isv(value.data(), value.size());
-      if (_codec->decode(isv, *res->value) == 0)
+      // timestamp
+      if (value.size()<sizeof(int64_t))
         return nullptr;
+      memcpy(&res->event_time, value.data(), sizeof(int64_t));
+
+      size_t actual_sz = value.size() - sizeof(int64_t);
+      std::istrstream isv(value.data() + sizeof(int64_t), actual_sz);
+      size_t consumed = _codec->decode(isv, *res->value);
+      if (consumed != actual_sz) {
+        BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", decode payload failed, consumed:" << consumed << ", actual sz:" << actual_sz;
+        return nullptr;
+      }
       return res;
     }
 
@@ -144,9 +152,12 @@ class rocksdb_store
         std::strstream s(key_buf, MAX_KEY_SIZE);
         ksize = _codec->encode(record->key, s);
       }
+      
+      // write timestamp
+      memcpy(val_buf, &record->event_time, sizeof(int64_t));
       {
-        std::strstream s(val_buf, MAX_VALUE_SIZE);
-        vsize = _codec->encode(*record->value, s);
+        std::strstream s(val_buf + sizeof(int64_t), MAX_VALUE_SIZE - sizeof(int64_t));
+        vsize = _codec->encode(*record->value, s) + +sizeof(int64_t);
       }
       rocksdb::Status status = _db->Put(rocksdb::WriteOptions(), rocksdb::Slice((char*) key_buf, ksize), rocksdb::Slice(val_buf, vsize));
     } else {
@@ -173,14 +184,19 @@ class rocksdb_store
     res->offset = -1;
     res->event_time = -1; // ????
     {
-      std::istrstream is(payload.data(), payload.size());
-      res->value = std::make_shared<V>();
-      size_t consumed = _codec->decode(is, *res->value);
-      if (consumed == 0) {
-        BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", decode payload failed, actual sz:" << payload.size();
+      // sanity - at least timestamp
+      if (payload.size()<sizeof(int64_t))
         return nullptr;
-      } else if (consumed != payload.size()) {
-        BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", decode payload failed, consumed:" << consumed << ", actual sz:" << payload.size();
+      memcpy(&res->event_time, payload.data(), sizeof(int64_t));
+
+      // read value
+      size_t actual_sz = payload.size() - sizeof(int64_t);
+      std::istrstream is(payload.data() + sizeof(int64_t), actual_sz);
+      res->value = std::make_shared<V>();
+
+      size_t consumed = _codec->decode(is, *res->value);
+      if (consumed != actual_sz) {
+        BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", decode payload failed, consumed:" << consumed << ", actual sz:" << actual_sz;
         return nullptr;
       }
     }
