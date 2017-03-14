@@ -48,13 +48,15 @@
     mem_store(boost::filesystem::path storage_path){
     }
 
-    virtual ~mem_store() {}
+    virtual ~mem_store() {
+    }
 
     static std::string type_name() {
       return "mem_store";
     }
 
-    virtual void close() {}
+    virtual void close() {
+    }
     
     /**
     * Put a key-value pair if timestamp is greater or equal to existing record

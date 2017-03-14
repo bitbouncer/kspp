@@ -1,4 +1,4 @@
-#include <kspp/impl/state_stores/mem_token_bucket_store.h>
+#include <kspp/state_stores/mem_token_bucket_store.h>
 #include <chrono>
 #pragma once
 
@@ -15,7 +15,7 @@ class rate_limiter : public partition_source<K, V>
   rate_limiter(topology_base& topology, std::shared_ptr<partition_source<K, V>> source, std::chrono::milliseconds agetime, size_t capacity)
     : partition_source<K, V>(source.get(), source->partition())
     , _source(source)
-    , _token_bucket(std::make_shared<mem_token_bucket_store<K>>(agetime, capacity))
+    , _token_bucket(std::make_shared<mem_token_bucket_store<K, size_t>>(agetime, capacity))
     , _in_count("in_count")
     , _out_count("out_count")
     , _rejection_count("rejection_count") {
@@ -48,7 +48,7 @@ class rate_limiter : public partition_source<K, V>
     _source->start(offset);
 
     if (offset == -2)
-      _token_bucket->erase();
+      _token_bucket->clear();
   }
 
   virtual void close() {
@@ -88,12 +88,12 @@ class rate_limiter : public partition_source<K, V>
   }
 
   private:
-  std::shared_ptr<partition_source<K, V>>    _source;
-  std::deque<std::shared_ptr<krecord<K, V>>> _queue;
-  std::shared_ptr<token_bucket_store<K>>     _token_bucket;
-  metric_lag                                 _lag;
-  metric_counter                             _in_count;
-  metric_counter                             _out_count;
-  metric_counter                             _rejection_count;
+  std::shared_ptr<partition_source<K, V>>            _source;
+  std::deque<std::shared_ptr<krecord<K, V>>>         _queue;
+  std::shared_ptr<mem_token_bucket_store<K, size_t>> _token_bucket;
+  metric_lag                                         _lag;
+  metric_counter                                     _in_count;
+  metric_counter                                     _out_count;
+  metric_counter                                     _rejection_count;
 };
 } // namespace

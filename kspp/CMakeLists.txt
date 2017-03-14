@@ -8,7 +8,6 @@ file(GLOB LIB_SRCS
   processors/*.h
   state_stores/*.h
   impl/*.*
-  impl/state_stores/*.*
   impl/sources/*.*
   impl/sinks/*.*
   impl/serdes/*.*
