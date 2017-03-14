@@ -1,4 +1,4 @@
-add_subdirectory(test_setup)
+add_subdirectory(example_setup)
 add_subdirectory(example1-partition-topology)
 add_subdirectory(example2-join)
 add_subdirectory(example3-count)
