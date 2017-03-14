@@ -1,4 +1,4 @@
-#include <kspp/impl/state_stores/token_bucket.h>
+#include <kspp/impl/state_stores/mem_token_bucket_store.h>
 #include <chrono>
 #pragma once
 
@@ -15,7 +15,7 @@ class thoughput_limiter : public partition_source<K, V>
   thoughput_limiter(topology_base& topology, std::shared_ptr<partition_source<K, V>> source, double messages_per_sec)
     : partition_source<K, V>(source.get(), source->partition())
     , _source(source)
-    , _token_bucket(std::make_shared<mem_token_bucket<int>>(std::chrono::milliseconds((int) (1000.0 / messages_per_sec)), 1)) {
+    , _token_bucket(std::make_shared<mem_token_bucket_store<int>>(std::chrono::milliseconds((int) (1000.0 / messages_per_sec)), 1)) {
     _source->add_sink([this](auto r) {
       _queue.push_back(r);
     });
@@ -79,7 +79,7 @@ class thoughput_limiter : public partition_source<K, V>
   private:
   std::shared_ptr<partition_source<K, V>>    _source;
   std::deque<std::shared_ptr<krecord<K, V>>> _queue;
-  std::shared_ptr<token_bucket<int>>         _token_bucket;
+  std::shared_ptr<token_bucket_store<int>>   _token_bucket;
   metric_lag                                 _lag;
 };
 }; // namespace

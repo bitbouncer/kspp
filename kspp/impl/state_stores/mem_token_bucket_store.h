@@ -2,53 +2,24 @@
 #include <chrono>
 #include <cstdint>
 #include <kspp/kspp.h>
-//#include <iostream>
+#include "token_bucket_store.h"
 #pragma once
 
 namespace kspp {
 template<class K>
-class token_bucket
+class mem_token_bucket_store : public token_bucket_store<K>
 {
   public:
-  virtual ~token_bucket() {}
-
-  virtual void close() = 0;
-
-  /**
-  * Adds count to bucket
-  * returns true if bucket has capacity
-  */
-  virtual bool consume(const K& key, int64_t timestamp) = 0;
-
-  /**
-  * Deletes a bucket
-  */
-  virtual void del(const K& key) = 0;
-
-  virtual size_t token(const K& key) = 0;
-
-  /**
-  * erases all counters
-  */
-  virtual void erase() = 0;
-
-  // SHOULD BE IMPLEMENTED
-  //virtual typename kspp::materialized_source<K, size_t>::iterator begin(void) = 0;
-  //virtual typename kspp::materialized_source<K, size_t>::iterator end() = 0;
-};
-
-template<class K>
-class mem_token_bucket : public token_bucket<K>
-{
-  public:
-  mem_token_bucket(std::chrono::milliseconds agetime, size_t capacity)
-    : token_bucket<K>()
+  mem_token_bucket_store(std::chrono::milliseconds agetime, size_t capacity)
+    : token_bucket_store<K>()
     , _config(agetime.count(), capacity) {
   }
     
-  virtual ~mem_token_bucket() {}
+  virtual ~mem_token_bucket_store() {
+  }
 
-  virtual void close() {}
+  virtual void close() {
+  }
 
   /**
   * Adds count to bucket
@@ -74,9 +45,13 @@ class mem_token_bucket : public token_bucket<K>
   /**
   * Returns the counter for the given key
   */
-  virtual size_t token(const K& key) {
+  virtual size_t get(const K& key) {
     typename std::map<K, std::shared_ptr<bucket>>::iterator item = _buckets.find(key);
     return (item == _buckets.end()) ? _config.capacity : item->second->token();
+  }
+
+  virtual size_t size() const {
+    return _buckets.size();
   }
 
   /**
@@ -131,15 +106,16 @@ class mem_token_bucket : public token_bucket<K>
     void __age(const config* conf, int64_t ts) {
       auto delta_ts = ts - _tstamp;
       size_t delta_count = (size_t) (delta_ts * conf->fillrate_per_ms);
-      if (delta_count) {
+      if (delta_count>0) { // no ageing on negative deltas
         _tstamp = ts;
         _tokens = std::min<size_t>(conf->capacity, _tokens + delta_count);
       }
     }
 
-      //virtual typename kspp::materialized_source<K, size_t>::iterator begin(void) = 0;
-      //virtual typename kspp::materialized_source<K, size_t>::iterator end() = 0;
-      // global
+    //virtual typename kspp::materialized_source<K, size_t>::iterator begin(void) = 0;
+    //virtual typename kspp::materialized_source<K, size_t>::iterator end() = 0;
+    // global
+
     size_t  _tokens;
     int64_t _tstamp;
   }; // class bucket

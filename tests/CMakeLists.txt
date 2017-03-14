@@ -28,3 +28,7 @@ add_executable(test2_rocksdb_counter_store test2_rocksdb_counter_store.cpp)
 target_link_libraries(test2_rocksdb_counter_store ${CSI_LIBS})
 add_test(NAME test2_rocksdb_counter_store COMMAND $<TARGET_FILE:test2_rocksdb_counter_store>)
 endif()
+
+add_executable(test3_mem_token_bucket test3_mem_token_bucket.cpp)
+target_link_libraries(test3_mem_token_bucket ${CSI_LIBS})
+add_test(NAME test3_mem_token_bucket COMMAND $<TARGET_FILE:test3_mem_token_bucket>)
