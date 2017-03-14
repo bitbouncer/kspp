@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
     store.insert(std::make_shared<kspp::krecord<int32_t, std::string>>(0, "value0", t0));
     store.insert(std::make_shared<kspp::krecord<int32_t, std::string>>(1, "value1", t0));
     store.insert(std::make_shared<kspp::krecord<int32_t, std::string>>(2, "value2", t0));
-    assert(store.size() == 3);
+    assert(exact_size(store) == 3);
 
     // update existing key with new value
     {

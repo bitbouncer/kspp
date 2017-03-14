@@ -20,6 +20,10 @@ add_executable(test2_rocksdb_store test2_rocksdb_store.cpp)
 target_link_libraries(test2_rocksdb_store ${CSI_LIBS})
 add_test(NAME test2_rocksdb_store COMMAND $<TARGET_FILE:test2_rocksdb_store>)
 
+add_executable(test2_rocksdb_windowed_store test2_rocksdb_windowed_store.cpp)
+target_link_libraries(test2_rocksdb_windowed_store ${CSI_LIBS})
+add_test(NAME test2_rocksdb_windowed_store COMMAND $<TARGET_FILE:test2_rocksdb_windowed_store>)
+
 add_executable(test2_rocksdb_counter_store test2_rocksdb_counter_store.cpp)
 target_link_libraries(test2_rocksdb_counter_store ${CSI_LIBS})
 add_test(NAME test2_rocksdb_counter_store COMMAND $<TARGET_FILE:test2_rocksdb_counter_store>)
