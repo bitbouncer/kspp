@@ -105,7 +105,7 @@ namespace kspp {
     */
 
     virtual void insert(std::shared_ptr<krecord<K, V>> record) {
-      _current_offset = std::max<int64_t>(_current_offset, record->offset);
+      _current_offset = std::max<int64_t>(_current_offset, record->offset());
       auto old_record = get(record->key);
       int64_t new_slot = get_slot_index(record->event_time);
       

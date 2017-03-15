@@ -90,7 +90,7 @@ namespace kspp {
         vs.read((char*)vp, vsize);
       }
       ++(this->_in_count);
-      return this->_impl.produce((uint32_t) this->_fixed_partition, kafka_producer::FREE, kp, ksize, vp, vsize);
+      return this->_impl.produce((uint32_t) this->_fixed_partition, kafka_producer::FREE, kp, ksize, vp, vsize, r->_commit_callback);
     }
   };
 

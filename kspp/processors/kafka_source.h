@@ -44,6 +44,7 @@ namespace kspp {
 
     virtual void commit(bool flush) {
       // TBD!!!!
+      //_can_be_committed
     }
 
     virtual size_t queue_len() {
@@ -66,12 +67,15 @@ namespace kspp {
     kafka_source_base(std::string brokers, std::string topic, size_t partition, std::shared_ptr<CODEC> codec)
       : partition_source<K, V>(nullptr, partition)
       , _codec(codec)
-      , _consumer(brokers, topic, partition) {}
+      , _consumer(brokers, topic, partition)
+      , _can_be_committed(-1) {
+    }
 
     virtual std::shared_ptr<krecord<K, V>> parse(const std::unique_ptr<RdKafka::Message> & ref) = 0;
 
     kafka_consumer          _consumer;
     std::shared_ptr<CODEC>  _codec;
+    int64_t                 _can_be_committed;
   };
 
   template<class K, class V, class CODEC>
@@ -92,7 +96,7 @@ namespace kspp {
       auto res = std::make_shared<krecord<K, V>>();
 
       res->event_time = ref->timestamp().timestamp;
-      res->offset = ref->offset();
+      res->__offset = ref->offset(); // TBD create callback object here to capture end use per offset
       {
         std::istrstream ks((const char*)ref->key_pointer(), ref->key_len());
         size_t consumed = this->_codec->decode(ks, res->key);
@@ -118,6 +122,10 @@ namespace kspp {
           return nullptr;
         }
       }
+      res->_commit_callback = std::make_shared<commit_offset_callback>(ref->offset(), [this](int64_t offset) {
+        _can_be_committed = offset; // should we not have an error code???
+        BOOST_LOG_TRIVIAL(info) << "_can_be_committed " << _can_be_committed;
+      });
       return res;
     }
   };
@@ -147,7 +155,12 @@ namespace kspp {
         if (consumed == sz) {
           auto res = std::make_shared<krecord<void, V>>(v);
           res->event_time = ref->timestamp().timestamp;
-          res->offset = ref->offset();
+          res->__offset = ref->offset(); // TBD create callback object here to capture end use per offset
+          res->_commit_callback = std::make_shared<commit_offset_callback>(ref->offset(), [this](int64_t offset) {
+            _can_be_committed = offset; // should we not have an error code???
+            BOOST_LOG_TRIVIAL(info) << "_can_be_committed " << _can_be_committed;
+          });
+
           return res;
         }
 
@@ -184,7 +197,8 @@ namespace kspp {
       auto res = std::make_shared<krecord<K, void>>();
 
       res->event_time = ref->timestamp().timestamp;
-      res->offset = ref->offset();
+      res->__offset = ref->offset(); // TBD create callback object here to capture end use per offset
+   
       std::istrstream ks((const char*)ref->key_pointer(), ref->key_len());
       size_t consumed = this->_codec->decode(ks, res->key);
       if (consumed == 0) {
@@ -194,6 +208,12 @@ namespace kspp {
         LOGPREFIX_ERROR << ", decode key failed, consumed: " << consumed << ", actual: " << ref->key_len();
         return nullptr;
       }
+      
+      res->_commit_callback = std::make_shared<commit_offset_callback>(ref->offset(), [this](int64_t offset) {
+        _can_be_committed = offset; // should we not have an error code???
+        BOOST_LOG_TRIVIAL(info) << "_can_be_committed " << _can_be_committed;
+      });
+
       return res;
     }
   };

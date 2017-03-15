@@ -82,7 +82,8 @@ namespace kspp {
           } else {
             auto p = std::make_shared<kspp::krecord<K, R>>(e->key);
             p->event_time = e->event_time;
-            p->offset = e->offset;
+            p->__offset = e->offset();
+            p->_commit_callback = e->_commit_callback;
             this->send_to_sinks(p);
           }
         } else {

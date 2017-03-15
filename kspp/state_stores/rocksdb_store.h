@@ -55,7 +55,6 @@ class rocksdb_store
       rocksdb::Slice value = _it->value();
 
       std::shared_ptr<krecord<K, V>> res(std::make_shared<krecord<K, V>>());
-      res->offset = -1;
       res->value = std::make_shared<V>();
 
       std::istrstream isk(key.data(), key.size());
@@ -146,7 +145,7 @@ class rocksdb_store
 
     size_t ksize = 0;
     size_t vsize = 0;
-    _current_offset = std::max<int64_t>(_current_offset, record->offset);
+    _current_offset = std::max<int64_t>(_current_offset, record->offset());
     if (record->value) {
       {
         std::strstream s(key_buf, MAX_KEY_SIZE);
@@ -179,10 +178,7 @@ class rocksdb_store
     rocksdb::Status s = _db->Get(rocksdb::ReadOptions(), rocksdb::Slice(key_buf, ksize), &payload);
     if (!s.ok())
       return nullptr;
-    auto  res = std::make_shared<krecord<K, V>>();
-    res->key = key;
-    res->offset = -1;
-    res->event_time = -1; // ????
+    auto  res = std::make_shared<krecord<K, V>>(key, std::make_shared<V>(), -1);
     {
       // sanity - at least timestamp
       if (payload.size()<sizeof(int64_t))
@@ -192,7 +188,6 @@ class rocksdb_store
       // read value
       size_t actual_sz = payload.size() - sizeof(int64_t);
       std::istrstream is(payload.data() + sizeof(int64_t), actual_sz);
-      res->value = std::make_shared<V>();
 
       size_t consumed = _codec->decode(is, *res->value);
       if (consumed != actual_sz) {

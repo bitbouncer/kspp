@@ -105,8 +105,6 @@ namespace kspp {
         rocksdb::Slice value = _it->value();
 
         std::shared_ptr<krecord<K, V>> res(std::make_shared<krecord<K, V>>());
-        res->offset = -1;
-        //res->event_time = -1; // ????
         res->value = std::make_shared<V>();
 
         std::istrstream isk(key.data(), key.size());
@@ -217,9 +215,7 @@ namespace kspp {
       if (!Int64AddOperator::Deserialize(str, &count))
         return nullptr;
 
-      auto res = std::make_shared<krecord<K, V>>(key, std::make_shared<V>((V) count));
-      res->offset = -1;
-      //res->event_time = -1; // ????
+      auto res = std::make_shared<krecord<K, V>>(key, std::make_shared<V>((V) count), -1);
       return res;
     }
 

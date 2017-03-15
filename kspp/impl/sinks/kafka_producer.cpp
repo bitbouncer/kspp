@@ -5,9 +5,31 @@
 #define LOG_INFO(EVENT)  BOOST_LOG_TRIVIAL(info) << "kafka_producer: " << EVENT << ", topic:" << _topic
 
 namespace kspp {
+
+
+  struct message_extra
+  {
+    message_extra() {
+      ++instance_count;
+    }
+
+    ~message_extra() {
+      --instance_count;
+    }
+
+    static int64_t instance_count;
+
+    std::shared_ptr<commit_offset_callback> cb;
+    uint32_t                                partition_hash;
+  };
+
+  int64_t message_extra::instance_count = 0;
+
   int32_t kafka_producer::MyHashPartitionerCb::partitioner_cb(const RdKafka::Topic *topic, const std::string *key, int32_t partition_cnt, void *msg_opaque) {
-    uintptr_t partition_hash = (uintptr_t) msg_opaque;
-    int32_t partition = partition_hash % partition_cnt;
+    message_extra*  extra = (message_extra*) msg_opaque;
+    int32_t partition = extra->partition_hash % partition_cnt;
+    //uintptr_t partition_hash = (uintptr_t) msg_opaque;
+    //int32_t partition = partition_hash % partition_cnt;
     return partition;
   }
 
@@ -22,6 +44,10 @@ namespace kspp {
     } else {
       _status = message.err();
     }
+    message_extra* extra = (message_extra*) message.msg_opaque();
+    //message.msg_opaque = NULL;
+    assert(extra);
+    delete extra; // TBD signal good or bad status here
   };
 
   int64_t kafka_producer::MyDeliveryReportCb::cursor() const {
@@ -112,6 +138,8 @@ kafka_producer::kafka_producer(std::string brokers, std::string topic)
 kafka_producer::~kafka_producer() {
   if (!_closed)
     close();
+  int64_t remaning = message_extra::instance_count;
+  LOG_INFO("~kafka_producer") << ", remaining " << remaning;
 }
 
 void kafka_producer::close() {
@@ -128,10 +156,15 @@ void kafka_producer::close() {
 }
 
 
-int kafka_producer::produce(uint32_t partition_hash, rdkafka_memory_management_mode mode, void* key, size_t keysz, void* value, size_t valuesz) {
-  RdKafka::ErrorCode resp = _producer->produce(_rd_topic.get(), -1, (int) mode, value, valuesz, key, keysz, (void*) (uintptr_t) partition_hash);
+int kafka_producer::produce(uint32_t partition_hash, rdkafka_memory_management_mode mode, void* key, size_t keysz, void* value, size_t valuesz, std::shared_ptr<commit_offset_callback> cb) {
+  auto user_data = new message_extra();
+  user_data->partition_hash = partition_hash;
+  user_data->cb = cb;
+
+  RdKafka::ErrorCode resp = _producer->produce(_rd_topic.get(), -1, (int) mode, value, valuesz, key, keysz, user_data);
   if (resp != RdKafka::ERR_NO_ERROR) {
     LOGPREFIX_ERROR << ", Produce failed: " << RdKafka::err2str(resp);
+    delete user_data; // how do we signal failure to send data... the consumer should probably not continue...
     return (int) resp;
   }
   _msg_cnt++;

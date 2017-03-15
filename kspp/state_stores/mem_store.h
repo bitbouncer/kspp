@@ -62,7 +62,7 @@
     * Put a key-value pair if timestamp is greater or equal to existing record
     */
     virtual void insert(std::shared_ptr<krecord<K, V>> record) {
-      _current_offset = std::max<int64_t>(_current_offset, record->offset);
+      _current_offset = std::max<int64_t>(_current_offset, record->offset());
       auto item = _store.find(record->key);
 
       // non existing - TBD should we keep a tombstone???
