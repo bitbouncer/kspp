@@ -47,12 +47,12 @@ namespace kspp {
     }
 
   protected:
-    virtual int _produce(std::shared_ptr<ktransaction<K, V>> r) {
-      _os << "ts: " << r->record->event_time << "  ";
-      _codec->encode(r->record->key, _os);
+    virtual int _produce(std::shared_ptr<ktransaction<K, V>> transaction) {
+      _os << "ts: " << transaction->event_time() << "  ";
+      _codec->encode(transaction->record()->key, _os);
       _os << ":";
-      if (r->record->value)
-        _codec->encode(*r->record->value, _os);
+      if (transaction->record()->value)
+        _codec->encode(*transaction->record()->value, _os);
       else
         _os << "<nullptr>";
       _os << std::endl;
@@ -103,15 +103,15 @@ namespace kspp {
     }
 
   protected:
-    virtual int _produce(std::shared_ptr<ktransaction<void, V>> r) {
-      _os << "ts: " << r->record->event_time << "  ";
-      _codec->encode(*r->record->value, _os);
+    virtual int _produce(std::shared_ptr<ktransaction<void, V>> transaction) {
+      _os << "ts: " << transaction->event_time() << "  ";
+      _codec->encode(*transaction->record()->value, _os);
       _os << std::endl;
       return 0;
     }
 
   private:
-    std::ostream&                     _os;
+    std::ostream&                      _os;
     std::shared_ptr<kspp::text_serdes> _codec;
   };
 
@@ -153,9 +153,9 @@ namespace kspp {
     }
 
   protected:
-    virtual int _produce(std::shared_ptr<ktransaction<K, void>> r) {
-      _os << "ts: " << r->record->event_time << "  ";
-      _codec->encode(r->record->key, _os);
+    virtual int _produce(std::shared_ptr<ktransaction<K, void>> transaction) {
+      _os << "ts: " << transaction->event_time() << "  ";
+      _codec->encode(transaction->record()->key, _os);
       _os << std::endl;
       return 0;
     }

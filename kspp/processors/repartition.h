@@ -67,14 +67,14 @@ namespace kspp {
       _source->process_one(tick);
       bool processed = (_queue.size() > 0);
       while (_queue.size()) {
-        auto e = _queue.front();
+        auto transaction = _queue.front();
         _queue.pop_front();
-        _lag.add_event_time(tick, e->event_time());
-        auto routing_row = _routing_table->get(e->record->key);
+        _lag.add_event_time(tick, transaction->event_time());
+        auto routing_row = _routing_table->get(transaction->record()->key);
         if (routing_row) {
           if (routing_row->value) {
             uint32_t hash = kspp::get_partition_hash<FOREIGN_KEY, CODEC>(*routing_row->value, _repartition_codec);
-            _topic_sink->produce(hash, e);
+            _topic_sink->produce(hash, transaction);
           }
         } else {
           // join failed

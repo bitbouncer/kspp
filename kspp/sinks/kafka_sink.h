@@ -110,32 +110,32 @@ class kafka_topic_sink : public kafka_sink_base<K, V, CODEC>
   }
    
 protected:
-  virtual int _produce(std::shared_ptr<ktransaction<K, V>> trans) {
+  virtual int _produce(std::shared_ptr<ktransaction<K, V>> transaction) {
     if (this->_partitioner)
-      return _produce(this->_partitioner(trans->record->key), trans);
+      return _produce(this->_partitioner(transaction->record()->key), transaction);
     else
-      return _produce(kspp::get_partition_hash(trans->record->key, this->codec()), trans);
+      return _produce(kspp::get_partition_hash(transaction->record()->key, this->codec()), transaction);
   }
 
-  virtual int _produce(uint32_t partition, std::shared_ptr<ktransaction<K, V>> trans) {
+  virtual int _produce(uint32_t partition, std::shared_ptr<ktransaction<K, V>> transaction) {
     void* kp = nullptr;
     void* vp = nullptr;
     size_t ksize = 0;
     size_t vsize = 0;
 
     std::stringstream ks;
-    ksize = this->_codec->encode(trans->record->key, ks);
+    ksize = this->_codec->encode(transaction->record()->key, ks);
     kp = malloc(ksize);
     ks.read((char*) kp, ksize);
 
-    if (trans->record->value) {
+    if (transaction->record()->value) {
       std::stringstream vs;
-      vsize = this->_codec->encode(*trans->record->value, vs);
+      vsize = this->_codec->encode(*transaction->record()->value, vs);
       vp = malloc(vsize);
       vs.read((char*) vp, vsize);
     }
     ++(this->_in_count);
-    return this->_impl.produce(partition, kafka_producer::FREE, kp, ksize, vp, vsize, trans->_commit_callback);
+    return this->_impl.produce(partition, kafka_producer::FREE, kp, ksize, vp, vsize, transaction->_commit_callback);
   }
 };
 
@@ -149,24 +149,24 @@ class kafka_topic_sink<void, V, CODEC> : public kafka_sink_base<void, V, CODEC>
   }
 
 protected:
-  virtual int _produce(std::shared_ptr<ktransaction<void, V>> trans) {
+  virtual int _produce(std::shared_ptr<ktransaction<void, V>> transaction) {
     static uint32_t partition = 0;
     // it does not matter that this is not thread safe since we really does not care where the message goes
-    return _produce(++partition, trans);
+    return _produce(++partition, transaction);
   }
 
-  virtual int _produce(uint32_t partition, std::shared_ptr<ktransaction<void, V>> trans) {
+  virtual int _produce(uint32_t partition, std::shared_ptr<ktransaction<void, V>> transaction) {
     void* vp = nullptr;
     size_t vsize = 0;
 
-    if (trans->record->value) {
+    if (transaction->record()->value) {
       std::stringstream vs;
-      vsize = this->_codec->encode(*trans->record->value, vs);
+      vsize = this->_codec->encode(*transaction->record()->value, vs);
       vp = malloc(vsize);
       vs.read((char*) vp, vsize);
     }
     ++(this->_in_count);
-    return this->_impl.produce(partition, kafka_producer::FREE, nullptr, 0, vp, vsize, trans->_commit_callback);
+    return this->_impl.produce(partition, kafka_producer::FREE, nullptr, 0, vp, vsize, transaction->_commit_callback);
   }
 };
 
@@ -186,31 +186,31 @@ class kafka_topic_sink<K, void, CODEC> : public kafka_sink_base<K, void, CODEC>
   }
 
 protected:
-  virtual int _produce(std::shared_ptr<ktransaction<K, void>> trans) {
+  virtual int _produce(std::shared_ptr<ktransaction<K, void>> transaction) {
     void* kp = nullptr;
     size_t ksize = 0;
 
     std::stringstream ks;
-    ksize = this->_codec->encode(trans->record->key, ks);
+    ksize = this->_codec->encode(transaction->record()->key, ks);
     kp = malloc(ksize);
     ks.read((char*) kp, ksize);
 
     if (this->_partitioner)
-      return _produce(this->_partitioner(trans->record->key), trans);
+      return _produce(this->_partitioner(transaction->record()->key), transaction);
     else
-      return _produce(kspp::get_partition_hash(trans->record->key, this->codec()), trans);
+      return _produce(kspp::get_partition_hash(transaction->record()->key, this->codec()), transaction);
   }
 
-  virtual int _produce(uint32_t partition, std::shared_ptr<ktransaction<K, void>> trans) {
+  virtual int _produce(uint32_t partition, std::shared_ptr<ktransaction<K, void>> transaction) {
     void* kp = nullptr;
     size_t ksize = 0;
 
     std::stringstream ks;
-    ksize = this->_codec->encode(trans->record->key, ks);
+    ksize = this->_codec->encode(transaction->record()->key, ks);
     kp = malloc(ksize);
     ks.read((char*) kp, ksize);
     ++(this->_in_count);
-    return this->_impl.produce(partition, kafka_producer::FREE, kp, ksize, nullptr, 0, trans->_commit_callback);
+    return this->_impl.produce(partition, kafka_producer::FREE, kp, ksize, nullptr, 0, transaction->_commit_callback);
   }
 };
 };

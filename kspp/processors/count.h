@@ -75,7 +75,10 @@ class count_by_key : public materialized_source<K, V>
       _lag.add_event_time(tick, trans->event_time());
       _dirty = true; // aggregated but not committed
       _queue.pop_front();
-      _counter_store.insert(std::make_shared<krecord<K, V>>(trans->record->key, 1));
+      auto record = std::make_shared<krecord<K, V>>(trans->record()->key, 1);
+      auto t1 = std::make_shared<ktransaction<K, V>>(record);
+      t1->_commit_callback = trans->_commit_callback; // change name..
+      _counter_store.insert(t1);
     }
     return processed;
   }
