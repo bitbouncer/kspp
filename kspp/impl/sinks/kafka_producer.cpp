@@ -19,8 +19,8 @@ namespace kspp {
 
     static int64_t instance_count;
 
-    std::shared_ptr<commit_offset_callback> cb;
-    uint32_t                                partition_hash;
+    std::shared_ptr<commit_chain::commit_offset_callback> cb;
+    uint32_t                                              partition_hash;
   };
 
   int64_t message_extra::instance_count = 0;
@@ -156,7 +156,7 @@ void kafka_producer::close() {
 }
 
 
-int kafka_producer::produce(uint32_t partition_hash, rdkafka_memory_management_mode mode, void* key, size_t keysz, void* value, size_t valuesz, std::shared_ptr<commit_offset_callback> cb) {
+int kafka_producer::produce(uint32_t partition_hash, rdkafka_memory_management_mode mode, void* key, size_t keysz, void* value, size_t valuesz, std::shared_ptr<commit_chain::commit_offset_callback> cb) {
   auto user_data = new message_extra();
   user_data->partition_hash = partition_hash;
   user_data->cb = cb;

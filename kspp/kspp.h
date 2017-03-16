@@ -8,92 +8,21 @@
 #include <thread>
 #include <chrono>
 #include <strstream>
-#include <functional>
 #include <boost/filesystem.hpp>
 #include <boost/uuid/uuid.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/algorithm/string/replace.hpp>
+#include "krecord.h"
 #include "metrics.h"
 #include "type_name.h"
 
 #pragma once
 namespace kspp {
-inline int64_t milliseconds_since_epoch() {
-  return std::chrono::duration_cast<std::chrono::milliseconds>
-    (std::chrono::system_clock::now().time_since_epoch()).count();
-}
 
 std::string      sanitize_filename(std::string s);
 std::vector<int> parse_partition_list(std::string s);
 
-class commit_offset_callback
-{
-public:
-  commit_offset_callback(int64_t offset, std::function <void(int64_t)> callback)
-    : _offset(offset)
-    , _cb(callback) {
-  }
 
-  ~commit_offset_callback() {
-    if (_cb)
-      _cb(_offset);
-  }
-  
-  inline int64_t offset() const { 
-    return _offset; 
-  }
-
-  private:
-    int64_t                              _offset;
-    std::function <void(int64_t offset)> _cb;
-};
-
-template<class K, class V>
-struct krecord
-{
-  krecord() : event_time(-1), __offset(-1) {}
-  krecord(const K& k) : event_time(milliseconds_since_epoch()), __offset(-1), key(k) {}
-  krecord(const K& k, const V& v, int64_t ts = milliseconds_since_epoch()) : event_time(ts), __offset(-1), key(k), value(std::make_shared<V>(v)) {}
-  krecord(const K& k, std::shared_ptr<V> v, int64_t ts = milliseconds_since_epoch()) : event_time(ts), __offset(-1), key(k), value(v) {}
-  krecord(const K& k, std::nullptr_t nullp, int64_t ts = milliseconds_since_epoch()) : event_time(ts), __offset(-1), key(k), value(nullptr) {}
-  
-  int64_t offset() const { return __offset; }
-
-  K                                       key;
-  std::shared_ptr<V>                      value;
-  int64_t                                 event_time;
-  std::shared_ptr<commit_offset_callback> _commit_callback;
-  int64_t                                 __offset;
-};
-
-template<class V>
-struct krecord<void, V>
-{
-  krecord() : event_time(-1), __offset(-1) {}
-  krecord(const V& v, int64_t ts = milliseconds_since_epoch()) : event_time(ts), __offset(-1), value(std::make_shared<V>(v)) {}
-  krecord(std::shared_ptr<V> v, int64_t ts= milliseconds_since_epoch()) : event_time(ts), __offset(-1), value(v) {}
-
-  int64_t offset() const { return __offset; }
-
-  std::shared_ptr<V>                      value;
-  int64_t                                 event_time;
-  std::shared_ptr<commit_offset_callback> _commit_callback;
-  int64_t                                 __offset;
-};
-
-template<class K>
-struct krecord<K, void>
-{
-  krecord() : event_time(-1), __offset(-1) {}
-  krecord(const K& k, int64_t ts = milliseconds_since_epoch()) : event_time(ts), __offset(-1), key(k) {}
-
-  int64_t offset() const { return __offset; }
-
-  K                                       key;
-  int64_t                                 event_time;
-  std::shared_ptr<commit_offset_callback> _commit_callback;
-  int64_t                                 __offset;
-};
 
 class processor
 {

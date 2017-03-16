@@ -68,7 +68,11 @@ namespace kspp {
       : partition_source<K, V>(nullptr, partition)
       , _codec(codec)
       , _consumer(brokers, topic, partition)
-      , _can_be_committed(-1) {
+      , _can_be_committed(-1)
+      , _commit_chain([this](int64_t offset) { 
+      _can_be_committed = offset; 
+      //BOOST_LOG_TRIVIAL(info) << "_can_be_committed " << _can_be_committed;
+    }) {
     }
 
     virtual std::shared_ptr<krecord<K, V>> parse(const std::unique_ptr<RdKafka::Message> & ref) = 0;
@@ -76,6 +80,7 @@ namespace kspp {
     kafka_consumer          _consumer;
     std::shared_ptr<CODEC>  _codec;
     int64_t                 _can_be_committed;
+    commit_chain            _commit_chain;
   };
 
   template<class K, class V, class CODEC>
@@ -122,10 +127,7 @@ namespace kspp {
           return nullptr;
         }
       }
-      res->_commit_callback = std::make_shared<commit_offset_callback>(ref->offset(), [this](int64_t offset) {
-        _can_be_committed = offset; // should we not have an error code???
-        BOOST_LOG_TRIVIAL(info) << "_can_be_committed " << _can_be_committed;
-      });
+      res->_commit_callback = this->_commit_chain.create(ref->offset());
       return res;
     }
   };
@@ -156,11 +158,7 @@ namespace kspp {
           auto res = std::make_shared<krecord<void, V>>(v);
           res->event_time = ref->timestamp().timestamp;
           res->__offset = ref->offset(); // TBD create callback object here to capture end use per offset
-          res->_commit_callback = std::make_shared<commit_offset_callback>(ref->offset(), [this](int64_t offset) {
-            _can_be_committed = offset; // should we not have an error code???
-            BOOST_LOG_TRIVIAL(info) << "_can_be_committed " << _can_be_committed;
-          });
-
+          res->_commit_callback = this->_commit_chain.create(ref->offset());
           return res;
         }
 
@@ -208,12 +206,7 @@ namespace kspp {
         LOGPREFIX_ERROR << ", decode key failed, consumed: " << consumed << ", actual: " << ref->key_len();
         return nullptr;
       }
-      
-      res->_commit_callback = std::make_shared<commit_offset_callback>(ref->offset(), [this](int64_t offset) {
-        _can_be_committed = offset; // should we not have an error code???
-        BOOST_LOG_TRIVIAL(info) << "_can_be_committed " << _can_be_committed;
-      });
-
+      res->_commit_callback = this->_commit_chain.create(ref->offset());
       return res;
     }
   };
