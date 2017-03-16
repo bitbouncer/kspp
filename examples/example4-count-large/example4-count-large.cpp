@@ -20,13 +20,11 @@ int main(int argc, char **argv) {
     auto topology = text_builder.create_topology();
     auto sources = topology->create_processors<kspp::kafka_source<void, std::string, kspp::text_serdes>>(partition_list, "kspp_test_text");
     std::regex rgx("\\s+");
-    auto word_streams = topology->create_processors<kspp::flat_map<void, std::string, std::string, void>>(sources, [&rgx](const auto trans, auto flat_map) {
-      std::sregex_token_iterator iter(trans->record->value->begin(), trans->record->value->end(), rgx, -1);
+    auto word_streams = topology->create_processors<kspp::flat_map<void, std::string, std::string, void>>(sources, [&rgx](const auto transaction, auto flat_map) {
+      std::sregex_token_iterator iter(transaction->record()->value->begin(), transaction->record()->value->end(), rgx, -1);
       std::sregex_token_iterator end;
       for (; iter != end; ++iter) {
-        auto t1 = std::make_shared<kspp::ktransaction<std::string, void>>(std::make_shared<kspp::krecord<std::string, void>>(*iter));
-        t1->_commit_callback = trans->_commit_callback; // keep transaction running...
-        flat_map->push_back(t1);
+        flat_map->push_back(std::make_shared<kspp::ktransaction<std::string, void>>(std::make_shared<kspp::krecord<std::string, void>>(*iter), transaction->id()));
       }
     });
 

@@ -63,13 +63,13 @@
     */
     virtual void _insert(std::shared_ptr<ktransaction<K, V>> transaction) {
       _current_offset = std::max<int64_t>(_current_offset, transaction->offset());
-      auto record = transaction->record;
+      auto record = transaction->record();
       auto item = _store.find(record->key);
 
       // non existing - TBD should we keep a tombstone???
       if (item == _store.end()) {
-        if (transaction->record->value)
-          _store[transaction->record->key] = record;
+        if (record->value)
+          _store[record->key] = record;
         return;
       }
 

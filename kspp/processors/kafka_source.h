@@ -68,19 +68,24 @@ namespace kspp {
       : partition_source<K, V>(nullptr, partition)
       , _codec(codec)
       , _consumer(brokers, topic, partition)
-      , _can_be_committed(-1)
-      , _commit_chain([this](int64_t offset) { 
-      _can_be_committed = offset; 
-      //BOOST_LOG_TRIVIAL(info) << "_can_be_committed " << _can_be_committed;
-    }) {
+      , _can_be_committed(-1) {
+      _commit_chain.set_handler([this](int64_t offset, int32_t ec) {
+        if (!ec) {
+          _can_be_committed = offset;
+        } else {
+          //_good = false;
+          // TBD we have to exit here after committing the last good offset
+          BOOST_LOG_TRIVIAL(warning) << "kafka consumer, topic " << _consumer.topic() << ", transaction failure at offset:" << offset << ", ec:" << ec;
+        }
+      });
     }
 
     virtual std::shared_ptr<ktransaction<K, V>> parse(const std::unique_ptr<RdKafka::Message> & ref) = 0;
 
-    kafka_consumer          _consumer;
-    std::shared_ptr<CODEC>  _codec;
-    int64_t                 _can_be_committed;
-    commit_chain            _commit_chain;
+    kafka_consumer         _consumer;
+    std::shared_ptr<CODEC> _codec;
+    int64_t                _can_be_committed;
+    commit_chain           _commit_chain;
   };
 
   template<class K, class V, class CODEC>
@@ -125,9 +130,7 @@ namespace kspp {
           return nullptr;
         }
       }
-      auto transaction = std::make_shared<ktransaction<K, V>>(record);
-      transaction->_commit_callback = this->_commit_chain.create(ref->offset());
-      return transaction;
+      return std::make_shared<ktransaction<K, V>>(record, this->_commit_chain.create(ref->offset()));
     }
   };
 
@@ -157,9 +160,7 @@ namespace kspp {
         record->value = std::make_shared<V>();
         size_t consumed = this->_codec->decode(vs, *record->value);
         if (consumed == sz) {
-          auto transaction = std::make_shared<ktransaction<void, V>>(record);
-          transaction->_commit_callback = this->_commit_chain.create(ref->offset());
-          return transaction;
+          return std::make_shared<ktransaction<void, V>>(record, this->_commit_chain.create(ref->offset()));
         }
 
         if (consumed == 0) {
@@ -172,7 +173,6 @@ namespace kspp {
       }
       return nullptr; // just parsed an empty message???
     }
-
   };
 
   //<KEY, nullptr>
@@ -202,9 +202,7 @@ namespace kspp {
         LOGPREFIX_ERROR << ", decode key failed, consumed: " << consumed << ", actual: " << ref->key_len();
         return nullptr;
       }
-      auto transaction = std::make_shared<ktransaction<K, void>>(record);
-      transaction->_commit_callback = this->_commit_chain.create(ref->offset());
-      return transaction;
+      return std::make_shared<ktransaction<K, void>>(record, this->_commit_chain.create(ref->offset()));
     }
   };
 };

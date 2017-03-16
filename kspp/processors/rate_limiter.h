@@ -59,15 +59,15 @@ class rate_limiter : public partition_source<K, V>
     _source->process_one(tick);
     bool processed = (_queue.size() > 0);
     while (_queue.size()) {
-      auto trans = _queue.front();
+      auto transaction = _queue.front();
       _queue.pop_front();
       ++_in_count;
-      _lag.add_event_time(tick, trans->event_time());
+      _lag.add_event_time(tick, transaction->event_time());
       // milliseconds_since_epoch for processing time limiter
       // 
-      if (_token_bucket->consume(trans->record->key, trans->event_time())) { // TBD tick???
+      if (_token_bucket->consume(transaction->record()->key, transaction->event_time())) { // TBD tick???
         ++_out_count;
-        this->send_to_sinks(trans);
+        this->send_to_sinks(transaction);
       } else {
         ++_rejection_count;
       }

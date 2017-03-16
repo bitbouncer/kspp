@@ -19,8 +19,8 @@ namespace kspp {
 
     static int64_t instance_count;
 
-    std::shared_ptr<commit_chain::commit_offset_callback> cb;
-    uint32_t                                              partition_hash;
+    std::shared_ptr<commit_chain::transaction_marker> transaction_marker;
+    uint32_t                                          partition_hash;
   };
 
   int64_t message_extra::instance_count = 0;
@@ -38,24 +38,15 @@ namespace kspp {
   }
 
   void kafka_producer::MyDeliveryReportCb::dr_cb(RdKafka::Message& message) {
-    if (message.err() == RdKafka::ErrorCode::ERR_NO_ERROR) {
-      if (message.offset() > 0)
-        _cursor[message.partition()] = message.offset(); // this is not good ... it seems stat the last message of a batch has the server offset stamped into it... we only want OUR message number that came upstream
-    } else {
+    message_extra* extra = (message_extra*) message.msg_opaque();
+
+    if (message.err() != RdKafka::ErrorCode::ERR_NO_ERROR) {
+      extra->transaction_marker->fail(message.err());
       _status = message.err();
     }
-    message_extra* extra = (message_extra*) message.msg_opaque();
-    //message.msg_opaque = NULL;
     assert(extra);
-    delete extra; // TBD signal good or bad status here
+    delete extra; 
   };
-
-  int64_t kafka_producer::MyDeliveryReportCb::cursor() const {
-    int64_t m = INT64_MAX;
-    for (auto& i : _cursor)
-      m = std::min<int64_t>(m, i.second);
-    return m;
-  }
 
 kafka_producer::kafka_producer(std::string brokers, std::string topic) 
   : _topic(topic)
@@ -155,11 +146,10 @@ void kafka_producer::close() {
   LOG_INFO("closed") << ", produced " << _msg_cnt << " messages (" << _msg_bytes << " bytes)";
 }
 
-
-int kafka_producer::produce(uint32_t partition_hash, rdkafka_memory_management_mode mode, void* key, size_t keysz, void* value, size_t valuesz, std::shared_ptr<commit_chain::commit_offset_callback> cb) {
+int kafka_producer::produce(uint32_t partition_hash, rdkafka_memory_management_mode mode, void* key, size_t keysz, void* value, size_t valuesz, std::shared_ptr<commit_chain::transaction_marker> transaction_marker) {
   auto user_data = new message_extra();
   user_data->partition_hash = partition_hash;
-  user_data->cb = cb;
+  user_data->transaction_marker = transaction_marker;
 
   RdKafka::ErrorCode resp = _producer->produce(_rd_topic.get(), -1, (int) mode, value, valuesz, key, keysz, user_data);
   if (resp != RdKafka::ERR_NO_ERROR) {
@@ -171,5 +161,4 @@ int kafka_producer::produce(uint32_t partition_hash, rdkafka_memory_management_m
   _msg_bytes += valuesz;
   return 0;
 }
-
 }; // namespace

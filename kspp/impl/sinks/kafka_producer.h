@@ -21,7 +21,7 @@ namespace kspp {
     /**
     produce a message to partition -> (partition_hash % partition_cnt)
     */
-    int produce(uint32_t partition_hash, rdkafka_memory_management_mode mode, void* key, size_t keysz, void* value, size_t valuesz, std::shared_ptr<commit_chain::commit_offset_callback> cb);
+    int produce(uint32_t partition_hash, rdkafka_memory_management_mode mode, void* key, size_t keysz, void* value, size_t valuesz, std::shared_ptr<commit_chain::transaction_marker> transaction_marker);
 
     inline std::string topic() const {
       return _topic;
@@ -53,10 +53,10 @@ namespace kspp {
       inline RdKafka::ErrorCode status() const { 
         return _status; 
       }
-      int64_t cursor() const;
+     // int64_t cursor() const;
       private:
-      std::map<int32_t, int64_t> _cursor;
-      RdKafka::ErrorCode         _status;
+      //std::map<int32_t, int64_t> _cursor;
+      RdKafka::ErrorCode _status;
     };
 
     const std::string                  _topic;

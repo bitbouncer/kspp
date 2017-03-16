@@ -45,11 +45,11 @@ namespace kspp {
         _source->process_one(tick);
       bool processed = (_queue.size() > 0);
       while (_queue.size()) {
-        auto trans = _queue.front();
+        auto transaction = _queue.front();
         _queue.pop_front();
-        _lag.add_event_time(tick, trans->event_time());
-        if (_predicate(trans->record)) {
-          this->send_to_sinks(trans);
+        _lag.add_event_time(tick, transaction->event_time());
+        if (_predicate(transaction->record())) {
+          this->send_to_sinks(transaction);
         } else {
           ++_predicate_false;
         }
