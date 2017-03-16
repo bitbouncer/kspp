@@ -14,7 +14,7 @@ namespace kspp {
   class left_join : public partition_source<K, R>
   {
   public:
-    typedef std::function<void(const K& key, const streamV& left, const tableV& right, R& result)> value_joiner; // TBD replace with std::shared_ptr<const krecord<K, R>> left, std::shared_ptr<const krecord<K, R>> right, std::shared_ptr<krecord<K, R>> result;
+    typedef std::function<void(const K& key, const streamV& left, const tableV& right, R& result)> value_joiner; // TBD replace with std::shared_ptr<const ktransaction<K, R>> left, std::shared_ptr<const ktransaction<K, R>> right, std::shared_ptr<ktransaction<K, R>> result;
 
     left_join(topology_base& topology, std::shared_ptr<partition_source<K, streamV>> stream, std::shared_ptr<materialized_source<K, tableV>> table, value_joiner f)
       : partition_source<K, R>(stream.get(), stream->partition())
@@ -70,21 +70,20 @@ namespace kspp {
         return false;
 
       while (_queue.size()) {
-        auto e = _queue.front();
+        auto t0 = _queue.front();
         _queue.pop_front();
-        _lag.add_event_time(tick, e->event_time);
-        auto table_row = _table->get(e->key);
+        _lag.add_event_time(tick, t0->event_time());
+        auto table_row = _table->get(t0->record->key);
         if (table_row) {
-          if (e->value) {
-            auto p = std::make_shared<kspp::krecord<K, R>>(e->key, std::make_shared<R>(), e->event_time);
-            _value_joiner(e->key, *e->value, *table_row->value, *p->value);
-            this->send_to_sinks(p);
+          if (t0->record->value) {
+            auto t1 = std::make_shared<kspp::ktransaction<K, R>>(std::make_shared<krecord<K, R>>(t0->record->key, std::make_shared<R>(), t0->event_time()));
+            t1->_commit_callback = t0->_commit_callback;
+            _value_joiner(t1->record->key, *t0->record->value, *table_row->value, *t1->record->value);
+            this->send_to_sinks(t1);
           } else {
-            auto p = std::make_shared<kspp::krecord<K, R>>(e->key);
-            p->event_time = e->event_time;
-            p->__offset = e->offset();
-            p->_commit_callback = e->_commit_callback;
-            this->send_to_sinks(p);
+            auto t1 = std::make_shared<kspp::ktransaction<K, R>>(std::make_shared<krecord<K, R>>(t0->record->key, nullptr, t0->event_time()));
+            t1->_commit_callback = t0->_commit_callback;
+            this->send_to_sinks(t1);
           }
         } else {
           // join failed
@@ -105,7 +104,7 @@ namespace kspp {
   private:
     std::shared_ptr<partition_source<K, streamV>>    _stream;
     std::shared_ptr<materialized_source<K, tableV>>  _table;
-    std::deque<std::shared_ptr<krecord<K, streamV>>> _queue;
+    std::deque<std::shared_ptr<ktransaction<K, streamV>>> _queue;
     value_joiner                                     _value_joiner;
     metric_lag                                       _lag;
   };

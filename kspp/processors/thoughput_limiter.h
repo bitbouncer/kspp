@@ -53,11 +53,11 @@ class thoughput_limiter : public partition_source<K, V>
       _source->process_one(tick);
 
     if (_queue.size()) {
-      auto r = _queue.front();
-      _lag.add_event_time(tick, r->event_time);
+      auto trans = _queue.front();
+      _lag.add_event_time(tick, trans->event_time());
       if (_token_bucket->consume(0, tick)) {
         _queue.pop_front();
-        this->send_to_sinks(r);
+        this->send_to_sinks(trans);
         return true;
       }
     }
@@ -78,7 +78,7 @@ class thoughput_limiter : public partition_source<K, V>
 
   private:
   std::shared_ptr<partition_source<K, V>>              _source;
-  std::deque<std::shared_ptr<krecord<K, V>>>           _queue;
+  std::deque<std::shared_ptr<ktransaction<K, V>>>           _queue;
   std::shared_ptr<mem_token_bucket_store<int, size_t>> _token_bucket;
   metric_lag                                           _lag;
 };

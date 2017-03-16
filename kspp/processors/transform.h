@@ -9,7 +9,7 @@ namespace kspp {
   class transform_value : public partition_source<K, RV>
   {
   public:
-    typedef std::function<void(std::shared_ptr<krecord<K, SV>> record, transform_value* self)> extractor; // maybee better to pass this and send() directrly
+    typedef std::function<void(std::shared_ptr<ktransaction<K, SV>> record, transform_value* self)> extractor; // maybee better to pass this and send() directrly
 
     transform_value(topology_base& topology, std::shared_ptr<partition_source<K, SV>> source, extractor f)
       : partition_source<K, RV>(source.get(), source->partition())
@@ -57,7 +57,7 @@ namespace kspp {
       return processed;
     }
 
-    void push_back(std::shared_ptr<krecord<K, RV>> r) {
+    void push_back(std::shared_ptr<ktransaction<K, RV>> r) {
       this->send_to_sinks(r);
     }
 
@@ -76,7 +76,7 @@ namespace kspp {
   private:
     std::shared_ptr<partition_source<K, SV>>    _source;
     extractor                                   _extractor;
-    std::deque<std::shared_ptr<krecord<K, SV>>> _queue;
+    std::deque<std::shared_ptr<ktransaction<K, SV>>> _queue;
     metric_lag                                  _lag;
   };
 }

@@ -15,11 +15,11 @@ namespace kspp {
       , _state_store(get_storage_path(topology.get_storage_path()), args...)
       , _in_count("in_count")
       , _state_store_count("state_store_count", [this]() { return _state_store.size(); }) {
-      _source->add_sink([this](auto r) {
-        _lag.add_event_time(kspp::milliseconds_since_epoch(), r->event_time);
+      _source->add_sink([this](auto trans) {
+        _lag.add_event_time(kspp::milliseconds_since_epoch(), trans->event_time());
         ++_in_count;
-        _state_store.insert(r);
-        this->send_to_sinks(r);
+        _state_store.insert(trans->record);
+        this->send_to_sinks(trans);
       });
       _state_store.set_sink([this](auto r) {
         this->send_to_sinks(r);

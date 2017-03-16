@@ -4,7 +4,7 @@ namespace kspp {
   class delay : public partition_source<K, V>
   {
   public:
-    typedef std::function<bool(std::shared_ptr<krecord<K, V>> record)> predicate; // return true to keep
+    typedef std::function<bool(std::shared_ptr<ktransaction<K, V>> record)> predicate; // return true to keep
 
     delay(topology_base& topology, std::shared_ptr<partition_source<K, V>> source, int ms)
       : partition_source<K, V>(source->partition())
@@ -71,7 +71,7 @@ namespace kspp {
   private:
     std::shared_ptr<partition_source<K, V>>    _source;
     int                                        _delay;
-    std::deque<std::shared_ptr<krecord<K, V>>> _queue;
+    std::deque<std::shared_ptr<ktransaction<K, V>>> _queue;
     metric_lag                                 _lag;
   };
 } // namespace

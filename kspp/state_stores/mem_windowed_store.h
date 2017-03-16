@@ -94,7 +94,7 @@ namespace kspp {
         std::vector<std::shared_ptr<krecord<K, V>>> tombstones;
         for (auto i = _buckets.begin(); i != upper_bound; ++i) {
           for (auto&& j : *i->second)
-            this->_sink(std::make_shared<krecord<K, V>>(j.first));
+            this->_sink(std::make_shared<ktransaction<K,V>>(std::make_shared<krecord<K, V>>(j.first)));
         }
       }
       _buckets.erase(_buckets.begin(), upper_bound);
@@ -104,8 +104,10 @@ namespace kspp {
     * Put a key-value pair
     */
 
-    virtual void insert(std::shared_ptr<krecord<K, V>> record) {
-      _current_offset = std::max<int64_t>(_current_offset, record->offset());
+    virtual void _insert(std::shared_ptr<ktransaction<K, V>> transaction) {
+      _current_offset = std::max<int64_t>(_current_offset, transaction->offset());
+      auto record = transaction->record;
+
       auto old_record = get(record->key);
       int64_t new_slot = get_slot_index(record->event_time);
       
@@ -216,7 +218,7 @@ namespace kspp {
       return timestamp / _slot_width;
     }
 
-    //virtual std::shared_ptr<krecord<K, V>> get_from_slot(const K& key, int64_t slot_begin, int64_t slot_end) {
+    //virtual std::shared_ptr<ktransaction<K, V>> get_from_slot(const K& key, int64_t slot_begin, int64_t slot_end) {
     //  for (auto&& i : _buckets) {
     //    if (i.first >= slot_begin && i.first < slot_end) {
     //      auto item = i.second->find(key);

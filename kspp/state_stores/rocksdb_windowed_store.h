@@ -170,7 +170,7 @@ class rocksdb_windowed_store
           rocksdb::Slice key = j->key();
           std::istrstream isk(key.data(), key.size());
           if (_codec->decode(isk, record->key) == key.size())
-            this->_sink(record);
+            this->_sink(std::make_shared<ktransaction<K,V>>(record));
           j->Next();
         }
       }
@@ -182,11 +182,14 @@ class rocksdb_windowed_store
   // this respects strong ordering of timestamp and makes shure we only have one value
   // a bit slow but samantically correct
   // TBD add option to speed this up either by storing all values or disregarding timestamps
-  virtual void insert(std::shared_ptr<krecord<K, V>> record) {
+  virtual void _insert(std::shared_ptr<ktransaction<K, V>> transaction) {
+    _current_offset = std::max<int64_t>(_current_offset, transaction->offset());
+    auto record = transaction->record;
+
     char key_buf[MAX_KEY_SIZE];
     char val_buf[MAX_VALUE_SIZE];
 
-    _current_offset = std::max<int64_t>(_current_offset, record->offset());
+    //_current_offset = std::max<int64_t>(_current_offset, record->offset());
     auto old_record = get(record->key);
     if (old_record && old_record->event_time > record->event_time)
       return;

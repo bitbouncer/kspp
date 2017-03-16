@@ -72,20 +72,20 @@ namespace kspp {
       : kafka_partition_sink_base<K, V, CODEC>(topology.brokers(), topic, topology.partition(), codec) {}
 
   protected:
-    virtual int _produce(std::shared_ptr<krecord<K, V>> r) {
+    virtual int _produce(std::shared_ptr<ktransaction<K, V>> r) {
       void* kp = nullptr;
       void* vp = nullptr;
       size_t ksize = 0;
       size_t vsize = 0;
 
       std::stringstream ks;
-      ksize = this->_codec->encode(r->key, ks);
+      ksize = this->_codec->encode(r->record->key, ks);
       kp = malloc(ksize);
       ks.read((char*)kp, ksize);
 
-      if (r->value) {
+      if (r->record->value) {
         std::stringstream vs;
-        vsize = this->_codec->encode(*r->value, vs);
+        vsize = this->_codec->encode(*r->record->value, vs);
         vp = malloc(vsize);
         vs.read((char*)vp, vsize);
       }
@@ -103,13 +103,13 @@ namespace kspp {
       : kafka_partition_sink_base<void, V, CODEC>(topology.brokers(), topic, topology.partition(), codec) {}
 
   protected:
-    virtual int _produce(std::shared_ptr<krecord<void, V>> r) {
+    virtual int _produce(std::shared_ptr<ktransaction<void, V>> r) {
       void* vp = nullptr;
       size_t vsize = 0;
 
       if (r->value) {
         std::stringstream vs;
-        vsize = this->_codec->encode(*r->value, vs);
+        vsize = this->_codec->encode(*r->record->value, vs);
         vp = malloc(vsize);
         vs.read((char*)vp, vsize);
       }
@@ -127,12 +127,12 @@ namespace kspp {
       : kafka_partition_sink_base<K, void, CODEC>(topology.brokers(), topic, topology.partition(), codec) {}
 
   protected:
-    virtual int _produce(std::shared_ptr<krecord<K, void>> r) {
+    virtual int _produce(std::shared_ptr<ktransaction<K, void>> r) {
       void* kp = nullptr;
       size_t ksize = 0;
 
       std::stringstream ks;
-      ksize = this->_codec->encode(r->key, ks);
+      ksize = this->_codec->encode(r->record->key, ks);
       kp = malloc(ksize);
       ks.read((char*)kp, ksize);
       ++(this->_in_count);

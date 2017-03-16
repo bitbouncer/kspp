@@ -75,7 +75,7 @@ int main(int argc, char** argv) {
     //// delete existing key with to old timestamp
     //// should be forbidden
     //{
-    //  store.insert(std::make_shared<kspp::krecord<int32_t, int>>(2, nullptr, t0));
+    //  store.insert(std::make_shared<kspp::ktransaction<int32_t, int>>(2, nullptr, t0));
     //  assert(store.size() == 3);
     //  auto record = store.get(2);
     //  assert(record != nullptr);

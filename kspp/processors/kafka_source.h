@@ -75,7 +75,7 @@ namespace kspp {
     }) {
     }
 
-    virtual std::shared_ptr<krecord<K, V>> parse(const std::unique_ptr<RdKafka::Message> & ref) = 0;
+    virtual std::shared_ptr<ktransaction<K, V>> parse(const std::unique_ptr<RdKafka::Message> & ref) = 0;
 
     kafka_consumer          _consumer;
     std::shared_ptr<CODEC>  _codec;
@@ -94,17 +94,15 @@ namespace kspp {
       : kafka_source_base<K, V, CODEC>(topology.brokers(), topic, partition, codec) {}
 
   protected:
-    std::shared_ptr<krecord<K, V>> parse(const std::unique_ptr<RdKafka::Message> & ref) {
+    std::shared_ptr<ktransaction<K, V>> parse(const std::unique_ptr<RdKafka::Message> & ref) {
       if (!ref)
         return nullptr;
 
-      auto res = std::make_shared<krecord<K, V>>();
-
-      res->event_time = ref->timestamp().timestamp;
-      res->__offset = ref->offset(); // TBD create callback object here to capture end use per offset
+      auto record = std::make_shared<krecord<K, V>>();
+      record->event_time = ref->timestamp().timestamp;
       {
         std::istrstream ks((const char*)ref->key_pointer(), ref->key_len());
-        size_t consumed = this->_codec->decode(ks, res->key);
+        size_t consumed = this->_codec->decode(ks, record->key);
         if (consumed == 0) {
           LOGPREFIX_ERROR << ", decode key failed, actual key sz:" << ref->key_len();
           return nullptr;
@@ -117,8 +115,8 @@ namespace kspp {
       size_t sz = ref->len();
       if (sz) {
         std::istrstream vs((const char*)ref->payload(), sz);
-        res->value = std::make_shared<V>();
-        size_t consumed = this->_codec->decode(vs, *res->value);
+        record->value = std::make_shared<V>();
+        size_t consumed = this->_codec->decode(vs, *record->value);
         if (consumed == 0) {
           LOGPREFIX_ERROR << ", decode value failed, size:" << sz;
           return nullptr;
@@ -127,8 +125,9 @@ namespace kspp {
           return nullptr;
         }
       }
-      res->_commit_callback = this->_commit_chain.create(ref->offset());
-      return res;
+      auto transaction = std::make_shared<ktransaction<K, V>>(record);
+      transaction->_commit_callback = this->_commit_chain.create(ref->offset());
+      return transaction;
     }
   };
 
@@ -146,20 +145,21 @@ namespace kspp {
     }
 
   protected:
-    std::shared_ptr<krecord<void, V>> parse(const std::unique_ptr<RdKafka::Message> & ref) {
+    std::shared_ptr<ktransaction<void, V>> parse(const std::unique_ptr<RdKafka::Message> & ref) {
       if (!ref)
         return nullptr;
       size_t sz = ref->len();
       if (sz) {
+        auto record = std::make_shared<krecord<void, V>>();
+        record->event_time = ref->timestamp().timestamp;
+
         std::istrstream vs((const char*)ref->payload(), sz);
-        auto v = std::make_shared<V>();
-        size_t consumed = this->_codec->decode(vs, *v);
+        record->value = std::make_shared<V>();
+        size_t consumed = this->_codec->decode(vs, *record->value);
         if (consumed == sz) {
-          auto res = std::make_shared<krecord<void, V>>(v);
-          res->event_time = ref->timestamp().timestamp;
-          res->__offset = ref->offset(); // TBD create callback object here to capture end use per offset
-          res->_commit_callback = this->_commit_chain.create(ref->offset());
-          return res;
+          auto transaction = std::make_shared<ktransaction<void, V>>(record);
+          transaction->_commit_callback = this->_commit_chain.create(ref->offset());
+          return transaction;
         }
 
         if (consumed == 0) {
@@ -188,17 +188,13 @@ namespace kspp {
     }
 
   protected:
-    std::shared_ptr<krecord<K, void>> parse(const std::unique_ptr<RdKafka::Message> & ref) {
+    std::shared_ptr<ktransaction<K, void>> parse(const std::unique_ptr<RdKafka::Message> & ref) {
       if (!ref || ref->key_len() == 0)
         return nullptr;
 
-      auto res = std::make_shared<krecord<K, void>>();
-
-      res->event_time = ref->timestamp().timestamp;
-      res->__offset = ref->offset(); // TBD create callback object here to capture end use per offset
-   
+      auto record = std::make_shared<krecord<K, void>>();
       std::istrstream ks((const char*)ref->key_pointer(), ref->key_len());
-      size_t consumed = this->_codec->decode(ks, res->key);
+      size_t consumed = this->_codec->decode(ks, record->key);
       if (consumed == 0) {
         LOGPREFIX_ERROR << ", decode key failed, actual key sz:" << ref->key_len();
         return nullptr;
@@ -206,8 +202,9 @@ namespace kspp {
         LOGPREFIX_ERROR << ", decode key failed, consumed: " << consumed << ", actual: " << ref->key_len();
         return nullptr;
       }
-      res->_commit_callback = this->_commit_chain.create(ref->offset());
-      return res;
+      auto transaction = std::make_shared<ktransaction<K, void>>(record);
+      transaction->_commit_callback = this->_commit_chain.create(ref->offset());
+      return transaction;
     }
   };
 };

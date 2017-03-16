@@ -49,7 +49,7 @@ class count_by_key : public materialized_source<K, V>
     _stream->close();
   }
 
-  virtual int produce(std::shared_ptr<krecord<K, void>> r) {
+  virtual int produce(std::shared_ptr<ktransaction<K, void>> r) {
     _queue.push_back(r);
     return 0;
   }
@@ -62,20 +62,20 @@ class count_by_key : public materialized_source<K, V>
     _stream->process_one(tick);
     bool processed = (_queue.size() > 0);
     while (_queue.size()) {
-      auto e = _queue.front();
+      auto trans = _queue.front();
       // should this be on processing time our message time??? 
       // what happens at end of stream if on messaage time...
-      if (_next_punctuate < e->event_time) {
+      if (_next_punctuate < trans->event_time()) {
         punctuate(_next_punctuate); // what happens here if message comes out of order??? TBD
-        _next_punctuate = e->event_time + _punctuate_intervall;
+        _next_punctuate = trans->event_time() + _punctuate_intervall;
         _dirty = false;
       }
 
       ++_in_count;
-      _lag.add_event_time(tick, e->event_time);
+      _lag.add_event_time(tick, trans->event_time());
       _dirty = true; // aggregated but not committed
       _queue.pop_front();
-      _counter_store.insert(std::make_shared<krecord<K, V>>(e->key, 1));
+      _counter_store.insert(std::make_shared<krecord<K, V>>(trans->record->key, 1));
     }
     return processed;
   }
@@ -95,7 +95,7 @@ class count_by_key : public materialized_source<K, V>
     if (_dirty) { // keep event timestamts in counter store and only include the updated ones... TBD
       for (auto i : _counter_store) {
         i->event_time = timestamp;
-        this->send_to_sinks(i);
+        this->send_to_sinks(std::make_shared<ktransaction<K, V>>(i));
       }
     }
     _dirty = false;
@@ -123,7 +123,7 @@ class count_by_key : public materialized_source<K, V>
 
   std::shared_ptr<partition_source<K, void>>      _stream;
   STATE_STORE<K, V, CODEC>                        _counter_store;
-  std::deque<std::shared_ptr<krecord<K, void>>>   _queue;
+  std::deque<std::shared_ptr<ktransaction<K, void>>>   _queue;
   int64_t                                         _punctuate_intervall;
   int64_t                                         _next_punctuate;
   bool                                            _dirty;

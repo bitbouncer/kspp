@@ -69,8 +69,8 @@ namespace kspp {
       while (_queue.size()) {
         auto e = _queue.front();
         _queue.pop_front();
-        _lag.add_event_time(tick, e->event_time);
-        auto routing_row = _routing_table->get(e->key);
+        _lag.add_event_time(tick, e->event_time());
+        auto routing_row = _routing_table->get(e->record->key);
         if (routing_row) {
           if (routing_row->value) {
             uint32_t hash = kspp::get_partition_hash<FOREIGN_KEY, CODEC>(*routing_row->value, _repartition_codec);
@@ -97,7 +97,7 @@ namespace kspp {
     }
 
   private:
-    std::deque<std::shared_ptr<krecord<K, V>>>           _queue;
+    std::deque<std::shared_ptr<ktransaction<K, V>>>           _queue;
     std::shared_ptr<partition_source<K, V>>              _source;
     std::shared_ptr<materialized_source<K, FOREIGN_KEY>> _routing_table;
     std::shared_ptr<topic_sink<K, V>>                    _topic_sink;

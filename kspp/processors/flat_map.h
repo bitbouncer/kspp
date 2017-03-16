@@ -9,7 +9,7 @@ namespace kspp {
   class flat_map : public partition_source<RK, RV>
   {
   public:
-    typedef std::function<void(std::shared_ptr<krecord<SK, SV>> record, flat_map* self)> extractor; // maybe better to pass this and send() directrly
+    typedef std::function<void(std::shared_ptr<ktransaction<SK, SV>> record, flat_map* self)> extractor; // maybe better to pass this and send() directrly
 
     flat_map(topology_base& topology, std::shared_ptr<partition_source<SK, SV>> source, extractor f)
       : partition_source<RK, RV>(source.get(), source->partition())
@@ -51,17 +51,16 @@ namespace kspp {
       _source->process_one(tick);
       bool processed = (_queue.size() > 0);
       while (_queue.size()) {
-        auto e = _queue.front();
+        auto trans = _queue.front();
         _queue.pop_front();
-        _lag.add_event_time(tick, e->event_time);
-        _extractor(e, this);
+        _lag.add_event_time(tick, trans->event_time());
+        _extractor(trans, this);
         ++_in_count;
-
       }
       return processed;
     }
 
-    void push_back(std::shared_ptr<krecord<RK, RV>> r) {
+    void push_back(std::shared_ptr<ktransaction<RK, RV>> r) {
       this->send_to_sinks(r);
     }
 
@@ -80,7 +79,7 @@ namespace kspp {
   private:
     std::shared_ptr<partition_source<SK, SV>>    _source;
     extractor                                    _extractor;
-    std::deque<std::shared_ptr<krecord<SK, SV>>> _queue;
+    std::deque<std::shared_ptr<ktransaction<SK, SV>>> _queue;
     metric_counter                               _in_count;
     metric_lag                                   _lag;
   };

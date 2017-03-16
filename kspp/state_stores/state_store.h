@@ -12,7 +12,7 @@ template<class K, class V>
 class state_store
 {
   public:
-  using sink_function = typename std::function<void(std::shared_ptr<krecord<K, V>>)>;
+  using sink_function = typename std::function<void(std::shared_ptr<ktransaction<K, V>>)>;
 
   virtual ~state_store() {}
 
@@ -21,9 +21,18 @@ class state_store
   virtual void close() = 0;
 
   /**
+  * apply transaction
+  */
+  inline void insert(std::shared_ptr<ktransaction<K, V>> transaction) {
+    _insert(transaction);
+  }
+
+  /**
   * Put or delete a record
   */
-  virtual void insert(std::shared_ptr<krecord<K, V>> record) = 0;
+  inline void insert(std::shared_ptr<krecord<K, V>> record) {
+    _insert(std::make_shared<ktransaction<K,V>>(record));
+  }
 
   /**
   * commits the offset
@@ -54,6 +63,8 @@ class state_store
   virtual typename kspp::materialized_source<K, V>::iterator end() = 0;
 
   protected:
+  virtual void _insert(std::shared_ptr<ktransaction<K, V>> record) = 0;
+
   sink_function _sink;
 };
 };
