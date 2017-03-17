@@ -1,0 +1,34 @@
+#include "commit_chain.h"
+
+namespace kspp {
+commit_chain::commit_chain()
+  : _cb(nullptr)
+  , _next(std::make_shared<transaction_marker>([this](int64_t offset, int32_t ec) {
+  handle_result(offset, ec);
+})) {
+}
+
+void commit_chain::set_handler(std::function <void(int64_t offset, int32_t ec)> callback) {
+  _cb = callback;
+}
+
+
+std::shared_ptr<commit_chain::transaction_marker> commit_chain::commit_chain::create(int64_t offset) {
+  ++_size;
+  
+  auto next = std::make_shared<transaction_marker>([this](int64_t offset, int32_t ec) {
+    handle_result(offset, ec);
+  });
+
+  _next->init(offset, next);
+  auto res = _next;
+  _next = next;
+  return res;
+}
+
+void commit_chain::handle_result(int64_t offset, int32_t ec) {
+  --_size;
+  if (_cb)
+    _cb(offset, ec);
+}
+};

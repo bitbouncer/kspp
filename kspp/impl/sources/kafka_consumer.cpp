@@ -16,19 +16,13 @@ kafka_consumer::kafka_consumer(std::string brokers, std::string topic, size_t pa
   * Create configuration objects
   */
   std::unique_ptr<RdKafka::Conf> conf(RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL));
-  std::unique_ptr<RdKafka::Conf> tconf(RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC));
-
   /*
   * Set configuration properties
   */
   std::string errstr;
   conf->set("metadata.broker.list", brokers, errstr);
   conf->set("api.version.request", "true", errstr);
-
-  //ExampleEventCb ex_event_cb;
-  //conf->set("event_cb", &ex_event_cb, errstr);
-
-  conf->set("default_topic_conf", tconf.get(), errstr);
+  conf->set("socket.nagle.disable", "true", errstr);
 
   /*
   * Create consumer using accumulated global configuration.
@@ -40,8 +34,13 @@ kafka_consumer::kafka_consumer(std::string brokers, std::string topic, size_t pa
   }
   LOG_INFO("created");
 
-  std::unique_ptr<RdKafka::Conf> tconf2(RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC));
-  _rd_topic = std::unique_ptr<RdKafka::Topic>(RdKafka::Topic::create(_consumer.get(), _topic, tconf2.get(), errstr));
+  std::unique_ptr<RdKafka::Conf> tconf(RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC));
+  conf->set("default_topic_conf", tconf.get(), errstr);
+  conf->set("offset.store.method", "broker", errstr);
+  conf->set("enable.auto.commit", "false", errstr);
+  //conf->set("group.id", "my_group_id", errstr);
+
+  _rd_topic = std::unique_ptr<RdKafka::Topic>(RdKafka::Topic::create(_consumer.get(), _topic, tconf.get(), errstr));
 
   if (!_rd_topic) {
     LOGPREFIX_ERROR << ", failed to create topic, reason: " << errstr;
