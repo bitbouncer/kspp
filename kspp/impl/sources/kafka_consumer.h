@@ -28,6 +28,8 @@ namespace kspp {
 
     void start(int64_t offset);
 
+    void commit(int64_t offset, bool flush = false);
+
   private:
     const std::string                  _topic;
     const size_t                       _partition;

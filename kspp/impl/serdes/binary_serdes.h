@@ -26,7 +26,7 @@ class binary_serdes
     dst.write((const char*) &vsz, sizeof(uint32_t));
     size_t sz = 4;
     for (auto & i : v)
-      sz += neti::binary_serdes::encode<T>(i, dst);
+      sz += kspp::binary_serdes::encode<T>(i, dst);
     return sz;
   }
 
@@ -45,7 +45,7 @@ class binary_serdes
     dst.reserve(len);
     for (int i = 0; i != len; ++i) {
       T t;
-      sz += neti::binary_serdes::decode<T>(src, t);
+      sz += kspp::binary_serdes::decode<T>(src, t);
       dst.push_back(t);
     }
     return src.good() ? sz : 0;

@@ -36,8 +36,9 @@ kafka_consumer::kafka_consumer(std::string brokers, std::string topic, size_t pa
 
   std::unique_ptr<RdKafka::Conf> tconf(RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC));
   conf->set("default_topic_conf", tconf.get(), errstr);
-  conf->set("offset.store.method", "broker", errstr);
+  //conf->set("offset.store.method", "broker", errstr);
   conf->set("enable.auto.commit", "false", errstr);
+  conf->set("auto.offset.reset", "earliest", errstr);
   //conf->set("group.id", "my_group_id", errstr);
 
   _rd_topic = std::unique_ptr<RdKafka::Topic>(RdKafka::Topic::create(_consumer.get(), _topic, tconf.get(), errstr));
@@ -106,5 +107,9 @@ std::unique_ptr<RdKafka::Message> kafka_consumer::consume() {
       LOGPREFIX_ERROR << ", consume failed: " << msg->errstr();
   }
   return nullptr;
+}
+
+void kafka_consumer::commit(int64_t offset, bool flush) {
+  //rd_kafka_offset_store()
 }
 }; // namespace
