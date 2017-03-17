@@ -1,9 +1,9 @@
 #pragma once
 #include <memory>
 #include <strstream>
+#include <fstream>
 #include <boost/filesystem.hpp>
 #include <boost/log/trivial.hpp>
-
 #include <kspp/kspp.h>
 #include "state_store.h"
 
