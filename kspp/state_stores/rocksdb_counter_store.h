@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <strstream>
+#include <fstream>
 #include <boost/filesystem.hpp>
 #include <boost/log/trivial.hpp>
 #include <rocksdb/db.h>
