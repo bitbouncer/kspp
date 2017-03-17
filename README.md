@@ -21,6 +21,7 @@ Build
 
 git clone https://github.com/facebook/rocksdb.git
 cd rocksdb
+git checkout v5.1.4
 make static_lib
 cd ..
 
@@ -98,6 +99,7 @@ nmake install
 cd ..
 
 cd rocksdb
+git checkout v5.1.4
 mkdir build & cd build
 cmake -G "Visual Studio 14 Win64" ..
 msbuild rocksdb.sln
