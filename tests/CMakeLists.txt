@@ -32,3 +32,7 @@ endif()
 add_executable(test3_mem_token_bucket test3_mem_token_bucket.cpp)
 target_link_libraries(test3_mem_token_bucket ${CSI_LIBS})
 add_test(NAME test3_mem_token_bucket COMMAND $<TARGET_FILE:test3_mem_token_bucket>)
+
+add_executable(test4_kafka_consumer test4_kafka_consumer.cpp)
+target_link_libraries(test4_kafka_consumer ${CSI_LIBS})
+add_test(NAME test4_kafka_consumer COMMAND $<TARGET_FILE:test4_kafka_consumer>)

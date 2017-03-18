@@ -9,7 +9,7 @@ namespace kspp {
   class flat_map : public partition_source<RK, RV>
   {
   public:
-    typedef std::function<void(std::shared_ptr<ktransaction<SK, SV>> record, flat_map* self)> extractor; // maybe better to pass this and send() directrly
+    typedef std::function<void(std::shared_ptr<krecord<SK, SV>> record, flat_map* self)> extractor;
 
     flat_map(topology_base& topology, std::shared_ptr<partition_source<SK, SV>> source, extractor f)
       : partition_source<RK, RV>(source.get(), source->partition())
@@ -54,14 +54,11 @@ namespace kspp {
         auto trans = _queue.front();
         _queue.pop_front();
         _lag.add_event_time(tick, trans->event_time());
-        _extractor(trans, this);
+        _currrent_id = trans->id();
+        _extractor(trans->record(), this);
         ++_in_count;
       }
       return processed;
-    }
-
-    void push_back(std::shared_ptr<ktransaction<RK, RV>> r) {
-      this->send_to_sinks(r);
     }
 
     virtual void commit(bool flush) {
@@ -76,12 +73,20 @@ namespace kspp {
       return _queue.size();
     }
 
+    /**
+    * use from from extractor callback
+    */
+    inline void push_back(std::shared_ptr<krecord<RK, RV>> record) {
+      this->send_to_sinks(std::make_shared<ktransaction<RK, RV>>(record, _currrent_id));
+    }
+
   private:
-    std::shared_ptr<partition_source<SK, SV>>    _source;
-    extractor                                    _extractor;
+    std::shared_ptr<partition_source<SK, SV>>         _source;
+    extractor                                         _extractor;
+    std::shared_ptr<commit_chain::transaction_marker> _currrent_id;
     std::deque<std::shared_ptr<ktransaction<SK, SV>>> _queue;
-    metric_counter                               _in_count;
-    metric_lag                                   _lag;
+    metric_counter                                    _in_count;
+    metric_lag                                        _lag;
   };
 }
 

@@ -6,10 +6,8 @@ namespace kspp {
   class kafka_consumer
   {
   public:
-    kafka_consumer(std::string brokers, std::string topic, size_t partition);
-
+    kafka_consumer(std::string brokers, std::string topic, int32_t partition, std::string consumer_group="");
     ~kafka_consumer();
-
     void close();
 
     std::unique_ptr<RdKafka::Message> consume();
@@ -22,17 +20,29 @@ namespace kspp {
       return _topic;
     }
 
-    inline uint32_t partition() const {
-      return (uint32_t) _partition;
+    inline int32_t partition() const {
+      return _partition;
     }
 
+    /**
+    * start from stored offset
+    * if no stored offset exists, starts from beginning
+    */
+    void start();
+
     void start(int64_t offset);
+
+    void stop();
 
     void commit(int64_t offset, bool flush = false);
 
   private:
+    bool init();
+
+    const std::string                  _brokers;
     const std::string                  _topic;
-    const size_t                       _partition;
+    const int32_t                      _partition;
+    const std::string                  _consumer_group;
     std::unique_ptr<RdKafka::Topic>    _rd_topic;
     std::unique_ptr<RdKafka::Consumer> _consumer;
     uint64_t                           _msg_cnt;

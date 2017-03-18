@@ -28,11 +28,11 @@ int main(int argc, char **argv) {
     auto source = topology->create_processors<kspp::kafka_source<void, std::string, kspp::text_serdes>>(partition_list, "kspp_TextInput");
 
     std::regex rgx("\\s+");
-    auto word_stream = topology->create_processors<kspp::flat_map<void, std::string, std::string, void>>(source, [&rgx](const auto transaction, auto flat_map) {
-      std::sregex_token_iterator iter(transaction->record()->value->begin(), transaction->record()->value->end(), rgx, -1);
+    auto word_stream = topology->create_processors<kspp::flat_map<void, std::string, std::string, void>>(source, [&rgx](const auto record, auto flat_map) {
+      std::sregex_token_iterator iter(record->value->begin(), record->value->end(), rgx, -1);
       std::sregex_token_iterator end;
       for (; iter != end; ++iter) {
-        flat_map->push_back(std::make_shared<kspp::ktransaction<std::string, void>>(std::make_shared<kspp::krecord<std::string, void>>(*iter), transaction->id()));
+        flat_map->push_back(std::make_shared<kspp::krecord<std::string, void>>(*iter));
       }
     });
 
