@@ -14,6 +14,7 @@ kafka_consumer::kafka_consumer(std::string brokers, std::string topic, int32_t p
   , _msg_cnt(0)
   , _msg_bytes(0)
   , _closed(false) {
+  _topic_partition.push_back(RdKafka::TopicPartition::create(_topic, _partition));
   if (!init()) {
     exit(-1);
   }
@@ -23,6 +24,9 @@ kafka_consumer::~kafka_consumer() {
   if (!_closed)
     close();
   close();
+  
+  for (auto i : _topic_partition) // should be exactly 1
+    delete i;
 }
 
 void kafka_consumer::close() {
@@ -30,10 +34,10 @@ void kafka_consumer::close() {
     return;
   _closed = true;
   if (_consumer) {
-    _consumer->stop(_rd_topic.get(), 0);
+    _consumer->close();
     LOG_INFO("close") << ", consumed " << _msg_cnt << " messages (" << _msg_bytes << " bytes)";
   }
-  _rd_topic = nullptr;
+  //_rd_topic = nullptr;
   _consumer = nullptr;
 }
 
@@ -62,20 +66,23 @@ bool kafka_consumer::init() {
     return false;
   }
 
-  /*
-  if (conf->set("enable.auto.offset.store", "false", errstr) != RdKafka::Conf::CONF_OK) {
-    LOGPREFIX_ERROR << ", failed to set enable.auto.offset.store " << errstr;
-    return false;
-  }
-  */
-
-  if (conf->set("auto.commit.enable", "false", errstr) != RdKafka::Conf::CONF_OK) {
+  if (conf->set("enable.auto.commit", "false", errstr) != RdKafka::Conf::CONF_OK) {
   LOGPREFIX_ERROR << ", failed to set auto.commit.enable " << errstr;
   return false;
   }
 
   if (conf->set("auto.commit.interval.ms", "5000", errstr) != RdKafka::Conf::CONF_OK) {
     LOGPREFIX_ERROR << ", failed to set auto.commit.interval.ms " << errstr;
+    return false;
+  }
+
+  if (conf->set("enable.auto.offset.store", "false", errstr) != RdKafka::Conf::CONF_OK) {
+    LOGPREFIX_ERROR << ", failed to set enable.auto.offset.store " << errstr;
+    return false;
+  }
+
+  if (conf->set("auto.offset.reset", "earliest", errstr) != RdKafka::Conf::CONF_OK) {
+    LOGPREFIX_ERROR << ", failed to set auto.offset.reset " << errstr;
     return false;
   }
 
@@ -94,62 +101,63 @@ bool kafka_consumer::init() {
   /*
   * Create consumer using accumulated global configuration.
   */
-  _consumer = std::unique_ptr<RdKafka::Consumer>(RdKafka::Consumer::create(conf.get(), errstr));
+  _consumer = std::unique_ptr<RdKafka::KafkaConsumer>(RdKafka::KafkaConsumer::create(conf.get(), errstr));
   if (!_consumer) {
     LOGPREFIX_ERROR << ", failed to create consumer, reason: " << errstr;
     return false;
   }
   LOG_INFO("created");
 
-  /**
-  * create topic configuration
-  */
-  std::unique_ptr<RdKafka::Conf> tconf(RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC));
-  //conf->set("default_topic_conf", tconf.get(), errstr);
+  ///**
+  //* create topic configuration
+  //*/
+  //std::unique_ptr<RdKafka::Conf> tconf(RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC));
+  ////conf->set("default_topic_conf", tconf.get(), errstr);
 
-  // to we need both of the following (is this broker of topic config??)
-  if (tconf->set("auto.commit.enable", "false", errstr) != RdKafka::Conf::CONF_OK) {
-    LOGPREFIX_ERROR << ", failed to set auto.commit.enable " << errstr;
-    return false;
-  }
+  //// to we need both of the following (is this broker of topic config??)
+  //if (tconf->set("auto.commit.enable", "false", errstr) != RdKafka::Conf::CONF_OK) {
+  //  LOGPREFIX_ERROR << ", failed to set auto.commit.enable " << errstr;
+  //  return false;
+  //}
 
-  if (tconf->set("enable.auto.commit", "false", errstr) != RdKafka::Conf::CONF_OK) {
-    LOGPREFIX_ERROR << ", failed to set enable.auto.commit " << errstr;
-    return false;
-  }
+  //if (tconf->set("enable.auto.commit", "false", errstr) != RdKafka::Conf::CONF_OK) {
+  //  LOGPREFIX_ERROR << ", failed to set enable.auto.commit " << errstr;
+  //  return false;
+  //}
 
-  if (tconf->set("auto.offset.reset", "earliest", errstr) != RdKafka::Conf::CONF_OK) {
-    LOGPREFIX_ERROR << ", failed to set auto.offset.reset " << errstr;
-    return false;
-  }
+  //if (tconf->set("auto.offset.reset", "earliest", errstr) != RdKafka::Conf::CONF_OK) {
+  //  LOGPREFIX_ERROR << ", failed to set auto.offset.reset " << errstr;
+  //  return false;
+  //}
 
-  _rd_topic = std::unique_ptr<RdKafka::Topic>(RdKafka::Topic::create(_consumer.get(), _topic, tconf.get(), errstr));
+  //_rd_topic = std::unique_ptr<RdKafka::Topic>(RdKafka::Topic::create(_consumer.get(), _topic, tconf.get(), errstr));
 
-  if (!_rd_topic) {
-    LOGPREFIX_ERROR << ", failed to create topic, reason: " << errstr;
-    return false;
-  }
+  //if (!_rd_topic) {
+  //  LOGPREFIX_ERROR << ", failed to create topic, reason: " << errstr;
+  //  return false;
+  //}
   return true;
 }
 
 void kafka_consumer::start(int64_t offset) {
-  int64_t low = 0;
-  int64_t high = 0;
-  RdKafka::ErrorCode err = _consumer->query_watermark_offsets(_topic, _partition, &low, &high, 1000);
-  if (err) {
-    LOGPREFIX_ERROR << ", failed to query_watermark_offsets, reason:" << RdKafka::err2str(err);
-  }
-  if (low == high)
-    _eof = true;
-
   /*
   * Subscribe to topics
   */
-  err = _consumer->start(_rd_topic.get(), _partition, offset);
-  if (err) {
-    LOGPREFIX_ERROR << ", failed to subscribe, reason:" << RdKafka::err2str(err);
+  _topic_partition[0]->set_offset(offset);
+  RdKafka::ErrorCode err0 = _consumer->assign(_topic_partition);
+  if (err0) {
+    LOGPREFIX_ERROR << ", failed to subscribe, reason:" << RdKafka::err2str(err0);
     exit(1);
   }
+
+  int64_t low = 0;
+  int64_t high = 0;
+  RdKafka::ErrorCode err1 = _consumer->query_watermark_offsets(_topic, _partition, &low, &high, 1000);
+  if (err1) {
+    LOGPREFIX_ERROR << ", failed to query_watermark_offsets, reason:" << RdKafka::err2str(err1);
+  }
+  if (low == high)
+    _eof = true;
 }
 
 void kafka_consumer::start() {
@@ -162,7 +170,7 @@ void kafka_consumer::start() {
 }
 
 void kafka_consumer::stop() {
-  RdKafka::ErrorCode err = _consumer->stop(_rd_topic.get(), _partition);
+  RdKafka::ErrorCode err = _consumer->unassign();
   if (err) {
     LOGPREFIX_ERROR << ", failed to stop, reason:" << RdKafka::err2str(err);
     exit(1);
@@ -170,7 +178,7 @@ void kafka_consumer::stop() {
 }
 
 std::unique_ptr<RdKafka::Message> kafka_consumer::consume() {
-  std::unique_ptr<RdKafka::Message> msg(_consumer->consume(_rd_topic.get(), _partition, 0));
+  std::unique_ptr<RdKafka::Message> msg(_consumer->consume(0));
 
   switch (msg->err()) {
     case RdKafka::ERR_NO_ERROR:
@@ -201,10 +209,11 @@ std::unique_ptr<RdKafka::Message> kafka_consumer::consume() {
 }
 
 int32_t kafka_consumer::commit(int64_t offset, bool flush) {
-  //_can_be_committed = offset;
-  RdKafka::ErrorCode err = _rd_topic->offset_store(_partition, offset);
-  if (err)
-    LOGPREFIX_ERROR << ", failed to commit, reason:" << RdKafka::err2str(err);
-  return err;
+  _topic_partition[0]->set_offset(offset);
+  if (flush)
+    _consumer->commitSync(_topic_partition);
+  else
+    _consumer->commitAsync(_topic_partition);
+  return 0;
 }
 }; // namespace

@@ -6,7 +6,7 @@ namespace kspp {
   class kafka_consumer
   {
   public:
-    kafka_consumer(std::string brokers, std::string topic, int32_t partition, std::string consumer_group="");
+    kafka_consumer(std::string brokers, std::string topic, int32_t partition, std::string consumer_group);
     ~kafka_consumer();
     void close();
 
@@ -39,16 +39,17 @@ namespace kspp {
   private:
     bool init();
 
-    const std::string                  _brokers;
-    const std::string                  _topic;
-    const int32_t                      _partition;
-    const std::string                  _consumer_group;
-    std::unique_ptr<RdKafka::Topic>    _rd_topic;
-    std::unique_ptr<RdKafka::Consumer> _consumer;
-    uint64_t                           _msg_cnt;
-    uint64_t                           _msg_bytes;
-    bool                               _eof;
-    bool                               _closed;
+    const std::string                       _brokers;
+    const std::string                       _topic;
+    const int32_t                           _partition;
+    const std::string                       _consumer_group;
+    std::vector<RdKafka::TopicPartition*>   _topic_partition;
+    //std::unique_ptr<RdKafka::Topic>         _rd_topic;
+    std::unique_ptr<RdKafka::KafkaConsumer> _consumer;
+    uint64_t                                _msg_cnt;
+    uint64_t                                _msg_bytes;
+    bool                                    _eof;
+    bool                                    _closed;
   };
 };
 

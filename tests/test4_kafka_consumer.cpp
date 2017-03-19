@@ -25,7 +25,7 @@ int main(int argc, char** argv) {
   // test 1
   // start from end and produce 4 records - make sure we get same 4 records
   {
-    kspp::kafka_consumer consumer("localhost", "kspp_test4", 0);
+    kspp::kafka_consumer consumer("localhost", "kspp_test4", 0, "kspp_test");
     assert(consumer.topic() == "kspp_test4");
     assert(consumer.partition() == 0);
     consumer.start(-1); // start from end
@@ -39,6 +39,9 @@ int main(int argc, char** argv) {
     kspp::kafka_producer producer("localhost", "kspp_test4");
     for (auto i : test_data) {
       int ec = producer.produce(0, kspp::kafka_producer::COPY, (void*)i.key.data(), i.key.size(), (void*)i.value.data(), i.value.size(), nullptr);
+      if (ec) {
+        std::cerr << ", failed to produce, reason:" << RdKafka::err2str((RdKafka::ErrorCode) ec) << std::endl;
+      }
     }
 
     std::vector<record> res;
@@ -70,6 +73,7 @@ int main(int argc, char** argv) {
   // and produce 4 records - make sure we get same 4 records
   // stop consume
   // start consume at committed offset and make sure we get same records again
+  int64_t last_comitted_offset = -1;
   {
     kspp::kafka_consumer consumer("localhost", "kspp_test4", 0, "kspp_test");
     assert(consumer.topic() == "kspp_test4");
@@ -87,14 +91,15 @@ int main(int argc, char** argv) {
       int ec = producer.produce(0, kspp::kafka_producer::COPY, (void*)i.key.data(), i.key.size(), (void*)i.value.data(), i.value.size(), nullptr);
     }
 
-    int64_t last_comitted_offset = -1;
+
     {
       std::vector<record> res;
       std::chrono::time_point<std::chrono::system_clock> end = std::chrono::system_clock::now() + 5000ms;
       while (std::chrono::system_clock::now() < end) {
         auto p = consumer.consume();
         if (p) {
-          last_comitted_offset = p->offset();
+          if (last_comitted_offset == -1)
+            last_comitted_offset = p->offset();
           record r;
           r.key.assign((const char*)p->key_pointer(), p->key_len());
           r.value.assign((const char*)p->payload(), p->len());
@@ -110,10 +115,14 @@ int main(int argc, char** argv) {
         assert(res[i].value == test_data[i].value);
       }
     }
-    std::cout << "comitting " <<last_comitted_offset << std::endl;
+    std::cout << "comitting " << last_comitted_offset << std::endl;
     assert(consumer.commit(last_comitted_offset) == 0);
     std::this_thread::sleep_for(6000ms); // 5 s commit flush intervall (how can this be fixed????)
     consumer.stop();
+  } // 2
+  
+  { // 3
+    kspp::kafka_consumer consumer("localhost", "kspp_test4", 0, "kspp_test");
     assert(consumer.topic() == "kspp_test4");
     assert(consumer.partition() == 0);
     consumer.start(); // start from last committed offset
@@ -143,7 +152,7 @@ int main(int argc, char** argv) {
         assert(res[i].value == test_data[i].value);
       }
     }
-  } // test 2
+  } // test 3
 
   return 0;
 }
