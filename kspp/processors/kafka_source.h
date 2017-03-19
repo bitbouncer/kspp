@@ -64,7 +64,7 @@ namespace kspp {
     }
 
   protected:
-    kafka_source_base(std::string brokers, std::string topic, size_t partition, std::shared_ptr<CODEC> codec)
+    kafka_source_base(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<CODEC> codec)
       : partition_source<K, V>(nullptr, partition)
       , _codec(codec)
       , _consumer(brokers, topic, partition)
@@ -95,7 +95,7 @@ namespace kspp {
     kafka_source(topology_base& topology, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
       : kafka_source_base<K, V, CODEC>(topology.brokers(), topic, topology.partition(), codec) {}
 
-    kafka_source(topology_base& topology, size_t partition, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
+    kafka_source(topology_base& topology, int32_t partition, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
       : kafka_source_base<K, V, CODEC>(topology.brokers(), topic, partition, codec) {}
 
   protected:
@@ -143,7 +143,7 @@ namespace kspp {
       : kafka_source_base<void, V, CODEC>(topology.brokers(), topic, topology.partition(), codec) {
     }
 
-    kafka_source(topology_base& topology, size_t partition, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
+    kafka_source(topology_base& topology, int32_t partition, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
       : kafka_source_base<void, V, CODEC>(topology.brokers(), topic, partition, codec) {
     }
 
@@ -183,7 +183,7 @@ namespace kspp {
     kafka_source(topology_base& topology, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
       : kafka_source_base<K, void, CODEC>(topology.brokers(), topic, topology.partition(), codec) {}
 
-    kafka_source(topology_base& topology, size_t partition, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
+    kafka_source(topology_base& topology, int32_t partition, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
       : kafka_source_base<K, void, CODEC>(topology.brokers(), topic, partition, codec) {
     }
 

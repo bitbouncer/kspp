@@ -13,7 +13,7 @@ namespace kspp {
   class kafka_partition_sink_base : public partition_sink<K, V>
   {
   protected:
-    kafka_partition_sink_base(std::string brokers, std::string topic, size_t partition, std::shared_ptr<CODEC> codec)
+    kafka_partition_sink_base(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<CODEC> codec)
       : partition_sink<K, V>(partition)
       , _codec(codec)
       , _impl(brokers, topic)

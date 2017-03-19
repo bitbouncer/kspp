@@ -61,7 +61,7 @@ class pipe<void, V> : public partition_source<void, V>
   typedef V value_type;
   typedef kspp::ktransaction<void, V> record_type;
 
-  pipe(topology_base& topology, size_t partition)
+  pipe(topology_base& topology, int32_t partition)
     : partition_source<void, V>(nullptr, topology.partition()) {
   }
 

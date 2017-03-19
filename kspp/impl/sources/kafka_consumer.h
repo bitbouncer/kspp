@@ -34,7 +34,7 @@ namespace kspp {
 
     void stop();
 
-    void commit(int64_t offset, bool flush = false);
+    int32_t commit(int64_t offset, bool flush = false);
 
   private:
     bool init();

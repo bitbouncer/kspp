@@ -9,21 +9,16 @@ namespace kspp {
 
   struct message_extra
   {
-    message_extra() {
-      ++instance_count;
+    message_extra(uint32_t hash, std::shared_ptr<commit_chain::autocommit_marker> marker)
+    : partition_hash(hash)
+    , autocommit_marker(marker) {
     }
 
     ~message_extra() {
-      --instance_count;
     }
-
-    static int64_t instance_count;
-
-    std::shared_ptr<commit_chain::transaction_marker> transaction_marker;
-    uint32_t                                          partition_hash;
+    uint32_t                                         partition_hash;
+    std::shared_ptr<commit_chain::autocommit_marker> autocommit_marker;
   };
-
-  int64_t message_extra::instance_count = 0;
 
   int32_t kafka_producer::MyHashPartitionerCb::partitioner_cb(const RdKafka::Topic *topic, const std::string *key, int32_t partition_cnt, void *msg_opaque) {
     message_extra*  extra = (message_extra*) msg_opaque;
@@ -41,7 +36,7 @@ namespace kspp {
     message_extra* extra = (message_extra*) message.msg_opaque();
 
     if (message.err() != RdKafka::ErrorCode::ERR_NO_ERROR) {
-      extra->transaction_marker->fail(message.err());
+      extra->autocommit_marker->fail(message.err());
       _status = message.err();
     }
     assert(extra);
@@ -129,8 +124,6 @@ kafka_producer::kafka_producer(std::string brokers, std::string topic)
 kafka_producer::~kafka_producer() {
   if (!_closed)
     close();
-  int64_t remaning = message_extra::instance_count;
-  LOG_INFO("~kafka_producer") << ", remaining " << remaning;
 }
 
 void kafka_producer::close() {
@@ -146,11 +139,8 @@ void kafka_producer::close() {
   LOG_INFO("closed") << ", produced " << _msg_cnt << " messages (" << _msg_bytes << " bytes)";
 }
 
-int kafka_producer::produce(uint32_t partition_hash, rdkafka_memory_management_mode mode, void* key, size_t keysz, void* value, size_t valuesz, std::shared_ptr<commit_chain::transaction_marker> transaction_marker) {
-  auto user_data = new message_extra();
-  user_data->partition_hash = partition_hash;
-  user_data->transaction_marker = transaction_marker;
-
+int kafka_producer::produce(uint32_t partition_hash, rdkafka_memory_management_mode mode, void* key, size_t keysz, void* value, size_t valuesz, std::shared_ptr<commit_chain::autocommit_marker> autocommit_marker) {
+  auto user_data = new message_extra(partition_hash, autocommit_marker);
   RdKafka::ErrorCode resp = _producer->produce(_rd_topic.get(), -1, (int) mode, value, valuesz, key, keysz, user_data);
   if (resp != RdKafka::ERR_NO_ERROR) {
     LOGPREFIX_ERROR << ", Produce failed: " << RdKafka::err2str(resp);

@@ -8,16 +8,16 @@ class commit_chain
 {
   public:
 
-  class transaction_marker
+  class autocommit_marker
   {
     public:
-    transaction_marker(std::function <void(int64_t offset, int32_t ec)> callback)
+      autocommit_marker(std::function <void(int64_t offset, int32_t ec)> callback)
       : _offset(-1)
       , _ec(0)
       , _cb(callback) {
     }
    
-    ~transaction_marker() {
+    ~autocommit_marker() {
       _cb(_offset, _ec);
     }
 
@@ -34,7 +34,7 @@ class commit_chain
         _ec = ec;
     }
 
-    void init(int64_t offset, std::shared_ptr<transaction_marker> next) {
+    void init(int64_t offset, std::shared_ptr<autocommit_marker> next) {
       _offset = offset;
       _next = next;
     }
@@ -43,7 +43,7 @@ class commit_chain
     int64_t                                          _offset;
     int32_t                                          _ec;
     std::function <void(int64_t offset, int32_t ec)> _cb;
-    std::shared_ptr<transaction_marker>              _next;
+    std::shared_ptr<autocommit_marker>               _next;
   };
 
   public:
@@ -55,13 +55,13 @@ class commit_chain
     return _size; 
   }
 
-  std::shared_ptr<commit_chain::transaction_marker> create(int64_t offset);
+  std::shared_ptr<commit_chain::autocommit_marker> create(int64_t offset);
 
   private:
   void handle_result(int64_t offset, int32_t ec);
 
   std::function <void(int64_t offset, int32_t ec)> _cb;
-  std::shared_ptr<transaction_marker>              _next;
+  std::shared_ptr<autocommit_marker>               _next;
   size_t                                           _size;
 };
 };

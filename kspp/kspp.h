@@ -129,8 +129,8 @@ class partition_processor : public processor
       _upstream->close();
   }
 
-  inline uint32_t partition() const {
-    return (uint32_t) _partition;
+  inline int32_t partition() const {
+    return _partition;
   }
 
   virtual void flush() {
@@ -168,11 +168,11 @@ class partition_processor : public processor
   }
 
   protected:
-  partition_processor(partition_processor* upstream, size_t partition)
+  partition_processor(partition_processor* upstream, int32_t partition)
     : _upstream(upstream)
     , _partition(partition) {}
 
-  const size_t          _partition;
+  const int32_t         _partition;
   partition_processor*  _upstream;
 };
 
@@ -288,7 +288,7 @@ class partition_sink : public partition_processor
   }
 
 protected:
-  partition_sink(size_t partition)
+  partition_sink(int32_t partition)
     : partition_processor(nullptr, partition) {}
   
   virtual int _produce(std::shared_ptr<ktransaction<K, V>> r) = 0;
@@ -320,7 +320,7 @@ class partition_sink<void, V> : public partition_processor
   }
 
   protected:
-  partition_sink(size_t partition)
+  partition_sink(int32_t partition)
     : partition_processor(nullptr, partition) {}
 
   virtual int _produce(std::shared_ptr<ktransaction<void, V>> r) = 0;
@@ -352,7 +352,7 @@ class partition_sink<K, void> : public partition_processor
   }
 
   protected:
-  partition_sink(size_t partition)
+  partition_sink(int32_t partition)
     : partition_processor(nullptr, partition) {}
 
   virtual int _produce(std::shared_ptr<ktransaction<K, void>> r) = 0;
@@ -505,7 +505,7 @@ class partition_source : public partition_processor
   public:
   using sink_function = typename std::function<void(std::shared_ptr<ktransaction<K, V>>)>;
 
-  partition_source(partition_processor* upstream, size_t partition)
+  partition_source(partition_processor* upstream, int32_t partition)
     : partition_processor(upstream, partition)
     , _out_messages("out_message_count") {
     this->add_metric(&_out_messages);
@@ -598,7 +598,7 @@ class materialized_source : public partition_source<K, V>
   virtual iterator end() = 0;
   virtual std::shared_ptr<krecord<K, V>> get(const K& key) = 0;
 
-  materialized_source(partition_processor* upstream, size_t partition)
+  materialized_source(partition_processor* upstream, int32_t partition)
     : partition_source<K, V>(upstream, partition) {
   }
 };

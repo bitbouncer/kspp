@@ -9,9 +9,9 @@ template<class K, class V>
 class ktransaction
 {
   public:
-  ktransaction(std::shared_ptr<krecord<K, V>> r, std::shared_ptr<commit_chain::transaction_marker> id=nullptr)
+  ktransaction(std::shared_ptr<krecord<K, V>> r, std::shared_ptr<commit_chain::autocommit_marker> autocommit_marker =nullptr)
     : _record(r)
-    , _id(id) {
+    , _autocommit_marker(autocommit_marker) {
   }
 
   inline int64_t event_time() const {
@@ -19,18 +19,18 @@ class ktransaction
   }
 
   inline int64_t offset() const {
-    return _id ? _id->offset() : -1;
+    return _autocommit_marker ? _autocommit_marker->offset() : -1;
   }
 
   inline std::shared_ptr<krecord<K, V>> record() { 
     return _record; 
   }
 
-  inline std::shared_ptr<commit_chain::transaction_marker> id() {
-    return _id;
+  inline std::shared_ptr<commit_chain::autocommit_marker> id() {
+    return _autocommit_marker;
   }
 
-  std::shared_ptr<krecord<K, V>>                    _record;
-  std::shared_ptr<commit_chain::transaction_marker> _id;
+  std::shared_ptr<krecord<K, V>>                   _record;
+  std::shared_ptr<commit_chain::autocommit_marker> _autocommit_marker;
 };
 }

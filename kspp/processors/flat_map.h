@@ -83,7 +83,7 @@ namespace kspp {
   private:
     std::shared_ptr<partition_source<SK, SV>>         _source;
     extractor                                         _extractor;
-    std::shared_ptr<commit_chain::transaction_marker> _currrent_id;
+    std::shared_ptr<commit_chain::autocommit_marker>  _currrent_id;
     std::deque<std::shared_ptr<ktransaction<SK, SV>>> _queue;
     metric_counter                                    _in_count;
     metric_lag                                        _lag;
