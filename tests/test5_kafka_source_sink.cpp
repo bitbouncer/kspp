@@ -35,6 +35,7 @@ int main(int argc, char** argv) {
   auto nr_of_partitions = kspp::kafka::get_number_partitions(builder.brokers(), "kspp_test5");
   auto partition_list = kspp::get_partition_list(nr_of_partitions);
 
+  /*
   {
     auto consumer_topology = builder.create_topology();
     auto streams = consumer_topology->create_processors<kspp::kafka_source<std::string, std::string, kspp::binary_serdes>>(partition_list, "kspp_test5");
@@ -42,6 +43,7 @@ int main(int argc, char** argv) {
     consumer_topology->commit(true);
     // now offset should be at end of stream
   }
+  */
 
   {
     auto topology = builder.create_topology();
@@ -51,6 +53,39 @@ int main(int argc, char** argv) {
     auto table_stream = topology->create_sink<kspp::kafka_topic_sink<std::string, std::string, kspp::binary_serdes>>("kspp_test5");
     pipe->add_sink(table_stream);
     
+    topology->init(); // remove
+    topology->start(-1);
+
+    // insert testdata in pipe
+    for (auto & i : test_data) {
+      pipe->produce(i.key, i.value);
+    }
+
+    topology->flush();
+    topology->flush();
+
+
+    topology->commit(true);
+
+    assert(table_stream->get_metric("in_count") == TEST_SIZE);
+
+    int64_t sz = 0;
+    for (auto&& i : streams)
+      sz += i->get_metric("in_count");
+    std::cout << "source incount " << sz;
+
+    assert(sz == TEST_SIZE);
+  }
+
+  // now pick up from last commit
+  {
+    auto topology = builder.create_topology();
+
+    auto streams = topology->create_processors<kspp::kafka_source<std::string, std::string, kspp::binary_serdes>>(partition_list, "kspp_test5");
+    auto pipe = topology->create_partition_processor<kspp::pipe<std::string, std::string>>();
+    auto table_stream = topology->create_sink<kspp::kafka_topic_sink<std::string, std::string, kspp::binary_serdes>>("kspp_test5");
+    pipe->add_sink(table_stream);
+
     topology->init(); // remove
     topology->start();
 
@@ -71,7 +106,6 @@ int main(int argc, char** argv) {
 
     assert(sz == TEST_SIZE);
   }
-
 
   return 0;
 }
