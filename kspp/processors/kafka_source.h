@@ -29,12 +29,13 @@ namespace kspp {
       _consumer.start(offset);
     }
 
-    //TBD get offsets from kafka
     virtual void start() {
-      _consumer.start(-2);
+      _consumer.start();
     }
 
     virtual void close() {
+      if (_can_be_committed>=0)
+        _consumer.commit(_can_be_committed, true);
       _consumer.close();
     }
 
@@ -43,8 +44,7 @@ namespace kspp {
     }
 
     virtual void commit(bool flush) {
-      // TBD!!!!
-      //_can_be_committed
+      _consumer.commit(_can_be_committed, flush);
     }
 
     virtual size_t queue_len() {
@@ -55,6 +55,7 @@ namespace kspp {
       auto p = _consumer.consume();
       if (!p)
         return false;
+      ++_in_count;
       this->send_to_sinks(parse(p));
       return true;
     }
@@ -62,13 +63,18 @@ namespace kspp {
     std::string topic() const {
       return _consumer.topic();
     }
+    
+    size_t nr_of_partitions() const {
+      return _consumer.nr_of_partitions();
+    }
 
   protected:
     kafka_source_base(std::string brokers, std::string topic, int32_t partition, std::string consumer_group, std::shared_ptr<CODEC> codec)
       : partition_source<K, V>(nullptr, partition)
       , _codec(codec)
       , _consumer(brokers, topic, partition, consumer_group)
-      , _can_be_committed(-1) {
+      , _can_be_committed(-1)
+      , _in_count("in_count") {
       _commit_chain.set_handler([this](int64_t offset, int32_t ec) {
         if (!ec) {
           _can_be_committed = offset;
@@ -78,6 +84,10 @@ namespace kspp {
           BOOST_LOG_TRIVIAL(warning) << "kafka consumer, topic " << _consumer.topic() << ", transaction failure at offset:" << offset << ", ec:" << ec;
         }
       });
+
+       {
+        this->add_metric(&_in_count);
+      }
     }
 
     virtual std::shared_ptr<ktransaction<K, V>> parse(const std::unique_ptr<RdKafka::Message> & ref) = 0;
@@ -86,6 +96,7 @@ namespace kspp {
     std::shared_ptr<CODEC> _codec;
     int64_t                _can_be_committed;
     commit_chain           _commit_chain;
+    metric_counter         _in_count;
   };
 
   template<class K, class V, class CODEC>

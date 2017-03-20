@@ -39,6 +39,14 @@ namespace kspp {
       return (_delivery_report_cb.status() == RdKafka::ErrorCode::ERR_NO_ERROR);
     }
 
+    inline size_t nr_of_partitions() {
+      return _nr_of_partitions;
+    }
+
+    inline int32_t flush(int timeout_ms) {
+      return _producer->flush(timeout_ms);
+    }
+
   private:
     class MyHashPartitionerCb : public RdKafka::PartitionerCb {
     public:
@@ -63,6 +71,7 @@ namespace kspp {
     std::unique_ptr<RdKafka::Topic>    _rd_topic;
     std::unique_ptr<RdKafka::Producer> _producer;
     bool                               _closed;
+    size_t                             _nr_of_partitions;
     uint64_t                           _msg_cnt;
     uint64_t                           _msg_bytes;
     MyHashPartitionerCb                _default_partitioner;

@@ -36,3 +36,8 @@ add_test(NAME test3_mem_token_bucket COMMAND $<TARGET_FILE:test3_mem_token_bucke
 add_executable(test4_kafka_consumer test4_kafka_consumer.cpp)
 target_link_libraries(test4_kafka_consumer ${CSI_LIBS})
 add_test(NAME test4_kafka_consumer COMMAND $<TARGET_FILE:test4_kafka_consumer>)
+
+add_executable(test5_kafka_source_sink test5_kafka_source_sink.cpp)
+target_link_libraries(test5_kafka_source_sink ${CSI_LIBS})
+add_test(NAME test5_kafka_source_sink COMMAND $<TARGET_FILE:test5_kafka_source_sink>)
+

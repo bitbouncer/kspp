@@ -1,30 +1,30 @@
+#include <thread>
+#include <chrono>
 #include <boost/log/trivial.hpp>
 #include "kafka_producer.h"
 
 #define LOGPREFIX_ERROR BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", topic:" << _topic
 #define LOG_INFO(EVENT)  BOOST_LOG_TRIVIAL(info) << "kafka_producer: " << EVENT << ", topic:" << _topic
 
+using namespace std::chrono_literals;
+
 namespace kspp {
-
-
-  struct message_extra
+  struct producer_user_data
   {
-    message_extra(uint32_t hash, std::shared_ptr<commit_chain::autocommit_marker> marker)
+    producer_user_data(uint32_t hash, std::shared_ptr<commit_chain::autocommit_marker> marker)
     : partition_hash(hash)
     , autocommit_marker(marker) {
     }
 
-    ~message_extra() {
+    ~producer_user_data() {
     }
     uint32_t                                         partition_hash;
     std::shared_ptr<commit_chain::autocommit_marker> autocommit_marker;
   };
 
   int32_t kafka_producer::MyHashPartitionerCb::partitioner_cb(const RdKafka::Topic *topic, const std::string *key, int32_t partition_cnt, void *msg_opaque) {
-    message_extra*  extra = (message_extra*) msg_opaque;
+    producer_user_data*  extra = (producer_user_data*) msg_opaque;
     int32_t partition = extra->partition_hash % partition_cnt;
-    //uintptr_t partition_hash = (uintptr_t) msg_opaque;
-    //int32_t partition = partition_hash % partition_cnt;
     return partition;
   }
 
@@ -33,7 +33,7 @@ namespace kspp {
   }
 
   void kafka_producer::MyDeliveryReportCb::dr_cb(RdKafka::Message& message) {
-    message_extra* extra = (message_extra*) message.msg_opaque();
+    producer_user_data* extra = (producer_user_data*) message.msg_opaque();
 
     if (message.err() != RdKafka::ErrorCode::ERR_NO_ERROR) {
       extra->autocommit_marker->fail(message.err());
@@ -47,7 +47,8 @@ kafka_producer::kafka_producer(std::string brokers, std::string topic)
   : _topic(topic)
   , _msg_cnt(0)
   , _msg_bytes(0)
-  , _closed(false) {
+  , _closed(false)
+  , _nr_of_partitions(0) {
   std::string errstr;
   /*
   * Create configuration objects
@@ -87,9 +88,6 @@ kafka_producer::kafka_producer(std::string brokers, std::string topic)
     exit(1);
   }
 
-  //ExampleEventCb ex_event_cb;
-  //conf->set("event_cb", &ex_event_cb, errstr);
-
   /*
   * Create producer using accumulated global configuration.
   */
@@ -118,6 +116,32 @@ kafka_producer::kafka_producer(std::string brokers, std::string topic)
     exit(1);
   }
 
+  // really try to make sure the partition exist and all partitions has leaders before we continue
+  RdKafka::Metadata* md = NULL;
+  auto  _rd_topic = std::unique_ptr<RdKafka::Topic>(RdKafka::Topic::create(_producer.get(), _topic, nullptr, errstr));
+  int64_t nr_available = 0;
+  while (_nr_of_partitions==0 || nr_available != _nr_of_partitions) {
+    auto ec = _producer->metadata(false, _rd_topic.get(), &md, 5000);
+    if (ec == 0) {
+      const RdKafka::Metadata::TopicMetadataVector* v = md->topics();
+      for (auto&& i : *v) {
+        auto partitions = i->partitions();
+        _nr_of_partitions = partitions->size();
+        nr_available = 0;
+        for (auto&& j : *partitions) {
+          if ((j->err() == 0) && (j->leader() >= 0)) {
+            ++nr_available;
+          }
+        }
+      }
+    }
+    if (_nr_of_partitions==0 || nr_available != _nr_of_partitions) {
+      LOGPREFIX_ERROR << ", waiting for partitions leader to be available";
+      std::this_thread::sleep_for(1s);
+    }
+  }
+  delete md;
+  
   LOG_INFO("created");
 }
 
@@ -130,25 +154,40 @@ void kafka_producer::close() {
   if (_closed)
     return;
   _closed = true;
-  while (_producer && _producer->outq_len() > 0) {
+  
+  if (_producer && _producer->outq_len() > 0) {
     LOG_INFO("closing") << ", waiting for " << _producer->outq_len() << " messages to be written...";
-    _producer->poll(1000);
   }
+
+  // quick flush then exit anyway
+  auto ec = _producer->flush(2000);
+  if (ec) {
+    LOG_INFO("closing") << ", flush did not finish in 2 sec " << RdKafka::err2str(ec);
+  }
+
+  // should we still keep trying here???
+  /*
+  while (_producer && _producer->outq_len() > 0) {
+    auto ec = _producer->flush(1000);
+    LOG_INFO("closing") << ", still waiting for " << _producer->outq_len() << " messages to be written... " << RdKafka::err2str(ec);
+  }
+  */
+
   _rd_topic = nullptr;
   _producer = nullptr;
   LOG_INFO("closed") << ", produced " << _msg_cnt << " messages (" << _msg_bytes << " bytes)";
 }
 
 int kafka_producer::produce(uint32_t partition_hash, rdkafka_memory_management_mode mode, void* key, size_t keysz, void* value, size_t valuesz, std::shared_ptr<commit_chain::autocommit_marker> autocommit_marker) {
-  auto user_data = new message_extra(partition_hash, autocommit_marker);
-  RdKafka::ErrorCode resp = _producer->produce(_rd_topic.get(), -1, (int) mode, value, valuesz, key, keysz, user_data);
-  if (resp != RdKafka::ERR_NO_ERROR) {
-    LOGPREFIX_ERROR << ", Produce failed: " << RdKafka::err2str(resp);
+  auto user_data = new producer_user_data(partition_hash, autocommit_marker);
+  RdKafka::ErrorCode ec = _producer->produce(_rd_topic.get(), -1, (int) mode, value, valuesz, key, keysz, user_data);
+  if (ec != RdKafka::ERR_NO_ERROR) {
+    LOGPREFIX_ERROR << ", Produce failed: " << RdKafka::err2str(ec);
     delete user_data; // how do we signal failure to send data... the consumer should probably not continue...
-    return (int) resp;
+    return ec;
   }
   _msg_cnt++;
-  _msg_bytes += valuesz;
+  _msg_bytes += (valuesz + keysz);
   return 0;
 }
 }; // namespace

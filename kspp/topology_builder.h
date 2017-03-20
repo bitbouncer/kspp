@@ -155,6 +155,10 @@ class topology_builder
     return std::make_shared<topic_topology>(_app_info, id, _brokers, _root_path);
   }
 
+  std::string brokers() const {
+    return _brokers;
+  }
+
   private:
   std::shared_ptr<app_info> _app_info;
   std::string               _brokers;

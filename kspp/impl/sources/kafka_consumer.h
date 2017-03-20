@@ -37,15 +37,15 @@ namespace kspp {
     int32_t commit(int64_t offset, bool flush = false);
 
   private:
-    bool init();
-
     const std::string                       _brokers;
     const std::string                       _topic;
     const int32_t                           _partition;
     const std::string                       _consumer_group;
     std::vector<RdKafka::TopicPartition*>   _topic_partition;
-    //std::unique_ptr<RdKafka::Topic>         _rd_topic;
     std::unique_ptr<RdKafka::KafkaConsumer> _consumer;
+    int64_t                                 _can_be_committed;
+    int64_t                                 _last_committed;
+    size_t                                  _max_pending_commits;
     uint64_t                                _msg_cnt;
     uint64_t                                _msg_bytes;
     bool                                    _eof;

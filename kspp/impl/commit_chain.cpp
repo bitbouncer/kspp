@@ -3,6 +3,7 @@
 namespace kspp {
 commit_chain::commit_chain()
   : _cb(nullptr)
+  , _size(0)
   , _next(std::make_shared<autocommit_marker>([this](int64_t offset, int32_t ec) {
   handle_result(offset, ec);
 })) {
@@ -15,7 +16,7 @@ void commit_chain::set_handler(std::function <void(int64_t offset, int32_t ec)> 
 
 std::shared_ptr<commit_chain::autocommit_marker> commit_chain::commit_chain::create(int64_t offset) {
   ++_size;
-  
+
   auto next = std::make_shared<autocommit_marker>([this](int64_t offset, int32_t ec) {
     handle_result(offset, ec);
   });
@@ -27,8 +28,10 @@ std::shared_ptr<commit_chain::autocommit_marker> commit_chain::commit_chain::cre
 }
 
 void commit_chain::handle_result(int64_t offset, int32_t ec) {
-  --_size;
-  if (_cb)
-    _cb(offset, ec);
+  if (offset >= 0) { // the "next" object with -1 is invalid
+    --_size;
+    if (_cb)
+      _cb(offset, ec);
+  }
 }
 };
