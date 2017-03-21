@@ -63,10 +63,6 @@ namespace kspp {
     std::string topic() const {
       return _consumer.topic();
     }
-    
-    size_t nr_of_partitions() const {
-      return _consumer.nr_of_partitions();
-    }
 
   protected:
     kafka_source_base(std::string brokers, std::string topic, int32_t partition, std::string consumer_group, std::shared_ptr<CODEC> codec)
