@@ -291,7 +291,7 @@ class partition_sink : public partition_processor
   }
 
   inline int produce(std::shared_ptr<krecord<K, V>> r) {
-    return _produce(std::make_shared<ktransaction<K, V>(r));
+    return _produce(std::make_shared<ktransaction<K, V>>(r));
   }
 
   inline int produce(std::shared_ptr<ktransaction<K, V>> r) {
@@ -327,7 +327,7 @@ class partition_sink<void, V> : public partition_processor
   }
 
   inline int produce(std::shared_ptr<krecord<void, V>> r) {
-    return _produce(std::make_shared<ktransaction<void, V>(r));
+    return _produce(std::make_shared<ktransaction<void, V>>(r));
   }
   
   inline int produce(std::shared_ptr<ktransaction<void, V>> r) {
@@ -363,7 +363,7 @@ class partition_sink<K, void> : public partition_processor
   }
 
   inline int produce(std::shared_ptr<krecord<K, void>> r) {
-    return _produce(std::make_shared<ktransaction<K, void>(r));
+    return _produce(std::make_shared<ktransaction<K, void>>(r));
   }
   
   inline int produce(std::shared_ptr<ktransaction<K, void>> r) {
@@ -426,7 +426,7 @@ public:
   }
 
   inline int produce(std::shared_ptr<krecord<K, V>> r) {
-    return _produce(std::make_shared<ktransaction<K,V>(r));
+    return _produce(std::make_shared<ktransaction<K,V>>(r));
   }
 
   inline int produce(std::shared_ptr<ktransaction<K, V>> t) {
@@ -472,7 +472,7 @@ public:
   }
 
   inline int produce(std::shared_ptr<krecord<void, V>> r) {
-    return _produce(std::make_shared<ktransaction<void, V>(r));
+    return _produce(std::make_shared<ktransaction<void, V>>(r));
   }
 
   inline int produce(std::shared_ptr<ktransaction<void, V>> t) {
@@ -518,7 +518,7 @@ public:
   }
 
   inline int produce(std::shared_ptr<krecord<K, void>> r) {
-    return _produce(std::make_shared<ktransaction<K, void>(r));
+    return _produce(std::make_shared<ktransaction<K, void>>(r));
   }
 
   inline int produce(std::shared_ptr<ktransaction<K, void>> r) {
