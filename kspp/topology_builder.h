@@ -19,12 +19,11 @@ class partition_topology : public topology_base
     return p;
   }
 
-  // this seems to be only sinks???
   template<class pp, typename... Args>
-  typename std::enable_if<std::is_base_of<kspp::topic_processor, pp>::value, std::shared_ptr<pp>>::type
+  typename std::enable_if<std::is_base_of<kspp::generic_sink, pp>::value, std::shared_ptr<pp>>::type
     create_topic_sink(Args... args) {
     auto p = std::make_shared<pp>(*this, args...);
-    _topic_processors.push_back(p);
+    _sinks.push_back(p);
     return p;
   }
 };
@@ -94,19 +93,19 @@ class topic_topology : public topology_base
 
   // this seems to be only sinks???
   template<class pp, typename... Args>
-  typename std::enable_if<std::is_base_of<kspp::topic_processor, pp>::value, std::shared_ptr<pp>>::type
+  typename std::enable_if<std::is_base_of<kspp::generic_sink, pp>::value, std::shared_ptr<pp>>::type
     create_sink(Args... args) {
     auto p = std::make_shared<pp>(*this, args...);
-    _topic_processors.push_back(p);
+    _sinks.push_back(p);
     return p;
   }
 
   // this seems to be only sinks???
   template<class pp, class source, typename... Args>
-  typename std::enable_if<std::is_base_of<kspp::topic_processor, pp>::value, std::shared_ptr<pp>>::type
+  typename std::enable_if<std::is_base_of<kspp::generic_sink, pp>::value, std::shared_ptr<pp>>::type
     create_sink(std::vector<std::shared_ptr<source>> sources, Args... args) {
     auto p = std::make_shared<pp>(*this, args...);
-    _topic_processors.push_back(p);
+    _sinks.push_back(p);
     for (auto i : sources)
       i->add_sink(p);
     return p;

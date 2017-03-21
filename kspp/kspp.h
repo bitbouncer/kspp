@@ -79,10 +79,10 @@ class processor
 
 // this seems to be only sinks - rename to a better name (topic_sinks taken...)
 // topic_sink_processor??
-class topic_processor : public processor
+class generic_sink : public processor
 {
   public:
-  virtual ~topic_processor() {}
+  virtual ~generic_sink() {}
   virtual std::string name() const = 0;
 
   virtual void poll(int timeout) {}
@@ -92,19 +92,20 @@ class topic_processor : public processor
   virtual void close() = 0;
 
 
-  virtual void flush() {
-    while (!eof())
-      if (!process_one(kspp::milliseconds_since_epoch())) {
-        ;
-      }
-    //if (_upstream)   TBD!!!!!
-    //  _upstream->flush();
-    while (!eof())
-      if (!process_one(kspp::milliseconds_since_epoch())) {
-        ;
-      }
-    punctuate(milliseconds_since_epoch());
-  }
+  virtual void flush() = 0;
+  //virtual void flush() {
+  //  while (!eof())
+  //    if (!process_one(kspp::milliseconds_since_epoch())) {
+  //      ;
+  //    }
+  //  //if (_upstream)   TBD!!!!!
+  //  //  _upstream->flush();
+  //  while (!eof())
+  //    if (!process_one(kspp::milliseconds_since_epoch())) {
+  //      ;
+  //    }
+  //  punctuate(milliseconds_since_epoch());
+  //}
   
   protected:
 };
@@ -257,7 +258,7 @@ class topology_base
   std::string                                       _brokers;
   boost::filesystem::path                           _root_path;
   std::vector<std::shared_ptr<partition_processor>> _partition_processors;
-  std::vector<std::shared_ptr<topic_processor>>     _topic_processors;
+  std::vector<std::shared_ptr<generic_sink>>        _sinks;
   std::vector<std::shared_ptr<partition_processor>> _top_partition_processors;
   int64_t                                           _next_gc_ts;
   //next sink queue check loop count;
@@ -389,7 +390,7 @@ inline uint32_t get_partition(const PK& key, size_t nr_of_partitions, std::share
   we need this class to get rid of the codec for templates..
 */
 template<class K, class V>
-class topic_sink : public topic_processor
+class topic_sink : public generic_sink
 {
 public:
   typedef K key_type;
@@ -427,7 +428,7 @@ protected:
 
 // spec for void key
 template<class V>
-class topic_sink<void, V> : public topic_processor
+class topic_sink<void, V> : public generic_sink
 {
 public:
   typedef void key_type;
@@ -465,7 +466,7 @@ protected:
 
 // spec for void value
 template<class K>
-class topic_sink<K, void> : public topic_processor
+class topic_sink<K, void> : public generic_sink
 {
 public:
   typedef K key_type;

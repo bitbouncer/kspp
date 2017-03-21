@@ -53,6 +53,14 @@ namespace kspp {
       // noop
     }
 
+    virtual void flush() {
+      while (true) {
+        auto ec = _impl.flush(1000);
+        if (ec == 0)
+          break;
+      }
+    }
+
     virtual bool eof() const {
       return true;
     }

@@ -22,8 +22,11 @@ topology_base::topology_base(std::shared_ptr<app_info> ai,
 }
 
 topology_base::~topology_base() {
+  BOOST_LOG_TRIVIAL(info) << "topology, name:" << name() << " terminating";
+  _partition_processors.clear(); 
+  _top_partition_processors.clear();
+  _sinks.clear();
   BOOST_LOG_TRIVIAL(info) << "topology, name:" << name() << " terminated";
-  // output stats
 }
 
 std::string topology_base::app_id() const {
@@ -74,7 +77,7 @@ void topology_base::init_metrics() {
     }
   }
 
-  for (auto i : _topic_processors) {
+  for (auto i : _sinks) {
     for (auto j : i->get_metrics()) {
       j->_logged_name = j->_simple_name
         + ",app_id=" + escape_influx(_app_info->app_id)
@@ -94,7 +97,7 @@ void topology_base::for_each_metrics(std::function<void(kspp::metric&)> f) {
     for (auto j : i->get_metrics())
       f(*j);
 
-  for (auto i : _topic_processors)
+  for (auto i : _sinks)
     for (auto j : i->get_metrics())
       f(*j);
 }
@@ -131,7 +134,7 @@ int topology_base::process_one() {
   // we should not check every loop
   // check every 1000 run?
   size_t sink_queue_len = 0;
-  for (auto i : _topic_processors)
+  for (auto i : _sinks)
     sink_queue_len += i->queue_len();
   if (sink_queue_len > 50000)
     return 0;
@@ -142,14 +145,15 @@ int topology_base::process_one() {
   for (auto&& i : _top_partition_processors) {
     res += i->process_one(tick);
   }
-  // is this nessessary??? are those only sinks??
-  for (auto i : _topic_processors)
+
+  // is this nessessary???
+  for (auto i : _sinks)
     res += i->process_one(tick);
 
   if (tick > _next_gc_ts) {
     for (auto i : _partition_processors)
       i->garbage_collect(tick);
-    for (auto i : _topic_processors)
+    for (auto i : _sinks)
       i->garbage_collect(tick);
     _next_gc_ts = tick + 10000; // 10 sec
   }
@@ -158,9 +162,9 @@ int topology_base::process_one() {
 }
 
 void topology_base::close() {
-  for (auto i : _topic_processors)
-    i->close();
   for (auto i : _partition_processors)
+    i->close();
+  for (auto i : _sinks)
     i->close();
 }
 
@@ -189,9 +193,17 @@ void topology_base::commit(bool force) {
     i->commit(force);
 }
 
+// this is probably not enough if we have a topology that consists of 
+// sources -> sink -> source -> processing > sink -> source
+// we might have stuff in sinks that needs to be flushed before processing in following steps can finish
+// TBD how to capture this??
+// for now we start with a flush of the sinks but that is not enough
 void topology_base::flush() {
   while (true)
   {
+    for (auto i : _sinks)
+      i->flush();
+
     auto sz = process_one();
     if (sz)
       continue;
@@ -205,6 +217,9 @@ void topology_base::flush() {
     i->flush();
 
   while (true) {
+    for (auto i : _sinks)
+      i->flush();
+
     auto sz = process_one();
     if (sz)
       continue;

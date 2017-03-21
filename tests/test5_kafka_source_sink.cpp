@@ -61,10 +61,10 @@ int main(int argc, char** argv) {
       pipe->produce(i.key, i.value);
     }
 
-    topology->flush();
-    topology->flush();
-
-
+    std::chrono::time_point<std::chrono::system_clock> end = std::chrono::system_clock::now() + 2000ms;
+    while (std::chrono::system_clock::now() < end) {
+      topology->flush();
+    }
     topology->commit(true);
 
     assert(table_stream->get_metric("in_count") == TEST_SIZE);
@@ -72,8 +72,6 @@ int main(int argc, char** argv) {
     int64_t sz = 0;
     for (auto&& i : streams)
       sz += i->get_metric("in_count");
-    std::cout << "source incount " << sz;
-
     assert(sz == TEST_SIZE);
   }
 
@@ -94,7 +92,10 @@ int main(int argc, char** argv) {
       pipe->produce(i.key, i.value);
     }
 
-    topology->flush();
+    std::chrono::time_point<std::chrono::system_clock> end = std::chrono::system_clock::now() + 2000ms;
+    while (std::chrono::system_clock::now() < end) {
+      topology->flush();
+    }
     topology->commit(true);
 
     assert(table_stream->get_metric("in_count") == TEST_SIZE);
@@ -102,8 +103,6 @@ int main(int argc, char** argv) {
     int64_t sz = 0;
     for (auto&& i : streams)
       sz += i->get_metric("in_count");
-    std::cout << "source incount " << sz;
-
     assert(sz == TEST_SIZE);
   }
 

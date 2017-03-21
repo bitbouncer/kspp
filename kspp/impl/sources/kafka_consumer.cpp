@@ -6,6 +6,7 @@
 
 #define LOGPREFIX_ERROR BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", topic:" << _topic << ":" << _partition
 #define LOG_INFO(EVENT)  BOOST_LOG_TRIVIAL(info) << "kafka_consumer: " << EVENT << ", topic:" << _topic << ":" << _partition
+#define LOG_DEBUG(EVENT)  BOOST_LOG_TRIVIAL(debug) << "kafka_consumer: " << EVENT << ", topic:" << _topic << ":" << _partition
 
 using namespace std::chrono_literals;
 
@@ -106,9 +107,8 @@ void kafka_consumer::close() {
   _closed = true;
   if (_consumer) {
     _consumer->close();
-    LOG_INFO("close") << ", consumed " << _msg_cnt << " messages (" << _msg_bytes << " bytes)";
+    LOG_INFO("closed") << ", consumed " << _msg_cnt << " messages (" << _msg_bytes << " bytes)";
   }
-  //_rd_topic = nullptr;
   _consumer = nullptr;
 }
 
@@ -122,18 +122,7 @@ void kafka_consumer::start(int64_t offset) {
     LOGPREFIX_ERROR << ", failed to subscribe, reason:" << RdKafka::err2str(err0);
     exit(1);
   }
-  
-  //_topic_partition[0]->set_offset(0);
-  //_consumer->position(_topic_partition);
-
-  int64_t low = 0;
-  int64_t high = 0;
-  RdKafka::ErrorCode err1 = _consumer->query_watermark_offsets(_topic, _partition, &low, &high, 1000);
-  if (err1) {
-    LOGPREFIX_ERROR << ", failed to query_watermark_offsets, reason:" << RdKafka::err2str(err1);
-  }
-  if (low == high)
-    _eof = true;
+  update_eof();
 }
 
 void kafka_consumer::start() {
@@ -148,6 +137,28 @@ void kafka_consumer::stop() {
   }
 }
 
+int kafka_consumer::update_eof(){
+  int64_t low = 0;
+  int64_t high = 0;
+  RdKafka::ErrorCode ec = _consumer->query_watermark_offsets(_topic, _partition, &low, &high, 1000);
+  if (ec) {
+    LOGPREFIX_ERROR << ", failed to query_watermark_offsets, reason:" << RdKafka::err2str(ec);
+    return ec;
+  }
+  if (low == high) {
+    _eof = true;
+  } else {
+    auto ec = _consumer->position(_topic_partition);
+    if (ec) {
+      LOGPREFIX_ERROR << ", failed to query position, reason:" << RdKafka::err2str(ec);
+      return ec;
+    }
+    auto cursor = _topic_partition[0]->offset();
+    _eof = (cursor + 1 == high);
+  }
+  return 0;
+}
+
 std::unique_ptr<RdKafka::Message> kafka_consumer::consume() {
   std::unique_ptr<RdKafka::Message> msg(_consumer->consume(0));
 
@@ -155,7 +166,7 @@ std::unique_ptr<RdKafka::Message> kafka_consumer::consume() {
     case RdKafka::ERR_NO_ERROR:
       _eof = false;
       _msg_cnt++;
-      _msg_bytes += msg->len();
+      _msg_bytes += msg->len() + msg->key_len();
       return msg;
 
     case RdKafka::ERR__TIMED_OUT:
@@ -180,44 +191,26 @@ std::unique_ptr<RdKafka::Message> kafka_consumer::consume() {
 }
 
 int32_t kafka_consumer::commit(int64_t offset, bool flush) {
-  if (offset < 0 ) {
-    int64_t low = 0;
-    int64_t high = 0;
-    RdKafka::ErrorCode ec = _consumer->query_watermark_offsets(_topic, _partition, &low, &high, 1000);
-    if (ec) {
-      LOGPREFIX_ERROR << ", failed to query_watermark_offsets, reason:" << RdKafka::err2str(ec);
-      return ec;
-    }
-    auto sz = high - low;
-    if ((high - low) == 0) { // empty dataset - nothing to commit
-      LOG_INFO("commit") << ", nothing to commit, low: " << low << ", high: " << high;
-      return 0;
-    }
+  if (offset < 0) // not valid
+    return 0;
 
-    if (offset==-1)
-      offset = high - 1;
-    else
-      offset = low - 1;
-  } else {   // debug only...
-    int64_t low = 0;
-    int64_t high = 0;
-    RdKafka::ErrorCode ec = _consumer->query_watermark_offsets(_topic, _partition, &low, &high, 1000);
-    if (ec) {
-      LOGPREFIX_ERROR << ", failed to query_watermark_offsets, reason:" << RdKafka::err2str(ec);
-      return ec;
-    }
-    LOG_INFO("commit") << ", " << offset << " highwatermark=" << high << " behind " << (high - 1) - offset << " messages";
-  }
+  // you should actually write offset + 1, since a new consumer will start at offset.
+  offset = offset + 1; 
+
+  if (offset == _last_committed) // already done
+    return 0;
 
   _can_be_committed = offset;
   RdKafka::ErrorCode ec = RdKafka::ERR_NO_ERROR;
   if (flush) {
+    LOG_INFO("commiting(flush)") << ", " << _can_be_committed;
     _topic_partition[0]->set_offset(_can_be_committed);
     ec = _consumer->commitSync(_topic_partition);
     if (ec != RdKafka::ERR_NO_ERROR) {
       LOGPREFIX_ERROR << ", failed to commit, reason:" << RdKafka::err2str(ec);
     }
   } else if ((_last_committed + _max_pending_commits) < _can_be_committed) {
+    LOG_DEBUG("commiting(lazy)") << ", " << _can_be_committed;
     _topic_partition[0]->set_offset(_can_be_committed);
     ec = _consumer->commitAsync(_topic_partition);
     if (ec != RdKafka::ERR_NO_ERROR) {

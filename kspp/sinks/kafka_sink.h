@@ -61,7 +61,16 @@ class kafka_sink_base : public topic_sink<K, V>
     // noop
   }
 
+  virtual void flush() {
+    while (true) {
+      auto ec = _impl.flush(1000);
+      if (ec == 0)
+        break;
+    }
+  }
+
   virtual bool eof() const {
+    //return (_impl.queue_len() == 0);
     return true;
   }
 

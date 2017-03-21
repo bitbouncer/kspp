@@ -36,6 +36,8 @@ namespace kspp {
 
     int32_t commit(int64_t offset, bool flush = false);
 
+    int update_eof();
+
   private:
     const std::string                       _brokers;
     const std::string                       _topic;

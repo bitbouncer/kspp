@@ -44,6 +44,7 @@ namespace kspp {
     }
 
     inline int32_t flush(int timeout_ms) {
+      auto sz = _producer->outq_len();
       return _producer->flush(timeout_ms);
     }
 
