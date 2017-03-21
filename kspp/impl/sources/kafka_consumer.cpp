@@ -63,11 +63,11 @@ kafka_consumer::kafka_consumer(std::string brokers, std::string topic, int32_t p
     exit(-1);
   }
 
-  // this seems to be a bug with librdkafka v0.9.4 (works with master)
-  if (conf->set("auto.offset.reset", "earliest", errstr) != RdKafka::Conf::CONF_OK) {
-    LOGPREFIX_ERROR << ", failed to set auto.offset.reset " << errstr;
-    //exit(-1);
-  }
+  //// this seems to be a bug with librdkafka v0.9.4 (works with master)
+  //if (conf->set("auto.offset.reset", "earliest", errstr) != RdKafka::Conf::CONF_OK) {
+  //  LOGPREFIX_ERROR << ", failed to set auto.offset.reset " << errstr;
+  //  //exit(-1);
+  //}
 
   if (conf->set("group.id", _consumer_group, errstr) != RdKafka::Conf::CONF_OK) {
     LOGPREFIX_ERROR << ", failed to set group " << errstr;
@@ -78,6 +78,22 @@ kafka_consumer::kafka_consumer(std::string brokers, std::string topic, int32_t p
     LOGPREFIX_ERROR << ", failed to set enable.partition.eof " << errstr;
     exit(-1);
   }
+
+  // following are topic configs but they will be passed in default_topic_conf to broker config.
+  {
+    std::unique_ptr<RdKafka::Conf> tconf(RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC));
+
+    if (tconf->set("auto.offset.reset", "earliest", errstr) != RdKafka::Conf::CONF_OK) {
+      LOGPREFIX_ERROR << ", failed to set auto.offset.reset " << errstr;
+      //exit(-1);
+    }
+
+    if (conf->set("default_topic_conf", tconf.get(), errstr) != RdKafka::Conf::CONF_OK) {
+      LOGPREFIX_ERROR << ", failed to set default_topic_conf " << errstr;
+      exit(-1);
+    }
+  }
+
 
   /*
   * Create consumer using accumulated global configuration.
