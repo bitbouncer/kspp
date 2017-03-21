@@ -119,6 +119,10 @@ call bootstrap.bat
 .\b2.exe -toolset=msvc-%VisualStudioVersion% variant=release,debug link=static address-model=64 architecture=x86 --stagedir=stage\lib\x64 stage -s ZLIB_SOURCE=%CD%\..\zlib headers log_setup log date_time timer thread system program_options filesystem regex chrono
 cd ..
 
+cd librdkafka
+git checkout v0.9.4
+cd ..
+
 mkdir include
 mkdir include\librdkafka
 xcopy /e /s librdkafka\src\*.h include\librdkafka
