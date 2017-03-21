@@ -129,15 +129,14 @@ int main(int argc, char** argv) {
       }
       std::cout << "comitting " << last_comitted_offset << std::endl;
       assert(consumer.commit(last_comitted_offset, true) == 0);
-      //std::this_thread::sleep_for(6000ms); // 5 s commit flush intervall (how can this be fixed????)
       consumer.stop();
     } // 2 phase A
 
-    { // 2 phase B
+    { // 2 phase B we shouyld pick up 3 records since we comitted one
       kspp::kafka_consumer consumer("localhost", "kspp_test4", 0, "kspp_test");
       assert(consumer.topic() == "kspp_test4");
       assert(consumer.partition() == 0);
-      consumer.start(); // start from last committed offset
+      consumer.start(); // start from after last committed offset
 
       int64_t first_offset = -1;
       {
@@ -153,15 +152,15 @@ int main(int argc, char** argv) {
             r.value.assign((const char*) p->payload(), p->len());
             res.push_back(r);
           }
-          if (res.size() == 4)
+          if (res.size() == 3)
             break;
         }
         std::cout << "reading first offset " << first_offset << std::endl;
-        assert(first_offset == last_comitted_offset);
-        assert(res.size() == 4);
-        for (int i = 0; i != 4; ++i) {
-          assert(res[i].key == test_data[i].key);
-          assert(res[i].value == test_data[i].value);
+        assert(first_offset == last_comitted_offset+1);
+        assert(res.size() == 3);
+        for (int i = 0; i != 3; ++i) {
+          assert(res[i].key == test_data[i+1].key);
+          assert(res[i].value == test_data[i+1].value);
         }
       }
     } //// test 2 phase B
@@ -243,11 +242,11 @@ int main(int argc, char** argv) {
           break;
       }
       std::cout << "reading first offset " << first_offset << std::endl;
-      assert(first_offset == last_comitted_offset);
-      assert(res.size() == 4);
-      for (int i = 0; i != 4; ++i) {
-        assert(res[i].key == test_data[i].key);
-        assert(res[i].value == test_data[i].value);
+      assert(first_offset == last_comitted_offset+1);
+      assert(res.size() == 3);
+      for (int i = 0; i != 3; ++i) {
+        assert(res[i].key == test_data[i+1].key);
+        assert(res[i].value == test_data[i+1].value);
       }
     }
   }// test 3

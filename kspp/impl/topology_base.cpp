@@ -33,6 +33,10 @@ std::string topology_base::app_id() const {
   return _app_info->identity();
 }
 
+std::string topology_base::group_id() const {
+  return _app_info->group_id();
+}
+
 std::string topology_base::topology_id() const {
   return _topology_id;
 }

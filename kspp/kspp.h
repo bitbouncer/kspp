@@ -211,6 +211,13 @@ struct app_info
       return app_namespace + "::" + app_id + "#" + app_instance_id;
   }
 
+  std::string group_id() const {
+    if (app_instance_id.size() == 0)
+      return app_namespace + "_" + app_id;
+    else
+      return app_namespace + "_" + app_id + "_" + app_instance_id;
+  }
+
   const std::string app_namespace;
   const std::string app_id;
   const std::string app_instance_id;
@@ -234,6 +241,7 @@ class topology_base
 
   public:
   std::string             app_id() const;
+  std::string             group_id() const;
   std::string             topology_id() const;
   int32_t                 partition() const;
   std::string             brokers() const;
@@ -282,6 +290,10 @@ class partition_sink : public partition_processor
     return type_name<V>::get();
   }
 
+  inline int produce(std::shared_ptr<krecord<K, V>> r) {
+    return _produce(std::make_shared<ktransaction<K, V>(r));
+  }
+
   inline int produce(std::shared_ptr<ktransaction<K, V>> r) {
     return _produce(r);
   }
@@ -312,6 +324,10 @@ class partition_sink<void, V> : public partition_processor
 
   virtual std::string value_type_name() const {
     return type_name<V>::get();
+  }
+
+  inline int produce(std::shared_ptr<krecord<void, V>> r) {
+    return _produce(std::make_shared<ktransaction<void, V>(r));
   }
   
   inline int produce(std::shared_ptr<ktransaction<void, V>> r) {
@@ -344,6 +360,10 @@ class partition_sink<K, void> : public partition_processor
 
   virtual std::string value_type_name() const {
     return "void";
+  }
+
+  inline int produce(std::shared_ptr<krecord<K, void>> r) {
+    return _produce(std::make_shared<ktransaction<K, void>(r));
   }
   
   inline int produce(std::shared_ptr<ktransaction<K, void>> r) {
@@ -405,12 +425,20 @@ public:
     return type_name<V>::get();
   }
 
-  inline int produce(std::shared_ptr<ktransaction<K, V>> r) {
-    return _produce(r);
+  inline int produce(std::shared_ptr<krecord<K, V>> r) {
+    return _produce(std::make_shared<ktransaction<K,V>(r));
   }
 
-  inline int produce(uint32_t partition_hash, std::shared_ptr<ktransaction<K, V>> r) {
-    return _produce(partition_hash, r);
+  inline int produce(std::shared_ptr<ktransaction<K, V>> t) {
+    return _produce(t);
+  }
+
+  inline int produce(uint32_t partition_hash, std::shared_ptr<krecord<K, V>> r) {
+    return _produce(partition_hash, std::make_shared<ktransaction<K, V>(r));
+  }
+
+  inline int produce(uint32_t partition_hash, std::shared_ptr<ktransaction<K, V>> t) {
+    return _produce(partition_hash, t);
   }
 
   inline  int produce(const K& key, const V& value) {
@@ -443,12 +471,20 @@ public:
     return type_name<V>::get();
   }
 
-  inline int produce(std::shared_ptr<ktransaction<void, V>> r) {
-    return _produce(r);
+  inline int produce(std::shared_ptr<krecord<void, V>> r) {
+    return _produce(std::make_shared<ktransaction<void, V>(r));
   }
 
-  inline int produce(uint32_t partition_hash, std::shared_ptr<ktransaction<void, V>> r) {
-    return _produce(partition_hash, r);
+  inline int produce(std::shared_ptr<ktransaction<void, V>> t) {
+    return _produce(t);
+  }
+
+  inline int produce(uint32_t partition_hash, std::shared_ptr<krecord<void, V>> r) {
+    return _produce(partition_hash, std::make_shared<ktransaction<void, V>(r));
+  }
+
+  inline int produce(uint32_t partition_hash, std::shared_ptr<ktransaction<void, V>> t) {
+    return _produce(partition_hash, t);
   }
 
   inline  int produce(const V& value) {
@@ -481,8 +517,16 @@ public:
     return "void";
   }
 
+  inline int produce(std::shared_ptr<krecord<K, void>> r) {
+    return _produce(std::make_shared<ktransaction<K, void>(r));
+  }
+
   inline int produce(std::shared_ptr<ktransaction<K, void>> r) {
     return _produce(r);
+  }
+
+  inline int produce(uint32_t partition_hash, std::shared_ptr<krecord<K, void>> r) {
+    return _produce(partition_hash, std::make_shared<ktransaction<K, void>(r));
   }
 
   inline int produce(uint32_t partition_hash, std::shared_ptr<ktransaction<K, void>> r) {
