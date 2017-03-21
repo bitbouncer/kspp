@@ -63,9 +63,10 @@ kafka_consumer::kafka_consumer(std::string brokers, std::string topic, int32_t p
     exit(-1);
   }
 
+  // this seems to be a bug with librdkafka v0.9.4 (works with master)
   if (conf->set("auto.offset.reset", "earliest", errstr) != RdKafka::Conf::CONF_OK) {
     LOGPREFIX_ERROR << ", failed to set auto.offset.reset " << errstr;
-    exit(-1);
+    //exit(-1);
   }
 
   if (conf->set("group.id", _consumer_group, errstr) != RdKafka::Conf::CONF_OK) {

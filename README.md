@@ -27,6 +27,7 @@ cd ..
 
 git clone https://github.com/edenhill/librdkafka.git
 cd librdkafka
+git checkout v0.9.4
 ./configure
 make
 sudo make install
