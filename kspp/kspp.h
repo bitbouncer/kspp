@@ -371,7 +371,7 @@ class partition_sink<K, void> : public partition_processor
   }
 
   inline int produce(const K& key, int64_t ts = milliseconds_since_epoch()) {
-    return _produce(std::make_shared<ktransaction<K, void>>(std::make_shared<krecord<K, void>(key, ts)));
+    return _produce(std::make_shared<ktransaction<K, void>>(std::make_shared<krecord<K, void>>(key, ts)));
   }
 
   protected:
@@ -434,7 +434,7 @@ public:
   }
 
   inline int produce(uint32_t partition_hash, std::shared_ptr<krecord<K, V>> r) {
-    return _produce(partition_hash, std::make_shared<ktransaction<K, V>(r));
+    return _produce(partition_hash, std::make_shared<ktransaction<K, V>>(r));
   }
 
   inline int produce(uint32_t partition_hash, std::shared_ptr<ktransaction<K, V>> t) {
@@ -480,7 +480,7 @@ public:
   }
 
   inline int produce(uint32_t partition_hash, std::shared_ptr<krecord<void, V>> r) {
-    return _produce(partition_hash, std::make_shared<ktransaction<void, V>(r));
+    return _produce(partition_hash, std::make_shared<ktransaction<void, V>>(r));
   }
 
   inline int produce(uint32_t partition_hash, std::shared_ptr<ktransaction<void, V>> t) {
@@ -526,7 +526,7 @@ public:
   }
 
   inline int produce(uint32_t partition_hash, std::shared_ptr<krecord<K, void>> r) {
-    return _produce(partition_hash, std::make_shared<ktransaction<K, void>(r));
+    return _produce(partition_hash, std::make_shared<ktransaction<K, void>>(r));
   }
 
   inline int produce(uint32_t partition_hash, std::shared_ptr<ktransaction<K, void>> r) {
