@@ -249,6 +249,11 @@ int main(int argc, char** argv) {
         assert(res[i].value == test_data[i+1].value);
       }
     }
+
+   /* std::cerr << "sleep forever" << std::endl;
+    while (true) {
+      std::this_thread::sleep_for(1000ms);
+    }*/
   }// test 3
   return 0;
 }

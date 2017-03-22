@@ -8,7 +8,7 @@
 #include <kspp/sinks/kafka_sink.h>
 #include <kspp/processors/pipe.h>
 #include <kspp/processors/kafka_source.h>
-
+#include <kspp/impl/kafka_utils.h>
 
 using namespace std::chrono_literals;
 
@@ -21,6 +21,8 @@ struct record
 #define TEST_SIZE 1
 
 int main(int argc, char** argv) {
+  kspp::kafka::wait_for_group("localhost", "dummy");
+
   std::vector<record> test_data;
   for (int i = 0; i != TEST_SIZE; ++i) {
     record r;

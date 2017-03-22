@@ -53,6 +53,7 @@ kafka_consumer::kafka_consumer(std::string brokers, std::string topic, int32_t p
     exit(-1);
   }
 
+  // probably not needed
   if (conf->set("auto.commit.interval.ms", "5000", errstr) != RdKafka::Conf::CONF_OK) {
     LOGPREFIX_ERROR << ", failed to set auto.commit.interval.ms " << errstr;
     exit(-1);
@@ -106,7 +107,7 @@ kafka_consumer::kafka_consumer(std::string brokers, std::string topic, int32_t p
   LOG_INFO("created");
   // really try to make sure the partition & group exist before we continue
   kspp::kafka::wait_for_partition(_consumer.get(), _topic, _partition);
-  kspp::kafka::wait_for_group(brokers, consumer_group);
+  //kspp::kafka::wait_for_group(brokers, consumer_group); something seems to wrong in rdkafka master....
 }
 
 kafka_consumer::~kafka_consumer() {
