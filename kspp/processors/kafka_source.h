@@ -82,9 +82,8 @@ namespace kspp {
         }
       });
 
-       {
-        this->add_metric(&_in_count);
-      }
+      this->add_metric(&_in_count);
+      this->add_metric(&_commit_chain_size);
     }
 
     virtual std::shared_ptr<ktransaction<K, V>> parse(const std::unique_ptr<RdKafka::Message> & ref) = 0;
