@@ -22,7 +22,7 @@ namespace kspp {
     }
 
     virtual std::string processor_name() const {
-      return "kafka_source";
+      return "kafka_source(" + _consumer.topic() + ")";
     }
 
     virtual void start(int64_t offset) {
@@ -65,12 +65,13 @@ namespace kspp {
     }
 
   protected:
-    kafka_source_base(std::string brokers, std::string topic, int32_t partition, std::string consumer_group, std::shared_ptr<CODEC> codec)
-      : partition_source<K, V>(nullptr, partition)
-      , _codec(codec)
-      , _consumer(brokers, topic, partition, consumer_group)
-      , _can_be_committed(-1)
-      , _in_count("in_count") {
+  kafka_source_base(std::string brokers, std::string topic, int32_t partition, std::string consumer_group, std::shared_ptr<CODEC> codec)
+    : partition_source<K, V>(nullptr, partition)
+    , _codec(codec)
+    , _consumer(brokers, topic, partition, consumer_group)
+    , _can_be_committed(-1)
+    , _in_count("in_count")
+    , _commit_chain_size("commit_chain_size", [this]() { return _commit_chain.size(); }) {
       _commit_chain.set_handler([this](int64_t offset, int32_t ec) {
         if (!ec) {
           _can_be_committed = offset;
@@ -93,6 +94,7 @@ namespace kspp {
     int64_t                _can_be_committed;
     commit_chain           _commit_chain;
     metric_counter         _in_count;
+    metric_evaluator       _commit_chain_size;
   };
 
   template<class K, class V, class CODEC>
