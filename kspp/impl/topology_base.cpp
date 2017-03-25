@@ -134,6 +134,10 @@ bool topology_base::eof() {
 }
 
 int topology_base::process_one() {
+  // this needs to be done to to trigger callbacks
+  for (auto i : _sinks)
+    i->poll(0);
+
   // check sinks here an return 0 if we need to wait...
   // we should not check every loop
   // check every 1000 run?

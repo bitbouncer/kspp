@@ -14,7 +14,7 @@ void commit_chain::set_handler(std::function <void(int64_t offset, int32_t ec)> 
 }
 
 
-std::shared_ptr<commit_chain::autocommit_marker> commit_chain::commit_chain::create(int64_t offset) {
+std::shared_ptr<commit_chain::autocommit_marker> commit_chain::create(int64_t offset) {
   ++_size;
 
   auto next = std::make_shared<autocommit_marker>([this](int64_t offset, int32_t ec) {

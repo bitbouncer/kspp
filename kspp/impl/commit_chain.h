@@ -50,12 +50,11 @@ class commit_chain
   commit_chain();
 
   void set_handler(std::function <void(int64_t offset, int32_t ec)> callback);
-
-  size_t size() const { 
-    return _size; 
-  }
-
   std::shared_ptr<commit_chain::autocommit_marker> create(int64_t offset);
+  
+  inline size_t size() const {
+    return _size;
+  }
 
   private:
   void handle_result(int64_t offset, int32_t ec);
