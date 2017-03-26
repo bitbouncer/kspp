@@ -34,19 +34,21 @@ int main(int argc, char** argv) {
   // start from end and produce 4 records - make sure we get same 4 records
   {
     kspp::kafka_consumer consumer("localhost", "kspp_test4", 0, "kspp_test");
+    int64_t timestamp0 = 1234567890;
     assert(consumer.topic() == "kspp_test4");
     assert(consumer.partition() == 0);
     consumer.start(-1); // start from end
     std::this_thread::sleep_for(1000ms);
     // consumer some and make sure nothing is returned
     auto message = consumer.consume();
+
     assert(message == nullptr);
     //assert(consumer.eof());
 
     // produce some
     {
       for (auto i : test_data) {
-        int ec = producer.produce(0, kspp::kafka_producer::COPY, (void*) i.key.data(), i.key.size(), (void*) i.value.data(), i.value.size(), nullptr);
+        int ec = producer.produce(0, kspp::kafka_producer::COPY, (void*) i.key.data(), i.key.size(), (void*) i.value.data(), i.value.size(), timestamp0, nullptr);
         if (ec) {
           std::cerr << ", failed to produce, reason:" << RdKafka::err2str((RdKafka::ErrorCode) ec) << std::endl;
         }
@@ -65,6 +67,7 @@ int main(int argc, char** argv) {
         record r;
         r.key.assign((const char*) p->key_pointer(), p->key_len());
         r.value.assign((const char*) p->payload(), p->len());
+        assert(p->timestamp().timestamp == timestamp0);
         res.push_back(r);
       }
       if (res.size() == 4)
@@ -85,6 +88,7 @@ int main(int argc, char** argv) {
   //
   {
     int64_t last_comitted_offset = -1;
+    int64_t timestamp2 = 2234567890;
     { // test 2 phase A
       kspp::kafka_consumer consumer("localhost", "kspp_test4", 0, "kspp_test");
       assert(consumer.topic() == "kspp_test4");
@@ -99,7 +103,7 @@ int main(int argc, char** argv) {
       {
         // produce some
         for (auto i : test_data) {
-          int ec = producer.produce(0, kspp::kafka_producer::COPY, (void*) i.key.data(), i.key.size(), (void*) i.value.data(), i.value.size(), nullptr);
+          int ec = producer.produce(0, kspp::kafka_producer::COPY, (void*) i.key.data(), i.key.size(), (void*) i.value.data(), i.value.size(), timestamp2, nullptr);
         }
         assert(producer.flush(1000) == 0);
       }
@@ -115,6 +119,7 @@ int main(int argc, char** argv) {
             record r;
             r.key.assign((const char*) p->key_pointer(), p->key_len());
             r.value.assign((const char*) p->payload(), p->len());
+            assert(p->timestamp().timestamp == timestamp2);
             res.push_back(r);
           }
           if (res.size() == 4)
@@ -150,6 +155,7 @@ int main(int argc, char** argv) {
             record r;
             r.key.assign((const char*) p->key_pointer(), p->key_len());
             r.value.assign((const char*) p->payload(), p->len());
+            assert(p->timestamp().timestamp == timestamp2);
             res.push_back(r);
           }
           if (res.size() == 3)
@@ -173,6 +179,7 @@ int main(int argc, char** argv) {
    // stop 
    // restart same consumer from committed offset
   {
+    int64_t timestamp3 = 3234567890;
     int64_t last_comitted_offset = -1;
     kspp::kafka_consumer consumer("localhost", "kspp_test4", 0, "kspp_test");
     assert(consumer.topic() == "kspp_test4");
@@ -187,7 +194,7 @@ int main(int argc, char** argv) {
     // produce some
     {
       for (auto i : test_data) {
-        int ec = producer.produce(0, kspp::kafka_producer::COPY, (void*) i.key.data(), i.key.size(), (void*) i.value.data(), i.value.size(), nullptr);
+        int ec = producer.produce(0, kspp::kafka_producer::COPY, (void*) i.key.data(), i.key.size(), (void*) i.value.data(), i.value.size(), timestamp3, nullptr);
       }
       assert(producer.flush(1000) == 0);
     }
@@ -203,6 +210,7 @@ int main(int argc, char** argv) {
           record r;
           r.key.assign((const char*) p->key_pointer(), p->key_len());
           r.value.assign((const char*) p->payload(), p->len());
+          assert(p->timestamp().timestamp == timestamp3);
           res.push_back(r);
         }
         if (res.size() == 4)
@@ -236,6 +244,7 @@ int main(int argc, char** argv) {
           record r;
           r.key.assign((const char*) p->key_pointer(), p->key_len());
           r.value.assign((const char*) p->payload(), p->len());
+          assert(p->timestamp().timestamp == timestamp3);
           res.push_back(r);
         }
         if (res.size() == 4)

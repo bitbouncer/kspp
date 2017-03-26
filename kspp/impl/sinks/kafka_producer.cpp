@@ -178,6 +178,7 @@ void kafka_producer::close() {
   LOG_INFO("closed") << ", produced " << _msg_cnt << " messages (" << _msg_bytes << " bytes)";
 }
 
+/*
 int kafka_producer::produce(uint32_t partition_hash, rdkafka_memory_management_mode mode, void* key, size_t keysz, void* value, size_t valuesz, std::shared_ptr<commit_chain::autocommit_marker> autocommit_marker) {
   auto user_data = new producer_user_data(partition_hash, autocommit_marker);
   RdKafka::ErrorCode ec = _producer->produce(_rd_topic.get(), -1, (int) mode, value, valuesz, key, keysz, user_data);
@@ -190,4 +191,19 @@ int kafka_producer::produce(uint32_t partition_hash, rdkafka_memory_management_m
   _msg_bytes += (valuesz + keysz);
   return 0;
 }
+*/
+
+int kafka_producer::produce(uint32_t partition_hash, rdkafka_memory_management_mode mode, void* key, size_t keysz, void* value, size_t valuesz, int64_t timestamp, std::shared_ptr<commit_chain::autocommit_marker> autocommit_marker) {
+  auto user_data = new producer_user_data(partition_hash, autocommit_marker);
+  RdKafka::ErrorCode ec = _producer->produce(_topic, -1, (int) mode, value, valuesz, key, keysz, timestamp, user_data); // note not using _rd_topic anymore...?
+  if (ec != RdKafka::ERR_NO_ERROR) {
+    LOGPREFIX_ERROR << ", Produce failed: " << RdKafka::err2str(ec);
+    delete user_data; // how do we signal failure to send data... the consumer should probably not continue...
+    return ec;
+  }
+  _msg_cnt++;
+  _msg_bytes += (valuesz + keysz);
+  return 0;
+}
+
 }; // namespace

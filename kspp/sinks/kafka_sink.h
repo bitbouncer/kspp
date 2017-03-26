@@ -144,7 +144,7 @@ protected:
       vs.read((char*) vp, vsize);
     }
     ++(this->_in_count);
-    return this->_impl.produce(partition, kafka_producer::FREE, kp, ksize, vp, vsize, transaction->id());
+    return this->_impl.produce(partition, kafka_producer::FREE, kp, ksize, vp, vsize, transaction->event_time(), transaction->id());
   }
 };
 
@@ -175,7 +175,7 @@ protected:
       vs.read((char*) vp, vsize);
     }
     ++(this->_in_count);
-    return this->_impl.produce(partition, kafka_producer::FREE, nullptr, 0, vp, vsize, transaction->id());
+    return this->_impl.produce(partition, kafka_producer::FREE, nullptr, 0, vp, vsize, transaction->event_time(), transaction->id());
   }
 };
 
@@ -219,7 +219,7 @@ protected:
     kp = malloc(ksize);
     ks.read((char*) kp, ksize);
     ++(this->_in_count);
-    return this->_impl.produce(partition, kafka_producer::FREE, kp, ksize, nullptr, 0, transaction->id());
+    return this->_impl.produce(partition, kafka_producer::FREE, kp, ksize, nullptr, 0, transaction->event_time(), transaction->id());
   }
 };
 };
