@@ -38,8 +38,8 @@ class pipe : public partition_source<K, V>
     return 0;
   }
 
-  inline int produce(const K& key, const V& value) {
-    return produce(std::make_shared<ktransaction<K, V>>(std::make_shared<krecord<K, V>>(key, value)));
+  inline int produce(const K& key, const V& value, int64_t ts = kspp::milliseconds_since_epoch()) {
+    return produce(std::make_shared<ktransaction<K, V>>(std::make_shared<krecord<K, V>>(key, value, ts)));
   }
 
   virtual size_t queue_len() {
