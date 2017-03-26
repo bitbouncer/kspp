@@ -59,9 +59,8 @@
     /**
     * Put a key-value pair
     */
-    virtual void _insert(std::shared_ptr<ktransaction<K, V>> transaction) {
-      _current_offset = std::max<int64_t>(_current_offset, transaction->offset());
-      auto record = transaction->record();
+    virtual void _insert(std::shared_ptr<krecord<K, V>> record, int64_t offset) {
+      _current_offset = std::max<int64_t>(_current_offset, offset);
       auto item = _store.find(record->key);
 
       // non existing - create - TBD should we keep a tombstone???

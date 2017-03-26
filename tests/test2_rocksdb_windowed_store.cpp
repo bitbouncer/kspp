@@ -30,14 +30,14 @@ int main(int argc, char** argv) {
   kspp::rocksdb_windowed_store<int32_t, std::string, kspp::binary_serdes> store(path, 100ms, 10);
 
   auto t0 = kspp::milliseconds_since_epoch();
-  store.insert(std::make_shared<kspp::krecord<int32_t, std::string>>(0, "value0", t0));
-  store.insert(std::make_shared<kspp::krecord<int32_t, std::string>>(1, "value1", t0 + 200));
-  store.insert(std::make_shared<kspp::krecord<int32_t, std::string>>(2, "value2", t0 + 400));
+  store.insert(std::make_shared<kspp::krecord<int32_t, std::string>>(0, "value0", t0), -1);
+  store.insert(std::make_shared<kspp::krecord<int32_t, std::string>>(1, "value1", t0 + 200), -1);
+  store.insert(std::make_shared<kspp::krecord<int32_t, std::string>>(2, "value2", t0 + 400), -1);
   assert(exact_size(store) == 3);
 
   // update existing key with new value
   {
-    store.insert(std::make_shared<kspp::krecord<int32_t, std::string>>(2, "value2updated", t0 + 400));
+    store.insert(std::make_shared<kspp::krecord<int32_t, std::string>>(2, "value2updated", t0 + 400), -1);
     assert(exact_size(store) == 3);
     auto record = store.get(2);
     assert(record != nullptr);
@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
 
   // update existing key with new value but old timestamp
   {
-    store.insert(std::make_shared<kspp::krecord<int32_t, std::string>>(2, "to_old", t0 + 200));
+    store.insert(std::make_shared<kspp::krecord<int32_t, std::string>>(2, "to_old", t0 + 200), -1);
     assert(exact_size(store) == 3);
     auto record = store.get(2);
     assert(record != nullptr);
@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
 
   // delete existing key with to old timestamp
   {
-    store.insert(std::make_shared<kspp::krecord<int32_t, std::string>>(2, nullptr, t0));
+    store.insert(std::make_shared<kspp::krecord<int32_t, std::string>>(2, nullptr, t0), -1);
     assert(exact_size(store) == 3);
     auto record = store.get(2);
     assert(record != nullptr);
@@ -70,7 +70,7 @@ int main(int argc, char** argv) {
 
   // delete existing key with new timestamp
   {
-    store.insert(std::make_shared<kspp::krecord<int32_t, std::string>>(2, nullptr, t0 + 700));
+    store.insert(std::make_shared<kspp::krecord<int32_t, std::string>>(2, nullptr, t0 + 700), -1);
     assert(exact_size(store) == 2);
     auto record = store.get(2);
     assert(record == nullptr);
@@ -80,7 +80,7 @@ int main(int argc, char** argv) {
   {
     store.garbage_collect(t0);
     assert(exact_size(store) == 2);
-    store.garbage_collect(t0 + 1000);
+    store.garbage_collect(t0 + 900);
     assert(exact_size(store) == 2);
 
     // only item 1 should be left

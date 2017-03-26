@@ -18,9 +18,10 @@ namespace kspp {
       _source->add_sink([this](auto transaction) {
         _lag.add_event_time(kspp::milliseconds_since_epoch(), transaction->event_time());
         ++_in_count;
-        _state_store.insert(transaction);
+        _state_store.insert(transaction->record(), transaction->offset());
         this->send_to_sinks(transaction);
       });
+      // what to do with state_store deleted records (windowed)
       _state_store.set_sink([this](auto transaction) {
         this->send_to_sinks(transaction);
       });

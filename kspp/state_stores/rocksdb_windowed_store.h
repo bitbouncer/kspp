@@ -126,7 +126,8 @@ class rocksdb_windowed_store
     , _codec(codec)
     , _current_offset(-1)
     , _last_comitted_offset(-1)
-    , _last_flushed_offset(-1) {
+    , _last_flushed_offset(-1)
+    , _oldest_kept_slot(-1) {
     boost::filesystem::create_directories(boost::filesystem::path(storage_path));
     _offset_storage_path /= "kspp_offset.bin";
 
@@ -157,8 +158,8 @@ class rocksdb_windowed_store
   }
 
   virtual void garbage_collect(int64_t tick) {
-    int64_t oldest_kept_slot = get_slot_index(tick) - _nr_of_slots;
-    auto upper_bound = _buckets.lower_bound(oldest_kept_slot);
+    _oldest_kept_slot = get_slot_index(tick) - (_nr_of_slots-1);
+    auto upper_bound = _buckets.lower_bound(_oldest_kept_slot);
 
     if (this->_sink) {
       std::vector<std::shared_ptr<krecord<K, V>>> tombstones;
@@ -183,10 +184,13 @@ class rocksdb_windowed_store
   // this respects strong ordering of timestamp and makes shure we only have one value
   // a bit slow but samantically correct
   // TBD add option to speed this up either by storing all values or disregarding timestamps
-  virtual void _insert(std::shared_ptr<ktransaction<K, V>> transaction) {
-    _current_offset = std::max<int64_t>(_current_offset, transaction->offset());
-    auto record = transaction->record();
-
+  virtual void _insert(std::shared_ptr<krecord<K, V>> record, int64_t offset) {
+    _current_offset = std::max<int64_t>(_current_offset, offset);
+    int64_t new_slot = get_slot_index(record->event_time);
+    // old updates is killed straight away...
+    if (new_slot < _oldest_kept_slot)
+      return;
+    
     char key_buf[MAX_KEY_SIZE];
     char val_buf[MAX_VALUE_SIZE];
 
@@ -194,8 +198,6 @@ class rocksdb_windowed_store
     auto old_record = get(record->key);
     if (old_record && old_record->event_time > record->event_time)
       return;
-
-    int64_t new_slot = get_slot_index(record->event_time);
 
     std::shared_ptr<rocksdb::DB> bucket;
     {
@@ -352,6 +354,7 @@ class rocksdb_windowed_store
   int64_t                                         _current_offset;
   int64_t                                         _last_comitted_offset;
   int64_t                                         _last_flushed_offset;
+  int64_t                                         _oldest_kept_slot;
 };
 }
 

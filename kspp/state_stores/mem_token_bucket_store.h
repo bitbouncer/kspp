@@ -151,9 +151,8 @@ namespace kspp {
     }
 
     //this can and will override bucket capacity but bucket will stay in correct state
-    virtual void _insert(std::shared_ptr<ktransaction<K, V>> transaction) {
-      _current_offset = std::max<int64_t>(_current_offset, transaction->offset());
-      auto record = transaction->record();
+    virtual void _insert(std::shared_ptr<krecord<K, V>> record, int64_t offset) {
+      _current_offset = std::max<int64_t>(_current_offset, offset);
       if (record->value == nullptr) {
         _buckets.erase(record->key);
       } else {

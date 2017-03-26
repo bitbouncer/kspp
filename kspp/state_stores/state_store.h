@@ -21,17 +21,10 @@ class state_store
   virtual void close() = 0;
 
   /**
-  * apply transaction
-  */
-  inline void insert(std::shared_ptr<ktransaction<K, V>> transaction) {
-    _insert(transaction);
-  }
-
-  /**
   * Put or delete a record
   */
-  inline void insert(std::shared_ptr<krecord<K, V>> record) {
-    _insert(std::make_shared<ktransaction<K,V>>(record));
+  inline void insert(std::shared_ptr<krecord<K, V>> record, int64_t offset) {
+    _insert(record, offset);
   }
 
   /**
@@ -63,7 +56,7 @@ class state_store
   virtual typename kspp::materialized_source<K, V>::iterator end() = 0;
 
   protected:
-  virtual void _insert(std::shared_ptr<ktransaction<K, V>> record) = 0;
+  virtual void _insert(std::shared_ptr<krecord<K, V>> record, int64_t offset) = 0;
 
   sink_function _sink;
 };

@@ -103,10 +103,8 @@ namespace kspp {
     /**
     * Put a key-value pair
     */
-    virtual void _insert(std::shared_ptr<ktransaction<K, V>> transaction) {
-      _current_offset = std::max<int64_t>(_current_offset, transaction->offset());
-      auto record = transaction->record();
-
+    virtual void _insert(std::shared_ptr<krecord<K, V>> record, int64_t offset) {
+      _current_offset = std::max<int64_t>(_current_offset, offset);
       int64_t new_slot = get_slot_index(record->event_time);
       // old updates is killed straight away...
       if (new_slot < _oldest_kept_slot)
