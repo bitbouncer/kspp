@@ -87,8 +87,8 @@ namespace kspp {
     }
 
     virtual void garbage_collect(int64_t tick) {
-      int64_t oldest_kept_slot = get_slot_index(tick) - _nr_of_slots;
-      auto upper_bound = _buckets.lower_bound(oldest_kept_slot);
+      _oldest_kept_slot = get_slot_index(tick) - (_nr_of_slots - 1);
+      auto upper_bound = _buckets.lower_bound(_oldest_kept_slot);
 
       if (this->_sink) {
         std::vector<std::shared_ptr<krecord<K, V>>> tombstones;
@@ -107,18 +107,22 @@ namespace kspp {
       _current_offset = std::max<int64_t>(_current_offset, transaction->offset());
       auto record = transaction->record();
 
-      auto old_record = get(record->key);
       int64_t new_slot = get_slot_index(record->event_time);
-      
+      // old updates is killed straight away...
+      if (new_slot < _oldest_kept_slot)
+        return;
+
+      auto old_record = get(record->key);
       if (old_record == nullptr) {
         if (record->value) {
           auto bucket_it = _buckets.find(new_slot);
-          if (bucket_it == _buckets.end()) {
+          if (bucket_it == _buckets.end()) { // new slot  
             auto it = _buckets.insert(std::pair<int64_t, std::shared_ptr<bucket_type>>(new_slot, std::make_shared<bucket_type>()));
             std::shared_ptr<bucket_type> bucket = it.first->second;
             (*bucket)[record->key] = record;
+          } else { // existing slot 
+            (*bucket_it->second)[record->key] = record;
           }
-        
         }
         return;
       }
@@ -235,6 +239,7 @@ namespace kspp {
     std::map<int64_t, std::shared_ptr<bucket_type>> _buckets;
     int64_t                                         _slot_width;
     size_t                                          _nr_of_slots;
+    int64_t                                         _oldest_kept_slot;
     int64_t                                         _current_offset;
   };
 }
