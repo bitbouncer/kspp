@@ -138,6 +138,11 @@ int topology_base::process_one() {
   for (auto i : _sinks)
     i->poll(0);
 
+  // some of those might be kafka_partition_sinks....
+  for (auto i : _partition_processors)
+    i->poll(0);
+  
+  // tbd partiotns sinks???
   // check sinks here an return 0 if we need to wait...
   // we should not check every loop
   // check every 1000 run?
