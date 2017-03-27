@@ -49,10 +49,10 @@ namespace kspp {
       _source->process_one(tick);
       bool processed = (_queue.size() > 0);
       while (_queue.size()) {
-        auto e = _queue.front();
-        _lag.add_event_time(e->event_time);
+        auto trans = _queue.front();
+        _lag.add_event_time(tick, trans->event_time());
         _queue.pop_front();
-        _extractor(e, this);
+        _extractor(trans, this);
       }
       return processed;
     }
