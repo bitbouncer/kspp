@@ -27,7 +27,8 @@ cd ..
 
 git clone https://github.com/edenhill/librdkafka.git
 cd librdkafka
-git checkout v0.9.4
+#git checkout v0.9.4
+git checkout master
 ./configure
 make
 sudo make install
@@ -49,7 +50,6 @@ Install build tools (using Homebrew)
 xcode-select --install
 brew install cmake
 brew install kafka
-brew install librdkafka
 brew install snappy
 brew install rocksdb
 brew install boost
