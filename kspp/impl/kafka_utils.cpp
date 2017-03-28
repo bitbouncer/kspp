@@ -208,6 +208,52 @@ int wait_for_group(std::string brokers, std::string group_id) {
   return 0;
 }
 
+int group_exists(std::string brokers, std::string group_id) {
+  char errstr[128];
+  rd_kafka_t *rk;
+  /* Create Kafka C handle */
+  if (!(rk = rd_kafka_new(RD_KAFKA_PRODUCER, nullptr,
+      errstr, sizeof(errstr)))) {
+    LOGPREFIX_ERROR << "Failed to create new producer: " << errstr;
+    rd_kafka_destroy(rk);
+    return -1;
+  }
+
+  /* Add brokers */
+  if (rd_kafka_brokers_add(rk, brokers.c_str()) == 0) {
+    LOGPREFIX_ERROR << "No valid brokers specified";
+    rd_kafka_destroy(rk);
+    return -1;
+  }
+
+  rd_kafka_resp_err_t err = RD_KAFKA_RESP_ERR_NO_ERROR;
+  const struct rd_kafka_group_list *grplist;
+  int retries = 50; // 5 sec
+
+  /* FIXME: Wait for broker to come up. This should really be abstracted
+  *        by librdkafka. */
+  do {
+    if (err) {
+      //LOGPREFIX_ERROR << "Retrying group list in 1s, ec: " << rd_kafka_err2str(err) << " " << brokers;
+      std::this_thread::sleep_for(100ms);
+    }
+    err = rd_kafka_list_groups(rk, group_id.c_str(), &grplist, 5000);
+  } while ((err == RD_KAFKA_RESP_ERR__TRANSPORT ||
+           err == RD_KAFKA_RESP_ERR_GROUP_LOAD_IN_PROGRESS) &&
+           retries-- > 0);
+
+  if (err) {
+    LOGPREFIX_ERROR << "Failed to retrieve groups, ec: " << rd_kafka_err2str(err);
+    rd_kafka_destroy(rk);
+    return -1;
+  }
+
+  bool found = (grplist->group_cnt > 0);
+  rd_kafka_group_list_destroy(grplist);
+  rd_kafka_destroy(rk);
+  return found ? 0 : -1; // 0 if ok
+}
+
 }//namespace kafka
 } // kspp
 

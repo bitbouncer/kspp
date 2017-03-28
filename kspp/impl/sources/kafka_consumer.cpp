@@ -144,7 +144,10 @@ void kafka_consumer::start(int64_t offset) {
 }
 
 void kafka_consumer::start() {
-  start(RdKafka::Topic::OFFSET_STORED);
+  if (kspp::kafka::group_exists(_brokers, _consumer_group)==0)
+    start(RdKafka::Topic::OFFSET_STORED);
+  else
+    start(-2);
 }
 
 void kafka_consumer::stop() {
