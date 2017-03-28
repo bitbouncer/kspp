@@ -216,7 +216,7 @@ int32_t kafka_consumer::commit(int64_t offset, bool flush) {
     return 0;
 
   // you should actually write offset + 1, since a new consumer will start at offset.
-  offset = offset + 1; 
+  offset = offset + 1;
 
   if (offset == _last_committed) // already done
     return 0;
@@ -227,19 +227,22 @@ int32_t kafka_consumer::commit(int64_t offset, bool flush) {
     LOG_INFO("commiting(flush)") << ", " << _can_be_committed;
     _topic_partition[0]->set_offset(_can_be_committed);
     ec = _consumer->commitSync(_topic_partition);
-    if (ec != RdKafka::ERR_NO_ERROR) {
+    if (ec == RdKafka::ERR_NO_ERROR) {
+      _last_committed = _can_be_committed;
+    } else {
       LOGPREFIX_ERROR << ", failed to commit, reason:" << RdKafka::err2str(ec);
     }
   } else if ((_last_committed + _max_pending_commits) < _can_be_committed) {
     LOG_DEBUG("commiting(lazy)") << ", " << _can_be_committed;
     _topic_partition[0]->set_offset(_can_be_committed);
     ec = _consumer->commitAsync(_topic_partition);
-    if (ec != RdKafka::ERR_NO_ERROR) {
+    if (ec == RdKafka::ERR_NO_ERROR) {
+      _last_committed = _can_be_committed;
+    } else {
       LOGPREFIX_ERROR << ", failed to commit, reason:" << RdKafka::err2str(ec);
     }
-  } // add timeout based 
-  if (ec == RdKafka::ERR_NO_ERROR)
-    _last_committed = _can_be_committed;
+  }
+  // TBD add time based autocommit 
   return ec;
 }
 }; // namespace
