@@ -54,9 +54,49 @@ template<> inline size_t text_serdes::encode(const int& src, std::ostream& dst) 
   return s.size();
 }
 
-template<> inline size_t text_serdes::encode(const int64_t& src, std::ostream& dst) {
+template<> inline size_t text_serdes::decode(std::istream& src, int& dst) {
+  std::string s;
+  std::getline(src, s);
+  dst = std::atoi(s.c_str());
+  return s.size();
+}
+
+template<> inline size_t text_serdes::encode(const long& src, std::ostream& dst) {
   auto s = std::to_string(src);
   dst << s;
+  return s.size();
+}
+
+template<> inline size_t text_serdes::decode(std::istream& src, long& dst) {
+  std::string s;
+  std::getline(src, s);
+  dst = std::atol(s.c_str());
+  return s.size();
+}
+
+template<> inline size_t text_serdes::encode(const long long& src, std::ostream& dst) {
+  auto s = std::to_string(src);
+  dst << s;
+  return s.size();
+}
+
+template<> inline size_t text_serdes::decode(std::istream& src, long long& dst) {
+  std::string s;
+  std::getline(src, s);
+  dst = std::atoll(s.c_str());
+  return s.size();
+}
+
+template<> inline size_t text_serdes::encode(const unsigned int& src, std::ostream& dst) {
+  auto s = std::to_string(src);
+  dst << s;
+  return s.size();
+}
+
+template<> inline size_t text_serdes::decode(std::istream& src, unsigned int& dst) {
+  std::string s;
+  std::getline(src, s);
+  dst = (unsigned int) strtoul(s.c_str(), 0, 10);
   return s.size();
 }
 
@@ -66,16 +106,23 @@ template<> inline size_t text_serdes::encode(const unsigned long& src, std::ostr
   return s.size();
 }
 
-template<> inline size_t text_serdes::encode(const uint64_t& src, std::ostream& dst) {
+template<> inline size_t text_serdes::decode(std::istream& src, unsigned long& dst) {
+  std::string s;
+  std::getline(src, s);
+  dst = strtoul(s.c_str(), 0, 10);
+  return s.size();
+}
+
+template<> inline size_t text_serdes::encode(const unsigned long long& src, std::ostream& dst) {
   auto s = std::to_string(src);
   dst << s;
   return s.size();
 }
 
-template<> inline size_t text_serdes::decode(std::istream& src, int& dst) {
+template<> inline size_t text_serdes::decode(std::istream& src, unsigned long long& dst) {
   std::string s;
   std::getline(src, s);
-  dst = std::atoi(s.c_str());
+  dst = strtoull(s.c_str(), 0, 10);
   return s.size();
 }
 };
