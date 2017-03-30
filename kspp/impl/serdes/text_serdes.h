@@ -60,6 +60,12 @@ template<> inline size_t text_serdes::encode(const int64_t& src, std::ostream& d
   return s.size();
 }
 
+template<> inline size_t text_serdes::encode(const unsigned long& src, std::ostream& dst) {
+  auto s = std::to_string(src);
+  dst << s;
+  return s.size();
+}
+
 template<> inline size_t text_serdes::encode(const uint64_t& src, std::ostream& dst) {
   auto s = std::to_string(src);
   dst << s;
