@@ -113,6 +113,9 @@ namespace kspp {
 
       auto record = std::make_shared<krecord<K, V>>();
       record->event_time = ref->timestamp().timestamp;
+      if (record->event_time < 0)
+        record->event_time = milliseconds_since_epoch();
+
       {
         std::istrstream ks((const char*)ref->key_pointer(), ref->key_len());
         size_t consumed = this->_codec->decode(ks, record->key);
@@ -163,6 +166,8 @@ namespace kspp {
       if (sz) {
         auto record = std::make_shared<krecord<void, V>>();
         record->event_time = ref->timestamp().timestamp;
+        if (record->event_time < 0)
+          record->event_time = milliseconds_since_epoch();
 
         std::istrstream vs((const char*)ref->payload(), sz);
         record->value = std::make_shared<V>();
@@ -201,6 +206,10 @@ namespace kspp {
         return nullptr;
 
       auto record = std::make_shared<krecord<K, void>>();
+      record->event_time = ref->timestamp().timestamp;
+      if (record->event_time < 0)
+        record->event_time = milliseconds_since_epoch();
+
       std::istrstream ks((const char*)ref->key_pointer(), ref->key_len());
       size_t consumed = this->_codec->decode(ks, record->key);
       if (consumed == 0) {
