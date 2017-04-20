@@ -181,6 +181,11 @@ int kafka_consumer::update_eof(){
 }
 
 std::unique_ptr<RdKafka::Message> kafka_consumer::consume() {
+  if (_closed || _consumer == nullptr) {
+    LOGPREFIX_ERROR << ", consume failed: closed()";
+    return nullptr; // already closed
+  }
+
   std::unique_ptr<RdKafka::Message> msg(_consumer->consume(0));
 
   switch (msg->err()) {
@@ -214,6 +219,11 @@ std::unique_ptr<RdKafka::Message> kafka_consumer::consume() {
 int32_t kafka_consumer::commit(int64_t offset, bool flush) {
   if (offset < 0) // not valid
     return 0;
+
+  if (_closed || _consumer == nullptr) {
+    LOGPREFIX_ERROR << ", commit on closed consumer";
+    return -1; // already closed
+  }
 
   // you should actually write offset + 1, since a new consumer will start at offset.
   offset = offset + 1;
