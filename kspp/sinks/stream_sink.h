@@ -85,7 +85,7 @@ namespace kspp {
     }
 
     virtual std::string processor_name() const {
-      "stream_sink";
+      return "stream_sink";
     }
 
     virtual bool process_one(int64_t tick) {
