@@ -10,6 +10,20 @@
 
 using namespace std::chrono_literals;
 
+static void set_config(RdKafka::Conf* conf, std::string key, std::string value) {
+  std::string errstr;
+  if (conf->set(key, value, errstr) != RdKafka::Conf::CONF_OK) {
+    throw std::invalid_argument("\"" + key + "\" -> " + value + ", error: " + errstr);
+  }
+}
+
+static void set_config(RdKafka::Conf* conf, std::string key, RdKafka::Conf* topic_conf) {
+  std::string errstr;
+  if (conf->set(key, topic_conf, errstr) != RdKafka::Conf::CONF_OK) {
+    throw std::invalid_argument("\"" + key + ", error: " + errstr);
+  }
+}
+
 namespace kspp {
 kafka_consumer::kafka_consumer(std::string brokers, std::string topic, int32_t partition, std::string consumer_group)
   : _brokers(brokers)
@@ -31,74 +45,35 @@ kafka_consumer::kafka_consumer(std::string brokers, std::string topic, int32_t p
   /*
   * Set configuration properties
   */
-  std::string errstr;
+  try {
+    set_config(conf.get(), "metadata.broker.list", brokers);
+    set_config(conf.get(), "api.version.request", "true");
+    set_config(conf.get(), "socket.nagle.disable", "true");
+    //set_config(conf.get(), "queue.buffering.max.ms", "100");
+    //set_config(conf.get(), "socket.blocking.max.ms", "100");
+    set_config(conf.get(), "enable.auto.commit", "false");
+    set_config(conf.get(), "auto.commit.interval.ms", "5000"); // probably not needed
+    set_config(conf.get(), "enable.auto.offset.store", "false");
+    set_config(conf.get(), "group.id", _consumer_group);
+    set_config(conf.get(), "enable.partition.eof", "true");
+    set_config(conf.get(), "socket.max.fails", "1000000");
+    set_config(conf.get(), "message.send.max.retries", "1000000");// probably not needed
 
-  if (conf->set("metadata.broker.list", _brokers, errstr) != RdKafka::Conf::CONF_OK) {
-    LOGPREFIX_ERROR << ", failed to set metadata.broker.list " << errstr;
-    exit(-1);
-  }
-
-  if (conf->set("api.version.request", "true", errstr) != RdKafka::Conf::CONF_OK) {
-    LOGPREFIX_ERROR << ", failed to set api.version.request " << errstr;
-    exit(-1);
-  }
-
-  if (conf->set("socket.nagle.disable", "true", errstr) != RdKafka::Conf::CONF_OK) {
-    LOGPREFIX_ERROR << ", failed to set socket.nagle.disable " << errstr;
-    exit(-1);
-  }
-
-  if (conf->set("enable.auto.commit", "false", errstr) != RdKafka::Conf::CONF_OK) {
-    LOGPREFIX_ERROR << ", failed to set auto.commit.enable " << errstr;
-    exit(-1);
-  }
-
-  // probably not needed
-  if (conf->set("auto.commit.interval.ms", "5000", errstr) != RdKafka::Conf::CONF_OK) {
-    LOGPREFIX_ERROR << ", failed to set auto.commit.interval.ms " << errstr;
-    exit(-1);
-  }
-
-  if (conf->set("enable.auto.offset.store", "false", errstr) != RdKafka::Conf::CONF_OK) {
-    LOGPREFIX_ERROR << ", failed to set enable.auto.offset.store " << errstr;
-    exit(-1);
-  }
-
-  //// this seems to be a bug with librdkafka v0.9.4 (works with master)
-  //if (conf->set("auto.offset.reset", "earliest", errstr) != RdKafka::Conf::CONF_OK) {
-  //  LOGPREFIX_ERROR << ", failed to set auto.offset.reset " << errstr;
-  //  //exit(-1);
-  //}
-
-  if (conf->set("group.id", _consumer_group, errstr) != RdKafka::Conf::CONF_OK) {
-    LOGPREFIX_ERROR << ", failed to set group " << errstr;
-    exit(-1);
-  }
-
-  if (conf->set("enable.partition.eof", "true", errstr) != RdKafka::Conf::CONF_OK) {
-    LOGPREFIX_ERROR << ", failed to set enable.partition.eof " << errstr;
-    exit(-1);
-  }
-
-  // following are topic configs but they will be passed in default_topic_conf to broker config.
-  {
+    // following are topic configs but they will be passed in default_topic_conf to broker config.
     std::unique_ptr<RdKafka::Conf> tconf(RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC));
+    set_config(tconf.get(), "auto.offset.reset", "earliest");
 
-    if (tconf->set("auto.offset.reset", "earliest", errstr) != RdKafka::Conf::CONF_OK) {
-      LOGPREFIX_ERROR << ", failed to set auto.offset.reset " << errstr;
-      //exit(-1);
-    }
-
-    if (conf->set("default_topic_conf", tconf.get(), errstr) != RdKafka::Conf::CONF_OK) {
-      LOGPREFIX_ERROR << ", failed to set default_topic_conf " << errstr;
-      exit(-1);
-    }
+    set_config(conf.get(), "default_topic_conf", tconf.get());
   }
-
-
+  catch (std::invalid_argument& e) {
+    BOOST_LOG_TRIVIAL(fatal) << "topic:" << _topic << ", bad config " << e.what();
+    exit(1);
+  }
+ 
   /*
   * Create consumer using accumulated global configuration.
   */
+  std::string errstr;
   _consumer = std::unique_ptr<RdKafka::KafkaConsumer>(RdKafka::KafkaConsumer::create(conf.get(), errstr));
   if (!_consumer) {
     LOGPREFIX_ERROR << ", failed to create consumer, reason: " << errstr;

@@ -9,39 +9,64 @@
 using namespace std::chrono_literals;
 
 namespace kspp {
-  struct producer_user_data
-  {
-    producer_user_data(uint32_t hash, std::shared_ptr<commit_chain::autocommit_marker> marker)
+struct producer_user_data
+{
+  producer_user_data(uint32_t hash, std::shared_ptr<commit_chain::autocommit_marker> marker)
     : partition_hash(hash)
-    , autocommit_marker(marker) {
-    }
+    , autocommit_marker(marker) {}
 
-    ~producer_user_data() {
-    }
-    uint32_t                                         partition_hash;
-    std::shared_ptr<commit_chain::autocommit_marker> autocommit_marker;
-  };
+  ~producer_user_data() {}
+  uint32_t                                         partition_hash;
+  std::shared_ptr<commit_chain::autocommit_marker> autocommit_marker;
+};
 
-  int32_t kafka_producer::MyHashPartitionerCb::partitioner_cb(const RdKafka::Topic *topic, const std::string *key, int32_t partition_cnt, void *msg_opaque) {
-    producer_user_data*  extra = (producer_user_data*) msg_opaque;
-    int32_t partition = extra->partition_hash % partition_cnt;
-    return partition;
+int32_t kafka_producer::MyHashPartitionerCb::partitioner_cb(const RdKafka::Topic *topic, const std::string *key, int32_t partition_cnt, void *msg_opaque) {
+  producer_user_data*  extra = (producer_user_data*) msg_opaque;
+  int32_t partition = extra->partition_hash % partition_cnt;
+  return partition;
+}
+
+kafka_producer::MyDeliveryReportCb::MyDeliveryReportCb() :
+  _status(RdKafka::ErrorCode::ERR_NO_ERROR) {}
+
+void kafka_producer::MyDeliveryReportCb::dr_cb(RdKafka::Message& message) {
+  producer_user_data* extra = (producer_user_data*) message.msg_opaque();
+
+  if (message.err() != RdKafka::ErrorCode::ERR_NO_ERROR) {
+    extra->autocommit_marker->fail(message.err());
+    _status = message.err();
   }
+  assert(extra);
+  delete extra;
+};
 
-  kafka_producer::MyDeliveryReportCb::MyDeliveryReportCb() :
-    _status(RdKafka::ErrorCode::ERR_NO_ERROR) {
+static void set_config(RdKafka::Conf* conf,  std::string key, std::string value) {
+  std::string errstr;
+  if (conf->set(key, value, errstr) != RdKafka::Conf::CONF_OK) {
+    throw std::invalid_argument("\""+ key + "\" -> " + value + ", error: " + errstr);
   }
+}
 
-  void kafka_producer::MyDeliveryReportCb::dr_cb(RdKafka::Message& message) {
-    producer_user_data* extra = (producer_user_data*) message.msg_opaque();
+static void set_config(RdKafka::Conf* conf, std::string key, RdKafka::DeliveryReportCb* callback) {
+  std::string errstr;
+  if (conf->set(key, callback, errstr) != RdKafka::Conf::CONF_OK) {
+    throw std::invalid_argument("\"" + key + "\", error: " + errstr);
+  }
+}
 
-    if (message.err() != RdKafka::ErrorCode::ERR_NO_ERROR) {
-      extra->autocommit_marker->fail(message.err());
-      _status = message.err();
-    }
-    assert(extra);
-    delete extra; 
-  };
+static void set_config(RdKafka::Conf* conf, std::string key, RdKafka::PartitionerCb* partitioner_cb) {
+  std::string errstr;
+  if (conf->set(key, partitioner_cb, errstr) != RdKafka::Conf::CONF_OK) {
+    throw std::invalid_argument("\"" + key + "\", error: " + errstr);
+  }
+}
+
+static void set_config(RdKafka::Conf* conf, std::string key, RdKafka::Conf* topic_conf) {
+  std::string errstr;
+  if (conf->set(key, topic_conf, errstr) != RdKafka::Conf::CONF_OK) {
+    throw std::invalid_argument("\"" + key + ", error: " + errstr);
+  }
+}
 
 kafka_producer::kafka_producer(std::string brokers, std::string topic) 
   : _topic(topic)
@@ -54,37 +79,27 @@ kafka_producer::kafka_producer(std::string brokers, std::string topic)
   * Create configuration objects
   */
   std::unique_ptr<RdKafka::Conf> conf(RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL));
-
-  if (conf->set("dr_cb", &_delivery_report_cb, errstr) != RdKafka::Conf::CONF_OK) {
-    LOGPREFIX_ERROR << ", failed to add _delivery_report_cb " << errstr;
-    exit(1);
-  }
+  std::unique_ptr<RdKafka::Conf> tconf(RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC));
 
   /*
   * Set configuration properties
   */
-  if (conf->set("metadata.broker.list", brokers, errstr) != RdKafka::Conf::CONF_OK) {
-    LOGPREFIX_ERROR << ", failed to set metadata.broker.list " << errstr;
-    exit(1);
-  }
+  try {
+    set_config(conf.get(), "dr_cb", &_delivery_report_cb);
+    set_config(conf.get(), "metadata.broker.list", brokers);
+    set_config(conf.get(), "api.version.request", "true");
+    set_config(conf.get(), "queue.buffering.max.ms", "100");
+    set_config(conf.get(), "socket.blocking.max.ms", "100");
+    set_config(conf.get(), "socket.nagle.disable", "true");
+    set_config(conf.get(), "socket.max.fails", "1000000");
+    set_config(conf.get(), "message.send.max.retries", "1000000");
 
-  if (conf->set("api.version.request", "true", errstr) != RdKafka::Conf::CONF_OK) {
-    LOGPREFIX_ERROR << ", failed to set api.version.request " << errstr;
-    exit(1);
+    // should this be in this order? it was the opposite??
+    set_config(tconf.get(), "partitioner_cb", &_default_partitioner);
+    set_config(conf.get(), "default_topic_conf", tconf.get());
   }
-
-  if (conf->set("queue.buffering.max.ms", "100", errstr) != RdKafka::Conf::CONF_OK) {
-    LOGPREFIX_ERROR << ", failed to set queue.buffering.max.ms " << errstr;
-    exit(1);
-  }
-
-  if (conf->set("socket.blocking.max.ms", "100", errstr) != RdKafka::Conf::CONF_OK) {
-    LOGPREFIX_ERROR << ", failed to set socket.blocking.max.ms " << errstr;
-    exit(1);
-  }
-
-  if (conf->set("socket.nagle.disable", "true", errstr) != RdKafka::Conf::CONF_OK) {
-    LOGPREFIX_ERROR << ", failed to set socket.nagle.disable=true " << errstr;
+  catch (std::invalid_argument& e) {
+    BOOST_LOG_TRIVIAL(fatal) << "topic:" << _topic << ", bad config " << e.what();
     exit(1);
   }
 
@@ -97,18 +112,23 @@ kafka_producer::kafka_producer(std::string brokers, std::string topic)
     exit(1);
   }
 
-  std::unique_ptr<RdKafka::Conf> tconf(RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC));
+  //std::unique_ptr<RdKafka::Conf> tconf(RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC));
 
+  /*
   if (conf->set("default_topic_conf", tconf.get(), errstr) != RdKafka::Conf::CONF_OK) {
     LOGPREFIX_ERROR << ", failed to set default_topic_conf " << errstr;
     exit(1);
   }
+  */
 
+  /*
   if (tconf->set("partitioner_cb", &_default_partitioner, errstr) != RdKafka::Conf::CONF_OK) {
     LOGPREFIX_ERROR << ", failed to create partitioner: " << errstr;
     exit(1);
   }
+  */
 
+  // we have to keep this around otherwise the paritioner does not work...
   _rd_topic = std::unique_ptr<RdKafka::Topic>(RdKafka::Topic::create(_producer.get(), _topic, tconf.get(), errstr));
 
   if (!_rd_topic) {
