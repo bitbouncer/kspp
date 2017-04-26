@@ -6,7 +6,8 @@
 #include <kspp/impl/sources/kafka_consumer.h>
 #pragma once
 
-#define LOGPREFIX_ERROR BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << this->name()
+//#define LOGPREFIX_ERROR BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << this->processor_name() << "-" <<  CODEC::name()
+#define LOG_NAME this->processor_name() << "-" << CODEC::name()
 
 namespace kspp {
   template<class K, class V, class CODEC>
@@ -120,10 +121,10 @@ namespace kspp {
         std::istrstream ks((const char*)ref->key_pointer(), ref->key_len());
         size_t consumed = this->_codec->decode(ks, record->key);
         if (consumed == 0) {
-          LOGPREFIX_ERROR << ", decode key failed, actual key sz:" << ref->key_len();
+          BOOST_LOG_TRIVIAL(error) << LOG_NAME << ", decode key failed, actual key sz:" << ref->key_len();
           return nullptr;
         } else if (consumed != ref->key_len()) {
-          LOGPREFIX_ERROR << ", decode key failed, consumed: " << consumed << ", actual: " << ref->key_len();
+          BOOST_LOG_TRIVIAL(error) << LOG_NAME << ", decode key failed, consumed: " << consumed << ", actual: " << ref->key_len();
           return nullptr;
         }
       }
@@ -134,10 +135,10 @@ namespace kspp {
         record->value = std::make_shared<V>();
         size_t consumed = this->_codec->decode(vs, *record->value);
         if (consumed == 0) {
-          LOGPREFIX_ERROR << ", decode value failed, size:" << sz;
+          BOOST_LOG_TRIVIAL(error) << LOG_NAME << ", decode value failed, size:" << sz;
           return nullptr;
         } else if (consumed != sz) {
-          LOGPREFIX_ERROR << ", decode value failed, consumed: " << consumed << ", actual: " << sz;
+          BOOST_LOG_TRIVIAL(error) << LOG_NAME << ", decode value failed, consumed: " << consumed << ", actual: " << sz;
           return nullptr;
         }
       }
@@ -177,11 +178,11 @@ namespace kspp {
         }
 
         if (consumed == 0) {
-          LOGPREFIX_ERROR << ", decode value failed, size:" << sz;
+          BOOST_LOG_TRIVIAL(error) << LOG_NAME << ", decode value failed, size:" << sz;
           return nullptr;
         }
 
-        LOGPREFIX_ERROR << ", decode value failed, consumed: " << consumed << ", actual: " << sz;
+        BOOST_LOG_TRIVIAL(error) << LOG_NAME << ", decode value failed, consumed: " << consumed << ", actual: " << sz;
         return nullptr;
       }
       return nullptr; // just parsed an empty message???
@@ -213,10 +214,10 @@ namespace kspp {
       std::istrstream ks((const char*)ref->key_pointer(), ref->key_len());
       size_t consumed = this->_codec->decode(ks, record->key);
       if (consumed == 0) {
-        LOGPREFIX_ERROR << ", decode key failed, actual key sz:" << ref->key_len();
+        BOOST_LOG_TRIVIAL(error) << LOG_NAME << ", decode key failed, actual key sz:" << ref->key_len();
         return nullptr;
       } else if (consumed != ref->key_len()) {
-        LOGPREFIX_ERROR << ", decode key failed, consumed: " << consumed << ", actual: " << ref->key_len();
+        BOOST_LOG_TRIVIAL(error) << LOG_NAME << ", decode key failed, consumed: " << consumed << ", actual: " << ref->key_len();
         return nullptr;
       }
       return std::make_shared<ktransaction<K, void>>(record, this->_commit_chain.create(ref->offset()));

@@ -56,8 +56,8 @@ kafka_consumer::kafka_consumer(std::string brokers, std::string topic, int32_t p
     set_config(conf.get(), "enable.auto.offset.store", "false");
     set_config(conf.get(), "group.id", _consumer_group);
     set_config(conf.get(), "enable.partition.eof", "true");
-    set_config(conf.get(), "socket.max.fails", "1000000");
-    set_config(conf.get(), "message.send.max.retries", "1000000");// probably not needed
+    //set_config(conf.get(), "socket.max.fails", "1000000");
+    //set_config(conf.get(), "message.send.max.retries", "1000000");// probably not needed
 
     // following are topic configs but they will be passed in default_topic_conf to broker config.
     std::unique_ptr<RdKafka::Conf> tconf(RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC));

@@ -52,12 +52,10 @@ int main(int argc, char **argv) {
       return (record->key != "hello");
     });
     
-    auto binary_serdes = std::make_shared<kspp::binary_serdes>();
-
     // this should be possible to do in memory
-    auto word_counts = topology->create_processors<kspp::count_by_key<std::string, int64_t, kspp::rocksdb_counter_store, kspp::binary_serdes>>(filtered_streams, 100ms, binary_serdes);
+    auto word_counts = topology->create_processors<kspp::count_by_key<std::string, int64_t, kspp::rocksdb_counter_store, kspp::binary_serdes>>(filtered_streams, 100ms);
    
-    auto ex1 = topology->create_processors<kspp::ktable<std::string, int64_t, kspp::rocksdb_store, kspp::binary_serdes>>(word_counts, binary_serdes);
+    auto ex1 = topology->create_processors<kspp::ktable<std::string, int64_t, kspp::rocksdb_store, kspp::binary_serdes>>(word_counts);
     auto ex2 = topology->create_processors<kspp::ktable<std::string, int64_t, kspp::mem_store>>(word_counts);
     auto ex3 = topology->create_processors<kspp::ktable<std::string, int64_t, kspp::mem_windowed_store>>(word_counts, 500ms, 10);
 
