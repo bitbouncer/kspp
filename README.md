@@ -21,14 +21,13 @@ Build
 
 git clone https://github.com/facebook/rocksdb.git
 cd rocksdb
-git checkout v5.1.4
+git checkout v5.3.4
 make static_lib
 cd ..
 
 git clone https://github.com/edenhill/librdkafka.git
 cd librdkafka
-#git checkout v0.9.4
-git checkout master
+git checkout v0.9.5
 ./configure
 make
 sudo make install
@@ -92,7 +91,7 @@ set VISUALSTUDIO_VERSION_MAJOR=14
 call "C:\Program Files (x86)\Microsoft Visual Studio %VISUALSTUDIO_VERSION_MAJOR%.0\VC\vcvarsall.bat" amd64
 
 cd openssl
-#git checkout OpenSSL_1_1_0c
+git checkout OpenSSL_1_1_0e
 perl Configure VC-WIN64A
 nmake
 #you need to be Administrator for the next step)
@@ -100,7 +99,7 @@ nmake install
 cd ..
 
 cd rocksdb
-git checkout v5.1.4
+git checkout v5.3.4
 mkdir build & cd build
 cmake -G "Visual Studio 14 Win64" ..
 msbuild rocksdb.sln
@@ -120,7 +119,7 @@ call bootstrap.bat
 cd ..
 
 cd librdkafka
-git checkout v0.9.4
+git checkout v0.9.5
 cd ..
 
 mkdir include
