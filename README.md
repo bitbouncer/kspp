@@ -102,8 +102,8 @@ cd rocksdb
 git checkout v5.3.4
 mkdir build & cd build
 cmake -G "Visual Studio 14 Win64" ..
-msbuild rocksdb.sln
-msbuild rocksdb.sln /p:Configuration=Release
+msbuild /maxcpucount:8 rocksdb.sln
+msbuild /maxcpucount:8 rocksdb.sln /p:Configuration=Release
 cd ../..
 
 cd zlib
