@@ -1,9 +1,9 @@
 kspp
 =========
 
-A C++14 kafka streams library 
+A high performance C++ kafka streams library (C++14)
 
-It is intended to be run on mesos or kubernetes but it can be run standalone
+It is intended to be run on mesos or kubernetes but works equally well standalone
 
 Platforms: Windows / Linux / Mac
 
