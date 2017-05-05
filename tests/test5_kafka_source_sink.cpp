@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
   }
  
   auto app_info = std::make_shared<kspp::app_info>("kspp", "test5");
-  auto builder = kspp::topology_builder(app_info, "localhost");
+  auto builder = kspp::topology_builder(app_info, "localhost", 10ms);
 
   auto nr_of_partitions = kspp::kafka::get_number_partitions(builder.brokers(), "kspp_test5");
   auto partition_list = kspp::get_partition_list(nr_of_partitions);

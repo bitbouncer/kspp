@@ -13,10 +13,10 @@ namespace kspp {
   class kafka_partition_sink_base : public partition_sink<K, V>
   {
   protected:
-    kafka_partition_sink_base(std::string brokers, std::string topic, int32_t partition, std::shared_ptr<CODEC> codec)
+    kafka_partition_sink_base(std::string brokers, std::string topic, int32_t partition, std::chrono::milliseconds max_buffering_time, std::shared_ptr<CODEC> codec)
       : partition_sink<K, V>(partition)
       , _codec(codec)
-      , _impl(brokers, topic)
+      , _impl(brokers, topic, max_buffering_time)
       , _fixed_partition(partition)
       , _in_count("in_count") {
       this->add_metric(&_in_count);
@@ -77,7 +77,7 @@ namespace kspp {
   {
   public:
     kafka_partition_sink(topology_base& topology, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-      : kafka_partition_sink_base<K, V, CODEC>(topology.brokers(), topic, topology.partition(), codec) {}
+      : kafka_partition_sink_base<K, V, CODEC>(topology.brokers(), topic, topology.partition(), topology.max_buffering_time(), codec) {}
 
   protected:
     virtual int _produce(std::shared_ptr<ktransaction<K, V>> transaction) {
@@ -108,7 +108,7 @@ namespace kspp {
   {
   public:
     kafka_partition_sink(topology_base& topology, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-      : kafka_partition_sink_base<void, V, CODEC>(topology.brokers(), topic, topology.partition(), codec) {}
+      : kafka_partition_sink_base<void, V, CODEC>(topology.brokers(), topic, topology.partition(), topology.max_buffering_time(), codec) {}
 
   protected:
     virtual int _produce(std::shared_ptr<ktransaction<void, V>> transaction) {
@@ -132,7 +132,7 @@ namespace kspp {
   {
   public:
     kafka_partition_sink(topology_base& topology, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-      : kafka_partition_sink_base<K, void, CODEC>(topology.brokers(), topic, topology.partition(), codec) {}
+      : kafka_partition_sink_base<K, void, CODEC>(topology.brokers(), topic, topology.partition(), topology.max_buffering_time(), codec) {}
 
   protected:
     virtual int _produce(std::shared_ptr<ktransaction<K, void>> transaction) {

@@ -68,7 +68,7 @@ static void set_config(RdKafka::Conf* conf, std::string key, RdKafka::Conf* topi
   }
 }
 
-kafka_producer::kafka_producer(std::string brokers, std::string topic) 
+kafka_producer::kafka_producer(std::string brokers, std::string topic, std::chrono::milliseconds max_buffering_time)
   : _topic(topic)
   , _msg_cnt(0)
   , _msg_bytes(0)
@@ -88,8 +88,8 @@ kafka_producer::kafka_producer(std::string brokers, std::string topic)
     set_config(conf.get(), "dr_cb", &_delivery_report_cb);
     set_config(conf.get(), "metadata.broker.list", brokers);
     set_config(conf.get(), "api.version.request", "true");
-    set_config(conf.get(), "queue.buffering.max.ms", "100");
-    set_config(conf.get(), "socket.blocking.max.ms", "100");
+    set_config(conf.get(), "queue.buffering.max.ms", std::to_string(max_buffering_time.count()));
+    set_config(conf.get(), "socket.blocking.max.ms", std::to_string(max_buffering_time.count()));
     set_config(conf.get(), "socket.nagle.disable", "true");
     set_config(conf.get(), "socket.max.fails", "1000000");
     set_config(conf.get(), "message.send.max.retries", "1000000");

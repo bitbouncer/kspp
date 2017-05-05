@@ -12,6 +12,7 @@
 #include <kspp/processors/join.h>
 #include <kspp/state_stores/mem_store.h>
 #include <kspp/state_stores/mem_windowed_store.h>
+#include <kspp/impl/kafka_utils.h>
 
 #define PARTITION 0
 using namespace std::chrono_literals;
@@ -162,8 +163,10 @@ std::string ksource_to_string(const T&  ksource) {
 
 int main(int argc, char **argv) {
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example1-basic");
-  auto builder = kspp::topology_builder(app_info, "localhost");
-  auto partition_list = kspp::parse_partition_list("[0,1,2,3,4,5,6,7]");
+  auto builder = kspp::topology_builder(app_info, "localhost", 100ms);
+  
+
+
   {
     auto topology = builder.create_partition_topology(PARTITION);
     auto sink = topology->create_processor<kspp::kafka_partition_sink<int64_t, page_view_data, kspp::binary_serdes>>("kspp_PageViews");

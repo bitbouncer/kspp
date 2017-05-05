@@ -6,7 +6,8 @@ namespace kspp {
   class kafka_consumer
   {
   public:
-    kafka_consumer(std::string brokers, std::string topic, int32_t partition, std::string consumer_group);
+    //kafka_consumer(std::string brokers, std::string topic, int32_t partition, std::string consumer_group, std::chrono::milliseconds max_buffering_time = std::chrono::milliseconds(1000));
+    kafka_consumer(std::string brokers, std::string topic, int32_t partition, std::string consumer_group, std::chrono::milliseconds max_buffering_time);
     ~kafka_consumer();
     void close();
 

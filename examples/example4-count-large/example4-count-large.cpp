@@ -9,15 +9,21 @@
 #include <kspp/state_stores/mem_counter_store.h>
 #include <kspp/processors/kafka_source.h>
 #include <kspp/sinks/kafka_sink.h>
+#include <kspp/impl/kafka_utils.h>
 
 using namespace std::chrono_literals;
 
+#define TOPIC_NAME "kspp_TextInput"
+
 int main(int argc, char **argv) {
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example4-count");
-  auto text_builder = kspp::topology_builder(app_info, "localhost");
-  auto partition_list = kspp::parse_partition_list("[0,1,2,3,4,5,6,7]"); // tmp fix waiting for partition data in topology_builder.../ topology
+  auto builder = kspp::topology_builder(app_info, "localhost", 100ms);
+
   {
-    auto topology = text_builder.create_topology();
+    auto partitions = kspp::kafka::get_number_partitions(builder.brokers(), "kspp_test_text");
+    auto partition_list = kspp::get_partition_list(partitions);
+
+    auto topology = builder.create_topology();
     auto sources = topology->create_processors<kspp::kafka_source<void, std::string, kspp::text_serdes>>(partition_list, "kspp_test_text");
     std::regex rgx("\\s+");
     auto word_streams = topology->create_processors<kspp::flat_map<void, std::string, std::string, void>>(sources, [&rgx](const auto record, auto flat_map) {
@@ -37,7 +43,10 @@ int main(int argc, char **argv) {
   }
 
   { 
-    auto topology = text_builder.create_topology();
+    auto partitions = kspp::kafka::get_number_partitions(builder.brokers(), "kspp_test_words");
+    auto partition_list = kspp::get_partition_list(partitions);
+
+    auto topology = builder.create_topology();
     auto word_sources = topology->create_processors<kspp::kafka_source<std::string, void, kspp::text_serdes>>(partition_list, "kspp_test_words");
     auto word_counts = topology->create_processors<kspp::count_by_key<std::string, size_t, kspp::mem_counter_store>>(word_sources, 10s);
     

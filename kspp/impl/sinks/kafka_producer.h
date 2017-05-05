@@ -12,7 +12,8 @@ namespace kspp {
   public:
     enum rdkafka_memory_management_mode { NO_COPY = 0, FREE = 1, COPY = 2 };
 
-    kafka_producer(std::string brokers, std::string topic);
+    //kafka_producer(std::string brokers, std::string topic, std::chrono::milliseconds max_buffering_time=std::chrono::milliseconds(1000));
+    kafka_producer(std::string brokers, std::string topic, std::chrono::milliseconds max_buffering_time);
     
     ~kafka_producer();
     
