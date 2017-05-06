@@ -88,7 +88,7 @@ git clone https://github.com/edenhill/librdkafka.git
 git clone https://github.com/bitbouncer/kspp.git
 
 set VISUALSTUDIO_VERSION_MAJOR=14
-call "C:\Program Files (x86)\Microsoft Visual Studio %VISUALSTUDIO_VERSION_MAJOR%.0\VC\vcvarsall.bat" amd64
+cmd.exe /c 'C:\Program Files (x86)\Microsoft Visual Studio %VISUALSTUDIO_VERSION_MAJOR%.0\VC\vcvarsall.bat' amd64
 
 cd openssl
 git checkout OpenSSL_1_1_0e
