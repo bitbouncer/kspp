@@ -13,18 +13,20 @@
 #include <kspp/sinks/kafka_sink.h>
 #include <kspp/sinks/stream_sink.h>
 #include <kspp/state_stores/mem_counter_store.h>
+#include <kspp/impl/kafka_utils.h>
 
 #define PARTITION 0
+
+#define TOPIC_NAME "kspp_TextInput"
 
 using namespace std::chrono_literals;
 
 int main(int argc, char **argv) {
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example7-token-bucket");
-  auto builder = kspp::topology_builder(app_info, "localhost");
-  auto partition_list = kspp::parse_partition_list("[0,1,2,3,4,5,6,7]");
+  auto builder = kspp::topology_builder(app_info, "localhost", 100ms);
   {
     auto topology = builder.create_topology();
-    auto sink = topology->create_sink<kspp::kafka_topic_sink<void, std::string, kspp::text_serdes>>("kspp_TextInput");
+    auto sink = topology->create_sink<kspp::kafka_topic_sink<void, std::string, kspp::text_serdes>>(TOPIC_NAME);
     for (int i = 0; i != 100; ++i) {
       sink->produce("hello kafka streams");
       sink->produce("more text to parse");
@@ -33,8 +35,12 @@ int main(int argc, char **argv) {
   }
 
   {
+    auto partitions = kspp::kafka::get_number_partitions(builder.brokers(), TOPIC_NAME);
+    auto partition_list = kspp::get_partition_list(partitions);
+
+
     auto topology = builder.create_topology();
-    auto sources = topology->create_processors<kspp::kafka_source<void, std::string, kspp::text_serdes>>(partition_list, "kspp_TextInput");
+    auto sources = topology->create_processors<kspp::kafka_source<void, std::string, kspp::text_serdes>>(partition_list, TOPIC_NAME);
 
     std::regex rgx("\\s+");
     auto word_streams = topology->create_processors<kspp::flat_map<void, std::string, std::string, void>>(sources, [&rgx](const auto record, auto flat_map) {

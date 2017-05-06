@@ -235,28 +235,30 @@ class topology_base
                 std::string topology_id,
                 int32_t partition,
                 std::string brokers,
+                std::chrono::milliseconds max_buffering,
                 boost::filesystem::path root_path);
 
   virtual ~topology_base();
 
   public:
-  std::string             app_id() const;
-  std::string             group_id() const;
-  std::string             topology_id() const;
-  int32_t                 partition() const;
-  std::string             brokers() const;
-  std::string             name() const;
-  void                    init_metrics();
-  void                    for_each_metrics(std::function<void(kspp::metric&)> f);
-  void                    init();
-  bool                    eof();
-  int                     process_one();
-  void                    close();
-  void                    start();
-  void                    start(int offset);
-  void                    commit(bool force);
-  void                    flush();
-  boost::filesystem::path get_storage_path();
+  std::string               app_id() const;
+  std::string               group_id() const;
+  std::string               topology_id() const;
+  int32_t                   partition() const;
+  std::string               brokers() const;
+  std::string               name() const;
+  std::chrono::milliseconds max_buffering_time() const;
+  void                      init_metrics();
+  void                      for_each_metrics(std::function<void(kspp::metric&)> f);
+  void                      init();
+  bool                      eof();
+  int                       process_one();
+  void                      close();
+  void                      start();
+  void                      start(int offset);
+  void                      commit(bool force);
+  void                      flush();
+  boost::filesystem::path   get_storage_path();
 
   protected:
   bool                                              _is_init;
@@ -264,6 +266,7 @@ class topology_base
   std::string                                       _topology_id;
   int32_t                                           _partition;
   std::string                                       _brokers;
+  std::chrono::milliseconds                         _max_buffering_time;
   boost::filesystem::path                           _root_path;
   std::vector<std::shared_ptr<partition_processor>> _partition_processors;
   std::vector<std::shared_ptr<generic_sink>>        _sinks;

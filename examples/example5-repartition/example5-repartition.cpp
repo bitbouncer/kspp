@@ -11,15 +11,14 @@
 #include <kspp/sinks/kafka_sink.h>
 #include <kspp/sinks/stream_sink.h>
 #include <assert.h>
+#include <kspp/impl/kafka_utils.h>
 
-#define PARTITION 0
-
-
+using namespace std::chrono_literals;
 
 int main(int argc, char **argv) {
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example5-repartition");
-  auto builder = kspp::topology_builder(app_info, "localhost");
-  auto partition_list = kspp::parse_partition_list("[0,1,2,3,4,5,6,7]"); // tmp fix waiting for partition data in topology_builder.../ topology
+  auto builder = kspp::topology_builder(app_info, "localhost", 100ms);
+
   {
     auto topology = builder.create_topology();
     auto sink = topology->create_sink<kspp::kafka_topic_sink<int, std::string, kspp::text_serdes>>("kspp_example5_usernames");
@@ -58,7 +57,13 @@ int main(int argc, char **argv) {
     sink->produce(2, "channel2");
   }
 
+  auto partitions1 = kspp::kafka::get_number_partitions(builder.brokers(), "kspp_example5_usernames");
+  auto partitions2 = kspp::kafka::get_number_partitions(builder.brokers(), "kspp_example5_user_channel");
+  assert(partitions1 == partitions2);
+
   {
+    auto partition_list = kspp::get_partition_list(partitions1);
+
     auto topology = builder.create_topology();
     auto sources = topology->create_processors<kspp::kafka_source<int, std::string, kspp::text_serdes>>(partition_list, "kspp_example5_usernames");
     topology->create_processors<kspp::stream_sink<int, std::string>>(sources, &std::cerr);
@@ -68,6 +73,8 @@ int main(int argc, char **argv) {
   }
 
   {
+    auto partition_list = kspp::get_partition_list(partitions1);
+
     auto topology = builder.create_topology();
     auto topic_sink = topology->create_sink<kspp::kafka_topic_sink<int, std::string, kspp::text_serdes>>("kspp_example5_usernames.per-channel");
     auto sources = topology->create_processors<kspp::kafka_source<int, std::string, kspp::text_serdes>>(partition_list, "kspp_example5_usernames");
@@ -85,6 +92,9 @@ int main(int argc, char **argv) {
 
 
   {
+    auto partitions = kspp::kafka::get_number_partitions(builder.brokers(), "kspp_example5_usernames.per-channel");
+    auto partition_list = kspp::get_partition_list(partitions);
+
     auto topology = builder.create_topology();
     auto sources = topology->create_processors<kspp::kafka_source<int, std::string, kspp::text_serdes>>(partition_list, "kspp_example5_usernames.per-channel");
     topology->create_processors<kspp::stream_sink<int, std::string>>(sources, &std::cerr);

@@ -10,12 +10,14 @@ topology_base::topology_base(std::shared_ptr<app_info> ai,
                              std::string topology_id,
                              int32_t partition,
                              std::string brokers,
+                             std::chrono::milliseconds max_buffering,
                              boost::filesystem::path root_path)
   : _app_info(ai)
   , _is_init(false)
   , _topology_id(topology_id)
   , _partition(partition)
   , _brokers(brokers)
+  , _max_buffering_time(max_buffering)
   , _root_path(root_path)
   , _next_gc_ts(0) {
   BOOST_LOG_TRIVIAL(info) << "topology created, name:" << name();
@@ -47,6 +49,10 @@ int32_t topology_base::partition() const {
 
 std::string topology_base::brokers() const {
   return _brokers;
+}
+
+std::chrono::milliseconds topology_base::max_buffering_time() const {
+  return _max_buffering_time;
 }
 
 std::string topology_base::name() const {

@@ -25,7 +25,7 @@ static void set_config(RdKafka::Conf* conf, std::string key, RdKafka::Conf* topi
 }
 
 namespace kspp {
-kafka_consumer::kafka_consumer(std::string brokers, std::string topic, int32_t partition, std::string consumer_group)
+kafka_consumer::kafka_consumer(std::string brokers, std::string topic, int32_t partition, std::string consumer_group, std::chrono::milliseconds max_buffering_time)
   : _brokers(brokers)
   , _topic(topic)
   , _partition(partition)
@@ -49,6 +49,7 @@ kafka_consumer::kafka_consumer(std::string brokers, std::string topic, int32_t p
     set_config(conf.get(), "metadata.broker.list", brokers);
     set_config(conf.get(), "api.version.request", "true");
     set_config(conf.get(), "socket.nagle.disable", "true");
+    set_config(conf.get(), "fetch.wait.max.ms", std::to_string(max_buffering_time.count()));
     //set_config(conf.get(), "queue.buffering.max.ms", "100");
     //set_config(conf.get(), "socket.blocking.max.ms", "100");
     set_config(conf.get(), "enable.auto.commit", "false");
