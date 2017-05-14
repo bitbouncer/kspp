@@ -134,13 +134,13 @@ protected:
 
     std::stringstream ks;
     ksize = this->_codec->encode(transaction->record()->key, ks);
-    kp = malloc(ksize);
+    kp = malloc(ksize);  // must match the free in kafka_producer TBD change to new[] and a memory pool
     ks.read((char*) kp, ksize);
 
     if (transaction->record()->value) {
       std::stringstream vs;
       vsize = this->_codec->encode(*transaction->record()->value, vs);
-      vp = malloc(vsize);
+      vp = malloc(vsize);   // must match the free in kafka_producer TBD change to new[] and a memory pool
       vs.read((char*) vp, vsize);
     }
     ++(this->_in_count);
@@ -171,7 +171,7 @@ protected:
     if (transaction->record()->value) {
       std::stringstream vs;
       vsize = this->_codec->encode(*transaction->record()->value, vs);
-      vp = malloc(vsize);
+      vp = malloc(vsize);  // must match the free in kafka_producer TBD change to new[] and a memory pool
       vs.read((char*) vp, vsize);
     }
     ++(this->_in_count);
@@ -201,7 +201,7 @@ protected:
 
     std::stringstream ks;
     ksize = this->_codec->encode(transaction->record()->key, ks);
-    kp = malloc(ksize);
+    kp = malloc(ksize);  // must match the free in kafka_producer TBD change to new[] and a memory pool
     ks.read((char*) kp, ksize);
 
     if (this->_partitioner)
@@ -216,7 +216,7 @@ protected:
 
     std::stringstream ks;
     ksize = this->_codec->encode(transaction->record()->key, ks);
-    kp = malloc(ksize);
+    kp = malloc(ksize);  // must match the free in kafka_producer TBD change to new[] and a memory pool
     ks.read((char*) kp, ksize);
     ++(this->_in_count);
     return this->_impl.produce(partition, kafka_producer::FREE, kp, ksize, nullptr, 0, transaction->event_time(), transaction->id());

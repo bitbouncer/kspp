@@ -1,13 +1,12 @@
 kspp
 =========
 
-A high performance C++ kafka streams library (C++14)
+A high performance / realtime C++ (14) Kafka stream-processing framework based on librdkafka. The design is based on the original Kafka Streams API (java)
 
 It is intended to be run on mesos or kubernetes but works equally well standalone
 
 Platforms: Windows / Linux / Mac
 
-This is work-in-progress
 
 ## Ubuntu 16 x64:
 

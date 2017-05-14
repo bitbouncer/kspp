@@ -11,13 +11,30 @@ using namespace std::chrono_literals;
 namespace kspp {
 struct producer_user_data
 {
-  producer_user_data(uint32_t hash, std::shared_ptr<commit_chain::autocommit_marker> marker)
-    : partition_hash(hash)
+  producer_user_data(void* key, size_t keysz, void* val, size_t valsz, uint32_t hash, std::shared_ptr<commit_chain::autocommit_marker> marker)
+    : key_ptr(key)
+    , key_sz(keysz)
+    , val_ptr(val)
+    , val_sz(valsz)
+    , partition_hash(hash)
     , autocommit_marker(marker) {}
 
-  ~producer_user_data() {}
+  ~producer_user_data() {
+    if (key_ptr)
+      free(key_ptr);
+    if (val_ptr)
+      free(val_ptr);
+
+    key_ptr = nullptr;
+    val_ptr = nullptr;
+  }
+
   uint32_t                                         partition_hash;
   std::shared_ptr<commit_chain::autocommit_marker> autocommit_marker;
+  void*                                            key_ptr;
+  size_t                                           key_sz;
+  void*                                            val_ptr;
+  size_t                                           val_sz;
 };
 
 int32_t kafka_producer::MyHashPartitionerCb::partitioner_cb(const RdKafka::Topic *topic, const std::string *key, int32_t partition_cnt, void *msg_opaque) {
@@ -40,10 +57,10 @@ void kafka_producer::MyDeliveryReportCb::dr_cb(RdKafka::Message& message) {
   delete extra;
 };
 
-static void set_config(RdKafka::Conf* conf,  std::string key, std::string value) {
+static void set_config(RdKafka::Conf* conf, std::string key, std::string value) {
   std::string errstr;
   if (conf->set(key, value, errstr) != RdKafka::Conf::CONF_OK) {
-    throw std::invalid_argument("\""+ key + "\" -> " + value + ", error: " + errstr);
+    throw std::invalid_argument("\"" + key + "\" -> " + value + ", error: " + errstr);
   }
 }
 
@@ -140,7 +157,7 @@ kafka_producer::kafka_producer(std::string brokers, std::string topic, std::chro
   RdKafka::Metadata* md = NULL;
   auto  _rd_topic = std::unique_ptr<RdKafka::Topic>(RdKafka::Topic::create(_producer.get(), _topic, nullptr, errstr));
   int64_t nr_available = 0;
-  while (_nr_of_partitions==0 || nr_available != _nr_of_partitions) {
+  while (_nr_of_partitions == 0 || nr_available != _nr_of_partitions) {
     auto ec = _producer->metadata(false, _rd_topic.get(), &md, 5000);
     if (ec == 0) {
       const RdKafka::Metadata::TopicMetadataVector* v = md->topics();
@@ -155,13 +172,13 @@ kafka_producer::kafka_producer(std::string brokers, std::string topic, std::chro
         }
       }
     }
-    if (_nr_of_partitions==0 || nr_available != _nr_of_partitions) {
+    if (_nr_of_partitions == 0 || nr_available != _nr_of_partitions) {
       LOGPREFIX_ERROR << ", waiting for partitions leader to be available";
       std::this_thread::sleep_for(1s);
     }
   }
   delete md;
-  
+
   LOG_INFO("created");
 }
 
@@ -174,7 +191,7 @@ void kafka_producer::close() {
   if (_closed)
     return;
   _closed = true;
-  
+
   if (_producer && _producer->outq_len() > 0) {
     LOG_INFO("closing") << ", waiting for " << _producer->outq_len() << " messages to be written...";
   }
@@ -198,10 +215,20 @@ void kafka_producer::close() {
   LOG_INFO("closed") << ", produced " << _msg_cnt << " messages (" << _msg_bytes << " bytes)";
 }
 
-/*
-int kafka_producer::produce(uint32_t partition_hash, rdkafka_memory_management_mode mode, void* key, size_t keysz, void* value, size_t valuesz, std::shared_ptr<commit_chain::autocommit_marker> autocommit_marker) {
-  auto user_data = new producer_user_data(partition_hash, autocommit_marker);
-  RdKafka::ErrorCode ec = _producer->produce(_rd_topic.get(), -1, (int) mode, value, valuesz, key, keysz, user_data);
+int kafka_producer::produce(uint32_t partition_hash, memory_management_mode mode, void* key, size_t keysz, void* value, size_t valuesz, int64_t timestamp, std::shared_ptr<commit_chain::autocommit_marker> autocommit_marker) {
+  producer_user_data* user_data = nullptr;
+  if (mode == kafka_producer::COPY) {
+    void* pkey = malloc(keysz);
+    memcpy(pkey, key, keysz);
+    key = pkey;
+
+    void* pval = malloc(valuesz);
+    memcpy(pval, value, valuesz);
+    value = pval;
+  }
+  user_data = new producer_user_data(key, keysz, value, valuesz, partition_hash, autocommit_marker);
+
+  RdKafka::ErrorCode ec = _producer->produce(_topic, -1, 0, value, valuesz, key, keysz, timestamp, user_data); // note not using _rd_topic anymore...?
   if (ec != RdKafka::ERR_NO_ERROR) {
     LOGPREFIX_ERROR << ", Produce failed: " << RdKafka::err2str(ec);
     delete user_data; // how do we signal failure to send data... the consumer should probably not continue...
@@ -211,19 +238,4 @@ int kafka_producer::produce(uint32_t partition_hash, rdkafka_memory_management_m
   _msg_bytes += (valuesz + keysz);
   return 0;
 }
-*/
-
-int kafka_producer::produce(uint32_t partition_hash, rdkafka_memory_management_mode mode, void* key, size_t keysz, void* value, size_t valuesz, int64_t timestamp, std::shared_ptr<commit_chain::autocommit_marker> autocommit_marker) {
-  auto user_data = new producer_user_data(partition_hash, autocommit_marker);
-  RdKafka::ErrorCode ec = _producer->produce(_topic, -1, (int) mode, value, valuesz, key, keysz, timestamp, user_data); // note not using _rd_topic anymore...?
-  if (ec != RdKafka::ERR_NO_ERROR) {
-    LOGPREFIX_ERROR << ", Produce failed: " << RdKafka::err2str(ec);
-    delete user_data; // how do we signal failure to send data... the consumer should probably not continue...
-    return ec;
-  }
-  _msg_cnt++;
-  _msg_bytes += (valuesz + keysz);
-  return 0;
-}
-
 }; // namespace
