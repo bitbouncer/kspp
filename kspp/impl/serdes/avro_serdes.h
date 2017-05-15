@@ -6,10 +6,11 @@
 #include <vector>
 #include <typeinfo>
 #include <regex>
-#include <avro/Compiler.hh>
-#include <avro/Specific.hh>
 #include <avro/Encoder.hh>
 #include <avro/Decoder.hh>
+#include <avro/Compiler.hh>
+#include <avro/Generic.hh>
+#include <avro/Specific.hh>
 #include "confluent_schema_registry.h"
 
 namespace kspp {
@@ -80,6 +81,33 @@ class avro_serdes
   }
 
   static std::string name() { return "kspp::avro"; }
+
+
+  /**
+  * Format Avro datum as JSON according to schema.
+  */
+  static int avro2json(std::shared_ptr<avro::ValidSchema> avro_schema, std::shared_ptr<avro::GenericDatum> datum, std::string &str, std::string &errstr) {
+    /* JSON encoder */
+    avro::EncoderPtr json_encoder = avro::jsonEncoder(*avro_schema);
+
+    /* JSON output stream */
+    std::ostringstream oss;
+    std::auto_ptr<avro::OutputStream> json_os = avro::ostreamOutputStream(oss);
+
+    try {
+      /* Encode Avro datum to JSON */
+      json_encoder->init(*json_os.get());
+      avro::encode(*json_encoder, *datum);
+      json_encoder->flush();
+
+    } catch (const avro::Exception &e) {
+      errstr = std::string("Binary to JSON transformation failed: ") + e.what();
+      return -1;
+    }
+
+    str = oss.str();
+    return 0;
+  }
 
   /*
   template<class T>
@@ -165,6 +193,26 @@ class avro_serdes
     return 5; // this is probably wrong - is there a 0 size avro message???
   }
 
+
+  /*
+  * read confluent avro format
+  * confluent framing marker 0x00 (binary)
+  * schema id from registry (htonl - encoded)
+  * avro encoded payload
+  */
+  template<class T>
+  size_t decode(std::istream& src, T& dst) {
+    static int32_t schema_id = -1;
+    if (schema_id < 0) {
+      int32_t res = _registry->put_schema(src.name(), src.valid_schema());
+      if (res >= 0)
+        schema_id = res;
+      else
+        return 0;
+    }
+    return decode(schema_id, src, dst);
+  }
+
   template<class T>
   size_t decode(int32_t expected_schema_id, std::istream& src, T& dst) {
     /* read framing */
@@ -183,6 +231,41 @@ class avro_serdes
   private:
   std::shared_ptr<avro_schema_registry> _registry;
 };
+
+//// generic decoder
+//template<> inline size_t avro_serdes::decode(std::istream& src, avro::GenericDatum& dst) {
+//  /* read framing */
+//  char zero = 0x01;
+//  src.read(&zero, 1);
+//  int32_t encoded_schema_id = -1;
+//  src.read((char*)&encoded_schema_id, 4);
+//  int32_t schema_id = ntohl(encoded_schema_id);
+//  if (!src.good()) {
+//    // got something that is smaller than framing - bail out
+//    return 0;
+//  }
+//  auto valid_schema = _registry->get_schema(schema_id);
+//  if (valid_schema) {
+//    /* Binary input stream */
+//    std::auto_ptr<avro::InputStream> bin_is = avro::memoryInputStream((const uint8_t *)payload, size);
+//
+//    /* Binary Avro decoder */
+//    avro::DecoderPtr bin_decoder = avro::validatingDecoder(*valid_schema, avro::binaryDecoder());
+//    avro::GenericDatum *datum = new avro::GenericDatum(*valid_schema);
+//
+//    try {
+//      /* Decode binary to Avro datum */
+//      bin_decoder->init(*bin_is);
+//      avro::decode(*bin_decoder, *datum);
+//
+//    } catch (const avro::Exception &e) {
+//      std::cerr << "Avro deserialization failed: " << e.what();
+//      delete datum;
+//      return -1;
+//    }
+//  }
+//  return 0;
+//}
 
 template<> inline size_t avro_serdes::encode(const int64_t& src, std::ostream& dst) {
    static int32_t schema_id = -1;
@@ -281,3 +364,4 @@ template<> inline size_t avro_serdes::decode(std::istream& src, boost::uuids::uu
 //  *datump = datum;
 //  return 0;
 //}
+
