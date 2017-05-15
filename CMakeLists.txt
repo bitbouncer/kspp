@@ -149,9 +149,23 @@ SET(CSI_INCLUDE_PATH ${CSI_INCLUDE_PATH} ${CMAKE_SOURCE_DIR}/../rocksdb/include)
 SET(CSI_LIBRARY_PATH ${CSI_LIBRARY_PATH} ${CMAKE_SOURCE_DIR}/../rocksdb)
 endif()
 
-if (ENABLE_AVRO)	
-SET(CSI_INCLUDE_PATH ${CSI_INCLUDE_PATH} ${CMAKE_SOURCE_DIR}/../avro/lang/c++/include ${CMAKE_SOURCE_DIR}/../curl/include ${CMAKE_SOURCE_DIR}/../janson/src)
-SET(CSI_LIBRARY_PATH ${CSI_LIBRARY_PATH} ${CMAKE_SOURCE_DIR}/../curl/libs ${CMAKE_SOURCE_DIR}/../jansson/build/lib ${CMAKE_SOURCE_DIR}/../avro/lang/c++/build)
+if (ENABLE_AVRO1)	
+SET(CSI_INCLUDE_PATH ${CSI_INCLUDE_PATH} ${CMAKE_SOURCE_DIR}/../avro/lang/c++/include)
+SET(CSI_LIBRARY_PATH ${CSI_LIBRARY_PATH} ${CMAKE_SOURCE_DIR}/../avro/lang/c++/build)
+endif()
+
+if (ENABLE_AVRO2)	
+SET(CSI_INCLUDE_PATH 
+  ${CSI_INCLUDE_PATH} 
+  ${CMAKE_SOURCE_DIR}/../avro/lang/c++/include 
+  ${CMAKE_SOURCE_DIR}/../rapidjson/include
+  ${CMAKE_SOURCE_DIR}/../csi-async 
+  ${CMAKE_SOURCE_DIR}/../csi-hcl-asio)
+
+SET(CSI_LIBRARY_PATH ${CSI_LIBRARY_PATH} ${CMAKE_SOURCE_DIR}/../avro/lang/c++/build)
+
+SET(CSI_AVRO_LIBS avrocpp_s libcurl)
+
 endif()
 
 set(LIBRARY_OUTPUT_PATH     ${CMAKE_SOURCE_DIR}/lib)
@@ -170,13 +184,9 @@ if (ENABLE_ROCKSDB)
 SET(CSI_ROCKSDB_LIBS rocksdb snappy bz2 z)
 endif()
 
-if (ENABLE_AVRO)	
-
-endif()
-
 SET(LIBRDKAFKA_LIBS rdkafka++ rdkafka)
 
-SET(CSI_LIBS kspp ${LIBRDKAFKA_LIBS} ${CSI_ROCKSDB_LIBS} ${CSI_BOOST_LIBS} crypto ssl)
+SET(CSI_LIBS kspp ${CSI_AVRO_LIBS} ${LIBRDKAFKA_LIBS} ${CSI_ROCKSDB_LIBS} ${CSI_BOOST_LIBS} crypto ssl)
 endif() 
 
 include_directories(${CSI_INCLUDE_PATH} ${CMAKE_SOURCE_DIR})
