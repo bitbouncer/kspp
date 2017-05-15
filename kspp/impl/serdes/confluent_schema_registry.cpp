@@ -72,7 +72,8 @@ bool decode_get_schema_request_response(char* buf, size_t len, std::shared_ptr<a
       return false;
     avro_schema = (*document)["schema"].GetString();
     //std::cerr << avro_schema << std::endl;
-    avro::compileJsonSchema(std::istringstream(avro_schema), *schema);
+    std::istringstream stream(avro_schema);
+    avro::compileJsonSchema(stream, *schema);
   }
   catch (...) {
  // failed to parse this...
