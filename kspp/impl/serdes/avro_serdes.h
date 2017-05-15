@@ -122,7 +122,7 @@ class avro_serdes
   * avro encoded payload
   */
   template<class T>
-  size_t encode(std::string name, T& src, std::ostream& dst) {
+  size_t encode(std::string name, const T& src, std::ostream& dst) {
     static int32_t schema_id = -1;
     if (schema_id < 0) {
       int32_t res = _registry->put_schema(name, src.valid_schema());
@@ -142,7 +142,7 @@ class avro_serdes
   * avro encoded payload
   */
   template<class T>
-  size_t encode(int32_t schema_id, T& src, std::ostream& dst) {
+  size_t encode(int32_t schema_id, const T& src, std::ostream& dst) {
     /* write framing */
     char zero = 0x00;
     dst.write(&zero, 1);
