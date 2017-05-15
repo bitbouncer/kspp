@@ -53,6 +53,7 @@ sudo make install
 cd ../../..
 cd ..
 
+#THIS IS CONFLUENT LIBSERDES (AVRO) - CANNOT BE BUILD ON WINDOWS....
 git clone https://github.com/confluentinc/libserdes.git
 cd libserdes
 git checkout v3.2.1
@@ -60,6 +61,11 @@ git checkout v3.2.1
 make
 sudo make install
 cd ..
+
+#THIS IS FOR OUR OWN AVROSERDES
+git clone https://github.com/miloyip/rapidjson.git
+git clone https://github.com/bitbouncer/csi-async.git
+git clone https://github.com/bitbouncer/csi-hcl-asio.git
 
 
 
