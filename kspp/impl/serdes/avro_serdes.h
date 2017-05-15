@@ -127,7 +127,7 @@ class avro_serdes
     if (schema_id < 0) {
       int32_t res = _registry->put_schema(name, src.valid_schema());
       if (res >= 0)
-        schema_id = res.schema_id;
+        schema_id = res;
       else
         return 0;
     }
@@ -172,12 +172,12 @@ class avro_serdes
     src.read(&zero, 1);
     int32_t encoded_schema_id = -1;
     src.read((char*) &encoded_schema_id, 4);
-    schema_id = ntohl(encoded_schema_id);
+    int32_t schema_id = ntohl(encoded_schema_id);
     if (!src.good()) {
       // got something that is smaller than framing - bail out
       return 0;
     }
-    
+    return 0; // not implemented
   }
 
   private:
