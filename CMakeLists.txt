@@ -164,7 +164,7 @@ SET(CSI_INCLUDE_PATH
 
 SET(CSI_LIBRARY_PATH ${CSI_LIBRARY_PATH} ${CMAKE_SOURCE_DIR}/../avro/lang/c++/build)
 
-SET(CSI_AVRO_LIBS avrocpp_s libcurl)
+SET(CSI_AVRO_LIBS avrocpp_s curl)
 
 endif()
 
