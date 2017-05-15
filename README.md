@@ -106,7 +106,6 @@ Install build tools
 ```
 Build
 ```
-rm -f boost_1_62_0.zip
 wget --no-check-certificate http://downloads.sourceforge.net/project/boost/boost/1.62.0/boost_1_62_0.zip
 unzip boost_1_62_0.zip
 rename boost_1_62_0 boost
@@ -118,11 +117,19 @@ git clone https://github.com/lz4/lz4.git
 git clone https://github.com/openssl/openssl.git
 git clone https://github.com/edenhill/librdkafka.git
 
-#THIS IS FOR LIBSERDES (AVRO)
-git clone https://github.com/apache/avro.git
+
+#COMMON FOR AVRO
 git clone https://github.com/curl/curl.git
+git clone https://github.com/apache/avro.git
+
+#THIS IS FOR CONFLUENT LIBSERDES (AVRO) - CANNOT BE BUILD ON WINDOWS....
 git clone https://github.com/akheron/jansson.git
 git clone https://github.com/confluentinc/libserdes.git
+
+#THIS IS FOR OUR OWN AVROSERDES
+git clone https://github.com/miloyip/rapidjson.git
+git clone https://github.com/bitbouncer/csi-async.git
+git clone https://github.com/bitbouncer/csi-hcl-asio.git
 
 git clone https://github.com/bitbouncer/kspp.git
 
@@ -146,6 +153,7 @@ msbuild /maxcpucount:8 rocksdb.sln /p:Configuration=Release
 cd ../..
 
 cd zlib
+rm -rf build
 mkdir build & cd build
 cmake -G "Visual Studio 14 Win64" ..
 msbuild zlib.sln
@@ -195,8 +203,6 @@ cmake -G "Visual Studio 14 Win64" -DBOOST_ROOT=../../../boost -DBOOST_LIBRARYDIR
 #-DBoost_DEBUG=ON
 msbuild /maxcpucount:8 avrocpp_s.vcxproj
 msbuild /maxcpucount:8 avrocpp_s.vcxproj /p:Configuration=Release
-#msbuild /maxcpucount:8 Avro-cpp.sln
-#msbuild /maxcpucount:8 Avro-cpp.sln /p:Configuration=Release
 cd ..
 rm -rf include
 mkdir include
@@ -220,7 +226,6 @@ cd ../..
 cd libserdes
 git checkout v3.2.1
 cd ..
-
 
 cd kspp
 call rebuild_windows_vs14.bat

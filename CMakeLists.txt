@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.8.11)
 
-option(ENABLE_AVRO "enable avro support" ON)
+option(ENABLE_AVRO1 "enable avro1 support" OFF)
+option(ENABLE_AVRO2 "enable avro2 support" ON)
 option(ENABLE_ROCKSDB "enable rocksdb support" ON)
 option(BUILD_SAMPLES  "build examples" ON)
 option(BUILD_TESTS    "build tests" ON)
@@ -25,11 +26,35 @@ SET(CSI_INCLUDE_PATH ${CSI_INCLUDE_PATH} ${CMAKE_SOURCE_DIR}/../rocksdb/include)
 SET(CSI_LIBRARY_PATH ${CSI_LIBRARY_PATH} ${CMAKE_SOURCE_DIR}/../rocksdb/build) 
 endif()
 
-if (ENABLE_AVRO)	
-SET(CSI_INCLUDE_PATH ${CSI_INCLUDE_PATH} ${CMAKE_SOURCE_DIR}/../avro/lang/c++/include ${CMAKE_SOURCE_DIR}/../curl/include ${CMAKE_SOURCE_DIR}/../janson/src)
-SET(CSI_LIBRARY_PATH ${CSI_LIBRARY_PATH} ${CMAKE_SOURCE_DIR}/../curl/libs/$(Platform) ${CMAKE_SOURCE_DIR}/../jansson/build/lib ${CMAKE_SOURCE_DIR}/../avro/lang/c++/build)
+if (ENABLE_AVRO1)	
+SET(CSI_INCLUDE_PATH 
+  ${CSI_INCLUDE_PATH} 
+  ${CMAKE_SOURCE_DIR}/../avro/lang/c++/include 
+  ${CMAKE_SOURCE_DIR}/../curl/include 
+  ${CMAKE_SOURCE_DIR}/../jansson/build/include)
+  
+SET(CSI_LIBRARY_PATH 
+  ${CSI_LIBRARY_PATH} 
+  ${CMAKE_SOURCE_DIR}/../curl/libs/$(Platform) 
+  ${CMAKE_SOURCE_DIR}/../jansson/build/lib 
+  ${CMAKE_SOURCE_DIR}/../avro/lang/c++/build)
 endif()
 
+
+if (ENABLE_AVRO2)	
+SET(CSI_INCLUDE_PATH 
+  ${CSI_INCLUDE_PATH} 
+  ${CMAKE_SOURCE_DIR}/../avro/lang/c++/include 
+  ${CMAKE_SOURCE_DIR}/../curl/include 
+  ${CMAKE_SOURCE_DIR}/../rapidjson/include
+  ${CMAKE_SOURCE_DIR}/../csi-async 
+  ${CMAKE_SOURCE_DIR}/../csi-hcl-asio)
+  
+SET(CSI_LIBRARY_PATH 
+  ${CSI_LIBRARY_PATH} 
+  ${CMAKE_SOURCE_DIR}/../curl/libs/$(Platform) 
+  ${CMAKE_SOURCE_DIR}/../avro/lang/c++/build)
+endif()
 
 SET(LIBRARY_OUTPUT_PATH     ${CMAKE_SOURCE_DIR}/lib/$(Platform))
 SET(EXECUTABLE_OUTPUT_PATH  ${CMAKE_SOURCE_DIR}/bin/$(Platform))
@@ -47,21 +72,28 @@ add_definitions(-DUNICODE)
 add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 add_definitions(-D_SCL_SECURE_NO_WARNINGS)
 add_definitions(-DSECURITY_WIN32)
-add_definitions(/wd4996) #'strdup': The POSIX name for this item is deprecated
+add_definitions(/wd4996) # 'strdup': The POSIX name for this item is deprecated
 add_definitions(/wd4197) # 'cf_atomic32' : top-level volatile in cast is ignored
-add_definitions(/wd4200) #nonstandard extension used : zero-sized array in struct/union 
-add_definitions(-DLIBRDKAFKA_STATICLIB)
-add_definitions(-DLIBSERDES_STATICLIB)
+add_definitions(/wd4200) # nonstandard extension used : zero-sized array in struct/union 
+add_definitions(/wd4267) # 'argument': conversion from 'size_t' to 'int', possible loss of data  (AVRO is filled with those)
+add_definitions(/wd4090) # warning C4090: 'function': different 'const' qualifiers  (librdkafka usage of openssl)
 add_definitions(-DBOOST_ALL_STATIC_LINK)
-#add_definitions(-Dssize_t=SSIZE_T)
+add_definitions(-DLIBRDKAFKA_STATICLIB)
+add_definitions(-DCURL_STATICLIB)
 
 if (ENABLE_ROCKSDB)
 SET(CSI_ROCKSDB_LIBS rocksdb rocksdblib Rpcrt4)
 endif()
 
-if (ENABLE_AVRO)	
+if (ENABLE_AVRO1)	
+add_definitions(-DLIBSERDES_STATICLIB)
 SET(CSI_AVRO_LIBS libserdescpp avrocpp_s libcurl jansson)
 endif()
+
+if (ENABLE_AVRO2)	
+SET(CSI_AVRO_LIBS avrocpp_s libcurl)
+endif()
+
 
 SET(ZLIB_LIBS debug zlibstaticd optimized zlibstatic)
 SET(LIBRDKAFKA_LIBS librdkafkacpp librdkafka lz4)
@@ -174,19 +206,16 @@ add_library(librdkafkacpp STATIC ${librdkafka_cpp_files} ${librdkafka_cpp_h_file
 
 #LIBSERDES AVRO
 
-if (ENABLE_AVRO)
+if (ENABLE_AVRO1)
 file(GLOB libserdes_cpp_files ${CMAKE_CURRENT_SOURCE_DIR}/../libserdes/src-cpp/*.cpp)
 file(GLOB libserdes_cpp_h_files ${CMAKE_CURRENT_SOURCE_DIR}/../libserdes/src-cpp/*.h)
-#file(GLOB libserdes_c_files ${CMAKE_CURRENT_SOURCE_DIR}/../libserdes/src/*.c)
+file(GLOB libserdes_c_files ${CMAKE_CURRENT_SOURCE_DIR}/../libserdes/src/*.c)
 file(GLOB libserdes_c_h_files ${CMAKE_CURRENT_SOURCE_DIR}/../libserdes/src/*.h)
 file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/../include)
 file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/../include/libserdes)
 file(COPY ${libserdes_cpp_h_files} DESTINATION ${CMAKE_SOURCE_DIR}/../include/libserdes)
 file(COPY ${libserdes_c_h_files} DESTINATION ${CMAKE_SOURCE_DIR}/../include/libserdes)
-#file(COPY ${librdkafka_c_h_files} DESTINATION ${CMAKE_SOURCE_DIR}/../include/libserdes)
-#add_library(librdkafka STATIC ${librdkafka_c_files} ${librdkafka_c_h_files})
-#add_library(libserdescpp STATIC ${libserdes_cpp_files} ${libserdes_c_files} ${libserdes_c_h_files} ${libserdes_cpp_h_files})
-add_library(libserdescpp STATIC ${libserdes_cpp_files} ${libserdes_c_h_files} ${libserdes_cpp_h_files})
+add_library(libserdescpp STATIC ${libserdes_cpp_files} ${libserdes_cpp_h_files} ${libserdes_c_files} ${libserdes_c_h_files})
 target_include_directories(libserdescpp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../libserdes/src-cpp ${CMAKE_CURRENT_SOURCE_DIR}/../libserdes/src)
 endif()
 

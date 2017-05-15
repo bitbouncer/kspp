@@ -20,7 +20,6 @@ int main(int argc, char **argv) {
   auto builder = kspp::topology_builder(app_info, "localhost", 100ms);
   auto topology = builder.create_partition_topology(-1);
 
-  //auto partitioner = [](const boost::uuids::uuid& key)->uint32_t { return boost::hash<boost::uuids::uuid>()(key) % 8; };
   auto table_stream = topology->create_topic_sink<kspp::kafka_topic_sink<boost::uuids::uuid, int64_t, kspp::binary_serdes>>("kspp_test0_table");
   auto event_stream = topology->create_topic_sink<kspp::kafka_topic_sink<boost::uuids::uuid, int64_t, kspp::binary_serdes>>("kspp_test0_eventstream");
 
@@ -48,8 +47,10 @@ int main(int argc, char **argv) {
       event_stream->poll(0);
     }
   }
+  
   topology->for_each_metrics([](kspp::metric& m) {
     std::cerr << "metrics: " << m.name() << " : " << m.value() << std::endl;
   });
+  
   return 0;
 }
