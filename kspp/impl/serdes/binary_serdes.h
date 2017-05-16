@@ -1,6 +1,7 @@
 #include <boost/uuid/uuid.hpp>
 #include <ostream>
 #include <istream>
+#include <strstream>
 #include <vector>
 #include <typeinfo>
 #pragma once
