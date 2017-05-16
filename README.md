@@ -36,37 +36,17 @@ git clone https://github.com/apache/avro.git
 cd avro
 git checkout release-1.8.2-rc4
 
-cd lang/c/
-mkdir build
-cd build
-cmake -DCMAKE_BUILD_TYPE=Release ..
-make -j8
-sudo make install
-cd ../../..
-
 cd lang/c++/
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
 make -j8
 sudo make install
-cd ../../..
-cd ..
+cd ../../../..
 
-#THIS IS CONFLUENT LIBSERDES (AVRO) - CANNOT BE BUILD ON WINDOWS....
-git clone https://github.com/confluentinc/libserdes.git
-cd libserdes
-git checkout v3.2.1
-./configure
-make
-sudo make install
-cd ..
-
-#THIS IS FOR OUR OWN AVROSERDES
 git clone https://github.com/miloyip/rapidjson.git
 git clone https://github.com/bitbouncer/csi-async.git
 git clone https://github.com/bitbouncer/csi-hcl-asio.git
-
 
 
 git clone https://github.com/bitbouncer/kspp.git
@@ -122,17 +102,8 @@ git clone https://github.com/madler/zlib.git
 git clone https://github.com/lz4/lz4.git
 git clone https://github.com/openssl/openssl.git
 git clone https://github.com/edenhill/librdkafka.git
-
-
-#COMMON FOR AVRO
 git clone https://github.com/curl/curl.git
 git clone https://github.com/apache/avro.git
-
-#THIS IS FOR CONFLUENT LIBSERDES (AVRO) - CANNOT BE BUILD ON WINDOWS....
-git clone https://github.com/akheron/jansson.git
-git clone https://github.com/confluentinc/libserdes.git
-
-#THIS IS FOR OUR OWN AVROSERDES
 git clone https://github.com/miloyip/rapidjson.git
 git clone https://github.com/bitbouncer/csi-async.git
 git clone https://github.com/bitbouncer/csi-hcl-asio.git
@@ -169,7 +140,7 @@ cd ../..
 
 cd boost
 call bootstrap.bat
-.\b2.exe -j8 -toolset=msvc-%VisualStudioVersion% variant=release,debug link=shared,static threading=multi runtime-link=shared address-model=64 architecture=x86 --stagedir=stage\lib\x64 stage -s ZLIB_SOURCE=%CD%\..\zlib headers log_setup log date_time timer thread system program_options filesystem regex chrono iostreams
+.\b2.exe -j8 -toolset=msvc-%VisualStudioVersion% variant=release,debug link=static threading=multi runtime-link=shared address-model=64 architecture=x86 --stagedir=stage\lib\x64 stage -s ZLIB_SOURCE=%CD%\..\zlib headers log_setup log date_time timer thread system program_options filesystem regex chrono iostreams
 cd ..
 
 cd librdkafka
@@ -199,7 +170,6 @@ copy builds\libcurl-vc%VISUALSTUDIO_VERSION_MAJOR%-x64-debug-static-ipv6-sspi-wi
 copy builds\libcurl-vc%VISUALSTUDIO_VERSION_MAJOR%-x64-release-static-ipv6-sspi-winssl\lib\libcurl_a.lib libs\x64\Release\libcurl.lib
 cd ..
 
-
 cd avro
 git checkout release-1.8.2-rc4
 cd lang/c++/
@@ -217,21 +187,6 @@ mkdir include\avro\buffer
 copy /y api\*.hh include\avro
 copy /y api\buffer\*.hh include\avro\buffer
 cd ../../..
-
-cd jansson
-git checkout v2.10
-rm -rf build
-mkdir build & cd build
-cmake -G "Visual Studio 14 Win64" -DJANSSON_BUILD_DOCS=OFF  ..
-msbuild /maxcpucount:8 jansson.vcxproj
-msbuild /maxcpucount:8 jansson.vcxproj /p:Configuration=Release
-@REM get rid of the _d extension on library name (on windows)
-copy /y lib\Debug\jansson_d.lib lib\Debug\jansson.lib 
-cd ../..
-
-cd libserdes
-git checkout v3.2.1
-cd ..
 
 cd kspp
 call rebuild_windows_vs14.bat
