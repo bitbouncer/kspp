@@ -13,6 +13,7 @@ file(GLOB LIB_SRCS
   impl/sources/*.*
   impl/sinks/*.*
   impl/serdes/*.*
+  impl/hash/*.*
   )
 	
 add_library (kspp STATIC ${LIB_SRCS})
