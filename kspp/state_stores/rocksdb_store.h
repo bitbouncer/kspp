@@ -57,8 +57,7 @@ class rocksdb_store
       std::shared_ptr<krecord<K, V>> res(std::make_shared<krecord<K, V>>());
       res->value = std::make_shared<V>();
 
-      std::istrstream isk(key.data(), key.size());
-      if (_codec->decode(isk, res->key) == 0)
+      if (_codec->decode(key.data(), key.size(), res->key) != key.size())
         return nullptr;
 
       // timestamp
@@ -67,8 +66,7 @@ class rocksdb_store
       memcpy(&res->event_time, value.data(), sizeof(int64_t));
 
       size_t actual_sz = value.size() - sizeof(int64_t);
-      std::istrstream isv(value.data() + sizeof(int64_t), actual_sz);
-      size_t consumed = _codec->decode(isv, *res->value);
+      size_t consumed = _codec->decode(value.data() + sizeof(int64_t), actual_sz, *res->value);
       if (consumed != actual_sz) {
         BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", decode payload failed, consumed:" << consumed << ", actual sz:" << actual_sz;
         return nullptr;
@@ -188,9 +186,7 @@ class rocksdb_store
 
       // read value
       size_t actual_sz = payload.size() - sizeof(int64_t);
-      std::istrstream is(payload.data() + sizeof(int64_t), actual_sz);
-
-      size_t consumed = _codec->decode(is, *res->value);
+      size_t consumed = _codec->decode(payload.data() + sizeof(int64_t), actual_sz, *res->value);
       if (consumed != actual_sz) {
         BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", decode payload failed, consumed:" << consumed << ", actual sz:" << actual_sz;
         return nullptr;

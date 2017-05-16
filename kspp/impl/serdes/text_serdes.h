@@ -2,6 +2,8 @@
 #include <ostream>
 #include <istream>
 #include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_io.hpp>
+#include <boost/uuid/string_generator.hpp>
 #include <typeinfo>
 #pragma once
 
@@ -17,6 +19,12 @@ class text_serdes
   template<class T>
   size_t encode(const T& src, std::ostream& dst) {
     static_assert(fake_dependency<T>::value, "you must use specialization to provide a encode for T");
+  }
+
+  template<class T>
+  inline size_t decode(const char* payload, size_t size, T& dst) {
+    std::istrstream src(payload, size);
+    return decode(src, dst);
   }
 
   template<class T>
@@ -125,5 +133,20 @@ template<> inline size_t text_serdes::decode(std::istream& src, unsigned long lo
   dst = strtoull(s.c_str(), 0, 10);
   return s.size();
 }
+
+template<> inline size_t text_serdes::encode(const boost::uuids::uuid& src, std::ostream& dst) {
+  std::string s = boost::uuids::to_string(src);
+  dst << s;
+  return s.size();
+}
+
+template<> inline size_t text_serdes::decode(std::istream& src, boost::uuids::uuid& dst) {
+  static boost::uuids::string_generator gen;
+  std::string s;
+  std::getline(src, s);
+  dst = gen(s);
+  return s.size();
+}
+
 };
 

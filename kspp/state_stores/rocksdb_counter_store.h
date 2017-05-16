@@ -108,8 +108,7 @@ namespace kspp {
         std::shared_ptr<krecord<K, V>> res(std::make_shared<krecord<K, V>>());
         res->value = std::make_shared<V>();
 
-        std::istrstream isk(key.data(), key.size());
-        if (_codec->decode(isk, res->key) == 0)
+        if (_codec->decode(key.data(), key.size(), res->key) != key.size())
           return nullptr;
 
         int64_t count = 0;

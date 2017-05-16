@@ -31,9 +31,22 @@ class binary_serdes
   }
 
   template<class T>
+  inline size_t decode(const char* payload, size_t size, T& dst) {
+    std::istrstream src(payload, size);
+    return decode(src, dst);
+  }
+
+  template<class T>
+  inline size_t decode(const char* payload, size_t size, std::vector<T>& dst) {
+    std::istrstream src(payload, size);
+    return decode(src, dst);
+  }
+
+  template<class T>
   size_t decode(std::istream& src, T& dst) {
     static_assert(fake_dependency<T>::value, "you must use specialization to provide a decode for T");
   }
+
 
   template<class T>
   inline size_t decode(std::istream& src, std::vector<T>& dst) {

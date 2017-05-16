@@ -118,8 +118,7 @@ namespace kspp {
         record->event_time = milliseconds_since_epoch();
 
       {
-        std::istrstream ks((const char*)ref->key_pointer(), ref->key_len());
-        size_t consumed = this->_codec->decode(ks, record->key);
+        size_t consumed = this->_codec->decode((const char*) ref->key_pointer(), ref->key_len(), record->key);
         if (consumed == 0) {
           BOOST_LOG_TRIVIAL(error) << LOG_NAME << ", decode key failed, actual key sz:" << ref->key_len();
           return nullptr;
@@ -131,9 +130,8 @@ namespace kspp {
 
       size_t sz = ref->len();
       if (sz) {
-        std::istrstream vs((const char*)ref->payload(), sz);
         record->value = std::make_shared<V>();
-        size_t consumed = this->_codec->decode(vs, *record->value);
+        size_t consumed = this->_codec->decode((const char*) ref->payload(), sz, *record->value);
         if (consumed == 0) {
           BOOST_LOG_TRIVIAL(error) << LOG_NAME << ", decode value failed, size:" << sz;
           return nullptr;
@@ -170,9 +168,8 @@ namespace kspp {
         if (record->event_time < 0)
           record->event_time = milliseconds_since_epoch();
 
-        std::istrstream vs((const char*)ref->payload(), sz);
         record->value = std::make_shared<V>();
-        size_t consumed = this->_codec->decode(vs, *record->value);
+        size_t consumed = this->_codec->decode((const char*) ref->payload(), sz, *record->value);
         if (consumed == sz) {
           return std::make_shared<ktransaction<void, V>>(record, this->_commit_chain.create(ref->offset()));
         }
@@ -211,8 +208,7 @@ namespace kspp {
       if (record->event_time < 0)
         record->event_time = milliseconds_since_epoch();
 
-      std::istrstream ks((const char*)ref->key_pointer(), ref->key_len());
-      size_t consumed = this->_codec->decode(ks, record->key);
+      size_t consumed = this->_codec->decode((const char*) ref->key_pointer(), ref->key_len(), record->key);
       if (consumed == 0) {
         BOOST_LOG_TRIVIAL(error) << LOG_NAME << ", decode key failed, actual key sz:" << ref->key_len();
         return nullptr;
