@@ -267,24 +267,168 @@ class avro_serdes
   std::shared_ptr<avro_schema_registry> _registry;
 };
 
-template<> inline size_t avro_serdes::encode(const int64_t& src, std::ostream& dst) {
+template<> inline size_t avro_serdes::encode(const std::string& src, std::ostream& dst) {
   static int32_t schema_id = -1;
   std::shared_ptr<avro::ValidSchema> not_used;
   if (schema_id > 0)
     return encode(schema_id, src, dst);
-  std::tie(schema_id, not_used) = register_schema("int64_t", "{\"type\":\"long\"}");
+  std::tie(schema_id, not_used) = register_schema("string", "{\"type\":\"string\"}");
   if (schema_id > 0)
     return encode(schema_id, src, dst);
   else
     return 0;
 }
 
-template<> inline size_t avro_serdes::decode(const char* payload, size_t size, std::int64_t& dst) {
+template<> inline size_t avro_serdes::decode(const char* payload, size_t size, std::string& dst) {
   static int32_t schema_id = -1;
   static std::shared_ptr<avro::ValidSchema> valid_schema; // this means we never free memory from used schemas???
   if (schema_id>0)
     return decode(schema_id, valid_schema, payload, size, dst);
-  std::tie(schema_id, valid_schema) = register_schema("int64_t", "{\"type\":\"long\"}");
+  std::tie(schema_id, valid_schema) = register_schema("string", "{\"type\":\"string\"}");
+  if (schema_id > 0)
+    return decode(schema_id, valid_schema, payload, size, dst);
+  else
+    return 0;
+}
+
+template<> inline size_t avro_serdes::encode(const int64_t& src, std::ostream& dst) {
+  static int32_t schema_id = -1;
+  std::shared_ptr<avro::ValidSchema> not_used;
+  if (schema_id > 0)
+    return encode(schema_id, src, dst);
+  std::tie(schema_id, not_used) = register_schema("long", "{\"type\":\"long\"}");
+  if (schema_id > 0)
+    return encode(schema_id, src, dst);
+  else
+    return 0;
+}
+
+template<> inline size_t avro_serdes::decode(const char* payload, size_t size, int64_t& dst) {
+  static int32_t schema_id = -1;
+  static std::shared_ptr<avro::ValidSchema> valid_schema; // this means we never free memory from used schemas???
+  if (schema_id>0)
+    return decode(schema_id, valid_schema, payload, size, dst);
+  std::tie(schema_id, valid_schema) = register_schema("long", "{\"type\":\"long\"}");
+  if (schema_id > 0)
+    return decode(schema_id, valid_schema, payload, size, dst);
+  else
+    return 0;
+}
+
+template<> inline size_t avro_serdes::encode(const int32_t& src, std::ostream& dst) {
+  static int32_t schema_id = -1;
+  std::shared_ptr<avro::ValidSchema> not_used;
+  if (schema_id > 0)
+    return encode(schema_id, src, dst);
+  std::tie(schema_id, not_used) = register_schema("int", "{\"type\":\"int\"}");
+  if (schema_id > 0)
+    return encode(schema_id, src, dst);
+  else
+    return 0;
+}
+
+template<> inline size_t avro_serdes::decode(const char* payload, size_t size, int32_t& dst) {
+  static int32_t schema_id = -1;
+  static std::shared_ptr<avro::ValidSchema> valid_schema; // this means we never free memory from used schemas???
+  if (schema_id>0)
+    return decode(schema_id, valid_schema, payload, size, dst);
+  std::tie(schema_id, valid_schema) = register_schema("int", "{\"type\":\"int\"}");
+  if (schema_id > 0)
+    return decode(schema_id, valid_schema, payload, size, dst);
+  else
+    return 0;
+}
+
+template<> inline size_t avro_serdes::encode(const bool& src, std::ostream& dst) {
+  static int32_t schema_id = -1;
+  std::shared_ptr<avro::ValidSchema> not_used;
+  if (schema_id > 0)
+    return encode(schema_id, src, dst);
+  std::tie(schema_id, not_used) = register_schema("boolean", "{\"type\":\"boolean\"}");
+  if (schema_id > 0)
+    return encode(schema_id, src, dst);
+  else
+    return 0;
+}
+
+template<> inline size_t avro_serdes::decode(const char* payload, size_t size, bool& dst) {
+  static int32_t schema_id = -1;
+  static std::shared_ptr<avro::ValidSchema> valid_schema; // this means we never free memory from used schemas???
+  if (schema_id>0)
+    return decode(schema_id, valid_schema, payload, size, dst);
+  std::tie(schema_id, valid_schema) = register_schema("boolean", "{\"type\":\"boolean\"}");
+  if (schema_id > 0)
+    return decode(schema_id, valid_schema, payload, size, dst);
+  else
+    return 0;
+}
+
+template<> inline size_t avro_serdes::encode(const float& src, std::ostream& dst) {
+  static int32_t schema_id = -1;
+  std::shared_ptr<avro::ValidSchema> not_used;
+  if (schema_id > 0)
+    return encode(schema_id, src, dst);
+  std::tie(schema_id, not_used) = register_schema("float", "{\"type\":\"float\"}");
+  if (schema_id > 0)
+    return encode(schema_id, src, dst);
+  else
+    return 0;
+}
+
+template<> inline size_t avro_serdes::decode(const char* payload, size_t size, float& dst) {
+  static int32_t schema_id = -1;
+  static std::shared_ptr<avro::ValidSchema> valid_schema; // this means we never free memory from used schemas???
+  if (schema_id>0)
+    return decode(schema_id, valid_schema, payload, size, dst);
+  std::tie(schema_id, valid_schema) = register_schema("float", "{\"type\":\"float\"}");
+  if (schema_id > 0)
+    return decode(schema_id, valid_schema, payload, size, dst);
+  else
+    return 0;
+}
+
+template<> inline size_t avro_serdes::encode(const double& src, std::ostream& dst) {
+  static int32_t schema_id = -1;
+  std::shared_ptr<avro::ValidSchema> not_used;
+  if (schema_id > 0)
+    return encode(schema_id, src, dst);
+  std::tie(schema_id, not_used) = register_schema("double", "{\"type\":\"double\"}");
+  if (schema_id > 0)
+    return encode(schema_id, src, dst);
+  else
+    return 0;
+}
+
+template<> inline size_t avro_serdes::decode(const char* payload, size_t size, double& dst) {
+  static int32_t schema_id = -1;
+  static std::shared_ptr<avro::ValidSchema> valid_schema; // this means we never free memory from used schemas???
+  if (schema_id>0)
+    return decode(schema_id, valid_schema, payload, size, dst);
+  std::tie(schema_id, valid_schema) = register_schema("double", "{\"type\":\"double\"}");
+  if (schema_id > 0)
+    return decode(schema_id, valid_schema, payload, size, dst);
+  else
+    return 0;
+}
+
+template<> inline size_t avro_serdes::encode(const std::vector<uint8_t>& src, std::ostream& dst) {
+  static int32_t schema_id = -1;
+  std::shared_ptr<avro::ValidSchema> not_used;
+  if (schema_id > 0)
+    return encode(schema_id, src, dst);
+  std::tie(schema_id, not_used) = register_schema("bytes", "{\"type\":\"bytes\"}");
+  if (schema_id > 0)
+    return encode(schema_id, src, dst);
+  else
+    return 0;
+}
+
+template<> inline size_t avro_serdes::decode(const char* payload, size_t size, std::vector<uint8_t>& dst) {
+  static int32_t schema_id = -1;
+  static std::shared_ptr<avro::ValidSchema> valid_schema; // this means we never free memory from used schemas???
+  if (schema_id>0)
+    return decode(schema_id, valid_schema, payload, size, dst);
+  std::tie(schema_id, valid_schema) = register_schema("bytes", "{\"type\":\"bytes\"}");
   if (schema_id > 0)
     return decode(schema_id, valid_schema, payload, size, dst);
   else
