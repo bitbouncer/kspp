@@ -189,6 +189,7 @@ add_library(librdkafkacpp STATIC ${librdkafka_cpp_files} ${librdkafka_cpp_h_file
 endif()
 
 add_subdirectory(kspp)
+add_subdirectory(tools)
 add_subdirectory(examples)
 
 if (BUILD_TESTS)
