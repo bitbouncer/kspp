@@ -1,10 +1,11 @@
 #include <memory>
 #include <ostream>
 #include <istream>
-#include "avro_generic.h"
-#include "text_serdes.h"
-#include <avro/Encoder.hh>
 #include <sstream>
+#include <avro/Encoder.hh>
+#include <kspp/impl/serdes/text_serdes.h>
+#include "avro_generic.h"
+#pragma once
 
 namespace kspp {
 template<> inline size_t text_serdes::encode(const GenericAvro& src, std::ostream& dst) {

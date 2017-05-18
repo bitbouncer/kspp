@@ -1,8 +1,8 @@
 #include <iostream>
 #include <string>
 #include <chrono>
-#include <kspp/impl/serdes/avro_serdes.h>
-#include <kspp/impl/serdes/avro_text.h>
+#include <kspp/impl/serdes/avro/avro_serdes.h>
+#include <kspp/impl/serdes/avro/avro_text.h>
 #include <kspp/topology_builder.h>
 #include <kspp/sinks/kafka_sink.h>
 #include <kspp/sinks/stream_sink.h>

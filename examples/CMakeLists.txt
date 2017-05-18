@@ -12,6 +12,6 @@ if (ENABLE_ROCKSDB)
 add_subdirectory(example9-ktable-rocksdb)
 endif()
 
-if (ENABLE_AVRO2)
+if (ENABLE_AVRO)
 add_subdirectory(example10-avro)
 endif()

@@ -1,4 +1,3 @@
-#pragma once
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/uuid/string_generator.hpp>
@@ -15,6 +14,7 @@
 #include <avro/Specific.hh>
 #include "confluent_schema_registry.h"
 #include "avro_generic.h"
+#pragma once
 
 namespace kspp {
 

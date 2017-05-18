@@ -15,6 +15,10 @@ file(GLOB LIB_SRCS
   impl/serdes/*.*
   impl/hash/*.*
   )
-	
-add_library (kspp STATIC ${LIB_SRCS})
+
+if (ENABLE_AVRO)  
+file(GLOB AVRO_SRCS impl/serdes/avro/*.*)  
+endif()  
+  
+add_library (kspp STATIC ${LIB_SRCS} ${AVRO_SRCS})
 

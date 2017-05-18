@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.11)
 
-option(ENABLE_AVRO2 "enable avro2 support" ON)
+option(ENABLE_AVRO    "enable avro support" OFF)
 option(ENABLE_ROCKSDB "enable rocksdb support" ON)
 option(BUILD_SAMPLES  "build examples" ON)
 option(BUILD_TESTS    "build tests" ON)
@@ -25,7 +25,7 @@ SET(CSI_INCLUDE_PATH ${CSI_INCLUDE_PATH} ${CMAKE_SOURCE_DIR}/../rocksdb/include)
 SET(CSI_LIBRARY_PATH ${CSI_LIBRARY_PATH} ${CMAKE_SOURCE_DIR}/../rocksdb/build) 
 endif()
 
-if (ENABLE_AVRO2)	
+if (ENABLE_AVRO)	
 SET(CSI_INCLUDE_PATH 
   ${CSI_INCLUDE_PATH} 
   ${CMAKE_SOURCE_DIR}/../avro/lang/c++/include 
@@ -69,7 +69,7 @@ if (ENABLE_ROCKSDB)
 SET(CSI_ROCKSDB_LIBS rocksdb rocksdblib Rpcrt4)
 endif()
 
-if (ENABLE_AVRO2)	
+if (ENABLE_AVRO)	
 SET(CSI_AVRO_LIBS avrocpp_s libcurl)
 endif()
 
@@ -127,7 +127,7 @@ SET(CSI_INCLUDE_PATH ${CSI_INCLUDE_PATH} ${CMAKE_SOURCE_DIR}/../rocksdb/include)
 SET(CSI_LIBRARY_PATH ${CSI_LIBRARY_PATH} ${CMAKE_SOURCE_DIR}/../rocksdb)
 endif()
 
-if (ENABLE_AVRO2)	
+if (ENABLE_AVRO)	
 SET(CSI_INCLUDE_PATH 
   ${CSI_INCLUDE_PATH} 
   ${CMAKE_SOURCE_DIR}/../avro/lang/c++/include 
@@ -189,7 +189,9 @@ add_library(librdkafkacpp STATIC ${librdkafka_cpp_files} ${librdkafka_cpp_h_file
 endif()
 
 add_subdirectory(kspp)
+if (ENABLE_AVRO)
 add_subdirectory(tools)
+endif()
 add_subdirectory(examples)
 
 if (BUILD_TESTS)

@@ -1,5 +1,4 @@
 #include <map>
-//#include <avro/Generic.hh>
 #include <avro/Schema.hh>
 #include <csi_hcl_asio/http_client.h>
 #pragma once
