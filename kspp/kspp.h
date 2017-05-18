@@ -36,7 +36,7 @@ class processor
   // not fast but useful for debugging
   int64_t get_metric(std::string name) {
     for (auto&& i : _metrics) {
-      if (i->_simple_name == name)
+      if (i->_name == name)
         return i->value();
     }
     return -1;

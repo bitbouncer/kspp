@@ -8,17 +8,25 @@ namespace kspp {
 struct metric
 {
   metric(std::string s)
-    : _simple_name(s)
-    , _logged_name(s) {}
+    : _name(s) {
+  }
 
   virtual int64_t value() const = 0;
 
-  inline std::string name() {
-    return _logged_name;
+  inline std::string name() const {
+    return _name;
   }
 
-  std::string _simple_name;
-  std::string _logged_name;
+  void set_tags(std::string s) {
+    _tags = s;
+  }
+
+  inline std::string tags() const {
+    return _tags;
+  }
+
+  std::string _name;
+  std::string _tags;
 };
 
 struct metric_counter : public metric

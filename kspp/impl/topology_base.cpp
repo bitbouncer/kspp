@@ -73,31 +73,35 @@ static std::string escape_influx(std::string s) {
 void topology_base::init_metrics() {
   for (auto i : _partition_processors) {
     for (auto j : i->get_metrics()) {
-      j->_logged_name = j->_simple_name
-        + ",app_id=" + escape_influx(_app_info->app_id)
+      std::string app_tags = (_app_info->app_id.size() ? "app_id=" + escape_influx(_app_info->app_id) : "")
         + ",app_instance_id=" + escape_influx(_app_info->app_instance_id.size() ? _app_info->app_instance_id : "single-instance")
-        + ",app_instance_name=" + escape_influx(_app_info->app_instance_name.size() ? _app_info->app_instance_name : "noname")
-        + ",app_namespace=" + escape_influx(_app_info->app_namespace)
-        + ",depth=" + std::to_string(i->depth())
+        + (_app_info->app_instance_name.size() ? ",app_instance_name=" + escape_influx(_app_info->app_instance_name) : "")
+        + (_app_info->app_namespace.size() ? ",app_namespace=" + escape_influx(_app_info->app_namespace) : "");
+      
+      std::string metrics_tags = "depth=" + std::to_string(i->depth())
         + ",key_type=" + escape_influx(i->key_type_name())
         + ",partition=" + std::to_string(i->partition())
         + ",processor_type=" + escape_influx(i->processor_name())
         + ",topology=" + escape_influx(_topology_id)
         + ",value_type=" + escape_influx(i->value_type_name());
+
+      j->set_tags((app_tags.size() ? app_tags  + "," : "") + metrics_tags); // hewe we assume there is always metrics_tags
     }
   }
 
   for (auto i : _sinks) {
     for (auto j : i->get_metrics()) {
-      j->_logged_name = j->_simple_name
-        + ",app_id=" + escape_influx(_app_info->app_id)
+      std::string app_tags = (_app_info->app_id.size() ? "app_id=" + escape_influx(_app_info->app_id) : "")
         + ",app_instance_id=" + escape_influx(_app_info->app_instance_id.size() ? _app_info->app_instance_id : "single-instance")
-        + ",app_instance_name=" + escape_influx(_app_info->app_instance_name.size() ? _app_info->app_instance_name : "noname")
-        + ",app_namespace=" + escape_influx(_app_info->app_namespace)
-        + ",key_type=" + escape_influx(i->key_type_name())
+        + (_app_info->app_instance_name.size() ? ",app_instance_name=" + escape_influx(_app_info->app_instance_name) : "")
+        + (_app_info->app_namespace.size() ? ",app_namespace=" + escape_influx(_app_info->app_namespace) : "");
+
+      std::string metrics_tags = "key_type=" + escape_influx(i->key_type_name())
         + ",processor_type=" + escape_influx(i->processor_name())
         + ",topology=" + escape_influx(_topology_id)
         + ",value_type=" + escape_influx(i->value_type_name());
+
+      j->set_tags((app_tags.size() ? app_tags + "," : "") + metrics_tags); // hewe we assume there is always metrics_tags
     }
   }
 }
