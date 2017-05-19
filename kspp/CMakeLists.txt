@@ -5,6 +5,7 @@ file(GLOB LIB_SRCS
   type_name.h
   metrics.h
   topology_builder.h
+  metrics/*.*
   sinks/*.h
   codecs/*.h
   processors/*.h

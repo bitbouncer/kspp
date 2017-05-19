@@ -12,9 +12,9 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/algorithm/string/replace.hpp>
-#include "ktransaction.h"
-#include "metrics.h"
-#include "type_name.h"
+#include <kspp/metrics/metrics.h>
+#include <kspp/ktransaction.h>
+#include <kspp/type_name.h>
 
 #pragma once
 namespace kspp {
