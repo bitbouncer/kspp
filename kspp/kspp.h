@@ -128,8 +128,10 @@ class partition_processor : public processor
   virtual void punctuate(int64_t timestamp) {}
 
   virtual void close() {
-    if (_upstream)
+    if (_upstream) {
       _upstream->close();
+      _upstream = nullptr;
+    }
   }
 
   inline int32_t partition() const {
