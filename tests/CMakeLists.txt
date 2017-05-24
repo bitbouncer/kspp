@@ -41,3 +41,6 @@ add_executable(test5_kafka_source_sink test5_kafka_source_sink.cpp)
 target_link_libraries(test5_kafka_source_sink ${CSI_LIBS})
 add_test(NAME test5_kafka_source_sink COMMAND $<TARGET_FILE:test5_kafka_source_sink>)
 
+add_executable(test6-repartition test6-repartition.cpp)
+target_link_libraries(test6-repartition ${CSI_LIBS})
+add_test(NAME test6-repartition COMMAND $<TARGET_FILE:test6-repartition>)
