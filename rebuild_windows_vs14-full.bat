@@ -7,7 +7,7 @@ echo BUILDING
 rmdir /s /q build
 mkdir build 
 cd build
-cmake -DENABLE_ROCKSDB=OFF -G "Visual Studio %VISUALSTUDIO_VERSION_MAJOR% Win64"  ..
+cmake -G "Visual Studio %VISUALSTUDIO_VERSION_MAJOR% Win64"  -DENABLE_AVRO=ON -DENABLE_ROCKSDB=ON -DBUILD_SAMPLES=ON -DBUILD_TESTS=ON ..
 msbuild ALL_BUILD.vcxproj /p:Configuration=Debug /p:Platform=x64 /maxcpucount:12
 msbuild ALL_BUILD.vcxproj /p:Configuration=Release /p:Platform=x64 /maxcpucount:12
 cd ..
