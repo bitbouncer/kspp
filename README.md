@@ -15,23 +15,17 @@ Install build tools
 sudo apt-get install -y automake autogen shtool libtool git wget cmake unzip build-essential libboost-all-dev g++ python-dev autotools-dev libicu-dev zlib1g-dev openssl libssl-dev libbz2-dev libsnappy-dev
 sudo apt-get install -y libjansson-dev  libcurl4-openssl-dev liblzma-dev pkg-config
 ```
-Build
+optional build rocksdb 
 ```
-
 git clone https://github.com/facebook/rocksdb.git
 cd rocksdb
 git checkout v5.3.4
 make -j8 static_lib
 cd ..
+```
 
-git clone https://github.com/edenhill/librdkafka.git
-cd librdkafka
-git checkout v0.9.5
-./configure
-make -j8
-sudo make install
-cd ..
-
+optional build avro
+```
 git clone https://github.com/apache/avro.git
 cd avro
 git checkout release-1.8.2-rc4
@@ -47,7 +41,17 @@ cd ../../../..
 git clone https://github.com/miloyip/rapidjson.git
 git clone https://github.com/bitbouncer/csi-async.git
 git clone https://github.com/bitbouncer/csi-hcl-asio.git
+```
 
+build librdkafka & kspp
+```
+git clone https://github.com/edenhill/librdkafka.git
+cd librdkafka
+git checkout v0.9.5
+./configure
+make -j8
+sudo make install
+cd ..
 
 git clone https://github.com/bitbouncer/kspp.git
 cd kspp
@@ -189,7 +193,7 @@ copy /y api\buffer\*.hh include\avro\buffer
 cd ../../..
 
 cd kspp
-call rebuild_windows_vs14-full.bat
+call rebuild_windows_vs14.bat
 cd ..
 
 ```
