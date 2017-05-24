@@ -5,6 +5,8 @@ option(ENABLE_ROCKSDB "enable rocksdb support" OFF)
 option(BUILD_SAMPLES  "build examples" OFF)
 option(BUILD_TESTS    "build tests" OFF)
 
+set(CMAKE_CXX_STANDARD 14)
+
 if(WIN32)
 SET(CSI_INCLUDE_PATH
   ${CMAKE_SOURCE_DIR}/../include
@@ -80,7 +82,6 @@ SET(CSI_LIBS kspp ${LIBRDKAFKA_LIBS} ${CSI_AVRO_LIBS} ${CSI_ROCKSDB_LIBS} ${CSI_
 
 elseif(APPLE)
 add_definitions(-DBOOST_LOG_DYN_LINK)
-add_definitions(-std=c++14)
 
 set(LIBRARY_OUTPUT_PATH     ${CMAKE_SOURCE_DIR}/lib)
 SET(EXECUTABLE_OUTPUT_PATH  ${CMAKE_SOURCE_DIR}/bin)
@@ -91,36 +92,26 @@ SET(CSI_ROCKSDB_LIBS rocksdb_lite snappy bz2 z)
 endif()
 SET(LIBRDKAFKA_LIBS rdkafka++ rdkafka)
 SET(CSI_LIBS kspp ${LIBRDKAFKA_LIBS} ${CSI_ROCKSDB_LIBS} ${CSI_BOOST_LIBS} crypto ssl)
+#END APPLE
+else() #LINUX
+find_package(Boost COMPONENTS log date_time timer thread program_options regex  system filesystem REQUIRED)
 
-#elseif(ALPINE_LINUX)
-#SET(CSI_INCLUDE_PATH /usr/local/include)
-#SET(CSI_LIBRARY_PATH ${CMAKE_SOURCE_DIR}/../librdkafka/src)
-#if (ENABLE_ROCKSDB)
-#SET(CSI_INCLUDE_PATH ${CSI_INCLUDE_PATH} ${CMAKE_SOURCE_DIR}/../rocksdb/include)
-#SET(CSI_LIBRARY_PATH $(CSI_LIBRARY_PATH) ${CMAKE_SOURCE_DIR}/../rocksdb)
-#endif()
+set(BOOST_LIBS 
+  ${Boost_LOG_LIBRARY} 
+  ${Boost_DATE_TIME_LIBRARY} 
+  ${Boost_FILESYSTEM_LIBRARY} 
+  ${Boost_TIMER_LIBRARY} 
+  ${Boost_THREAD_LIBRARY} 
+  ${Boost_PROGRAM_OPTIONS_LIBRARY}
+  ${Boost_REGEXP_LIBRARY}
+  ${Boost_SYSTEM_LIBRARY}
+  ${Boost_FILESYSTEM_LIBRARY} 
+  pthread 
+  rt 
+  c
+)
 
-#set(LIBRARY_OUTPUT_PATH     ${CMAKE_SOURCE_DIR}/lib)
-#SET(EXECUTABLE_OUTPUT_PATH  ${CMAKE_SOURCE_DIR}/bin)
-
-#add_definitions(-D_FILE_OFFSET_BITS=64 -D_REENTRANT -DEXTERNAL_LOCKS -DMULTITHREAD)
-#add_definitions(-fPIC)
-#add_definitions(-std=c++14)
-#add_definitions(-DBOOST_LOG_DYN_LINK)
-#add_definitions(-DBOOST_ALL_DYN_LINK)
-#add_definitions(-Wno-deprecated)
-
-#boost_thread
-#set(CSI_BOOST_LIBS boost_log_setup boost_log-mt boost_date_time boost_timer boost_system boost_program_options boost_filesystem boost_regex boost_chrono boost_iostreams pthread rt c)
-#if (ENABLE_ROCKSDB)
-#SET(CSI_ROCKSDB_LIBS rocksdb snappy bz2 z)
-#endif()
-#SET(LIBRDKAFKA_LIBS rdkafka++ rdkafka)
-#SET(CSI_LIBS kspp ${LIBRDKAFKA_LIBS} ${CSI_ROCKSDB_LIBS} ${CSI_BOOST_LIBS} crypto ssl)
-else() # END ALPINE
-#LINUX
-SET(CSI_INCLUDE_PATH ${CMAKE_SOURCE_DIR}/../boost)
-SET(CSI_LIBRARY_PATH ${CMAKE_SOURCE_DIR}/../boost/stage/lib)
+SET(CSI_INCLUDE_PATH ${Boost_INCLUDE_DIR})
 
 if (ENABLE_ROCKSDB)	
 SET(CSI_INCLUDE_PATH ${CSI_INCLUDE_PATH} ${CMAKE_SOURCE_DIR}/../rocksdb/include)
@@ -133,39 +124,30 @@ SET(CSI_INCLUDE_PATH
   ${CMAKE_SOURCE_DIR}/../avro/lang/c++/include 
   ${CMAKE_SOURCE_DIR}/../rapidjson/include
   ${CMAKE_SOURCE_DIR}/../csi-async 
-  ${CMAKE_SOURCE_DIR}/../csi-hcl-asio)
-
+  ${CMAKE_SOURCE_DIR}/../csi-hcl-asio
+)
 SET(CSI_LIBRARY_PATH ${CSI_LIBRARY_PATH} ${CMAKE_SOURCE_DIR}/../avro/lang/c++/build)
-
 SET(CSI_AVRO_LIBS avrocpp_s curl)
-
-endif()
-
-set(LIBRARY_OUTPUT_PATH     ${CMAKE_SOURCE_DIR}/lib)
-SET(EXECUTABLE_OUTPUT_PATH  ${CMAKE_SOURCE_DIR}/bin)
-
-add_definitions(-D_FILE_OFFSET_BITS=64 -D_REENTRANT -DEXTERNAL_LOCKS -DMULTITHREAD)
-add_definitions(-fPIC)
-add_definitions(-std=c++14)
-add_definitions(-DBOOST_LOG_DYN_LINK)
-add_definitions(-Wno-deprecated)
-
-#boost_thread
-set(CSI_BOOST_LIBS boost_log_setup boost_log boost_date_time boost_timer boost_system boost_program_options boost_filesystem boost_regex boost_chrono boost_iostreams pthread rt c)
+endif() #AVRO
 
 if (ENABLE_ROCKSDB)	
 SET(CSI_ROCKSDB_LIBS rocksdb snappy bz2 z)
-endif()
+endif() #ROCKSDB
 
+SET(LIBRARY_OUTPUT_PATH     ${CMAKE_SOURCE_DIR}/lib)
+SET(EXECUTABLE_OUTPUT_PATH  ${CMAKE_SOURCE_DIR}/bin)
+add_definitions(-D_FILE_OFFSET_BITS=64 -D_REENTRANT -DEXTERNAL_LOCKS -DMULTITHREAD)
+add_definitions(-fPIC)
+add_definitions(-DBOOST_LOG_DYN_LINK)
+add_definitions(-Wno-deprecated)
 SET(LIBRDKAFKA_LIBS rdkafka++ rdkafka)
-
-SET(CSI_LIBS kspp ${CSI_AVRO_LIBS} ${LIBRDKAFKA_LIBS} ${CSI_ROCKSDB_LIBS} ${CSI_BOOST_LIBS} crypto ssl)
-endif() 
+SET(CSI_LIBS kspp ${CSI_AVRO_LIBS} ${CSI_ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${BOOST_LIBS} crypto ssl)
+endif() #LINUX
 
 include_directories(${CSI_INCLUDE_PATH} ${CMAKE_SOURCE_DIR})
-link_directories(${CSI_LIBRARY_PATH})
+link_directories(   ${CSI_LIBRARY_PATH})
 
-#dirty fix to complile non supported static lib on windows...
+#EXTRA WINDOWS TARGETS 
 if(WIN32)
 file(GLOB liblz4_files
   ${CMAKE_CURRENT_SOURCE_DIR}/../lz4/lib/*.c
@@ -185,9 +167,9 @@ file(COPY ${librdkafka_cpp_h_files} DESTINATION ${CMAKE_SOURCE_DIR}/../include/l
 file(COPY ${librdkafka_c_h_files} DESTINATION ${CMAKE_SOURCE_DIR}/../include/librdkafka)
 add_library(librdkafka STATIC ${librdkafka_c_files} ${librdkafka_c_h_files})
 add_library(librdkafkacpp STATIC ${librdkafka_cpp_files} ${librdkafka_cpp_h_files})
+endif() #WIN32
 
-endif()
-
+#TARGETS
 add_subdirectory(kspp)
 if (ENABLE_AVRO)
 add_subdirectory(tools)
