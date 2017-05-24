@@ -189,7 +189,7 @@ copy /y api\buffer\*.hh include\avro\buffer
 cd ../../..
 
 cd kspp
-call rebuild_windows_vs14.bat
+call rebuild_windows_vs14-full.bat
 cd ..
 
 ```

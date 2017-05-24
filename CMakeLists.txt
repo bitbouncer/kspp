@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 2.8.11)
 
 option(ENABLE_AVRO    "enable avro support" OFF)
-option(ENABLE_ROCKSDB "enable rocksdb support" ON)
-option(BUILD_SAMPLES  "build examples" ON)
-option(BUILD_TESTS    "build tests" ON)
+option(ENABLE_ROCKSDB "enable rocksdb support" OFF)
+option(BUILD_SAMPLES  "build examples" OFF)
+option(BUILD_TESTS    "build tests" OFF)
 
 if(WIN32)
 SET(CSI_INCLUDE_PATH
@@ -192,7 +192,10 @@ add_subdirectory(kspp)
 if (ENABLE_AVRO)
 add_subdirectory(tools)
 endif()
+
+if (BUILD_SAMPLES)
 add_subdirectory(examples)
+endif()
 
 if (BUILD_TESTS)
 SET(EXECUTABLE_OUTPUT_PATH  bin)

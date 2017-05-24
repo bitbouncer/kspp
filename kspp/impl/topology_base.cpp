@@ -25,8 +25,8 @@ topology_base::topology_base(std::shared_ptr<app_info> ai,
 
 topology_base::~topology_base() {
   BOOST_LOG_TRIVIAL(info) << "topology, name:" << name() << " terminating";
-  _partition_processors.clear(); 
   _top_partition_processors.clear();
+  _partition_processors.clear();
   _sinks.clear();
   BOOST_LOG_TRIVIAL(info) << "topology, name:" << name() << " terminated";
 }
