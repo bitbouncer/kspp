@@ -93,6 +93,8 @@ endif()
 SET(LIBRDKAFKA_LIBS rdkafka++ rdkafka)
 SET(CSI_LIBS kspp ${LIBRDKAFKA_LIBS} ${CSI_ROCKSDB_LIBS} ${CSI_BOOST_LIBS} crypto ssl)
 #END APPLE
+
+
 else() #LINUX
 find_package(Boost COMPONENTS log date_time timer thread program_options regex  system filesystem REQUIRED)
 

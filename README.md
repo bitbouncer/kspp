@@ -55,9 +55,7 @@ cd ..
 
 git clone https://github.com/bitbouncer/kspp.git
 cd kspp
-mkdir build && cd build
-cmake -DCMAKE_BUILD_TYPE=Release ..
-make -j8
+./rebuild.sh
 cd ..
 ```
 
@@ -82,7 +80,7 @@ git clone https://github.com/bitbouncer/kspp.git
 
 Run the build
 ```
-./rebuild_macos.sh
+./rebuild.sh
 ```
 
 ## Windows x64:
@@ -193,7 +191,7 @@ copy /y api\buffer\*.hh include\avro\buffer
 cd ../../..
 
 cd kspp
-call rebuild_windows_vs14.bat
+call rebuild_windows_vs14-all-options.bat
 cd ..
 
 ```
