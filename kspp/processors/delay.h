@@ -38,7 +38,7 @@ namespace kspp {
       _source->close();
     }
 
-    virtual bool process_one() {
+    virtual bool process_one(int64_t tick) {
       if (_queue.size()==0)
         _source->process_one();
 
@@ -46,8 +46,8 @@ namespace kspp {
         return false;
 
       auto r = _queue.front();
-      _lag.add_event_time(r->event_time);
-      if (r->event_time + _delay > milliseconds_since_epoch()) {
+      _lag.add_event_time(tick, r->event_time);
+      if (r->event_time + _delay > tick) {
         _queue.pop_front();
         this->send_to_sinks(r);
         return true;
