@@ -57,6 +57,7 @@ namespace kspp {
       if (!p)
         return false;
       ++_in_count;
+      _lag.add_event_time(tick, p->timestamp().timestamp);
       this->send_to_sinks(parse(p));
       return true;
     }
@@ -72,7 +73,8 @@ namespace kspp {
     , _consumer(brokers, topic, partition, consumer_group, max_buffering_time)
     , _can_be_committed(-1)
     , _in_count("in_count")
-    , _commit_chain_size("commit_chain_size", [this]() { return _commit_chain.size(); }) {
+    , _commit_chain_size("commit_chain_size", [this]() { return _commit_chain.size(); })
+    , _lag() {
       _commit_chain.set_handler([this](int64_t offset, int32_t ec) {
         if (!ec) {
           _can_be_committed = offset;
@@ -85,6 +87,7 @@ namespace kspp {
 
       this->add_metric(&_in_count);
       this->add_metric(&_commit_chain_size);
+      this->add_metric(&_lag);
     }
 
     virtual std::shared_ptr<ktransaction<K, V>> parse(const std::unique_ptr<RdKafka::Message> & ref) = 0;
@@ -95,6 +98,7 @@ namespace kspp {
     commit_chain           _commit_chain;
     metric_counter         _in_count;
     metric_evaluator       _commit_chain_size;
+    metric_lag             _lag;
   };
 
   template<class K, class V, class CODEC>

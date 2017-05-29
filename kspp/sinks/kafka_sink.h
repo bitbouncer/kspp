@@ -80,16 +80,20 @@ class kafka_sink_base : public topic_sink<K, V>
     , _codec(codec)
     , _impl(brokers, topic, max_buffering_time)
     , _partitioner(p)
-    , _in_count("in_count") {
+    , _in_count("in_count")
+    , _lag() {
     this->add_metric(&_in_count);
+    this->add_metric(&_lag);
   }
 
   kafka_sink_base(std::string brokers, std::string topic, std::chrono::milliseconds max_buffering_time, std::shared_ptr<CODEC> codec)
     : topic_sink<K, V>()
     , _codec(codec)
     , _impl(brokers, topic, max_buffering_time)
-    , _in_count("in_count") {
+    , _in_count("in_count") 
+    , _lag() {
     this->add_metric(&_in_count);
+    this->add_metric(&_lag);
   }
   
   inline std::shared_ptr<CODEC> codec() {
@@ -100,6 +104,7 @@ class kafka_sink_base : public topic_sink<K, V>
   kafka_producer         _impl;
   partitioner            _partitioner;
   metric_counter         _in_count;
+  metric_lag             _lag;
 };
 
 template<class K, class V, class CODEC>
@@ -144,6 +149,7 @@ protected:
       vs.read((char*) vp, vsize);
     }
     ++(this->_in_count);
+    _lag.add_event_time(kspp::milliseconds_since_epoch(), transaction->event_time());
     return this->_impl.produce(partition, kafka_producer::FREE, kp, ksize, vp, vsize, transaction->event_time(), transaction->id());
   }
 };
@@ -175,6 +181,7 @@ protected:
       vs.read((char*) vp, vsize);
     }
     ++(this->_in_count);
+    _lag.add_event_time(kspp::milliseconds_since_epoch(), transaction->event_time());
     return this->_impl.produce(partition, kafka_producer::FREE, nullptr, 0, vp, vsize, transaction->event_time(), transaction->id());
   }
 };
@@ -219,6 +226,7 @@ protected:
     kp = malloc(ksize);  // must match the free in kafka_producer TBD change to new[] and a memory pool
     ks.read((char*) kp, ksize);
     ++(this->_in_count);
+    _lag.add_event_time(kspp::milliseconds_since_epoch(), transaction->event_time());
     return this->_impl.produce(partition, kafka_producer::FREE, kp, ksize, nullptr, 0, transaction->event_time(), transaction->id());
   }
 };
