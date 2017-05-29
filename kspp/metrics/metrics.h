@@ -106,6 +106,8 @@ struct metric_lag : public metric
   inline void add_event_time(int64_t tick, int64_t event_time) {
     if (event_time > 0)
       _lag = tick - event_time;
+    else
+      _lag = -1;
   }
 
   virtual int64_t value() const {
