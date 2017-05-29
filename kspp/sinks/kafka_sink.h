@@ -149,7 +149,7 @@ protected:
       vs.read((char*) vp, vsize);
     }
     ++(this->_in_count);
-    _lag.add_event_time(kspp::milliseconds_since_epoch(), transaction->event_time());
+    this->_lag.add_event_time(kspp::milliseconds_since_epoch(), transaction->event_time());
     return this->_impl.produce(partition, kafka_producer::FREE, kp, ksize, vp, vsize, transaction->event_time(), transaction->id());
   }
 };
@@ -181,7 +181,7 @@ protected:
       vs.read((char*) vp, vsize);
     }
     ++(this->_in_count);
-    _lag.add_event_time(kspp::milliseconds_since_epoch(), transaction->event_time());
+    this->_lag.add_event_time(kspp::milliseconds_since_epoch(), transaction->event_time());
     return this->_impl.produce(partition, kafka_producer::FREE, nullptr, 0, vp, vsize, transaction->event_time(), transaction->id());
   }
 };
@@ -226,7 +226,7 @@ protected:
     kp = malloc(ksize);  // must match the free in kafka_producer TBD change to new[] and a memory pool
     ks.read((char*) kp, ksize);
     ++(this->_in_count);
-    _lag.add_event_time(kspp::milliseconds_since_epoch(), transaction->event_time());
+    this->_lag.add_event_time(kspp::milliseconds_since_epoch(), transaction->event_time());
     return this->_impl.produce(partition, kafka_producer::FREE, kp, ksize, nullptr, 0, transaction->event_time(), transaction->id());
   }
 };

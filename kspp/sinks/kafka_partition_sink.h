@@ -101,7 +101,7 @@ namespace kspp {
         vs.read((char*)vp, vsize);
       }
       ++(this->_in_count);
-      _lag.add_event_time(kspp::milliseconds_since_epoch(), transaction->event_time());
+      this->_lag.add_event_time(kspp::milliseconds_since_epoch(), transaction->event_time());
       return this->_impl.produce((uint32_t) this->_fixed_partition, kafka_producer::FREE, kp, ksize, vp, vsize, transaction->event_time(), transaction->id());
     }
   };
@@ -126,7 +126,7 @@ namespace kspp {
         vs.read((char*)vp, vsize);
       }
       ++(this->_in_count);
-      _lag.add_event_time(kspp::milliseconds_since_epoch(), transaction->event_time());
+      this->_lag.add_event_time(kspp::milliseconds_since_epoch(), transaction->event_time());
       return this->_impl.produce((uint32_t) this->_fixed_partition, kafka_producer::FREE, nullptr, 0, vp, vsize, transaction->event_time(), transaction->id());
     }
   };
@@ -149,7 +149,7 @@ namespace kspp {
       kp = malloc(ksize);  // must match the free in kafka_producer TBD change to new[] and a memory pool
       ks.read((char*)kp, ksize);
       ++(this->_in_count);
-      _lag.add_event_time(kspp::milliseconds_since_epoch(), transaction->event_time());
+      this->_lag.add_event_time(kspp::milliseconds_since_epoch(), transaction->event_time());
       return this->_impl.produce((uint32_t) this->_fixed_partition, kafka_producer::FREE, kp, ksize, nullptr, 0, transaction->event_time(), transaction->id());
     }
   };
