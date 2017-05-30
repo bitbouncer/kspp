@@ -9,7 +9,7 @@ namespace kspp {
   class transform_value : public partition_source<K, RV>
   {
   public:
-    typedef std::function<void(std::shared_ptr<ktransaction<K, SV>> record, transform_value* self)> extractor; // maybee better to pass this and send() directrly
+    typedef std::function<void(std::shared_ptr<kevent<K, SV>> record, transform_value* self)> extractor; // maybee better to pass this and send() directrly
 
     transform_value(topology_base& topology, std::shared_ptr<partition_source<K, SV>> source, extractor f)
       : partition_source<K, RV>(source.get(), source->partition())
@@ -57,7 +57,7 @@ namespace kspp {
       return processed;
     }
 
-    void push_back(std::shared_ptr<ktransaction<K, RV>> r) {
+    void push_back(std::shared_ptr<kevent<K, RV>> r) {
       this->send_to_sinks(r);
     }
 
@@ -76,7 +76,7 @@ namespace kspp {
   private:
     std::shared_ptr<partition_source<K, SV>>    _source;
     extractor                                   _extractor;
-    std::deque<std::shared_ptr<ktransaction<K, SV>>> _queue;
+    std::deque<std::shared_ptr<kevent<K, SV>>> _queue;
     metric_lag                                  _lag;
   };
 
@@ -85,7 +85,7 @@ namespace kspp {
   class transform : public partition_source<K, V>
   {
     public:
-    typedef std::function<void(std::shared_ptr<ktransaction<K, V>> record, transform* self)> extractor; // maybe better to pass this and send() directrly
+    typedef std::function<void(std::shared_ptr<kevent<K, V>> record, transform* self)> extractor; // maybe better to pass this and send() directrly
 
     transform(topology_base& topology, std::shared_ptr<partition_source<K, V>> source, extractor f)
       : partition_source<K, V>(source.get(), source->partition())
@@ -130,13 +130,13 @@ namespace kspp {
         _queue.pop_front();
         _currrent_id = trans->id(); // we capture this to have it in push_back callback
         _extractor(trans, this);
-        _currrent_id.reset(); // must be freed otherwise we continue to hold the last transaction
+        _currrent_id.reset(); // must be freed otherwise we continue to hold the last ev
       }
       return processed;
     }
 
     /*
-    void push_back(std::shared_ptr<ktransaction<K, V>> r) {
+    void push_back(std::shared_ptr<kevent<K, V>> r) {
       this->send_to_sinks(r);
     }
     */
@@ -145,7 +145,7 @@ namespace kspp {
     * use from from extractor callback
     */
     inline void push_back(std::shared_ptr<krecord<K, V>> record) {
-      this->send_to_sinks(std::make_shared<ktransaction<K, V>>(record, _currrent_id));
+      this->send_to_sinks(std::make_shared<kevent<K, V>>(record, _currrent_id));
     }
 
     virtual void commit(bool flush) {
@@ -164,7 +164,7 @@ namespace kspp {
     std::shared_ptr<partition_source<K, V>>           _source;
     extractor                                         _extractor;
     std::shared_ptr<commit_chain::autocommit_marker>  _currrent_id; // used to briefly hold the commit open during process one
-    std::deque<std::shared_ptr<ktransaction<K, V>>>   _queue;
+    std::deque<std::shared_ptr<kevent<K, V>>>   _queue;
     metric_lag                                        _lag;
   };
 }

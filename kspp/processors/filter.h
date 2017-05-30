@@ -45,11 +45,11 @@ namespace kspp {
         _source->process_one(tick);
       bool processed = (_queue.size() > 0);
       while (_queue.size()) {
-        auto transaction = _queue.front();
+        auto ev = _queue.front();
         _queue.pop_front();
-        _lag.add_event_time(tick, transaction->event_time());
-        if (_predicate(transaction->record())) {
-          this->send_to_sinks(transaction);
+        _lag.add_event_time(tick, ev->event_time());
+        if (_predicate(ev->record())) {
+          this->send_to_sinks(ev);
         } else {
           ++_predicate_false;
         }
@@ -72,7 +72,7 @@ namespace kspp {
   private:
     std::shared_ptr<partition_source<K, V>>    _source;
     predicate                                  _predicate;
-    std::deque<std::shared_ptr<ktransaction<K, V>>> _queue;
+    std::deque<std::shared_ptr<kevent<K, V>>> _queue;
     metric_lag                                 _lag;
     metric_counter                             _predicate_false;
   };

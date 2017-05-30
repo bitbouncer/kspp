@@ -83,26 +83,26 @@ namespace kspp {
       : kafka_partition_sink_base<K, V, CODEC>(topology.brokers(), topic, topology.partition(), topology.max_buffering_time(), codec) {}
 
   protected:
-    virtual int _produce(std::shared_ptr<ktransaction<K, V>> transaction) {
+    virtual int _produce(std::shared_ptr<kevent<K, V>> ev) {
       void* kp = nullptr;
       void* vp = nullptr;
       size_t ksize = 0;
       size_t vsize = 0;
 
       std::stringstream ks;
-      ksize = this->_codec->encode(transaction->record()->key, ks);
+      ksize = this->_codec->encode(ev->record()->key, ks);
       kp = malloc(ksize);  // must match the free in kafka_producer TBD change to new[] and a memory pool
       ks.read((char*)kp, ksize);
 
-      if (transaction->record()->value) {
+      if (ev->record()->value) {
         std::stringstream vs;
-        vsize = this->_codec->encode(*transaction->record()->value, vs);
+        vsize = this->_codec->encode(*ev->record()->value, vs);
         vp = malloc(vsize);  // must match the free in kafka_producer TBD change to new[] and a memory pool
         vs.read((char*)vp, vsize);
       }
       ++(this->_in_count);
-      this->_lag.add_event_time(kspp::milliseconds_since_epoch(), transaction->event_time());
-      return this->_impl.produce((uint32_t) this->_fixed_partition, kafka_producer::FREE, kp, ksize, vp, vsize, transaction->event_time(), transaction->id());
+      this->_lag.add_event_time(kspp::milliseconds_since_epoch(), ev->event_time());
+      return this->_impl.produce((uint32_t) this->_fixed_partition, kafka_producer::FREE, kp, ksize, vp, vsize, ev->event_time(), ev->id());
     }
   };
 
@@ -115,19 +115,19 @@ namespace kspp {
       : kafka_partition_sink_base<void, V, CODEC>(topology.brokers(), topic, topology.partition(), topology.max_buffering_time(), codec) {}
 
   protected:
-    virtual int _produce(std::shared_ptr<ktransaction<void, V>> transaction) {
+    virtual int _produce(std::shared_ptr<kevent<void, V>> ev) {
       void* vp = nullptr;
       size_t vsize = 0;
 
-      if (transaction->record()->value) {
+      if (ev->record()->value) {
         std::stringstream vs;
-        vsize = this->_codec->encode(*transaction->record()->value, vs);
+        vsize = this->_codec->encode(*ev->record()->value, vs);
         vp = malloc(vsize);  // must match the free in kafka_producer TBD change to new[] and a memory pool
         vs.read((char*)vp, vsize);
       }
       ++(this->_in_count);
-      this->_lag.add_event_time(kspp::milliseconds_since_epoch(), transaction->event_time());
-      return this->_impl.produce((uint32_t) this->_fixed_partition, kafka_producer::FREE, nullptr, 0, vp, vsize, transaction->event_time(), transaction->id());
+      this->_lag.add_event_time(kspp::milliseconds_since_epoch(), ev->event_time());
+      return this->_impl.produce((uint32_t) this->_fixed_partition, kafka_producer::FREE, nullptr, 0, vp, vsize, ev->event_time(), ev->id());
     }
   };
 
@@ -140,17 +140,17 @@ namespace kspp {
       : kafka_partition_sink_base<K, void, CODEC>(topology.brokers(), topic, topology.partition(), topology.max_buffering_time(), codec) {}
 
   protected:
-    virtual int _produce(std::shared_ptr<ktransaction<K, void>> transaction) {
+    virtual int _produce(std::shared_ptr<kevent<K, void>> ev) {
       void* kp = nullptr;
       size_t ksize = 0;
 
       std::stringstream ks;
-      ksize = this->_codec->encode(transaction->record()->key, ks);
+      ksize = this->_codec->encode(ev->record()->key, ks);
       kp = malloc(ksize);  // must match the free in kafka_producer TBD change to new[] and a memory pool
       ks.read((char*)kp, ksize);
       ++(this->_in_count);
-      this->_lag.add_event_time(kspp::milliseconds_since_epoch(), transaction->event_time());
-      return this->_impl.produce((uint32_t) this->_fixed_partition, kafka_producer::FREE, kp, ksize, nullptr, 0, transaction->event_time(), transaction->id());
+      this->_lag.add_event_time(kspp::milliseconds_since_epoch(), ev->event_time());
+      return this->_impl.produce((uint32_t) this->_fixed_partition, kafka_producer::FREE, kp, ksize, nullptr, 0, ev->event_time(), ev->id());
     }
   };
 };

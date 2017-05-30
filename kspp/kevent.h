@@ -6,10 +6,10 @@
 
 namespace kspp {
 template<class K, class V>
-class ktransaction
+class kevent
 {
   public:
-  ktransaction(std::shared_ptr<krecord<K, V>> r, std::shared_ptr<commit_chain::autocommit_marker> autocommit_marker =nullptr)
+  kevent(std::shared_ptr<krecord<K, V>> r, std::shared_ptr<commit_chain::autocommit_marker> autocommit_marker =nullptr)
     : _record(r)
     , _autocommit_marker(autocommit_marker) {
   }

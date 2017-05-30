@@ -13,7 +13,7 @@
 #include <boost/log/trivial.hpp>
 #include <boost/algorithm/string/replace.hpp>
 #include <kspp/metrics/metrics.h>
-#include <kspp/ktransaction.h>
+#include <kspp/kevent.h>
 #include <kspp/type_name.h>
 
 #pragma once
@@ -285,7 +285,7 @@ class partition_sink : public partition_processor
   public:
   typedef K key_type;
   typedef V value_type;
-  typedef kspp::ktransaction<K, V> record_type;
+  typedef kspp::kevent<K, V> record_type;
 
   virtual std::string key_type_name() const {
     return type_name<K>::get();
@@ -296,22 +296,22 @@ class partition_sink : public partition_processor
   }
 
   inline int produce(std::shared_ptr<krecord<K, V>> r) {
-    return _produce(std::make_shared<ktransaction<K, V>>(r));
+    return _produce(std::make_shared<kevent<K, V>>(r));
   }
 
-  inline int produce(std::shared_ptr<ktransaction<K, V>> r) {
+  inline int produce(std::shared_ptr<kevent<K, V>> r) {
     return _produce(r);
   }
 
   inline int produce(const K& key, const V& value, int64_t ts = milliseconds_since_epoch()) {
-    return _produce(std::make_shared<ktransaction<K, V>>(std::make_shared<krecord<K,V>>(key, value, ts)));
+    return _produce(std::make_shared<kevent<K, V>>(std::make_shared<krecord<K,V>>(key, value, ts)));
   }
 
 protected:
   partition_sink(int32_t partition)
     : partition_processor(nullptr, partition) {}
   
-  virtual int _produce(std::shared_ptr<ktransaction<K, V>> r) = 0;
+  virtual int _produce(std::shared_ptr<kevent<K, V>> r) = 0;
 };
 
 // specialisation for void key
@@ -321,7 +321,7 @@ class partition_sink<void, V> : public partition_processor
   public:
   typedef void key_type;
   typedef V value_type;
-  typedef kspp::ktransaction<void, V> record_type;
+  typedef kspp::kevent<void, V> record_type;
 
   virtual std::string key_type_name() const {
     return "void";
@@ -332,22 +332,22 @@ class partition_sink<void, V> : public partition_processor
   }
 
   inline int produce(std::shared_ptr<krecord<void, V>> r) {
-    return _produce(std::make_shared<ktransaction<void, V>>(r));
+    return _produce(std::make_shared<kevent<void, V>>(r));
   }
   
-  inline int produce(std::shared_ptr<ktransaction<void, V>> r) {
+  inline int produce(std::shared_ptr<kevent<void, V>> r) {
     return _produce(r);
   }
 
   inline int produce(const V& value, int64_t ts = milliseconds_since_epoch()) {
-    return _produce(std::make_shared<ktransaction<void, V>>(std::make_shared<krecord<void, V>>(value, ts)));
+    return _produce(std::make_shared<kevent<void, V>>(std::make_shared<krecord<void, V>>(value, ts)));
   }
 
   protected:
   partition_sink(int32_t partition)
     : partition_processor(nullptr, partition) {}
 
-  virtual int _produce(std::shared_ptr<ktransaction<void, V>> r) = 0;
+  virtual int _produce(std::shared_ptr<kevent<void, V>> r) = 0;
 };
 
 // specialisation for void value
@@ -357,7 +357,7 @@ class partition_sink<K, void> : public partition_processor
   public:
   typedef K key_type;
   typedef void value_type;
-  typedef kspp::ktransaction<K, void> record_type;
+  typedef kspp::kevent<K, void> record_type;
 
   virtual std::string key_type_name() const {
     return type_name<K>::get();
@@ -368,22 +368,22 @@ class partition_sink<K, void> : public partition_processor
   }
 
   inline int produce(std::shared_ptr<krecord<K, void>> r) {
-    return _produce(std::make_shared<ktransaction<K, void>>(r));
+    return _produce(std::make_shared<kevent<K, void>>(r));
   }
   
-  inline int produce(std::shared_ptr<ktransaction<K, void>> r) {
+  inline int produce(std::shared_ptr<kevent<K, void>> r) {
     return _produce(r);
   }
 
   inline int produce(const K& key, int64_t ts = milliseconds_since_epoch()) {
-    return _produce(std::make_shared<ktransaction<K, void>>(std::make_shared<krecord<K, void>>(key, ts)));
+    return _produce(std::make_shared<kevent<K, void>>(std::make_shared<krecord<K, void>>(key, ts)));
   }
 
   protected:
   partition_sink(int32_t partition)
     : partition_processor(nullptr, partition) {}
 
-  virtual int _produce(std::shared_ptr<ktransaction<K, void>> r) = 0;
+  virtual int _produce(std::shared_ptr<kevent<K, void>> r) = 0;
 };
 
 inline uint32_t djb_hash(const char *str, size_t len) {
@@ -420,7 +420,7 @@ class topic_sink : public generic_sink
 public:
   typedef K key_type;
   typedef V value_type;
-  typedef kspp::ktransaction<K, V> record_type;
+  typedef kspp::kevent<K, V> record_type;
 
   virtual std::string key_type_name() const {
     return type_name<K>::get();
@@ -431,32 +431,32 @@ public:
   }
 
   inline int produce(std::shared_ptr<krecord<K, V>> r) {
-    return _produce(std::make_shared<ktransaction<K,V>>(r));
+    return _produce(std::make_shared<kevent<K,V>>(r));
   }
 
-  inline int produce(std::shared_ptr<ktransaction<K, V>> t) {
+  inline int produce(std::shared_ptr<kevent<K, V>> t) {
     return _produce(t);
   }
 
   inline int produce(uint32_t partition_hash, std::shared_ptr<krecord<K, V>> r) {
-    return _produce(partition_hash, std::make_shared<ktransaction<K, V>>(r));
+    return _produce(partition_hash, std::make_shared<kevent<K, V>>(r));
   }
 
-  inline int produce(uint32_t partition_hash, std::shared_ptr<ktransaction<K, V>> t) {
+  inline int produce(uint32_t partition_hash, std::shared_ptr<kevent<K, V>> t) {
     return _produce(partition_hash, t);
   }
 
   inline int produce(const K& key, const V& value, int64_t ts = milliseconds_since_epoch()) {
-    return _produce(std::make_shared<ktransaction<K, V>>(std::make_shared<krecord<K,V>>(key, value, ts)));
+    return _produce(std::make_shared<kevent<K, V>>(std::make_shared<krecord<K,V>>(key, value, ts)));
   }
 
   inline  int produce(uint32_t partition_hash, const K& key, const V& value, int64_t ts = milliseconds_since_epoch()) {
-    return _produce(partition_hash, std::make_shared<ktransaction<K, V>>(std::make_shared<krecord<K, V>>(key, value, ts)));
+    return _produce(partition_hash, std::make_shared<kevent<K, V>>(std::make_shared<krecord<K, V>>(key, value, ts)));
   }
 
 protected:
-  virtual int _produce(std::shared_ptr<ktransaction<K, V>> r) = 0;
-  virtual int _produce(uint32_t partition_hash, std::shared_ptr<ktransaction<K, V>> r) = 0;
+  virtual int _produce(std::shared_ptr<kevent<K, V>> r) = 0;
+  virtual int _produce(uint32_t partition_hash, std::shared_ptr<kevent<K, V>> r) = 0;
 };
 
 // spec for void key
@@ -466,7 +466,7 @@ class topic_sink<void, V> : public generic_sink
 public:
   typedef void key_type;
   typedef V value_type;
-  typedef kspp::ktransaction<void, V> record_type;
+  typedef kspp::kevent<void, V> record_type;
 
   virtual std::string key_type_name() const {
     return "void";
@@ -477,32 +477,32 @@ public:
   }
 
   inline int produce(std::shared_ptr<krecord<void, V>> r) {
-    return _produce(std::make_shared<ktransaction<void, V>>(r));
+    return _produce(std::make_shared<kevent<void, V>>(r));
   }
 
-  inline int produce(std::shared_ptr<ktransaction<void, V>> t) {
+  inline int produce(std::shared_ptr<kevent<void, V>> t) {
     return _produce(t);
   }
 
   inline int produce(uint32_t partition_hash, std::shared_ptr<krecord<void, V>> r) {
-    return _produce(partition_hash, std::make_shared<ktransaction<void, V>>(r));
+    return _produce(partition_hash, std::make_shared<kevent<void, V>>(r));
   }
 
-  inline int produce(uint32_t partition_hash, std::shared_ptr<ktransaction<void, V>> t) {
+  inline int produce(uint32_t partition_hash, std::shared_ptr<kevent<void, V>> t) {
     return _produce(partition_hash, t);
   }
 
   inline int produce(const V& value, int64_t ts = milliseconds_since_epoch()) {
-    return _produce(std::make_shared<ktransaction<void, V>>(std::make_shared<krecord<void, V>>(value, ts)));
+    return _produce(std::make_shared<kevent<void, V>>(std::make_shared<krecord<void, V>>(value, ts)));
   }
 
   inline int produce(uint32_t partition_hash, const V& value, int64_t ts = milliseconds_since_epoch()) {
-    return _produce(partition_hash, std::make_shared<ktransaction<void, V>>(std::make_shared<krecord<void, V>>(value, ts)));
+    return _produce(partition_hash, std::make_shared<kevent<void, V>>(std::make_shared<krecord<void, V>>(value, ts)));
   }
 
 protected:
-  virtual int _produce(std::shared_ptr<ktransaction<void, V>> r) = 0;
-  virtual int _produce(uint32_t partition_hash, std::shared_ptr<ktransaction<void, V>> r) = 0;
+  virtual int _produce(std::shared_ptr<kevent<void, V>> r) = 0;
+  virtual int _produce(uint32_t partition_hash, std::shared_ptr<kevent<void, V>> r) = 0;
 };
 
 // spec for void value
@@ -512,7 +512,7 @@ class topic_sink<K, void> : public generic_sink
 public:
   typedef K key_type;
   typedef void value_type;
-  typedef kspp::ktransaction<K, void> record_type;
+  typedef kspp::kevent<K, void> record_type;
 
   virtual std::string key_type_name() const {
     return type_name<K>::get();
@@ -523,39 +523,39 @@ public:
   }
 
   inline int produce(std::shared_ptr<krecord<K, void>> r) {
-    return _produce(std::make_shared<ktransaction<K, void>>(r));
+    return _produce(std::make_shared<kevent<K, void>>(r));
   }
 
-  inline int produce(std::shared_ptr<ktransaction<K, void>> r) {
+  inline int produce(std::shared_ptr<kevent<K, void>> r) {
     return _produce(r);
   }
 
   inline int produce(uint32_t partition_hash, std::shared_ptr<krecord<K, void>> r) {
-    return _produce(partition_hash, std::make_shared<ktransaction<K, void>>(r));
+    return _produce(partition_hash, std::make_shared<kevent<K, void>>(r));
   }
 
-  inline int produce(uint32_t partition_hash, std::shared_ptr<ktransaction<K, void>> r) {
+  inline int produce(uint32_t partition_hash, std::shared_ptr<kevent<K, void>> r) {
     return _produce(partition_hash, r);
   }
 
   inline int produce(const K& key, int64_t ts = milliseconds_since_epoch()) {
-    return _produce(std::make_shared<ktransaction<K, void>>(std::make_shared<krecord<K, void>>(key, ts)));
+    return _produce(std::make_shared<kevent<K, void>>(std::make_shared<krecord<K, void>>(key, ts)));
   }
 
   inline int produce(uint32_t partition_hash, const K& key, int64_t ts = milliseconds_since_epoch()) {
-    return _produce(partition_hash, std::make_shared<ktransaction<K, void>>(std::make_shared<krecord<K, void>>(key, ts)));
+    return _produce(partition_hash, std::make_shared<kevent<K, void>>(std::make_shared<krecord<K, void>>(key, ts)));
   }
 
 protected:
-  virtual int _produce(std::shared_ptr<ktransaction<K, void>> r) = 0;
-  virtual int _produce(uint32_t partition_hash, std::shared_ptr<ktransaction<K, void>> r) = 0;
+  virtual int _produce(std::shared_ptr<kevent<K, void>> r) = 0;
+  virtual int _produce(uint32_t partition_hash, std::shared_ptr<kevent<K, void>> r) = 0;
 };
 
 template<class K, class V>
 class partition_source : public partition_processor
 {
   public:
-  using sink_function = typename std::function<void(std::shared_ptr<ktransaction<K, V>>)>;
+  using sink_function = typename std::function<void(std::shared_ptr<kevent<K, V>>)>;
 
   partition_source(partition_processor* upstream, int32_t partition)
     : partition_processor(upstream, partition)
@@ -601,7 +601,7 @@ class partition_source : public partition_processor
 
   protected:
 
-  virtual void send_to_sinks(std::shared_ptr<ktransaction<K, V>> p) {
+  virtual void send_to_sinks(std::shared_ptr<kevent<K, V>> p) {
     if (!p)
       return;
     ++_out_messages;

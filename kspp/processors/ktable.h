@@ -15,15 +15,15 @@ namespace kspp {
       , _state_store(get_storage_path(topology.get_storage_path()), args...)
       , _in_count("in_count")
       , _state_store_count("state_store_count", [this]() { return _state_store.size(); }) {
-      _source->add_sink([this](auto transaction) {
-        _lag.add_event_time(kspp::milliseconds_since_epoch(), transaction->event_time());
+      _source->add_sink([this](auto ev) {
+        _lag.add_event_time(kspp::milliseconds_since_epoch(), ev->event_time());
         ++_in_count;
-        _state_store.insert(transaction->record(), transaction->offset());
-        this->send_to_sinks(transaction);
+        _state_store.insert(ev->record(), ev->offset());
+        this->send_to_sinks(ev);
       });
       // what to do with state_store deleted records (windowed)
-      _state_store.set_sink([this](auto transaction) {
-        this->send_to_sinks(transaction);
+      _state_store.set_sink([this](auto ev) {
+        this->send_to_sinks(ev);
       });
       this->add_metric(&_lag);
       this->add_metric(&_in_count);

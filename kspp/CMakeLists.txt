@@ -1,7 +1,7 @@
 file(GLOB LIB_SRCS
   kspp.h
   krecord.h
-  ktransaction.h
+  kevent.h
   type_name.h
   metrics.h
   topology_builder.h

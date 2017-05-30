@@ -81,7 +81,7 @@ namespace kspp {
         } else {
           //_good = false;
           // TBD we have to exit here after committing the last good offset
-          BOOST_LOG_TRIVIAL(warning) << "kafka consumer, topic " << _consumer.topic() << ", transaction failure at offset:" << offset << ", ec:" << ec;
+          BOOST_LOG_TRIVIAL(warning) << "kafka consumer, topic " << _consumer.topic() << ", ev failure at offset:" << offset << ", ec:" << ec;
         }
       });
 
@@ -90,7 +90,7 @@ namespace kspp {
       this->add_metric(&_lag);
     }
 
-    virtual std::shared_ptr<ktransaction<K, V>> parse(const std::unique_ptr<RdKafka::Message> & ref) = 0;
+    virtual std::shared_ptr<kevent<K, V>> parse(const std::unique_ptr<RdKafka::Message> & ref) = 0;
 
     kafka_consumer         _consumer;
     std::shared_ptr<CODEC> _codec;
@@ -112,7 +112,7 @@ namespace kspp {
       : kafka_source_base<K, V, CODEC>(topology.brokers(), topic, partition, topology.group_id(), topology.max_buffering_time(), codec) {}
 
   protected:
-    std::shared_ptr<ktransaction<K, V>> parse(const std::unique_ptr<RdKafka::Message> & ref) {
+    std::shared_ptr<kevent<K, V>> parse(const std::unique_ptr<RdKafka::Message> & ref) {
       if (!ref)
         return nullptr;
 
@@ -144,7 +144,7 @@ namespace kspp {
           return nullptr;
         }
       }
-      return std::make_shared<ktransaction<K, V>>(record, this->_commit_chain.create(ref->offset()));
+      return std::make_shared<kevent<K, V>>(record, this->_commit_chain.create(ref->offset()));
     }
   };
 
@@ -162,7 +162,7 @@ namespace kspp {
     }
 
   protected:
-    std::shared_ptr<ktransaction<void, V>> parse(const std::unique_ptr<RdKafka::Message> & ref) {
+    std::shared_ptr<kevent<void, V>> parse(const std::unique_ptr<RdKafka::Message> & ref) {
       if (!ref)
         return nullptr;
       size_t sz = ref->len();
@@ -175,7 +175,7 @@ namespace kspp {
         record->value = std::make_shared<V>();
         size_t consumed = this->_codec->decode((const char*) ref->payload(), sz, *record->value);
         if (consumed == sz) {
-          return std::make_shared<ktransaction<void, V>>(record, this->_commit_chain.create(ref->offset()));
+          return std::make_shared<kevent<void, V>>(record, this->_commit_chain.create(ref->offset()));
         }
 
         if (consumed == 0) {
@@ -203,7 +203,7 @@ namespace kspp {
     }
 
   protected:
-    std::shared_ptr<ktransaction<K, void>> parse(const std::unique_ptr<RdKafka::Message> & ref) {
+    std::shared_ptr<kevent<K, void>> parse(const std::unique_ptr<RdKafka::Message> & ref) {
       if (!ref || ref->key_len() == 0)
         return nullptr;
 
@@ -220,7 +220,7 @@ namespace kspp {
         BOOST_LOG_TRIVIAL(error) << LOG_NAME << ", decode key failed, consumed: " << consumed << ", actual: " << ref->key_len();
         return nullptr;
       }
-      return std::make_shared<ktransaction<K, void>>(record, this->_commit_chain.create(ref->offset()));
+      return std::make_shared<kevent<K, void>>(record, this->_commit_chain.create(ref->offset()));
     }
   };
 };

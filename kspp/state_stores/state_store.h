@@ -12,7 +12,7 @@ template<class K, class V>
 class state_store
 {
   public:
-  using sink_function = typename std::function<void(std::shared_ptr<ktransaction<K, V>>)>;
+  using sink_function = typename std::function<void(std::shared_ptr<kevent<K, V>>)>;
 
   virtual ~state_store() {}
 

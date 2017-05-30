@@ -47,12 +47,12 @@ namespace kspp {
     }
 
   protected:
-    virtual int _produce(std::shared_ptr<ktransaction<K, V>> transaction) {
-      _os << "ts: " << transaction->event_time() << "  ";
-      _codec->encode(transaction->record()->key, _os);
+    virtual int _produce(std::shared_ptr<kevent<K, V>> ev) {
+      _os << "ts: " << ev->event_time() << "  ";
+      _codec->encode(ev->record()->key, _os);
       _os << ":";
-      if (transaction->record()->value)
-        _codec->encode(*transaction->record()->value, _os);
+      if (ev->record()->value)
+        _codec->encode(*ev->record()->value, _os);
       else
         _os << "<nullptr>";
       _os << std::endl;
@@ -103,9 +103,9 @@ namespace kspp {
     }
 
   protected:
-    virtual int _produce(std::shared_ptr<ktransaction<void, V>> transaction) {
-      _os << "ts: " << transaction->event_time() << "  ";
-      _codec->encode(*transaction->record()->value, _os);
+    virtual int _produce(std::shared_ptr<kevent<void, V>> ev) {
+      _os << "ts: " << ev->event_time() << "  ";
+      _codec->encode(*ev->record()->value, _os);
       _os << std::endl;
       return 0;
     }
@@ -153,9 +153,9 @@ namespace kspp {
     }
 
   protected:
-    virtual int _produce(std::shared_ptr<ktransaction<K, void>> transaction) {
-      _os << "ts: " << transaction->event_time() << "  ";
-      _codec->encode(transaction->record()->key, _os);
+    virtual int _produce(std::shared_ptr<kevent<K, void>> ev) {
+      _os << "ts: " << ev->event_time() << "  ";
+      _codec->encode(ev->record()->key, _os);
       _os << std::endl;
       return 0;
     }

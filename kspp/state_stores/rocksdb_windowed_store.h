@@ -169,7 +169,7 @@ class rocksdb_windowed_store
           record->event_time = tick;
           rocksdb::Slice key = j->key();
           if (_codec->decode(key.data(), key.size(), record->key) == key.size())
-            this->_sink(std::make_shared<ktransaction<K,V>>(record));
+            this->_sink(std::make_shared<kevent<K,V>>(record));
           j->Next();
         }
       }

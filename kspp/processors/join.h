@@ -5,7 +5,7 @@
 #pragma once
 
 namespace kspp {
-// alternative? replace with std::shared_ptr<const ktransaction<K, R>> left, std::shared_ptr<const ktransaction<K, R>> right, std::shared_ptr<ktransaction<K, R>> result;  
+// alternative? replace with std::shared_ptr<const kevent<K, R>> left, std::shared_ptr<const kevent<K, R>> right, std::shared_ptr<kevent<K, R>> result;  
 
 template<class K, class streamV, class tableV, class R>
 class left_join : public partition_source<K, R>
@@ -74,12 +74,12 @@ class left_join : public partition_source<K, R>
       if (table_row) {
         if (t0->record()->value) {
           auto record = std::make_shared<krecord<K, R>>(t0->record()->key, std::make_shared<R>(), t0->event_time());
-          auto t1 = std::make_shared<kspp::ktransaction<K, R>>(record, t0->id());
+          auto t1 = std::make_shared<kspp::kevent<K, R>>(record, t0->id());
           _value_joiner(t1->record()->key, *t0->record()->value, *table_row->value, *t1->record()->value);
           this->send_to_sinks(t1);
         } else {
           auto record = std::make_shared<krecord<K, R>>(t0->record()->key, nullptr, t0->event_time());
-          auto t1 = std::make_shared<kspp::ktransaction<K, R>>(record, t0->id());
+          auto t1 = std::make_shared<kspp::kevent<K, R>>(record, t0->id());
           this->send_to_sinks(t1);
         }
       } else {
@@ -101,7 +101,7 @@ class left_join : public partition_source<K, R>
   private:
   std::shared_ptr<partition_source<K, streamV>>    _stream;
   std::shared_ptr<materialized_source<K, tableV>>  _table;
-  std::deque<std::shared_ptr<ktransaction<K, streamV>>> _queue;
+  std::deque<std::shared_ptr<kevent<K, streamV>>> _queue;
   value_joiner                                     _value_joiner;
   metric_lag                                       _lag;
 };

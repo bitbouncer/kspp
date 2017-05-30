@@ -49,7 +49,7 @@ class count_by_value : public materialized_source<K, V>
     _stream->close();
   }
 
-  virtual int produce(std::shared_ptr<ktransaction<K, V>> r) {
+  virtual int produce(std::shared_ptr<kevent<K, V>> r) {
     _queue.push_back(r);
     return 0;
   }
@@ -105,7 +105,7 @@ class count_by_value : public materialized_source<K, V>
     //if (_dirty) { // keep event timestamts in counter store and only include the updated ones... TBD
       for (auto i : _counter_store) {
         i->event_time = timestamp;
-        this->send_to_sinks(std::make_shared<ktransaction<K, V>>(i));
+        this->send_to_sinks(std::make_shared<kevent<K, V>>(i));
       }
     //}
     _dirty = false;
@@ -133,7 +133,7 @@ class count_by_value : public materialized_source<K, V>
 
   std::shared_ptr<partition_source<K, V>>         _stream;
   STATE_STORE<K, V, CODEC>                        _counter_store;
-  std::deque<std::shared_ptr<ktransaction<K, V>>> _queue;
+  std::deque<std::shared_ptr<kevent<K, V>>> _queue;
   int64_t                                         _punctuate_intervall;
   int64_t                                         _next_punctuate;
   bool                                            _dirty;

@@ -56,7 +56,7 @@ namespace kspp {
         _lag.add_event_time(tick, trans->event_time());
         _currrent_id = trans->id(); // we capture this to have it in push_back callback
         _extractor(trans->record(), this);
-        _currrent_id.reset(); // must be freed otherwise we continue to hold the last transaction
+        _currrent_id.reset(); // must be freed otherwise we continue to hold the last ev
         ++_in_count;
       }
       return processed;
@@ -78,14 +78,14 @@ namespace kspp {
     * use from from extractor callback
     */
     inline void push_back(std::shared_ptr<krecord<RK, RV>> record) {
-      this->send_to_sinks(std::make_shared<ktransaction<RK, RV>>(record, _currrent_id));
+      this->send_to_sinks(std::make_shared<kevent<RK, RV>>(record, _currrent_id));
     }
 
   private:
     std::shared_ptr<partition_source<SK, SV>>         _source;
     extractor                                         _extractor;
     std::shared_ptr<commit_chain::autocommit_marker>  _currrent_id; // used to briefly hold the commit open during process one
-    std::deque<std::shared_ptr<ktransaction<SK, SV>>> _queue;
+    std::deque<std::shared_ptr<kevent<SK, SV>>> _queue;
     metric_counter                                    _in_count;
     metric_lag                                        _lag;
   };

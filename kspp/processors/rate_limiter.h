@@ -59,15 +59,15 @@ class rate_limiter : public partition_source<K, V>
     _source->process_one(tick);
     bool processed = (_queue.size() > 0);
     while (_queue.size()) {
-      auto transaction = _queue.front();
+      auto ev = _queue.front();
       _queue.pop_front();
       ++_in_count;
-      _lag.add_event_time(tick, transaction->event_time());
+      _lag.add_event_time(tick, ev->event_time());
       // milliseconds_since_epoch for processing time limiter
       // 
-      if (_token_bucket->consume(transaction->record()->key, transaction->event_time())) { // TBD tick???
+      if (_token_bucket->consume(ev->record()->key, ev->event_time())) { // TBD tick???
         ++_out_count;
-        this->send_to_sinks(transaction);
+        this->send_to_sinks(ev);
       } else {
         ++_rejection_count;
       }
@@ -89,7 +89,7 @@ class rate_limiter : public partition_source<K, V>
 
   private:
   std::shared_ptr<partition_source<K, V>>            _source;
-  std::deque<std::shared_ptr<ktransaction<K, V>>>         _queue;
+  std::deque<std::shared_ptr<kevent<K, V>>>         _queue;
   std::shared_ptr<mem_token_bucket_store<K, size_t>> _token_bucket;
   metric_lag                                         _lag;
   metric_counter                                     _in_count;
