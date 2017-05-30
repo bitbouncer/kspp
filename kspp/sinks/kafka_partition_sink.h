@@ -97,7 +97,7 @@ class kafka_partition_sink : public kafka_partition_sink_base<K, V, CODEC>
   }
 
   virtual ~kafka_partition_sink() {
-    close();
+    this->close();
   }
 
 protected:
@@ -118,7 +118,7 @@ protected:
         vp = malloc(vsize);   // must match the free in kafka_producer TBD change to new[] and a memory pool
         vs.read((char*) vp, vsize);
       }
-      return _impl.produce((uint32_t) this->_fixed_partition, kafka_producer::FREE, kp, ksize, vp, vsize, ev->event_time(), ev->id());
+      return this->_impl.produce((uint32_t) this->_fixed_partition, kafka_producer::FREE, kp, ksize, vp, vsize, ev->event_time(), ev->id());
   }
 };
 
@@ -145,8 +145,11 @@ protected:
         vsize = this->_codec->encode(*ev->record()->value, vs);
         vp = malloc(vsize);   // must match the free in kafka_producer TBD change to new[] and a memory pool
         vs.read((char*) vp, vsize);
+      } else {
+        assert(false);
+        return 0; // no writing of null key and null values
       }
-      return _impl.produce((uint32_t) this->_fixed_partition, kafka_producer::FREE, nullptr, 0, vp, vsize, ev->event_time(), ev->id());
+      return this->_impl.produce((uint32_t) this->_fixed_partition, kafka_producer::FREE, nullptr, 0, vp, vsize, ev->event_time(), ev->id());
   }
 };
 
@@ -165,16 +168,13 @@ class kafka_partition_sink<K, void, CODEC> : public kafka_partition_sink_base<K,
 
 protected:
   virtual int handle_event(std::shared_ptr<kevent<K, void>> ev) {
-      auto ev = this->_queue.front();
-
       void* kp = nullptr;
       size_t ksize = 0;
-
       std::stringstream ks;
       ksize = this->_codec->encode(ev->record()->key, ks);
       kp = malloc(ksize);  // must match the free in kafka_producer TBD change to new[] and a memory pool
       ks.read((char*) kp, ksize);
-      return _impl.produce((uint32_t) this->_fixed_partition, kafka_producer::FREE, kp, ksize, nullptr, 0, ev->event_time(), ev->id());
+      return this->_impl.produce((uint32_t) this->_fixed_partition, kafka_producer::FREE, kp, ksize, nullptr, 0, ev->event_time(), ev->id());
   }
 };
 };

@@ -193,6 +193,9 @@ protected:
       vsize = this->_codec->encode(*ev->record()->value, vs);
       vp = malloc(vsize);   // must match the free in kafka_producer TBD change to new[] and a memory pool
       vs.read((char*)vp, vsize);
+    } else {
+      assert(false);
+      return 0; // no writing of null key and null values
     }
     return this->_impl.produce(partition_hash, kafka_producer::FREE, nullptr, 0, vp, vsize, ev->event_time(), ev->id());
   }
