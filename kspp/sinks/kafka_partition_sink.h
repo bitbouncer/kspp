@@ -91,7 +91,7 @@ class kafka_partition_sink : public kafka_partition_sink_base<K, V, CODEC>
     size_t count = 0;
 
     while (this->_queue.size()) {
-      auto ev = _queue.front();
+      auto ev = this->_queue.front();
 
       void* kp = nullptr;
       void* vp = nullptr;
@@ -164,7 +164,7 @@ class kafka_partition_sink<void, V, CODEC> : public kafka_partition_sink_base<vo
     size_t count = 0;
 
     while (this->_queue.size()) {
-      auto ev = _queue.front();
+      auto ev = this->_queue.front();
       void* vp = nullptr;
       size_t vsize = 0;
 
@@ -221,7 +221,7 @@ class kafka_partition_sink<K, void, CODEC> : public kafka_partition_sink_base<K,
     size_t count = 0;
 
     while (this->_queue.size()) {
-      auto ev = _queue.front();
+      auto ev = this->_queue.front();
 
       void* kp = nullptr;
       //void* vp = nullptr;

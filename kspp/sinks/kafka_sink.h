@@ -130,7 +130,7 @@ class kafka_topic_sink : public kafka_sink_base<K, V, CODEC>
     size_t count = 0;
 
     while (this->_queue.size()) {
-      auto ev = _queue.front();
+      auto ev = this->_queue.front();
       uint32_t partition_hash = 0;
       if (ev->_partition_hash < 0)
         partition_hash = (this->_partitioner) ? this->_partitioner(ev->record()->key) : kspp::get_partition_hash(ev->record()->key, this->codec());
@@ -219,7 +219,7 @@ class kafka_topic_sink<void, V, CODEC> : public kafka_sink_base<void, V, CODEC>
     size_t count = 0;
 
     while (this->_queue.size()) {
-      auto ev = _queue.front();
+      auto ev = this->_queue.front();
       uint32_t partition_hash = (ev->_partition_hash < 0) ? ++s_partition : (uint32_t) ev->_partition_hash;
       void* vp = nullptr;
       size_t vsize = 0;
@@ -292,7 +292,7 @@ class kafka_topic_sink<void, V, CODEC> : public kafka_sink_base<void, V, CODEC>
       size_t count = 0;
 
       while (this->_queue.size()) {
-        auto ev = _queue.front();
+        auto ev = this->_queue.front();
         uint32_t partition_hash = 0;
         if (ev->_partition_hash < 0)
           partition_hash = (this->_partitioner) ? this->_partitioner(ev->record()->key) : kspp::get_partition_hash(ev->record()->key, this->codec());
