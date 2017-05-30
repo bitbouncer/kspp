@@ -120,7 +120,7 @@ class kafka_topic_sink : public kafka_sink_base<K, V, CODEC>
   }
 
   virtual ~kafka_topic_sink() {
-    close();
+    this->close();
   }
 
   // lets try to get as much as possible from queue to librdkafka - stop when queue is empty or librdkafka fails
@@ -153,7 +153,7 @@ class kafka_topic_sink : public kafka_sink_base<K, V, CODEC>
         vp = malloc(vsize);   // must match the free in kafka_producer TBD change to new[] and a memory pool
         vs.read((char*) vp, vsize);
       }
-      if (_impl.produce(partition_hash, kafka_producer::FREE, kp, ksize, vp, vsize, ev->event_time(), ev->id()))
+      if (this->_impl.produce(partition_hash, kafka_producer::FREE, kp, ksize, vp, vsize, ev->event_time(), ev->id()))
         return (count > 0);
       ++count;
       ++(this->_in_count);
@@ -206,7 +206,7 @@ class kafka_topic_sink<void, V, CODEC> : public kafka_sink_base<void, V, CODEC>
   }
 
   virtual ~kafka_topic_sink() {
-    close();
+    this->close();
   }
   
   // lets try to get as much as possible from queue to librdkafka - stop when queue is empty or librdkafka fails
@@ -230,7 +230,7 @@ class kafka_topic_sink<void, V, CODEC> : public kafka_sink_base<void, V, CODEC>
         vp = malloc(vsize);   // must match the free in kafka_producer TBD change to new[] and a memory pool
         vs.read((char*) vp, vsize);
       }
-      if (_impl.produce(partition_hash, kafka_producer::FREE, nullptr, 0, vp, vsize, ev->event_time(), ev->id()))
+      if (this->_impl.produce(partition_hash, kafka_producer::FREE, nullptr, 0, vp, vsize, ev->event_time(), ev->id()))
         return (count > 0);
       ++count;
       ++(this->_in_count);
@@ -281,9 +281,8 @@ class kafka_topic_sink<void, V, CODEC> : public kafka_sink_base<void, V, CODEC>
     }
 
     virtual ~kafka_topic_sink() {
-      close();
+      this->close();
     }
-    
 
     // lets try to get as much as possible from queue to librdkafka - stop when queue is empty or librdkafka fails
     virtual bool process_one(int64_t tick) {
@@ -318,7 +317,7 @@ class kafka_topic_sink<void, V, CODEC> : public kafka_sink_base<void, V, CODEC>
         }
         */
 
-        if (_impl.produce(partition_hash, kafka_producer::FREE, kp, ksize, nullptr, 0, ev->event_time(), ev->id()))
+        if (this->_impl.produce(partition_hash, kafka_producer::FREE, kp, ksize, nullptr, 0, ev->event_time(), ev->id()))
           return (count > 0);
         ++count;
         ++(this->_in_count);
