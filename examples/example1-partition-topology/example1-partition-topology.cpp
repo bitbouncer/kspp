@@ -227,7 +227,7 @@ int main(int argc, char **argv) {
     auto topology = builder.create_partition_topology(PARTITION);
     auto table_source = topology->create_processor<kspp::kafka_source<int64_t, user_profile_data, kspp::binary_serdes>>("kspp_UserProfile");
     auto table1 = topology->create_processor<kspp::ktable<int64_t, user_profile_data, kspp::mem_store>>(table_source); 
-    auto table2 = topology->create_processor<kspp::ktable<int64_t, user_profile_data, kspp::mem_windowed_store>>(table_source, 500ms, 10); // 500ms slots and 10 of them...
+    auto table2 = topology->create_processor<kspp::ktable<int64_t, user_profile_data, kspp::mem_windowed_store>>(table_source, 1000ms, 10); // 500ms slots and 10 of them...
     topology->start();
     topology->flush();
 

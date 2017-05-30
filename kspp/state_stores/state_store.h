@@ -23,7 +23,7 @@ class state_store
   /**
   * Put or delete a record
   */
-  inline void insert(std::shared_ptr<krecord<K, V>> record, int64_t offset) {
+  inline void insert(std::shared_ptr<const krecord<K, V>> record, int64_t offset) {
     _insert(record, offset);
   }
 
@@ -51,12 +51,12 @@ class state_store
   /**
   * Returns a key-value pair with the given key
   */
-  virtual std::shared_ptr<krecord<K, V>> get(const K& key) = 0;
+  virtual std::shared_ptr<const krecord<K, V>> get(const K& key) = 0;
   virtual typename kspp::materialized_source<K, V>::iterator begin() = 0;
   virtual typename kspp::materialized_source<K, V>::iterator end() = 0;
 
   protected:
-  virtual void _insert(std::shared_ptr<krecord<K, V>> record, int64_t offset) = 0;
+  virtual void _insert(std::shared_ptr<const krecord<K, V>> record, int64_t offset) = 0;
 
   sink_function _sink;
 };

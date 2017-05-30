@@ -69,9 +69,9 @@ namespace kspp {
     }
 
   private:
-    std::shared_ptr<partition_source<K, V>>    _source;
-    int                                        _delay;
-    std::deque<std::shared_ptr<kevent<K, V>>> _queue;
-    metric_lag                                 _lag;
+    std::shared_ptr<partition_source<K, V>> _source;
+    int                                     _delay;
+    event_queue<kevent<K, V>>               _queue;
+    metric_lag                              _lag;
   };
 } // namespace

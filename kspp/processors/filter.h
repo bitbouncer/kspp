@@ -4,7 +4,7 @@ namespace kspp {
   class filter : public partition_source<K, V>
   {
   public:
-    typedef std::function<bool(std::shared_ptr<krecord<K, V>> record)> predicate; // return true to keep
+    typedef std::function<bool(std::shared_ptr<const krecord<K, V>> record)> predicate; // return true to keep
 
     filter(topology_base& topology, std::shared_ptr<partition_source<K, V>> source, predicate f)
       : partition_source<K, V>(source.get(), source->partition())
@@ -70,10 +70,10 @@ namespace kspp {
     }
 
   private:
-    std::shared_ptr<partition_source<K, V>>    _source;
-    predicate                                  _predicate;
-    std::deque<std::shared_ptr<kevent<K, V>>> _queue;
-    metric_lag                                 _lag;
-    metric_counter                             _predicate_false;
+    std::shared_ptr<partition_source<K, V>> _source;
+    predicate                               _predicate;
+    event_queue<kevent<K, V>>               _queue;
+    metric_lag                              _lag;
+    metric_counter                          _predicate_false;
   };
 } // namespace

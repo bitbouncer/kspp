@@ -74,10 +74,10 @@ namespace kspp {
     }
 
   private:
-    std::shared_ptr<partition_source<K, SV>>    _source;
-    extractor                                   _extractor;
-    std::deque<std::shared_ptr<kevent<K, SV>>> _queue;
-    metric_lag                                  _lag;
+    std::shared_ptr<partition_source<K, SV>> _source;
+    extractor                                _extractor;
+    event_queue<kevent<K, SV>>               _queue;
+    metric_lag                               _lag;
   };
 
 
@@ -161,11 +161,11 @@ namespace kspp {
     }
 
     private:
-    std::shared_ptr<partition_source<K, V>>           _source;
-    extractor                                         _extractor;
-    std::shared_ptr<commit_chain::autocommit_marker>  _currrent_id; // used to briefly hold the commit open during process one
-    std::deque<std::shared_ptr<kevent<K, V>>>   _queue;
-    metric_lag                                        _lag;
+    std::shared_ptr<partition_source<K, V>>          _source;
+    extractor                                        _extractor;
+    std::shared_ptr<commit_chain::autocommit_marker> _currrent_id; // used to briefly hold the commit open during process one
+    event_queue<kevent<K, V>>                        _queue;
+    metric_lag                                       _lag;
   };
 }
 

@@ -39,7 +39,7 @@ struct krecord
 
   K                   key;
   std::shared_ptr<V>  value;
-  int64_t             event_time;
+  const int64_t       event_time;
 };
 
 template<class V>
@@ -60,7 +60,7 @@ struct krecord<void, V>
   }
 
   std::shared_ptr<V> value;
-  int64_t            event_time;
+  const int64_t      event_time;
 };
 
 template<class K>
@@ -75,7 +75,7 @@ struct krecord<K, void>
     key(k) {
   }
   
-  K        key;
-  int64_t  event_time;
+  K             key;
+  const int64_t event_time;
 };
 }

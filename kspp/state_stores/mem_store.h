@@ -11,7 +11,7 @@
     public:
       enum seek_pos_e { BEGIN, END };
 
-      iterator_impl(std::map<K, std::shared_ptr<krecord<K, V>>>& container, seek_pos_e pos)
+      iterator_impl(std::map<K, std::shared_ptr<const krecord<K, V>>>& container, seek_pos_e pos)
         : _container(container)
         , _it(pos == BEGIN ? _container.begin() : _container.end()) {
       }
@@ -26,7 +26,7 @@
         ++_it;
       }
 
-      virtual std::shared_ptr<krecord<K, V>> item() const {
+      virtual std::shared_ptr<const krecord<K, V>> item() const {
         return (_it == _container.end()) ? nullptr : _it->second;
       }
 
@@ -41,8 +41,8 @@
       }
 
     private:
-      std::map<K, std::shared_ptr<krecord<K, V>>>& _container;
-      typename std::map<K, std::shared_ptr<krecord<K, V>>>::iterator _it;
+      std::map<K, std::shared_ptr<const krecord<K, V>>>& _container;
+      typename std::map<K, std::shared_ptr<const krecord<K, V>>>::iterator _it;
     };
 
     mem_store(boost::filesystem::path storage_path){
@@ -61,7 +61,7 @@
     /**
     * Put a key-value pair if timestamp is greater or equal to existing record
     */
-    virtual void _insert(std::shared_ptr<krecord<K, V>> record, int64_t offset) {
+    virtual void _insert(std::shared_ptr<const krecord<K, V>> record, int64_t offset) {
       _current_offset = std::max<int64_t>(_current_offset, offset);
       auto item = _store.find(record->key);
 
@@ -103,7 +103,7 @@
     /**
     * Returns a key-value pair with the given key
     */
-    virtual std::shared_ptr<krecord<K, V>> get(const K& key) {
+    virtual std::shared_ptr<const krecord<K, V>> get(const K& key) {
       auto it = _store.find(key);
       return (it == _store.end()) ? nullptr : it->second;
     }
@@ -126,7 +126,7 @@
     }
 
   private:
-    std::map<K, std::shared_ptr<krecord<K, V>>> _store;
-    int64_t                                     _current_offset;
+    std::map<K, std::shared_ptr<const krecord<K, V>>> _store;
+    int64_t                                           _current_offset;
   };
  }

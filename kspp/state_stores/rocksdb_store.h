@@ -48,24 +48,24 @@ class rocksdb_store
       _it->Next();
     }
 
-    virtual std::shared_ptr<krecord<K, V>> item() const {
+    virtual std::shared_ptr<const krecord<K, V>> item() const {
       if (!_it->Valid())
         return nullptr;
       rocksdb::Slice key = _it->key();
       rocksdb::Slice value = _it->value();
 
-      std::shared_ptr<krecord<K, V>> res(std::make_shared<krecord<K, V>>());
-      res->value = std::make_shared<V>();
+
+      int64_t timestamp = 0;
+      // sanity - value size at least timestamp
+      if (value.size() < sizeof(int64_t))
+        return nullptr;
+      memcpy(&timestamp, value.data(), sizeof(int64_t));
+      auto  res = std::make_shared<krecord<K, V>>(K(), std::make_shared<V>(), timestamp);
 
       if (_codec->decode(key.data(), key.size(), res->key) != key.size())
         return nullptr;
 
-      // timestamp
-      if (value.size()<sizeof(int64_t))
-        return nullptr;
-      memcpy(&res->event_time, value.data(), sizeof(int64_t));
-
-      size_t actual_sz = value.size() - sizeof(int64_t);
+      size_t actual_sz = value.size() - sizeof(int64_t); // remove timestamp
       size_t consumed = _codec->decode(value.data() + sizeof(int64_t), actual_sz, *res->value);
       if (consumed != actual_sz) {
         BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", decode payload failed, consumed:" << consumed << ", actual sz:" << actual_sz;
@@ -137,7 +137,7 @@ class rocksdb_store
     _db = nullptr;
   }
 
-  virtual void _insert(std::shared_ptr<krecord<K, V>> record, int64_t offset) {
+  virtual void _insert(std::shared_ptr<const krecord<K, V>> record, int64_t offset) {
     _current_offset = std::max<int64_t>(_current_offset, offset);
     char key_buf[MAX_KEY_SIZE];
     char val_buf[MAX_VALUE_SIZE];
@@ -165,7 +165,7 @@ class rocksdb_store
     }
   }
 
-  std::shared_ptr<krecord<K, V>> get(const K& key) {
+  std::shared_ptr<const krecord<K, V>> get(const K& key) {
     char key_buf[MAX_KEY_SIZE];
     size_t ksize = 0;
     {
@@ -177,20 +177,19 @@ class rocksdb_store
     rocksdb::Status s = _db->Get(rocksdb::ReadOptions(), rocksdb::Slice(key_buf, ksize), &payload);
     if (!s.ok())
       return nullptr;
-    auto  res = std::make_shared<krecord<K, V>>(key, std::make_shared<V>(), -1);
-    {
-      // sanity - at least timestamp
-      if (payload.size()<sizeof(int64_t))
-        return nullptr;
-      memcpy(&res->event_time, payload.data(), sizeof(int64_t));
 
-      // read value
-      size_t actual_sz = payload.size() - sizeof(int64_t);
-      size_t consumed = _codec->decode(payload.data() + sizeof(int64_t), actual_sz, *res->value);
-      if (consumed != actual_sz) {
-        BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", decode payload failed, consumed:" << consumed << ", actual sz:" << actual_sz;
-        return nullptr;
-      }
+    int64_t timestamp = 0;
+    // sanity - at least timestamp
+    if (payload.size() < sizeof(int64_t))
+      return nullptr;
+    memcpy(&timestamp, payload.data(), sizeof(int64_t));
+    auto  res = std::make_shared<krecord<K, V>>(key, std::make_shared<V>(), timestamp);
+    // read value
+    size_t actual_sz = payload.size() - sizeof(int64_t);
+    size_t consumed = _codec->decode(payload.data() + sizeof(int64_t), actual_sz, *res->value);
+    if (consumed != actual_sz) {
+      BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", decode payload failed, consumed:" << consumed << ", actual sz:" << actual_sz;
+      return nullptr;
     }
     return res;
   }

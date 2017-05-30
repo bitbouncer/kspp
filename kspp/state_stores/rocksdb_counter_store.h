@@ -99,7 +99,7 @@ namespace kspp {
         _it->Next();
       }
 
-      virtual std::shared_ptr<krecord<K, V>> item() const {
+      virtual std::shared_ptr<const krecord<K, V>> item() const {
         if (!_it->Valid())
           return nullptr;
         rocksdb::Slice key = _it->key();
@@ -189,7 +189,7 @@ namespace kspp {
     /**
     * Put or delete a record
     */
-    virtual void _insert(std::shared_ptr<krecord<K, V>> record, int64_t offset) {
+    virtual void _insert(std::shared_ptr<const krecord<K, V>> record, int64_t offset) {
       _current_offset = std::max<int64_t>(_current_offset, offset);
       char key_buf[MAX_KEY_SIZE];
       size_t ksize = 0;
@@ -205,7 +205,7 @@ namespace kspp {
       }
     }
 
-    std::shared_ptr<krecord<K, V>> get(const K& key) {
+    std::shared_ptr<const krecord<K, V>> get(const K& key) {
       char key_buf[MAX_KEY_SIZE];
       size_t ksize = 0;
       std::ostrstream os(key_buf, MAX_KEY_SIZE);

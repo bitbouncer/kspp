@@ -1,9 +1,10 @@
 file(GLOB LIB_SRCS
+  app_info.h
+  metrics.h  
   kspp.h
   krecord.h
   kevent.h
   type_name.h
-  metrics.h
   topology_builder.h
   metrics/*.*
   sinks/*.h

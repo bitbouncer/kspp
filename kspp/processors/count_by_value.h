@@ -49,10 +49,12 @@ class count_by_value : public materialized_source<K, V>
     _stream->close();
   }
 
+  /*
   virtual int produce(std::shared_ptr<kevent<K, V>> r) {
     _queue.push_back(r);
     return 0;
   }
+  */
 
   virtual size_t queue_len() {
     return _queue.size();
@@ -112,7 +114,7 @@ class count_by_value : public materialized_source<K, V>
   }
 
   // inherited from kmaterialized_source
-  virtual std::shared_ptr<krecord<K, V>> get(const K& key) {
+  virtual std::shared_ptr<const krecord<K, V>> get(const K& key) {
     return _counter_store.get(key);
   }
 
@@ -131,13 +133,13 @@ class count_by_value : public materialized_source<K, V>
     return p;
   }
 
-  std::shared_ptr<partition_source<K, V>>         _stream;
-  STATE_STORE<K, V, CODEC>                        _counter_store;
-  std::deque<std::shared_ptr<kevent<K, V>>> _queue;
-  int64_t                                         _punctuate_intervall;
-  int64_t                                         _next_punctuate;
-  bool                                            _dirty;
-  metric_counter                                  _in_count;
-  metric_lag                                      _lag;
+  std::shared_ptr<partition_source<K, V>> _stream;
+  STATE_STORE<K, V, CODEC>                _counter_store;
+  event_queue<kevent<K, V>>               _queue;
+  int64_t                                 _punctuate_intervall;
+  int64_t                                 _next_punctuate;
+  bool                                    _dirty;
+  metric_counter                          _in_count;
+  metric_lag                              _lag;
 };
 }

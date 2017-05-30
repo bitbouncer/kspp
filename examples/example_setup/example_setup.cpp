@@ -33,19 +33,26 @@ int main(int argc, char **argv) {
   for (int64_t update_nr = 0; update_nr != 100; ++update_nr) {
     for (auto & i : ids) {
      table_stream->produce(i, update_nr);
+     table_stream->process_one(kspp::milliseconds_since_epoch());
+     table_stream->poll(0);
     }
-    while (table_stream->queue_len() > 10000)
-      table_stream->poll(0);
+    //while (table_stream->queue_len() > 10000)
+    //  table_stream->poll(0);
   }
 
   std::cerr << "creating " << event_stream->name() << std::endl;
   for (int64_t event_nr = 0; event_nr != 100; ++event_nr) {
     for (auto & i : ids) {
       event_stream->produce(i, event_nr);
-    }
-    while (event_stream->queue_len() > 10000) {
+      event_stream->process_one(kspp::milliseconds_since_epoch());
       event_stream->poll(0);
     }
+    /*
+    while (event_stream->queue_len() > 10000) {
+      table_stream->process_one(kspp::milliseconds_since_epoch());
+      event_stream->poll(0);
+    }
+    */
   }
   
   topology->for_each_metrics([](kspp::metric& m) {

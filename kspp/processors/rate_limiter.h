@@ -89,7 +89,7 @@ class rate_limiter : public partition_source<K, V>
 
   private:
   std::shared_ptr<partition_source<K, V>>            _source;
-  std::deque<std::shared_ptr<kevent<K, V>>>         _queue;
+  event_queue<kevent<K, V>>                          _queue;
   std::shared_ptr<mem_token_bucket_store<K, size_t>> _token_bucket;
   metric_lag                                         _lag;
   metric_counter                                     _in_count;

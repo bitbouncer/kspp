@@ -99,10 +99,10 @@ class left_join : public partition_source<K, R>
   }
 
   private:
-  std::shared_ptr<partition_source<K, streamV>>    _stream;
-  std::shared_ptr<materialized_source<K, tableV>>  _table;
-  std::deque<std::shared_ptr<kevent<K, streamV>>> _queue;
-  value_joiner                                     _value_joiner;
-  metric_lag                                       _lag;
+  std::shared_ptr<partition_source<K, streamV>>   _stream;
+  std::shared_ptr<materialized_source<K, tableV>> _table;
+  event_queue<kevent<K, streamV>>                 _queue;
+  value_joiner                                    _value_joiner;
+  metric_lag                                      _lag;
 };
 }

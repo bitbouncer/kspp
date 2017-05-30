@@ -49,10 +49,12 @@ class count_by_key : public materialized_source<K, V>
     _stream->close();
   }
 
+  /*
   virtual int produce(std::shared_ptr<kevent<K, void>> r) {
     _queue.push_back(r);
     return 0;
   }
+  */
 
   virtual size_t queue_len() {
     return _queue.size();
@@ -92,17 +94,18 @@ class count_by_key : public materialized_source<K, V>
   take a snapshot of state and post it to sinks
   */
   virtual void punctuate(int64_t timestamp) {
-    if (_dirty) { // keep event timestamts in counter store and only include the updated ones... TBD
+    if (_dirty) { // keep event timestamps in counter store and only include the updated ones... TBD
       for (auto i : _counter_store) {
-        i->event_time = timestamp;
-        this->send_to_sinks(std::make_shared<kevent<K, V>>(i));
+        //i->event_time = timestamp;
+        //we need to create a new instance
+        this->send_to_sinks(std::make_shared<kevent<K, V>>(std::make_shared<krecord<K, V>>(i->key, i->value, timestamp)));
       }
     }
     _dirty = false;
   }
 
   // inherited from kmaterialized_source
-  virtual std::shared_ptr<krecord<K, V>> get(const K& key) {
+  virtual std::shared_ptr<const krecord<K, V>> get(const K& key) {
     return _counter_store.get(key);
   }
 
@@ -121,13 +124,13 @@ class count_by_key : public materialized_source<K, V>
     return p;
   }
 
-  std::shared_ptr<partition_source<K, void>>      _stream;
-  STATE_STORE<K, V, CODEC>                        _counter_store;
-  std::deque<std::shared_ptr<kevent<K, void>>>   _queue;
-  int64_t                                         _punctuate_intervall;
-  int64_t                                         _next_punctuate;
-  bool                                            _dirty;
-  metric_counter                                  _in_count;
-  metric_lag                                      _lag;
+  std::shared_ptr<partition_source<K, void>> _stream;
+  STATE_STORE<K, V, CODEC>                   _counter_store;
+  event_queue<kevent<K, void>>               _queue;
+  int64_t                                    _punctuate_intervall;
+  int64_t                                    _next_punctuate;
+  bool                                       _dirty;
+  metric_counter                             _in_count;
+  metric_lag                                 _lag;
 };
 }

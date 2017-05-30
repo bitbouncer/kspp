@@ -157,7 +157,6 @@ int topology_base::process_one() {
     res += i->process_one(tick);
   }
 
-  // is this nessessary???
   for (auto i : _sinks)
     res += i->process_one(tick);
 

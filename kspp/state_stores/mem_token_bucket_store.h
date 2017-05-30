@@ -79,7 +79,7 @@ namespace kspp {
         ++_it;
       }
 
-      virtual std::shared_ptr<krecord<K, V>> item() const {
+      virtual std::shared_ptr<const krecord<K, V>> item() const {
         if (_it == _container.end())
           return nullptr;
        return std::make_shared<kspp::krecord<K, V>>(_it->first, _it->second->token(), _it->second->timestamp());
@@ -151,7 +151,7 @@ namespace kspp {
     }
 
     //this can and will override bucket capacity but bucket will stay in correct state
-    virtual void _insert(std::shared_ptr<krecord<K, V>> record, int64_t offset) {
+    virtual void _insert(std::shared_ptr<const krecord<K, V>> record, int64_t offset) {
       _current_offset = std::max<int64_t>(_current_offset, offset);
       if (record->value == nullptr) {
         _buckets.erase(record->key);
@@ -187,7 +187,7 @@ namespace kspp {
     /**
     * Returns the counter for the given key
     */
-    virtual std::shared_ptr<kspp::krecord<K, V>> get(const K& key) {
+    virtual std::shared_ptr<const kspp::krecord<K, V>> get(const K& key) {
       typename std::map<K, std::shared_ptr<bucket>>::iterator item = _buckets.find(key);
       if (item == _buckets.end()) {
         return std::make_shared<kspp::krecord<K, V>>(key, _config.capacity, -1);

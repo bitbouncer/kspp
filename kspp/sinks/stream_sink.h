@@ -33,20 +33,36 @@ namespace kspp {
       return "stream_sink";
     }
 
-    virtual bool process_one(int64_t tick) {
-      return false;
-      //return _upstream ? _upstream->process_one(tick) : false;
-    }
-
     virtual size_t queue_len() {
-      return 0;
+      return this->_queue.size();
     }
 
     virtual void commit(bool flush) {
       // noop
     }
 
+    virtual bool process_one(int64_t tick) {
+      if (this->_queue.size() == 0)
+        return false;
+  
+      while (this->_queue.size()) {
+        auto ev = _queue.front();
+
+        _os << "ts: " << ev->event_time() << "  ";
+        _codec->encode(ev->record()->key, _os);
+        _os << ":";
+        if (ev->record()->value)
+          _codec->encode(*ev->record()->value, _os);
+        else
+          _os << "<nullptr>";
+        _os << std::endl;
+        this->_queue.pop_front();
+      }
+      return true;
+    }
+
   protected:
+    /*
     virtual int _produce(std::shared_ptr<kevent<K, V>> ev) {
       _os << "ts: " << ev->event_time() << "  ";
       _codec->encode(ev->record()->key, _os);
@@ -58,6 +74,7 @@ namespace kspp {
       _os << std::endl;
       return 0;
     }
+    */
 
   private:
     std::ostream&                      _os;
@@ -89,13 +106,23 @@ namespace kspp {
     }
 
     virtual bool process_one(int64_t tick) {
-      return false;
-      //return _upstream ? _upstream->process_one(tick) : false;
+      if (this->_queue.size() == 0)
+        return false;
+
+      while (this->_queue.size()) {
+        auto ev = _queue.front();
+
+        _os << "ts: " << ev->event_time() << "  ";
+        _codec->encode(*ev->record()->value, _os);
+        _os << std::endl;
+
+        this->_queue.pop_front();
+      }
+      return true;
     }
 
-
     virtual size_t queue_len() {
-      return 0;
+      return this->_queue.size();
     }
 
     virtual void commit(bool flush) {
@@ -103,12 +130,14 @@ namespace kspp {
     }
 
   protected:
+    /*
     virtual int _produce(std::shared_ptr<kevent<void, V>> ev) {
       _os << "ts: " << ev->event_time() << "  ";
       _codec->encode(*ev->record()->value, _os);
       _os << std::endl;
       return 0;
     }
+    */
 
   private:
     std::ostream&                      _os;
@@ -140,12 +169,23 @@ namespace kspp {
     }
 
     virtual bool process_one(int64_t tick) {
-      return false;
-      //return _upstream ? _upstream->process_one(tick) : false;
+      if (this->_queue.size() == 0)
+        return false;
+
+      while (this->_queue.size()) {
+        auto ev = _queue.front();
+
+        _os << "ts: " << ev->event_time() << "  ";
+        _codec->encode(ev->record()->key, _os);
+        _os << std::endl;
+
+        this->_queue.pop_front();
+      }
+      return true;
     }
 
     virtual size_t queue_len() {
-      return 0;
+      return this->_queue.size();
     }
 
     virtual void commit(bool flush) {
@@ -153,12 +193,12 @@ namespace kspp {
     }
 
   protected:
-    virtual int _produce(std::shared_ptr<kevent<K, void>> ev) {
+  /*  virtual int _produce(std::shared_ptr<kevent<K, void>> ev) {
       _os << "ts: " << ev->event_time() << "  ";
       _codec->encode(ev->record()->key, _os);
       _os << std::endl;
       return 0;
-    }
+    }*/
 
   private:
     std::ostream&                      _os;

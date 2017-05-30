@@ -116,11 +116,8 @@ namespace kspp {
       if (!ref)
         return nullptr;
 
-      auto record = std::make_shared<krecord<K, V>>();
-      record->event_time = ref->timestamp().timestamp;
-      if (record->event_time < 0)
-        record->event_time = milliseconds_since_epoch();
-
+      int64_t timestamp = (ref->timestamp().timestamp >= 0) ? ref->timestamp().timestamp : milliseconds_since_epoch();
+      auto record = std::make_shared<krecord<K, V>>(K(), nullptr, timestamp);
       {
         size_t consumed = this->_codec->decode((const char*) ref->key_pointer(), ref->key_len(), record->key);
         if (consumed == 0) {
@@ -167,12 +164,8 @@ namespace kspp {
         return nullptr;
       size_t sz = ref->len();
       if (sz) {
-        auto record = std::make_shared<krecord<void, V>>();
-        record->event_time = ref->timestamp().timestamp;
-        if (record->event_time < 0)
-          record->event_time = milliseconds_since_epoch();
-
-        record->value = std::make_shared<V>();
+        int64_t timestamp = (ref->timestamp().timestamp >= 0) ? ref->timestamp().timestamp : milliseconds_since_epoch();
+        auto record = std::make_shared<krecord<void, V>>(std::make_shared<V>(), timestamp);
         size_t consumed = this->_codec->decode((const char*) ref->payload(), sz, *record->value);
         if (consumed == sz) {
           return std::make_shared<kevent<void, V>>(record, this->_commit_chain.create(ref->offset()));
@@ -207,11 +200,8 @@ namespace kspp {
       if (!ref || ref->key_len() == 0)
         return nullptr;
 
-      auto record = std::make_shared<krecord<K, void>>();
-      record->event_time = ref->timestamp().timestamp;
-      if (record->event_time < 0)
-        record->event_time = milliseconds_since_epoch();
-
+      int64_t timestamp = (ref->timestamp().timestamp >= 0) ? ref->timestamp().timestamp : milliseconds_since_epoch();
+      auto record = std::make_shared<krecord<K, void>>(K(), timestamp);
       size_t consumed = this->_codec->decode((const char*) ref->key_pointer(), ref->key_len(), record->key);
       if (consumed == 0) {
         BOOST_LOG_TRIVIAL(error) << LOG_NAME << ", decode key failed, actual key sz:" << ref->key_len();

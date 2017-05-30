@@ -68,24 +68,23 @@ class rocksdb_windowed_store
       }
     }
 
-    virtual std::shared_ptr<krecord<K, V>> item() const {
+    virtual std::shared_ptr<const krecord<K, V>> item() const {
       if (!_inner_it->Valid())
         return nullptr;
       rocksdb::Slice key = _inner_it->key();
       rocksdb::Slice value = _inner_it->value();
 
-      std::shared_ptr<krecord<K, V>> res(std::make_shared<krecord<K, V>>());
-      res->value = std::make_shared<V>();
+      int64_t timestamp = 0;
+      // sanity - value size at least timestamp
+      if (value.size() < sizeof(int64_t))
+        return nullptr;
+      memcpy(&timestamp, value.data(), sizeof(int64_t));
+      auto  res = std::make_shared<krecord<K, V>>(K(), std::make_shared<V>(), timestamp);
 
       if (_codec->decode(key.data(), key.size(), res->key) != key.size())
         return nullptr;
 
-      // timestamp
-      if (value.size()<sizeof(int64_t))
-        return nullptr;
-      memcpy(&res->event_time, value.data(), sizeof(int64_t));
-
-      size_t actual_sz = value.size() - sizeof(int64_t);
+      size_t actual_sz = value.size() - sizeof(int64_t); // remove timestamp
       size_t consumed = _codec->decode(value.data() + sizeof(int64_t), actual_sz, *res->value);
       if (consumed != actual_sz) {
         BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", decode payload failed, consumed:" << consumed << ", actual sz:" << actual_sz;
@@ -165,8 +164,7 @@ class rocksdb_windowed_store
         auto j = i->second->NewIterator(rocksdb::ReadOptions());
         j->SeekToFirst();
         while (j->Valid()) {
-          auto record = std::make_shared<krecord<K, V>>();
-          record->event_time = tick;
+          auto record = std::make_shared<krecord<K, V>>(K(), nullptr, tick);
           rocksdb::Slice key = j->key();
           if (_codec->decode(key.data(), key.size(), record->key) == key.size())
             this->_sink(std::make_shared<kevent<K,V>>(record));
@@ -181,7 +179,7 @@ class rocksdb_windowed_store
   // this respects strong ordering of timestamp and makes shure we only have one value
   // a bit slow but samantically correct
   // TBD add option to speed this up either by storing all values or disregarding timestamps
-  virtual void _insert(std::shared_ptr<krecord<K, V>> record, int64_t offset) {
+  virtual void _insert(std::shared_ptr<const krecord<K, V>> record, int64_t offset) {
     _current_offset = std::max<int64_t>(_current_offset, offset);
     int64_t new_slot = get_slot_index(record->event_time);
     // old updates is killed straight away...
@@ -251,7 +249,7 @@ class rocksdb_windowed_store
     }
   }
 
-  std::shared_ptr<krecord<K, V>> get(const K& key) {
+  std::shared_ptr<const krecord<K, V>> get(const K& key) {
     char key_buf[MAX_KEY_SIZE];
     size_t ksize = 0;
     {
@@ -263,21 +261,18 @@ class rocksdb_windowed_store
       std::string payload;
       rocksdb::Status s = i.second->Get(rocksdb::ReadOptions(), rocksdb::Slice(key_buf, ksize), &payload);
       if (s.ok()) {
-        auto  res = std::make_shared<krecord<K, V>>(key, std::make_shared<V>(), -1);
-        {
-          // sanity - at least timestamp
-          if (payload.size() < sizeof(int64_t))
-            return nullptr;
-          memcpy(&res->event_time, payload.data(), sizeof(int64_t));
-
-          // read value
-          size_t actual_sz = payload.size() - sizeof(int64_t);
-          size_t consumed = _codec->decode(payload.data() + sizeof(int64_t), actual_sz, *res->value);
-          if (consumed != actual_sz) {
-            BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", decode payload failed, consumed:" << consumed << ", actual sz:" << actual_sz;
-            return nullptr;
-          }
-
+        int64_t timestamp = 0;
+        // sanity - at least timestamp
+        if (payload.size() < sizeof(int64_t))
+          return nullptr;
+        memcpy(&timestamp, payload.data(), sizeof(int64_t));
+        auto  res = std::make_shared<krecord<K, V>>(key, std::make_shared<V>(), timestamp);
+        // read value
+        size_t actual_sz = payload.size() - sizeof(int64_t);
+        size_t consumed = _codec->decode(payload.data() + sizeof(int64_t), actual_sz, *res->value);
+        if (consumed != actual_sz) {
+          BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", decode payload failed, consumed:" << consumed << ", actual sz:" << actual_sz;
+          return nullptr;
         }
         return res;
       }
