@@ -132,7 +132,7 @@ class kafka_partition_sink<void, V, CODEC> : public kafka_partition_sink_base<vo
   }
 
   virtual ~kafka_partition_sink() {
-    close();
+    this->close();
   }
 
 protected:
@@ -163,7 +163,7 @@ class kafka_partition_sink<K, void, CODEC> : public kafka_partition_sink_base<K,
   }
 
   virtual ~kafka_partition_sink() {
-    close();
+    this->close();
   }
 
 protected:

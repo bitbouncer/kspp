@@ -22,7 +22,7 @@ namespace kspp {
     }
 
     virtual ~stream_sink() {
-      //_source->remove_sink()
+      this->flush();;
     }
 
     virtual std::string name() const {
@@ -80,7 +80,7 @@ namespace kspp {
     }
 
     virtual ~stream_sink() {
-      //_source->remove_sink()
+      this->flush();;
     }
 
     virtual std::string name() const {
@@ -133,7 +133,7 @@ namespace kspp {
     }
 
     virtual ~stream_sink() {
-      //_source->remove_sink()
+      this->flush();;
     }
 
     virtual std::string name() const {
