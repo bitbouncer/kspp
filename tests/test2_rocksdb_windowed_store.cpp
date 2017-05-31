@@ -41,9 +41,9 @@ int main(int argc, char** argv) {
     assert(exact_size(store) == 3);
     auto record = store.get(2);
     assert(record != nullptr);
-    assert(record->key == 2);
-    assert(record->value != nullptr);
-    assert(*record->value == "value2updated");
+    assert(record->key() == 2);
+    assert(record->value() != nullptr);
+    assert(*record->value() == "value2updated");
   }
 
   // update existing key with new value but old timestamp
@@ -52,9 +52,9 @@ int main(int argc, char** argv) {
     assert(exact_size(store) == 3);
     auto record = store.get(2);
     assert(record != nullptr);
-    assert(record->key == 2);
-    assert(record->value != nullptr);
-    assert(*record->value == "value2updated");
+    assert(record->key() == 2);
+    assert(record->value() != nullptr);
+    assert(*record->value() == "value2updated");
   }
 
   // delete existing key with to old timestamp
@@ -63,9 +63,9 @@ int main(int argc, char** argv) {
     assert(exact_size(store) == 3);
     auto record = store.get(2);
     assert(record != nullptr);
-    assert(record->key == 2);
-    assert(record->value != nullptr);
-    assert(*record->value == "value2updated");
+    assert(record->key() == 2);
+    assert(record->value() != nullptr);
+    assert(*record->value() == "value2updated");
   }
 
   // delete existing key with new timestamp
@@ -88,9 +88,9 @@ int main(int argc, char** argv) {
     assert(exact_size(store) == 1);
     auto record = store.get(1);
     assert(record != nullptr);
-    assert(record->key == 1);
-    assert(record->value != nullptr);
-    assert(*record->value == "value1");
+    assert(record->key() == 1);
+    assert(record->value() != nullptr);
+    assert(*record->value() == "value1");
 
     // this should clear out item 2
     store.garbage_collect(t0 + 1300);

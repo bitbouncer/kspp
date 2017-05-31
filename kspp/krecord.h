@@ -8,74 +8,91 @@ inline int64_t milliseconds_since_epoch() {
 }
 
 template<class K, class V>
-struct krecord
+class krecord
 {
-  krecord() 
-    : event_time(-1) {
-  }
-
-  krecord(const K& k) 
-    : event_time(milliseconds_since_epoch()), 
-    key(k) {
-  }
-
+  public:
   krecord(const K& k, const V& v, int64_t ts = milliseconds_since_epoch()) 
-    : event_time(ts)
-    , key(k)
-    , value(std::make_shared<V>(v)) {
+    : _event_time(ts)
+    , _key(k)
+    , _value(std::make_shared<V>(v)) {
   }
 
   krecord(const K& k, std::shared_ptr<V> v, int64_t ts = milliseconds_since_epoch())
-    : event_time(ts),
-    key(k), 
-    value(v) {
+    : _event_time(ts)
+    , _key(k)
+    , _value(v) {
   }
   
   krecord(const K& k, std::nullptr_t nullp, int64_t ts = milliseconds_since_epoch()) 
-    : event_time(ts), 
-    key(k), 
-    value(nullptr) {
+    : _event_time(ts)
+    , _key(k)
+    , _value(nullptr) {
   }
 
-  K                   key;
-  std::shared_ptr<V>  value;
-  const int64_t       event_time;
+  inline const K& key() const {
+    return _key;
+  }
+
+  inline const V* value() const {
+    return _value.get();
+  }
+
+  inline int64_t event_time() const {
+    return _event_time;
+  }
+  
+  private:
+  const K                         _key;
+  const std::shared_ptr<const V>  _value;
+  const int64_t                   _event_time;
 };
 
 template<class V>
-struct krecord<void, V>
+class krecord<void, V>
 {
-  krecord() 
-    : event_time(-1) {
-  }
-  
+  public:
   krecord(const V& v, int64_t ts = milliseconds_since_epoch()) 
-    : event_time(ts), 
-    value(std::make_shared<V>(v)) {
+    : _event_time(ts)
+    , _value(std::make_shared<V>(v)) {
   }
 
   krecord(std::shared_ptr<V> v, int64_t ts = milliseconds_since_epoch()) 
-    : event_time(ts), 
-    value(v) {
+    : _event_time(ts)
+    , _value(v) {
   }
 
-  std::shared_ptr<V> value;
-  const int64_t      event_time;
+  inline const V* value() const {
+    return _value.get();
+  }
+
+  inline int64_t event_time() const {
+    return _event_time;
+  }
+
+  private:
+  const std::shared_ptr<const V> _value;
+  const int64_t                  _event_time;
 };
 
 template<class K>
-struct krecord<K, void>
+class krecord<K, void>
 {
-  krecord() 
-    : event_time(-1) {
+  public:
+  krecord(const K& k, int64_t ts = milliseconds_since_epoch()) 
+    : _event_time(ts)
+    , _key(k) {
   }
 
-  krecord(const K& k, int64_t ts = milliseconds_since_epoch()) 
-    : event_time(ts), 
-    key(k) {
+  inline const K& key() const {
+    return _key;
   }
-  
-  K             key;
-  const int64_t event_time;
+
+  inline int64_t event_time() const { 
+    return _event_time; 
+  }
+
+  private:
+  const K       _key;
+  const int64_t _event_time;
 };
 }

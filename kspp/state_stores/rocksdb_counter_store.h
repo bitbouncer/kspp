@@ -105,18 +105,15 @@ namespace kspp {
         rocksdb::Slice key = _it->key();
         rocksdb::Slice value = _it->value();
 
-        std::shared_ptr<krecord<K, V>> res(std::make_shared<krecord<K, V>>());
-        res->value = std::make_shared<V>();
-
-        if (_codec->decode(key.data(), key.size(), res->key) != key.size())
+        K tmp_key;
+        if (_codec->decode(key.data(), key.size(), tmp_key) != key.size())
           return nullptr;
 
-        int64_t count = 0;
-        if (!Int64AddOperator::Deserialize(value, &count)) {
+        int64_t tmp_count = 0;
+        if (!Int64AddOperator::Deserialize(value, &tmp_count))
           return nullptr;
-        }
-        *res->value = (V) count; 
-        return res;
+
+        return std::make_shared<krecord<K, V>>(tmp_key, static_cast<V>(tmp_count), milliseconds_since_epoch()); // or should we use -1.
       }
 
       virtual bool operator==(const kmaterialized_source_iterator_impl<K, V>& other) const {
@@ -194,11 +191,11 @@ namespace kspp {
       char key_buf[MAX_KEY_SIZE];
       size_t ksize = 0;
       std::strstream s(key_buf, MAX_KEY_SIZE);
-      ksize = _codec->encode(record->key, s);
-      if (record->value)
+      ksize = _codec->encode(record->key(), s);
+      if (record->value())
       {
         std::string serialized;
-        Int64AddOperator::Serialize((int64_t) *record->value, &serialized);
+        Int64AddOperator::Serialize((int64_t) *record->value(), &serialized);
         auto status = _db->Merge(rocksdb::WriteOptions(), rocksdb::Slice(key_buf, ksize), serialized);
       } else {
         auto status = _db->Delete(rocksdb::WriteOptions(), rocksdb::Slice(key_buf, ksize));

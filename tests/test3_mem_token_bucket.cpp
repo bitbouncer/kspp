@@ -29,10 +29,10 @@ int main(int argc, char** argv) {
       assert(store.size() == 3);
       auto res = store.get(2);
       assert(res);
-      assert(res->key == 2);
-      assert(res->value);
-      assert(*res->value == 0);
-      assert(res->event_time == t0); // less than one item so not incremented
+      assert(res->key() == 2);
+      assert(res->value());
+      assert(*res->value() == 0);
+      assert(res->event_time() == t0); // less than one item so not incremented
     }
 
     // consume existing key to fast
@@ -41,10 +41,10 @@ int main(int argc, char** argv) {
       assert(store.size() == 3);
       auto res = store.get(2);
       assert(res);
-      assert(res->key == 2);
-      assert(res->value);
-      assert(*res->value == 0);
-      assert(res->event_time == t0);// less than one item so not incremented
+      assert(res->key() == 2);
+      assert(res->value());
+      assert(*res->value() == 0);
+      assert(res->event_time() == t0);// less than one item so not incremented
     }
 
     // consume existing key after one  should be available
@@ -53,10 +53,10 @@ int main(int argc, char** argv) {
       assert(store.size() == 3);
       auto res = store.get(2);
       assert(res);
-      assert(res->key == 2);
-      assert(res->value);
-      assert(*res->value==1);
-      assert(res->event_time == t0 + 101);// more than full time period so reset
+      assert(res->key() == 2);
+      assert(res->value());
+      assert(*res->value()==1);
+      assert(res->event_time() == t0 + 101);// more than full time period so reset
     }
 
     // delete existing key 
@@ -65,10 +65,10 @@ int main(int argc, char** argv) {
       assert(store.size() == 2);
       auto res = store.get(1);
       assert(res);
-      assert(res->key == 1);
-      assert(res->value);
-      assert(*res->value == 2);
-      assert(res->event_time == -1);
+      assert(res->key() == 1);
+      assert(res->value());
+      assert(*res->value() == 2);
+      assert(res->event_time() == -1);
     }
   }
   return 0;

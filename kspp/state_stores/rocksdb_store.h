@@ -60,18 +60,20 @@ class rocksdb_store
       if (value.size() < sizeof(int64_t))
         return nullptr;
       memcpy(&timestamp, value.data(), sizeof(int64_t));
-      auto  res = std::make_shared<krecord<K, V>>(K(), std::make_shared<V>(), timestamp);
+      K tmp_key;
 
-      if (_codec->decode(key.data(), key.size(), res->key) != key.size())
+      if (_codec->decode(key.data(), key.size(), tmp_key) != key.size())
         return nullptr;
 
+
       size_t actual_sz = value.size() - sizeof(int64_t); // remove timestamp
-      size_t consumed = _codec->decode(value.data() + sizeof(int64_t), actual_sz, *res->value);
+      auto tmp_value = std::make_shared<V>();
+      size_t consumed = _codec->decode(value.data() + sizeof(int64_t), actual_sz, *tmp_value);
       if (consumed != actual_sz) {
         BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", decode payload failed, consumed:" << consumed << ", actual sz:" << actual_sz;
         return nullptr;
       }
-      return res;
+      return std::make_shared<krecord<K, V>>(tmp_key, tmp_value, timestamp);
     }
 
     virtual bool operator==(const kmaterialized_source_iterator_impl<K, V>& other) const {
@@ -145,22 +147,23 @@ class rocksdb_store
     size_t ksize = 0;
     size_t vsize = 0;
     //_current_offset = std::max<int64_t>(_current_offset, record->offset());
-    if (record->value) {
+    if (record->value()) {
       {
         std::strstream s(key_buf, MAX_KEY_SIZE);
-        ksize = _codec->encode(record->key, s);
+        ksize = _codec->encode(record->key(), s);
       }
       
       // write timestamp
-      memcpy(val_buf, &record->event_time, sizeof(int64_t));
+      int64_t tmp = record->event_time();
+      memcpy(val_buf, &tmp, sizeof(int64_t));
       {
         std::strstream s(val_buf + sizeof(int64_t), MAX_VALUE_SIZE - sizeof(int64_t));
-        vsize = _codec->encode(*record->value, s) + +sizeof(int64_t);
+        vsize = _codec->encode(*record->value(), s) + +sizeof(int64_t);
       }
       rocksdb::Status status = _db->Put(rocksdb::WriteOptions(), rocksdb::Slice((char*) key_buf, ksize), rocksdb::Slice(val_buf, vsize));
     } else {
       std::strstream s(key_buf, MAX_KEY_SIZE);
-      ksize = _codec->encode(record->key, s);
+      ksize = _codec->encode(record->key(), s);
       auto status = _db->Delete(rocksdb::WriteOptions(), rocksdb::Slice(key_buf, ksize));
     }
   }
@@ -183,15 +186,16 @@ class rocksdb_store
     if (payload.size() < sizeof(int64_t))
       return nullptr;
     memcpy(&timestamp, payload.data(), sizeof(int64_t));
-    auto  res = std::make_shared<krecord<K, V>>(key, std::make_shared<V>(), timestamp);
+    
     // read value
     size_t actual_sz = payload.size() - sizeof(int64_t);
-    size_t consumed = _codec->decode(payload.data() + sizeof(int64_t), actual_sz, *res->value);
+    auto tmp_value = std::make_shared<V>();
+    size_t consumed = _codec->decode(payload.data() + sizeof(int64_t), actual_sz, *tmp_value);
     if (consumed != actual_sz) {
       BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", decode payload failed, consumed:" << consumed << ", actual sz:" << actual_sz;
       return nullptr;
     }
-    return res;
+    return std::make_shared<krecord<K, V>>(key, tmp_value, timestamp);
   }
 
   //should we allow writing -2 in store??

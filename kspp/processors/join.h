@@ -66,24 +66,25 @@ class left_join : public partition_source<K, R>
     if (!_queue.size())
       return false;
 
+    // reuse event time & commit it from event stream
     while (_queue.size()) {
-      auto t0 = _queue.front();
+      auto ev = _queue.front();
       _queue.pop_front();
-      _lag.add_event_time(tick, t0->event_time());
-      auto table_row = _table->get(t0->record()->key);
+      _lag.add_event_time(tick, ev->event_time());
+      auto table_row = _table->get(ev->record()->key());
       if (table_row) {
-        if (t0->record()->value) {
-          auto record = std::make_shared<krecord<K, R>>(t0->record()->key, std::make_shared<R>(), t0->event_time());
-          auto t1 = std::make_shared<kspp::kevent<K, R>>(record, t0->id());
-          _value_joiner(t1->record()->key, *t0->record()->value, *table_row->value, *t1->record()->value);
-          this->send_to_sinks(t1);
+        if (ev->record()->value()) {
+          auto new_value = std::make_shared<R>();
+          _value_joiner(ev->record()->key(), *ev->record()->value(), *table_row->value(), *new_value);
+          auto record = std::make_shared<krecord<K, R>>(ev->record()->key(), new_value, ev->event_time());
+          this->send_to_sinks(std::make_shared<kspp::kevent<K, R>>(record, ev->id()));
         } else {
-          auto record = std::make_shared<krecord<K, R>>(t0->record()->key, nullptr, t0->event_time());
-          auto t1 = std::make_shared<kspp::kevent<K, R>>(record, t0->id());
-          this->send_to_sinks(t1);
+          auto record = std::make_shared<krecord<K, R>>(ev->record()->key(), nullptr, ev->event_time());
+          this->send_to_sinks(std::make_shared<kspp::kevent<K, R>>(record, ev->id()));
         }
       } else {
-        // join failed
+        // join failed - table row not found
+        // TBD should we send delete event here???
       }
     }
     return true;

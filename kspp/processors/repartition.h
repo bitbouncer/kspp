@@ -70,10 +70,10 @@ class repartition_by_foreign_key : public partition_processor
       auto ev = _queue.front();
       _queue.pop_front();
       _lag.add_event_time(tick, ev->event_time());
-      auto routing_row = _routing_table->get(ev->record()->key);
+      auto routing_row = _routing_table->get(ev->record()->key());
       if (routing_row) {
-        if (routing_row->value) {
-          uint32_t hash = kspp::get_partition_hash<FOREIGN_KEY, CODEC>(*routing_row->value, _repartition_codec);
+        if (routing_row->value()) {
+          uint32_t hash = kspp::get_partition_hash<FOREIGN_KEY, CODEC>(*routing_row->value(), _repartition_codec);
           _topic_sink->produce(hash, ev);
         }
       } else {

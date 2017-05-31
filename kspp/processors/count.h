@@ -77,7 +77,7 @@ class count_by_key : public materialized_source<K, V>
       _lag.add_event_time(tick, trans->event_time());
       _dirty = true; // aggregated but not committed
       _queue.pop_front();
-      _counter_store.insert(std::make_shared<krecord<K, V>>(trans->record()->key, 1), trans->offset());
+      _counter_store.insert(std::make_shared<krecord<K, V>>(trans->record()->key(), 1), trans->offset());
     }
     return processed;
   }
@@ -96,9 +96,8 @@ class count_by_key : public materialized_source<K, V>
   virtual void punctuate(int64_t timestamp) {
     if (_dirty) { // keep event timestamps in counter store and only include the updated ones... TBD
       for (auto i : _counter_store) {
-        //i->event_time = timestamp;
         //we need to create a new instance
-        this->send_to_sinks(std::make_shared<kevent<K, V>>(std::make_shared<krecord<K, V>>(i->key, i->value, timestamp)));
+        this->send_to_sinks(std::make_shared<kevent<K, V>>(std::make_shared<krecord<K, V>>(i->key(), *i->value(), timestamp)));
       }
     }
     _dirty = false;

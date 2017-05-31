@@ -10,10 +10,10 @@ namespace kspp {
   template<class K, class V>
   void stream_sink_print(std::shared_ptr<kevent<K, V>> ev, std::ostream& _os, kspp::text_serdes* _codec) {
     _os << "ts: " << ev->event_time() << "  ";
-    _codec->encode(ev->record()->key, _os);
+    _codec->encode(ev->record()->key(), _os);
     _os << ":";
-    if (ev->record()->value)
-      _codec->encode(*ev->record()->value, _os);
+    if (ev->record()->value())
+      _codec->encode(*ev->record()->value(), _os);
     else
       _os << "<nullptr>";
     _os << std::endl;
@@ -22,14 +22,14 @@ namespace kspp {
   template<class V>
   void stream_sink_print(std::shared_ptr<kevent<void, V>> ev, std::ostream& _os, kspp::text_serdes* _codec) {
     _os << "ts: " << ev->event_time() << "  ";
-    _codec->encode(*ev->record()->value, _os);
+    _codec->encode(*ev->record()->value(), _os);
     _os << std::endl;
   }
 
   template<class K>
   void stream_sink_print(std::shared_ptr<kevent<K, void>> ev, std::ostream& _os, kspp::text_serdes* _codec) {
     _os << "ts: " << ev->event_time() << "  ";
-    _codec->encode(ev->record()->key, _os);
+    _codec->encode(ev->record()->key(), _os);
     _os << std::endl;
   }
 

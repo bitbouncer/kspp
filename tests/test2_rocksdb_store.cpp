@@ -42,10 +42,10 @@ int main(int argc, char** argv) {
       assert(exact_size(store) == 3);
       auto record = store.get(2);
       assert(record != nullptr);
-      assert(record->key == 2);
-      assert(record->value != nullptr);
-      assert(*record->value == "value2updated");
-      assert(record->event_time == t0 + 10);
+      assert(record->key() == 2);
+      assert(record->value() != nullptr);
+      assert(*record->value() == "value2updated");
+      assert(record->event_time() == t0 + 10);
     }
 
     //// update existing key with new value but old timestamp
@@ -54,7 +54,7 @@ int main(int argc, char** argv) {
     //  assert(exact_size(store) == 3);
     //  auto record = store.get(2);
     //  assert(record != nullptr);
-    //  assert(record->key == 2);
+    //  assert(record->key() == 2);
     //  assert(record->value != nullptr);
     //  assert(*record->value == "value2updated");
     //}
@@ -65,7 +65,7 @@ int main(int argc, char** argv) {
     //  assert(exact_size(store) == 3);
     //  auto record = store.get(2);
     //  assert(record != nullptr);
-    //  assert(record->key == 2);
+    //  assert(record->key() == 2);
     //  assert(record->value != nullptr);
     //  assert(*record->value == "value2updated");
     //}

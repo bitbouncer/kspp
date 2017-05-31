@@ -93,7 +93,7 @@ namespace kspp {
         std::vector<std::shared_ptr<krecord<K, V>>> tombstones;
         for (auto i = _buckets.begin(); i != upper_bound; ++i) {
           for (auto&& j : *i->second)
-            this->_sink(std::make_shared<kevent<K,V>>(std::make_shared<krecord<K, V>>(j.first)));
+            this->_sink(std::make_shared<kevent<K,V>>(std::make_shared<krecord<K, V>>(j.first, nullptr, tick)));
         }
       }
       _buckets.erase(_buckets.begin(), upper_bound);
@@ -104,37 +104,37 @@ namespace kspp {
     */
     virtual void _insert(std::shared_ptr<const krecord<K, V>> record, int64_t offset) {
       _current_offset = std::max<int64_t>(_current_offset, offset);
-      int64_t new_slot = get_slot_index(record->event_time);
+      int64_t new_slot = get_slot_index(record->event_time());
       // old updates is killed straight away...
       if (new_slot < _oldest_kept_slot)
         return;
 
-      auto old_record = get(record->key);
+      auto old_record = get(record->key());
       if (old_record == nullptr) {
-        if (record->value) {
+        if (record->value()) {
           auto bucket_it = _buckets.find(new_slot);
           if (bucket_it == _buckets.end()) { // new slot  
             auto it = _buckets.insert(std::pair<int64_t, std::shared_ptr<bucket_type>>(new_slot, std::make_shared<bucket_type>()));
             std::shared_ptr<bucket_type> bucket = it.first->second;
-            (*bucket)[record->key] = record;
+            (*bucket)[record->key()] = record;
           } else { // existing slot 
-            (*bucket_it->second)[record->key] = record;
+            (*bucket_it->second)[record->key()] = record;
           }
         }
         return;
       }
 
       // skip if we have a newer value
-      if (old_record->event_time > record->event_time)
+      if (old_record->event_time() > record->event_time())
         return;
 
-      int64_t old_slot = get_slot_index(old_record->event_time);
+      int64_t old_slot = get_slot_index(old_record->event_time());
 
-      if (record->value==nullptr) {
+      if (record->value() ==nullptr) {
         auto bucket_it = _buckets.find(old_slot);
         assert(bucket_it != _buckets.end()); // should never fail - we know we have an old value
         if (bucket_it != _buckets.end()) 
-          bucket_it->second->erase(record->key);
+          bucket_it->second->erase(record->key());
         return;
       }
 
@@ -142,24 +142,24 @@ namespace kspp {
         auto bucket_it = _buckets.find(old_slot);
         assert(bucket_it != _buckets.end()); // should never fail - we know we have an old value
         if (bucket_it != _buckets.end())
-          (*bucket_it->second)[record->key] = record;
+          (*bucket_it->second)[record->key()] = record;
       } else { // not same slot 
         // kill old value
         auto bucket_it = _buckets.find(old_slot);
         assert(bucket_it != _buckets.end()); // should never fail - we know we have an old value
         if (bucket_it != _buckets.end())
-          (*bucket_it->second).erase(record->key);
+          (*bucket_it->second).erase(record->key());
         // insert new value
         bucket_it = _buckets.find(new_slot);
         if (bucket_it == _buckets.end()) {  // new slot  
           auto it = _buckets.insert(std::pair<int64_t, std::shared_ptr<bucket_type>>(new_slot, std::make_shared<bucket_type>()));
           std::shared_ptr<bucket_type> bucket = it.first->second;
-          (*bucket)[record->key] = record;
-          assert(get_slot_index(record->event_time) == new_slot); // make sure this item is in right slot...
+          (*bucket)[record->key()] = record;
+          assert(get_slot_index(record->event_time()) == new_slot); // make sure this item is in right slot...
           assert(it.first->first == new_slot); // make sure this item is in right slot...
         } else { // existing slot 
-          (*bucket_it->second)[record->key] = record;
-          assert(get_slot_index(record->event_time) == new_slot); // make sure this item is in right slot...
+          (*bucket_it->second)[record->key()] = record;
+          assert(get_slot_index(record->event_time()) == new_slot); // make sure this item is in right slot...
           assert(bucket_it->first == new_slot); // make sure this item is in right slot...
         }
       }
@@ -190,8 +190,8 @@ namespace kspp {
       for (auto&& i : _buckets) {
         auto item = i.second->find(key);
         if (item != i.second->end()) {
-          int64_t expected = get_slot_index(item->second->event_time);
-          assert(get_slot_index(item->second->event_time) == i.first); // make sure this item is in right slot...
+          //int64_t expected = get_slot_index(item->second->event_time());
+          assert(get_slot_index(item->second->event_time()) == i.first); // make sure this item is in right slot...
           return item->second;
         }
       }

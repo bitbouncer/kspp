@@ -79,18 +79,18 @@ class rocksdb_windowed_store
       if (value.size() < sizeof(int64_t))
         return nullptr;
       memcpy(&timestamp, value.data(), sizeof(int64_t));
-      auto  res = std::make_shared<krecord<K, V>>(K(), std::make_shared<V>(), timestamp);
-
-      if (_codec->decode(key.data(), key.size(), res->key) != key.size())
+      K tmp_key;
+      if (_codec->decode(key.data(), key.size(), tmp_key) != key.size())
         return nullptr;
 
       size_t actual_sz = value.size() - sizeof(int64_t); // remove timestamp
-      size_t consumed = _codec->decode(value.data() + sizeof(int64_t), actual_sz, *res->value);
+      auto tmp_value = std::make_shared<V>();
+      size_t consumed = _codec->decode(value.data() + sizeof(int64_t), actual_sz, *tmp_value);
       if (consumed != actual_sz) {
         BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", decode payload failed, consumed:" << consumed << ", actual sz:" << actual_sz;
         return nullptr;
       }
-      return res;
+      return std::make_shared<krecord<K, V>>(tmp_key, tmp_value, timestamp);
     }
 
     virtual bool operator==(const kmaterialized_source_iterator_impl<K, V>& other) const {
@@ -164,10 +164,12 @@ class rocksdb_windowed_store
         auto j = i->second->NewIterator(rocksdb::ReadOptions());
         j->SeekToFirst();
         while (j->Valid()) {
-          auto record = std::make_shared<krecord<K, V>>(K(), nullptr, tick);
           rocksdb::Slice key = j->key();
-          if (_codec->decode(key.data(), key.size(), record->key) == key.size())
-            this->_sink(std::make_shared<kevent<K,V>>(record));
+          K tmp_key;
+          if (_codec->decode(key.data(), key.size(), tmp_key) == key.size()) {
+            auto record = std::make_shared<krecord<K, V>>(tmp_key, nullptr, tick);
+            this->_sink(std::make_shared<kevent<K, V>>(record));
+          }
           j->Next();
         }
       }
@@ -181,7 +183,7 @@ class rocksdb_windowed_store
   // TBD add option to speed this up either by storing all values or disregarding timestamps
   virtual void _insert(std::shared_ptr<const krecord<K, V>> record, int64_t offset) {
     _current_offset = std::max<int64_t>(_current_offset, offset);
-    int64_t new_slot = get_slot_index(record->event_time);
+    int64_t new_slot = get_slot_index(record->event_time());
     // old updates is killed straight away...
     if (new_slot < _oldest_kept_slot)
       return;
@@ -190,8 +192,8 @@ class rocksdb_windowed_store
     char val_buf[MAX_VALUE_SIZE];
 
     //_current_offset = std::max<int64_t>(_current_offset, record->offset());
-    auto old_record = get(record->key);
-    if (old_record && old_record->event_time > record->event_time)
+    auto old_record = get(record->key());
+    if (old_record && old_record->event_time() > record->event_time())
       return;
 
     std::shared_ptr<rocksdb::DB> bucket;
@@ -217,10 +219,10 @@ class rocksdb_windowed_store
 
     //if we have an old value and it's from another slot - remove it.
     if (old_record) {
-      int64_t old_slot = get_slot_index(old_record->event_time);
+      int64_t old_slot = get_slot_index(old_record->event_time());
       if (old_slot != new_slot) {
         std::strstream s(key_buf, MAX_KEY_SIZE);
-        size_t ksize = _codec->encode(record->key, s);
+        size_t ksize = _codec->encode(record->key(), s);
         auto bucket_it = _buckets.find(old_slot);
         if (bucket_it != _buckets.end()) {
           auto status = bucket_it->second->Delete(rocksdb::WriteOptions(), rocksdb::Slice(key_buf, ksize));
@@ -232,19 +234,20 @@ class rocksdb_windowed_store
     }
 
     // write current data
-    if (record->value) {
+    if (record->value()) {
       std::strstream ks(key_buf, MAX_KEY_SIZE);
-      size_t ksize = _codec->encode(record->key, ks);
+      size_t ksize = _codec->encode(record->key(), ks);
 
       // write timestamp
-      memcpy(val_buf, &record->event_time, sizeof(int64_t));
+      int64_t tmp = record->event_time();
+      memcpy(val_buf, &tmp, sizeof(int64_t));
       std::strstream vs(val_buf + sizeof(int64_t), MAX_VALUE_SIZE - sizeof(int64_t));
-      size_t vsize = _codec->encode(*record->value, vs) + +sizeof(int64_t);
+      size_t vsize = _codec->encode(*record->value(), vs) + +sizeof(int64_t);
 
       rocksdb::Status status = bucket->Put(rocksdb::WriteOptions(), rocksdb::Slice((char*) key_buf, ksize), rocksdb::Slice(val_buf, vsize));
     } else {
       std::strstream s(key_buf, MAX_KEY_SIZE);
-      size_t ksize = _codec->encode(record->key, s);
+      size_t ksize = _codec->encode(record->key(), s);
       auto status = bucket->Delete(rocksdb::WriteOptions(), rocksdb::Slice(key_buf, ksize));
     }
   }
@@ -266,15 +269,16 @@ class rocksdb_windowed_store
         if (payload.size() < sizeof(int64_t))
           return nullptr;
         memcpy(&timestamp, payload.data(), sizeof(int64_t));
-        auto  res = std::make_shared<krecord<K, V>>(key, std::make_shared<V>(), timestamp);
+
         // read value
         size_t actual_sz = payload.size() - sizeof(int64_t);
-        size_t consumed = _codec->decode(payload.data() + sizeof(int64_t), actual_sz, *res->value);
+        auto tmp_value = std::make_shared<V>();
+        size_t consumed = _codec->decode(payload.data() + sizeof(int64_t), actual_sz, *tmp_value);
         if (consumed != actual_sz) {
           BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", decode payload failed, consumed:" << consumed << ", actual sz:" << actual_sz;
           return nullptr;
         }
-        return res;
+        return std::make_shared<krecord<K, V>>(key, tmp_value, timestamp);
       }
     }
     return nullptr;

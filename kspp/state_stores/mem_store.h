@@ -63,23 +63,23 @@
     */
     virtual void _insert(std::shared_ptr<const krecord<K, V>> record, int64_t offset) {
       _current_offset = std::max<int64_t>(_current_offset, offset);
-      auto item = _store.find(record->key);
+      auto item = _store.find(record->key());
 
       // non existing - TBD should we keep a tombstone???
       if (item == _store.end()) {
-        if (record->value)
-          _store[record->key] = record;
+        if (record->value())
+          _store[record->key()] = record;
         return;
       }
 
       // skip if we have a newer value
-      if (item->second->event_time > record->event_time)
+      if (item->second->event_time() > record->event_time())
         return;
 
-      if (record->value)
+      if (record->value())
         item->second = record;
       else
-        _store.erase(record->key);
+        _store.erase(record->key());
     }
           
     /**

@@ -84,7 +84,7 @@ int main(int argc, char** argv) {
     // verify timestamps on all elements in ktable
     for (auto&& i : ktables)
       for (auto&& j : *i) {
-        auto ts = j->event_time;
+        auto ts = j->event_time();
         assert(ts == t0);
       }
 

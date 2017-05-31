@@ -35,8 +35,8 @@ namespace kspp {
     }
 
     virtual void close() {
-      if (_can_be_committed>=0)
-        _consumer.commit(_can_be_committed, true);
+      if (_commit_chain.last_good_offset()>=0)
+        _consumer.commit(_commit_chain.last_good_offset(), true);
       _consumer.close();
     }
 
@@ -45,7 +45,8 @@ namespace kspp {
     }
 
     virtual void commit(bool flush) {
-      _consumer.commit(_can_be_committed, flush);
+      if (_commit_chain.last_good_offset()>0)
+        _consumer.commit(_commit_chain.last_good_offset(), flush);
     }
 
     virtual size_t queue_len() {
@@ -71,20 +72,10 @@ namespace kspp {
     : partition_source<K, V>(nullptr, partition)
     , _codec(codec)
     , _consumer(brokers, topic, partition, consumer_group, max_buffering_time)
-    , _can_be_committed(-1)
+    , _commit_chain(topic, partition)
     , _in_count("in_count")
     , _commit_chain_size("commit_chain_size", [this]() { return _commit_chain.size(); })
     , _lag() {
-      _commit_chain.set_handler([this](int64_t offset, int32_t ec) {
-        if (!ec) {
-          _can_be_committed = offset;
-        } else {
-          //_good = false;
-          // TBD we have to exit here after committing the last good offset
-          BOOST_LOG_TRIVIAL(warning) << "kafka consumer, topic " << _consumer.topic() << ", ev failure at offset:" << offset << ", ec:" << ec;
-        }
-      });
-
       this->add_metric(&_in_count);
       this->add_metric(&_commit_chain_size);
       this->add_metric(&_lag);
@@ -94,7 +85,6 @@ namespace kspp {
 
     kafka_consumer         _consumer;
     std::shared_ptr<CODEC> _codec;
-    int64_t                _can_be_committed;
     commit_chain           _commit_chain;
     metric_counter         _in_count;
     metric_evaluator       _commit_chain_size;
@@ -117,9 +107,10 @@ namespace kspp {
         return nullptr;
 
       int64_t timestamp = (ref->timestamp().timestamp >= 0) ? ref->timestamp().timestamp : milliseconds_since_epoch();
-      auto record = std::make_shared<krecord<K, V>>(K(), nullptr, timestamp);
+      K tmp_key;
       {
-        size_t consumed = this->_codec->decode((const char*) ref->key_pointer(), ref->key_len(), record->key);
+
+        size_t consumed = this->_codec->decode((const char*) ref->key_pointer(), ref->key_len(), tmp_key);
         if (consumed == 0) {
           BOOST_LOG_TRIVIAL(error) << LOG_NAME << ", decode key failed, actual key sz:" << ref->key_len();
           return nullptr;
@@ -129,10 +120,12 @@ namespace kspp {
         }
       }
 
+      std::shared_ptr<V> tmp_value = nullptr;
+
       size_t sz = ref->len();
       if (sz) {
-        record->value = std::make_shared<V>();
-        size_t consumed = this->_codec->decode((const char*) ref->payload(), sz, *record->value);
+        tmp_value = std::make_shared<V>();
+        size_t consumed = this->_codec->decode((const char*) ref->payload(), sz, *tmp_value);
         if (consumed == 0) {
           BOOST_LOG_TRIVIAL(error) << LOG_NAME << ", decode value failed, size:" << sz;
           return nullptr;
@@ -141,6 +134,7 @@ namespace kspp {
           return nullptr;
         }
       }
+      auto record = std::make_shared<krecord<K, V>>(tmp_key, tmp_value, timestamp);
       return std::make_shared<kevent<K, V>>(record, this->_commit_chain.create(ref->offset()));
     }
   };
@@ -165,9 +159,10 @@ namespace kspp {
       size_t sz = ref->len();
       if (sz) {
         int64_t timestamp = (ref->timestamp().timestamp >= 0) ? ref->timestamp().timestamp : milliseconds_since_epoch();
-        auto record = std::make_shared<krecord<void, V>>(std::make_shared<V>(), timestamp);
-        size_t consumed = this->_codec->decode((const char*) ref->payload(), sz, *record->value);
+        std::shared_ptr<V> tmp_value = std::make_shared<V>();
+        size_t consumed = this->_codec->decode((const char*) ref->payload(), sz, *tmp_value);
         if (consumed == sz) {
+          auto record = std::make_shared<krecord<void, V>>(tmp_value, timestamp);
           return std::make_shared<kevent<void, V>>(record, this->_commit_chain.create(ref->offset()));
         }
 
@@ -201,8 +196,8 @@ namespace kspp {
         return nullptr;
 
       int64_t timestamp = (ref->timestamp().timestamp >= 0) ? ref->timestamp().timestamp : milliseconds_since_epoch();
-      auto record = std::make_shared<krecord<K, void>>(K(), timestamp);
-      size_t consumed = this->_codec->decode((const char*) ref->key_pointer(), ref->key_len(), record->key);
+      K tmp_key;
+      size_t consumed = this->_codec->decode((const char*) ref->key_pointer(), ref->key_len(), tmp_key);
       if (consumed == 0) {
         BOOST_LOG_TRIVIAL(error) << LOG_NAME << ", decode key failed, actual key sz:" << ref->key_len();
         return nullptr;
@@ -210,6 +205,7 @@ namespace kspp {
         BOOST_LOG_TRIVIAL(error) << LOG_NAME << ", decode key failed, consumed: " << consumed << ", actual: " << ref->key_len();
         return nullptr;
       }
+      auto record = std::make_shared<krecord<K, void>>(tmp_key, timestamp);
       return std::make_shared<kevent<K, void>>(record, this->_commit_chain.create(ref->offset()));
     }
   };

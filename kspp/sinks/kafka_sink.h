@@ -143,10 +143,11 @@ class kafka_topic_sink : public kafka_sink_base<K, V, CODEC>
 protected:
   virtual int handle_event(std::shared_ptr<kevent<K, V>> ev) {
     uint32_t partition_hash = 0;
-    if (ev->_partition_hash < 0)
-      partition_hash = (this->_partitioner) ? this->_partitioner(ev->record()->key) : kspp::get_partition_hash(ev->record()->key, this->codec());
-    else
-      partition_hash = (uint32_t)ev->_partition_hash;
+
+    if (ev->has_partition_hash())
+      partition_hash = ev->partition_hash();
+    else 
+      partition_hash = (this->_partitioner) ? this->_partitioner(ev->record()->key()) : kspp::get_partition_hash(ev->record()->key(), this->codec());
 
     void* kp = nullptr;
     void* vp = nullptr;
@@ -154,13 +155,13 @@ protected:
     size_t vsize = 0;
 
     std::stringstream ks;
-    ksize = this->_codec->encode(ev->record()->key, ks);
+    ksize = this->_codec->encode(ev->record()->key(), ks);
     kp = malloc(ksize);  // must match the free in kafka_producer TBD change to new[] and a memory pool
     ks.read((char*)kp, ksize);
 
-    if (ev->record()->value) {
+    if (ev->record()->value()) {
       std::stringstream vs;
-      vsize = this->_codec->encode(*ev->record()->value, vs);
+      vsize = this->_codec->encode(*ev->record()->value(), vs);
       vp = malloc(vsize);   // must match the free in kafka_producer TBD change to new[] and a memory pool
       vs.read((char*)vp, vsize);
     }
@@ -184,13 +185,13 @@ class kafka_topic_sink<void, V, CODEC> : public kafka_sink_base<void, V, CODEC>
 protected:
   virtual int handle_event(std::shared_ptr<kevent<void, V>> ev) {
     static uint32_t s_partition = 0;
-    uint32_t partition_hash = (ev->_partition_hash < 0) ? ++s_partition : (uint32_t)ev->_partition_hash;
+    uint32_t partition_hash = ev->has_partition_hash() ? ev->partition_hash() : ++s_partition;
     void* vp = nullptr;
     size_t vsize = 0;
 
-    if (ev->record()->value) {
+    if (ev->record()->value()) {
       std::stringstream vs;
-      vsize = this->_codec->encode(*ev->record()->value, vs);
+      vsize = this->_codec->encode(*ev->record()->value(), vs);
       vp = malloc(vsize);   // must match the free in kafka_producer TBD change to new[] and a memory pool
       vs.read((char*)vp, vsize);
     } else {
@@ -223,16 +224,16 @@ protected:
   protected:
     virtual int handle_event(std::shared_ptr<kevent<K, void>> ev) {
         uint32_t partition_hash = 0;
-        if (ev->_partition_hash < 0)
-          partition_hash = (this->_partitioner) ? this->_partitioner(ev->record()->key) : kspp::get_partition_hash(ev->record()->key, this->codec());
+        if (ev->has_partition_hash())
+          partition_hash = ev->partition_hash();
         else
-          partition_hash = (uint32_t) ev->_partition_hash;
+          partition_hash = (this->_partitioner) ? this->_partitioner(ev->record()->key()) : kspp::get_partition_hash(ev->record()->key(), this->codec());
 
         void* kp = nullptr;
         size_t ksize = 0;
 
         std::stringstream ks;
-        ksize = this->_codec->encode(ev->record()->key, ks);
+        ksize = this->_codec->encode(ev->record()->key(), ks);
         kp = malloc(ksize);  // must match the free in kafka_producer TBD change to new[] and a memory pool
         ks.read((char*) kp, ksize);
 

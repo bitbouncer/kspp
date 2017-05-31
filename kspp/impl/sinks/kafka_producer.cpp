@@ -17,7 +17,8 @@ struct producer_user_data
     , val_ptr(val)
     , val_sz(valsz)
     , partition_hash(hash)
-    , autocommit_marker(marker) {}
+    , autocommit_marker(marker) {
+  }
 
   ~producer_user_data() {
     if (key_ptr)

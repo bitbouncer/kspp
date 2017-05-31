@@ -61,31 +61,29 @@
     */
     virtual void _insert(std::shared_ptr<const krecord<K, V>> record, int64_t offset) {
       _current_offset = std::max<int64_t>(_current_offset, offset);
-      auto item = _store.find(record->key);
+      auto item = _store.find(record->key());
 
       // non existing - create - TBD should we keep a tombstone???
       if (item == _store.end()) {
-        if (record->value)
-          _store[record->key] = record;
+        if (record->value())
+          _store[record->key()] = record;
         return;
       }
 
       // we accept aggregation on old timestamps 
       // note that we need to create a new stored record for each update since we would update potentially live message otherwise
-      if (record->value) {
-        V new_value = *(item->second->value) + *(record->value);
-        int64_t timestamp = std::max<int64_t>(item->second->event_time, record->event_time);
-        //*(item->second->value) += *(record->value); // if existing aggregate
-        //item->second->event_time = std::max<int64_t>(item->second->event_time, record->event_time);
+      if (record->value()) {
+        V new_value = *(item->second->value()) + *(record->value());
+        int64_t timestamp = std::max<int64_t>(item->second->event_time(), record->event_time());
         item->second = std::make_shared<krecord<K, V>>(item->first, new_value, timestamp);
         return;
       } 
 
       // do not delete if we have a newer value
-      if (item->second->event_time > record->event_time)
+      if (item->second->event_time() > record->event_time())
         return;
       
-      _store.erase(record->key);
+      _store.erase(record->key());
     }
           
     /**

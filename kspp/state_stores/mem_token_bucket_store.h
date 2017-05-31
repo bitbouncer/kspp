@@ -153,19 +153,19 @@ namespace kspp {
     //this can and will override bucket capacity but bucket will stay in correct state
     virtual void _insert(std::shared_ptr<const krecord<K, V>> record, int64_t offset) {
       _current_offset = std::max<int64_t>(_current_offset, offset);
-      if (record->value == nullptr) {
-        _buckets.erase(record->key);
+      if (record->value() == nullptr) {
+        _buckets.erase(record->key());
       } else {
-        typename std::map<K, std::shared_ptr<bucket>>::iterator item = _buckets.find(record->key);
+        typename std::map<K, std::shared_ptr<bucket>>::iterator item = _buckets.find(record->key());
         if (item == _buckets.end()) {
           auto b = std::make_shared<bucket>(_config.capacity);
-          for (size_t i = 0; i != *record->value; ++i)
-            b->consume_one(&_config, record->event_time);
-          _buckets[record->key] = b;
+          for (size_t i = 0; i != *record->value(); ++i)
+            b->consume_one(&_config, record->event_time());
+          _buckets[record->key()] = b;
           return;
         }
-        for (V i = 0; i != *record->value; ++i) // bug only works por posituve...
-          item->second->consume_one(&_config, record->event_time);
+        for (V i = 0; i != *record->value(); ++i) // bug only works por posituve...
+          item->second->consume_one(&_config, record->event_time());
       }
     }
 

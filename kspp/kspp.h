@@ -263,8 +263,6 @@ class partition_sink : public partition_processor
 protected:
   partition_sink(int32_t partition)
     : partition_processor(nullptr, partition) {}
-  
-  //virtual int _produce(std::shared_ptr<kevent<K, V>> r) = 0;
 
   kspp::event_queue<kevent<K, V>> _queue;
 };
@@ -302,8 +300,6 @@ class partition_sink<void, V> : public partition_processor
   partition_sink(int32_t partition)
     : partition_processor(nullptr, partition) {}
 
-  //virtual int _produce(std::shared_ptr<kevent<void, V>> r) = 0;
-
   kspp::event_queue<kevent<void, V>> _queue;
 };
 
@@ -339,8 +335,6 @@ class partition_sink<K, void> : public partition_processor
   protected:
   partition_sink(int32_t partition)
     : partition_processor(nullptr, partition) {}
-
-  //virtual int _produce(std::shared_ptr<kevent<K, void>> r) = 0;
 
   kspp::event_queue<kevent<K, void>> _queue;
 };
@@ -400,14 +394,12 @@ public:
   }
 
   inline void produce(uint32_t partition_hash, std::shared_ptr<krecord<K, V>> r) {
-    auto ev = std::make_shared<kevent<K, V>>(r);
-    ev->_partition_hash = partition_hash;
+    auto ev = std::make_shared<kevent<K, V>>(r, nullptr, partition_hash);
     _queue.push_back(ev);
   }
 
   inline void produce(uint32_t partition_hash, std::shared_ptr<kevent<K, V>> t) {
-    auto ev2 = std::make_shared<kevent<K, V>>(*t); // make new one since change the partition
-    ev2->_partition_hash = partition_hash;
+    auto ev2 = std::make_shared<kevent<K, V>>(t->record(), t->id(), partition_hash); // make new one since change the partition
     _queue.push_back(ev2);
   }
 
@@ -420,9 +412,6 @@ public:
   }
 
 protected:
-  //virtual int _produce(std::shared_ptr<kevent<K, V>> r) = 0;
-  //virtual int _produce(uint32_t partition_hash, std::shared_ptr<kevent<K, V>> r) = 0;
-  
   kspp::event_queue<kevent<K, V>> _queue;
 };
 
@@ -471,9 +460,6 @@ public:
     produce(partition_hash, std::make_shared<krecord<void, V>>(value, ts));
   }
 protected:
-  //virtual int _produce(std::shared_ptr<kevent<void, V>> r) = 0;
-  //virtual int _produce(uint32_t partition_hash, std::shared_ptr<kevent<void, V>> r) = 0;
-  
   kspp::event_queue<kevent<void, V>> _queue;
 };
 
@@ -523,9 +509,6 @@ public:
   }
 
 protected:
-  //virtual int _produce(std::shared_ptr<kevent<K, void>> r) = 0;
-  //virtual int _produce(uint32_t partition_hash, std::shared_ptr<kevent<K, void>> r) = 0;
-  
   kspp::event_queue<kevent<K, void>> _queue;
 };
 

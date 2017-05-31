@@ -17,10 +17,10 @@ int main(int argc, char** argv) {
     assert(store.size() == 3);
     auto record = store.get(2);
     assert(record != nullptr);
-    assert(record->key == 2);
-    assert(record->value != nullptr);
-    assert(*record->value == 2);
-    assert(record->event_time == t0 + 10);
+    assert(record->key() == 2);
+    assert(record->value() != nullptr);
+    assert(*record->value() == 2);
+    assert(record->event_time() == t0 + 10);
   }
 
   // update existing key with new value but old timestamp
@@ -30,10 +30,10 @@ int main(int argc, char** argv) {
     assert(store.size() == 3);
     auto record = store.get(2);
     assert(record != nullptr);
-    assert(record->key == 2);
-    assert(record->value != nullptr);
-    assert(*record->value == 4);
-    assert(record->event_time == t0 + 10); // keep biggest timestamp - not latest
+    assert(record->key() == 2);
+    assert(record->value() != nullptr);
+    assert(*record->value() == 4);
+    assert(record->event_time() == t0 + 10); // keep biggest timestamp - not latest
   }
 
   // update existing key with new negative value
@@ -42,9 +42,9 @@ int main(int argc, char** argv) {
     assert(store.size() == 3);
     auto record = store.get(0);
     assert(record != nullptr);
-    assert(record->key == 0);
-    assert(record->value != nullptr);
-    assert(*record->value == -1);
+    assert(record->key() == 0);
+    assert(record->value() != nullptr);
+    assert(*record->value() == -1);
   }
 
   // delete existing key with to old timestamp
@@ -54,9 +54,9 @@ int main(int argc, char** argv) {
     assert(store.size() == 3);
     auto record = store.get(2);
     assert(record != nullptr);
-    assert(record->key == 2);
-    assert(record->value != nullptr);
-    assert(*record->value == 4);
+    assert(record->key() == 2);
+    assert(record->value() != nullptr);
+    assert(*record->value() == 4);
   }
 
   // delete existing key with new timestamp

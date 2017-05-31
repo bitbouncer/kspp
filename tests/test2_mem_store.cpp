@@ -18,9 +18,9 @@ int main(int argc, char** argv) {
       assert(store.size() == 3);
       auto record = store.get(2);
       assert(record!=nullptr);
-      assert(record->key == 2);
-      assert(record->value!=nullptr);
-      assert(*record->value == "value2updated");
+      assert(record->key() == 2);
+      assert(record->value() !=nullptr);
+      assert(*record->value() == "value2updated");
     }
 
     // update existing key with new value but old timestamp
@@ -29,9 +29,9 @@ int main(int argc, char** argv) {
       assert(store.size() == 3);
       auto record = store.get(2);
       assert(record != nullptr);
-      assert(record->key == 2);
-      assert(record->value != nullptr);
-      assert(*record->value == "value2updated");
+      assert(record->key() == 2);
+      assert(record->value() != nullptr);
+      assert(*record->value() == "value2updated");
     }
 
     // delete existing key with to old timestamp
@@ -40,9 +40,9 @@ int main(int argc, char** argv) {
       assert(store.size() == 3);
       auto record = store.get(2);
       assert(record != nullptr);
-      assert(record->key == 2);
-      assert(record->value != nullptr);
-      assert(*record->value == "value2updated");
+      assert(record->key() == 2);
+      assert(record->value() != nullptr);
+      assert(*record->value() == "value2updated");
     }
 
     // delete existing key with new timestamp

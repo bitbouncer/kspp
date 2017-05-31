@@ -153,11 +153,11 @@ template<> size_t text_serdes::encode(const page_view_decorated& src, std::ostre
 
 template<class T>
 std::string ksource_to_string(const T&  ksource) {
-  std::string res = "ts: " + std::to_string(ksource.event_time) 
+  std::string res = "ts: " + std::to_string(ksource.event_time()) 
     + ", " 
-    + std::to_string(ksource.key) 
+    + std::to_string(ksource.key()) 
     + ", " 
-    + (ksource.value ? to_string(*(ksource.value)) : "NULL");
+    + (ksource.value() ? to_string(*(ksource.value())) : "NULL");
   return res;
 }
 
