@@ -30,10 +30,8 @@ class count_by_key : public materialized_source<K, V>
     close();
   }
 
-  virtual std::string processor_name() const { return "count_by_key"; }
-
-  std::string name() const {
-    return _stream->name() + "-count_by_key()[" + type_name<K>::get() + ", " + type_name<V>::get() + "]";
+  virtual std::string simple_name() const { 
+    return "count_by_key"; 
   }
 
   virtual void start() {
@@ -119,7 +117,7 @@ class count_by_key : public materialized_source<K, V>
   private:
   boost::filesystem::path get_storage_path(boost::filesystem::path storage_path) {
     boost::filesystem::path p(storage_path);
-    p /= sanitize_filename(name());
+    p /= sanitize_filename(simple_name() + record_type_name() + "#" + std::to_string(partition()));
     return p;
   }
 

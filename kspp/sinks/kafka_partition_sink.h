@@ -23,12 +23,16 @@ class kafka_partition_sink_base : public partition_sink<K, V>
     this->add_metric(&_in_count);
     this->add_metric(&_lag);
   }
-   
-  virtual std::string name() const {
-    return "kafka_partition_sink(" + _impl.topic() + "#" + std::to_string(_fixed_partition) + ")-codec(" + CODEC::name() + ")[" + type_name<K>::get() + ", " + type_name<V>::get() + "]";
+
+  virtual std::string simple_name() const { 
+    return "kafka_partition_sink(" + _impl.topic() + ")"; 
   }
 
-  virtual std::string processor_name() const { return "kafka_partition_sink(" + _impl.topic() + ")"; }
+  /*
+  virtual std::string full_name() const {
+    return "kafka_partition_sink(" + _impl.topic() + "#" + std::to_string(_fixed_partition) + ")-codec(" + CODEC::name() + ")[" + type_name<K>::get() + ", " + type_name<V>::get() + "]";
+  }
+  */
 
   virtual void close() {
     flush();

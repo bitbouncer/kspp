@@ -27,11 +27,9 @@ class repartition_by_foreign_key : public partition_processor
     close();
   }
 
-  std::string name() const {
-    return _source->name() + "-repartition_by_foreign_key(" + _routing_table->name() + ")";
+  virtual std::string simple_name() const {
+    return "repartition_by_foreign_key";
   }
-
-  virtual std::string processor_name() const { return "repartition_by_foreign_key"; }
 
   virtual std::string key_type_name() const {
     return type_name<K>::get();

@@ -21,11 +21,7 @@ class pipe : public partition_source<K, V>
     });
   }
 
-  virtual std::string name() const {
-    return "pipe";
-  }
-
-  virtual std::string processor_name() const {
+  virtual std::string simple_name() const {
     return "pipe";
   }
 
@@ -73,11 +69,7 @@ class pipe<void, V> : public partition_source<void, V>
     });
   }
 
-  virtual std::string name() const {
-    return "pipe";
-  }
-
-  virtual std::string processor_name() const {
+  virtual std::string simple_name() const {
     return "pipe";
   }
 
@@ -124,11 +116,7 @@ class pipe<K, void> : public partition_source<K, void>
     });
   }
 
-  virtual std::string name() const {
-    return "pipe";
-  }
-
-  virtual std::string processor_name() const {
+  virtual std::string simple_name() const {
     return "pipe";
   }
 

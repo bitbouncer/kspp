@@ -52,8 +52,8 @@ class processor
   
   virtual std::string value_type_name() const = 0;
 
-  virtual std::string processor_name() const = 0;
-
+  virtual std::string simple_name() const = 0;
+  
   /**
   * Process an input record
   */
@@ -85,7 +85,7 @@ class generic_sink : public processor
 {
   public:
   virtual ~generic_sink() {}
-  virtual std::string name() const = 0;
+
 
   virtual void poll(int timeout) {} //TBD =0 to force sinks to process its queue
   virtual bool eof() const = 0;
@@ -115,7 +115,6 @@ class partition_processor : public processor
 {
   public:
   virtual ~partition_processor() {}
-  virtual std::string name() const = 0;
 
   size_t depth() const {
     return _upstream ? _upstream->depth() + 1 : 0;

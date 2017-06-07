@@ -25,12 +25,8 @@ class thoughput_limiter : public partition_source<K, V>
     close();
   }
 
-  virtual std::string processor_name() const {
+  virtual std::string simple_name() const {
     return "thoughput_limiter";
-  }
-
-  std::string name() const {
-    return _source->name() + "-thoughput_limiter";
   }
 
   virtual void start() {

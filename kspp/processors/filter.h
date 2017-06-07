@@ -22,12 +22,10 @@ namespace kspp {
       close();
     }
 
-    virtual std::string processor_name() const { return "filter"; }
-
-    std::string name() const {
-      return _source->name() + "-filter";
+    virtual std::string simple_name() const {
+      return "filter"; 
     }
-
+ 
     virtual void start() {
       _source->start();
     }

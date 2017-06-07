@@ -50,11 +50,7 @@ namespace kspp {
       this->flush();;
     }
 
-    virtual std::string name() const {
-      return "stream_sink";
-    }
-
-    virtual std::string processor_name() const {
+    virtual std::string simple_name() const {
       return "stream_sink";
     }
 

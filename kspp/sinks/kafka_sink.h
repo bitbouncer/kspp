@@ -29,14 +29,16 @@ class kafka_sink_base : public topic_sink<K, V>
 
   using partitioner = typename kafka_partitioner_base<K>::partitioner;
 
- 
-
-  virtual std::string name() const {
-    return "kafka_topic_sink(" + _impl.topic() + ")-codec(" + CODEC::name() + ")[" + type_name<K>::get() + ", " + type_name<V>::get() + "]";
+  virtual std::string simple_name() const { 
+    return "kafka_sink(" + _impl.topic() + ")"; 
   }
 
-  virtual std::string processor_name() const { return "kafka_sink(" + _impl.topic() + ")"; }
-
+  /*
+  virtual std::string full_name() const {
+    return "kafka_topic_sink(" + _impl.topic() + ")-codec(" + CODEC::name() + ")[" + type_name<K>::get() + ", " + type_name<V>::get() + "]";
+  }
+  */
+  
   virtual void close() {
     flush();
     return _impl.close();
@@ -75,13 +77,22 @@ class kafka_sink_base : public topic_sink<K, V>
     size_t count = 0;
     while (this->_queue.size()) {
       auto ev = this->_queue.front();
-      if (handle_event(ev)!=0)
+      int ec = handle_event(ev);
+      if (ec == 0) {
+        ++count;
+        ++(this->_in_count);
+        this->_lag.add_event_time(kspp::milliseconds_since_epoch(), ev->event_time()); // move outside loop
+        this->_queue.pop_front();
+        continue;
+      }
+
+      if (ec == RdKafka::ERR__QUEUE_FULL) {
+          // expected and retriable
         return (count > 0);
-      ++count;
-      ++(this->_in_count);
-      this->_lag.add_event_time(kspp::milliseconds_since_epoch(), ev->event_time()); // move outside loop
-      this->_queue.pop_front();
-    }
+      } 
+      // permanent failure - need to stop TBD
+      return (count > 0);
+    } // while
     return (count > 0);
   }
 

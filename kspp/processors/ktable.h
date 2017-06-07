@@ -34,13 +34,15 @@ namespace kspp {
       close();
     }
 
-    virtual std::string name() const {
-      return   _source->name() + "-ktable<" + STATE_STORE<K, V, CODEC>::type_name() + ">";
+    virtual std::string simple_name() const {
+      return "ktable";
     }
 
-    virtual std::string processor_name() const { 
+    /*
+    virtual std::string full_name() const {
       return "ktable<" + STATE_STORE<K, V, CODEC>::type_name() + ">";
     }
+    */
 
     virtual void start() {
       _source->start(_state_store.offset());
@@ -95,7 +97,7 @@ namespace kspp {
   private:
     boost::filesystem::path get_storage_path(boost::filesystem::path storage_path) {
       boost::filesystem::path p(storage_path);
-      p /= sanitize_filename(name());
+      p /= sanitize_filename(simple_name() + record_type_name() + "#" + std::to_string(partition()));
       return p;
     }
 

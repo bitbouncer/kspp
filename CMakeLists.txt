@@ -81,17 +81,31 @@ SET(LIBRDKAFKA_LIBS librdkafkacpp librdkafka lz4)
 SET(CSI_LIBS kspp ${LIBRDKAFKA_LIBS} ${CSI_AVRO_LIBS} ${CSI_ROCKSDB_LIBS} ${CSI_BOOST_LIBS} libssl libcrypto ${ZLIB_LIBS} crypt32 Ws2_32 legacy_stdio_definitions)
 
 elseif(APPLE)
+find_package(Boost COMPONENTS log date_time timer thread program_options regex  system filesystem REQUIRED)
+
+set(BOOST_LIBS
+  ${Boost_LOG_LIBRARY}
+  ${Boost_DATE_TIME_LIBRARY}
+  ${Boost_FILESYSTEM_LIBRARY}
+  ${Boost_TIMER_LIBRARY}
+  ${Boost_THREAD_LIBRARY}
+  ${Boost_PROGRAM_OPTIONS_LIBRARY}
+  ${Boost_REGEXP_LIBRARY}
+  ${Boost_SYSTEM_LIBRARY}
+  ${Boost_FILESYSTEM_LIBRARY}
+  pthread
+  c
+)
+
 add_definitions(-DBOOST_LOG_DYN_LINK)
 
 set(LIBRARY_OUTPUT_PATH     ${CMAKE_SOURCE_DIR}/lib)
 SET(EXECUTABLE_OUTPUT_PATH  ${CMAKE_SOURCE_DIR}/bin)
-
-set(CSI_BOOST_LIBS boost_log_setup boost_log-mt boost_date_time boost_timer boost_thread-mt boost_system boost_program_options boost_filesystem boost_regex boost_chrono boost_iostreams pthread c)
 if (ENABLE_ROCKSDB)
 SET(CSI_ROCKSDB_LIBS rocksdb_lite snappy bz2 z)
 endif()
 SET(LIBRDKAFKA_LIBS rdkafka++ rdkafka)
-SET(CSI_LIBS kspp ${LIBRDKAFKA_LIBS} ${CSI_ROCKSDB_LIBS} ${CSI_BOOST_LIBS} crypto ssl)
+SET(CSI_LIBS kspp ${LIBRDKAFKA_LIBS} ${CSI_ROCKSDB_LIBS} ${BOOST_LIBS} crypto ssl)
 #END APPLE
 
 

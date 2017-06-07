@@ -5,6 +5,7 @@
 
 #define LOGPREFIX_ERROR BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", topic:" << _topic
 #define LOG_INFO(EVENT)  BOOST_LOG_TRIVIAL(info) << "kafka_producer: " << EVENT << ", topic:" << _topic
+#define LOG_DEBUG(EVENT)  BOOST_LOG_TRIVIAL(debug) << "kafka_producer: " << EVENT << ", topic:" << _topic
 
 using namespace std::chrono_literals;
 
@@ -216,6 +217,7 @@ void kafka_producer::close() {
   LOG_INFO("closed") << ", produced " << _msg_cnt << " messages (" << _msg_bytes << " bytes)";
 }
 
+
 int kafka_producer::produce(uint32_t partition_hash, memory_management_mode mode, void* key, size_t keysz, void* value, size_t valuesz, int64_t timestamp, std::shared_ptr<commit_chain::autocommit_marker> autocommit_marker) {
   producer_user_data* user_data = nullptr;
   if (mode == kafka_producer::COPY) {
@@ -230,11 +232,17 @@ int kafka_producer::produce(uint32_t partition_hash, memory_management_mode mode
   user_data = new producer_user_data(key, keysz, value, valuesz, partition_hash, autocommit_marker);
 
   RdKafka::ErrorCode ec = _producer->produce(_topic, -1, 0, value, valuesz, key, keysz, timestamp, user_data); // note not using _rd_topic anymore...?
+  if (ec == RdKafka::ERR__QUEUE_FULL) {
+    BOOST_LOG_TRIVIAL(debug) << "kafka_producer, topic:" << _topic << ", queue full - retrying, msg_count (" << _msg_cnt << ")";
+    delete user_data;
+    return ec;
+  }
   if (ec != RdKafka::ERR_NO_ERROR) {
-    LOGPREFIX_ERROR << ", Produce failed: " << RdKafka::err2str(ec);
+    BOOST_LOG_TRIVIAL(error) << "kafka_producer, topic:" << _topic << ", produce failed: " << RdKafka::err2str(ec);
     delete user_data; // how do we signal failure to send data... the consumer should probably not continue...
     return ec;
   }
+
   _msg_cnt++;
   _msg_bytes += (valuesz + keysz);
   return 0;

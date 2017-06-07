@@ -20,10 +20,8 @@ namespace kspp {
       close();
     }
 
-    virtual std::string processor_name() const { return "delay"; }
-
-    std::string name() const {
-      return _source->name() + "-delay(" + std::to_string(_delay) + ")";
+    virtual std::string simple_name() const { 
+      return "delay"; 
     }
 
     virtual void start() {

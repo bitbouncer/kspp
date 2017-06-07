@@ -27,11 +27,7 @@ namespace kspp {
       close();
     }
 
-    std::string name() const {
-      return _source->name() + "-flat_map()[" + type_name<RK>::get() + ", " + type_name<RV>::get() + "]";
-    }
-
-    virtual std::string processor_name() const {
+    virtual std::string simple_name() const {
       return "flat_map";
     }
 

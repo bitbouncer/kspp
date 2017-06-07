@@ -25,11 +25,7 @@ namespace kspp {
       close();
     }
  
-    std::string name() const {
-      return _source->name() + "-transform_value";
-    }
-
-    virtual std::string processor_name() const {
+    virtual std::string simple_name() const {
       return "transform_value";
     }
 
@@ -101,11 +97,7 @@ namespace kspp {
       close();
     }
 
-    std::string name() const {
-      return _source->name() + "-transform";
-    }
-
-    virtual std::string processor_name() const {
+    virtual std::string simple_name() const {
       return "transform";
     }
 

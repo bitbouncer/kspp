@@ -32,12 +32,8 @@ class rate_limiter : public partition_source<K, V>
     close();
   }
 
-  virtual std::string processor_name() const { 
+  virtual std::string simple_name() const {
     return "rate_limiter"; 
-  }
-
-  std::string name() const {
-    return _source->name() + "-rate_limiter";
   }
 
   virtual void start() {

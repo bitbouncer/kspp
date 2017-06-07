@@ -28,10 +28,8 @@ class left_join : public partition_source<K, R>
     close();
   }
 
-  virtual std::string processor_name() const { return "left_join"; }
-
-  std::string name() const {
-    return  _stream->name() + "-left_join(" + _table->name() + ")[" + type_name<K>::get() + ", " + type_name<R>::get() + "]";
+  virtual std::string simple_name() const { 
+    return "left_join"; 
   }
 
   virtual void start() {

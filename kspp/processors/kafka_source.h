@@ -7,7 +7,7 @@
 #pragma once
 
 //#define LOGPREFIX_ERROR BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << this->processor_name() << "-" <<  CODEC::name()
-#define LOG_NAME this->processor_name() << "-" << CODEC::name()
+#define LOG_NAME this->simple_name() << "-" << CODEC::name()
 
 namespace kspp {
   template<class K, class V, class CODEC>
@@ -18,13 +18,15 @@ namespace kspp {
       close();
     }
 
-    virtual std::string name() const {
-      return "kafka_source(" + _consumer.topic() + "#" + std::to_string(_consumer.partition()) + ")-codec(" + CODEC::name() + ")[" + type_name<K>::get() + ", " + type_name<V>::get() + "]";
-    }
-
-    virtual std::string processor_name() const {
+    virtual std::string simple_name() const {
       return "kafka_source(" + _consumer.topic() + ")";
     }
+
+    /*
+    virtual std::string full_name() const {
+      return "kafka_source(" + _consumer.topic() + "#" + std::to_string(_consumer.partition()) + ")-codec(" + CODEC::name() + ")[" + type_name<K>::get() + ", " + type_name<V>::get() + "]";
+    }
+    */
 
     virtual void start(int64_t offset) {
       _consumer.start(offset);

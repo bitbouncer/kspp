@@ -76,7 +76,8 @@ void topology_base::init_metrics() {
       std::string metrics_tags = "depth=" + std::to_string(i->depth())
         + ",key_type=" + escape_influx(i->key_type_name())
         + ",partition=" + std::to_string(i->partition())
-        + ",processor_type=" + escape_influx(i->processor_name())
+        + ",processor_type=" + escape_influx(i->simple_name())
+        + ",record_type=" + escape_influx(i->record_type_name())
         + ",topology=" + escape_influx(_topology_id)
         + ",value_type=" + escape_influx(i->value_type_name());
       j->set_tags(metrics_tags);
@@ -86,7 +87,8 @@ void topology_base::init_metrics() {
   for (auto i : _sinks) {
     for (auto j : i->get_metrics()) {
       std::string metrics_tags = "key_type=" + escape_influx(i->key_type_name())
-        + ",processor_type=" + escape_influx(i->processor_name())
+        + ",processor_type=" + escape_influx(i->simple_name())
+        + ",record_type=" + escape_influx(i->record_type_name())
         + ",topology=" + escape_influx(_topology_id)
         + ",value_type=" + escape_influx(i->value_type_name());
       j->set_tags(metrics_tags);
@@ -114,10 +116,10 @@ void topology_base::init() {
         upstream_of_something = true;
     }
     if (!upstream_of_something) {
-      BOOST_LOG_TRIVIAL(info) << "topology << " << name() << ": adding " << i->name() << " to top";
+      BOOST_LOG_TRIVIAL(info) << "topology << " << name() << ": adding " << i->simple_name() << " to top";
       _top_partition_processors.push_back(i);
     } else {
-      BOOST_LOG_TRIVIAL(info) << "topology << " << name() << ": skipping poll of " << i->name();
+      BOOST_LOG_TRIVIAL(info) << "topology << " << name() << ": skipping poll of " << i->simple_name();
     }
   }
   _is_init = true;
