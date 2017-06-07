@@ -2,6 +2,7 @@
 #include <memory>
 #include <ctype.h>
 #include <string>
+
 #pragma once
 
 namespace kspp {

@@ -162,9 +162,9 @@ class topology_builder
 
   private:
   std::shared_ptr<app_info> _app_info;
+  size_t                    _next_topology_id;  
   std::string               _brokers;
   std::chrono::milliseconds _max_buffering;
   boost::filesystem::path   _root_path;
-  size_t                    _next_topology_id;
 };
 };

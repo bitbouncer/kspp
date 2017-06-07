@@ -178,8 +178,8 @@ class partition_processor : public processor
     : _upstream(upstream)
     , _partition(partition) {}
 
-  const int32_t         _partition;
   partition_processor*  _upstream;
+  const int32_t         _partition;  
 };
 
 class topology_base

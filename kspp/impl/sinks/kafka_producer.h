@@ -44,7 +44,7 @@ class kafka_producer
   }
 
   inline int32_t flush(int timeout_ms) {
-    auto sz = _producer->outq_len();
+    /* auto sz = */ _producer->outq_len();
     return _producer->flush(timeout_ms);
   }
 
