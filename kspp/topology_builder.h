@@ -85,7 +85,7 @@ class topic_topology : public topology_base
     auto end = v1.end();
     for (; i != end; ++i, ++j) {
       auto p = std::make_shared<pp>(*this, *i, *j, args...);
-      _partition_processors.push_back(p);
+      _partition_processors.push_back(std::static_pointer_cast<kspp::partition_processor>(p));
       result.push_back(p);
     }
     return result;

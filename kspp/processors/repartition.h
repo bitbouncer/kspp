@@ -2,9 +2,11 @@
 #include <kspp/kspp.h>
 #pragma once
 
+//TBD is this not a sink???
+
 namespace kspp {
 template<class K, class V, class FOREIGN_KEY, class CODEC>
-class repartition_by_foreign_key : public partition_processor
+class repartition_by_foreign_key : public event_consumer<K, V>, public partition_processor
 {
   public:
   repartition_by_foreign_key(topology_base& topology,
@@ -12,7 +14,8 @@ class repartition_by_foreign_key : public partition_processor
                              std::shared_ptr<materialized_source<K, FOREIGN_KEY>> routing_table,
                              std::shared_ptr<topic_sink<K, V>> topic_sink,
                              std::shared_ptr<CODEC> repartition_codec = std::make_shared<CODEC>())
-    : partition_processor(source.get(), source->partition())
+    : event_consumer<K, V>()
+    , partition_processor(source.get(), source->partition())
     , _source(source)
     , _routing_table(routing_table)
     , _topic_sink(topic_sink)
@@ -81,12 +84,12 @@ class repartition_by_foreign_key : public partition_processor
     return processed;
   }
 
-  virtual size_t queue_len() {
-    return _queue.size();
+  virtual size_t queue_len() const {
+    return event_consumer<K, V>::queue_len();
   }
 
   virtual bool eof() const {
-    return !_queue.size() && _routing_table->eof() && _source->eof();
+    return queue_len() ==0 && _routing_table->eof() && _source->eof();
   }
 
   virtual void commit(bool force) {
@@ -95,7 +98,7 @@ class repartition_by_foreign_key : public partition_processor
   }
 
   private:
-  event_queue<kevent<K, V>>                            _queue;
+  //event_queue<kevent<K, V>>                            _queue;
   std::shared_ptr<partition_source<K, V>>              _source;
   std::shared_ptr<materialized_source<K, FOREIGN_KEY>> _routing_table;
   std::shared_ptr<topic_sink<K, V>>                    _topic_sink;

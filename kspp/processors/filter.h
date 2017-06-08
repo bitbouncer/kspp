@@ -1,13 +1,14 @@
 #pragma once
 namespace kspp {
   template<class K, class V>
-  class filter : public partition_source<K, V>
+  class filter : public event_consumer<K, V>, public partition_source<K, V>
   {
   public:
     typedef std::function<bool(std::shared_ptr<const krecord<K, V>> record)> predicate; // return true to keep
 
     filter(topology_base& topology, std::shared_ptr<partition_source<K, V>> source, predicate f)
-      : partition_source<K, V>(source.get(), source->partition())
+      : event_consumer<K, V>()
+      , partition_source<K, V>(source.get(), source->partition())
       , _source(source)
       , _predicate(f)
       , _predicate_false("predicate_false") {
@@ -60,17 +61,17 @@ namespace kspp {
     }
 
     virtual bool eof() const {
-      return (_queue.size() == 0) && _source->eof();
+      return (queue_len() == 0) && _source->eof();
     }
 
-    virtual size_t queue_len() {
-      return _queue.size();
+    virtual size_t queue_len() const {
+      return event_consumer<K, V>::queue_len();
     }
 
   private:
     std::shared_ptr<partition_source<K, V>> _source;
     predicate                               _predicate;
-    event_queue<kevent<K, V>>               _queue;
+    //event_queue<kevent<K, V>>               _queue;
     metric_lag                              _lag;
     metric_counter                          _predicate_false;
   };

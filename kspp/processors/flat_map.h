@@ -6,13 +6,14 @@
 
 namespace kspp {
   template<class SK, class SV, class RK, class RV>
-  class flat_map : public partition_source<RK, RV>
+  class flat_map : public event_consumer<SK, SV>, public partition_source<RK, RV>
   {
   public:
     typedef std::function<void(std::shared_ptr<const krecord<SK, SV>> record, flat_map* self)> extractor;
 
     flat_map(topology_base& topology, std::shared_ptr<partition_source<SK, SV>> source, extractor f)
-      : partition_source<RK, RV>(source.get(), source->partition())
+      : event_consumer<SK, SV>()
+      , partition_source<RK, RV>(source.get(), source->partition())
       , _source(source)
       , _extractor(f)
       , _in_count("in_count") {
@@ -63,11 +64,11 @@ namespace kspp {
     }
 
     virtual bool eof() const {
-      return _source->eof() && (_queue.size() == 0);
+      return queue_len() == 0 && _source->eof();
     }
 
-    virtual size_t queue_len() {
-      return _queue.size();
+    virtual size_t queue_len() const {
+      return event_consumer<SK, SV>::queue_len();
     }
 
     /**
@@ -81,7 +82,7 @@ namespace kspp {
     std::shared_ptr<partition_source<SK, SV>>        _source;
     extractor                                        _extractor;
     std::shared_ptr<commit_chain::autocommit_marker> _currrent_id; // used to briefly hold the commit open during process one
-    event_queue<kevent<SK, SV>>                      _queue;
+    //event_queue<kevent<SK, SV>>                      _queue;
     metric_counter                                   _in_count;
     metric_lag                                       _lag;
   };

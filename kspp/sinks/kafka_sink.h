@@ -44,8 +44,8 @@ class kafka_sink_base : public topic_sink<K, V>
     return _impl.close();
   }
 
-  virtual size_t queue_len() {
-    return this->_queue.size() + _impl.queue_len();
+  virtual size_t queue_len() const {
+    return topic_sink<K, V>::queue_len() + _impl.queue_len();
   }
 
   virtual void poll(int timeout) {

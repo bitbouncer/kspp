@@ -8,13 +8,14 @@ namespace kspp {
 // alternative? replace with std::shared_ptr<const kevent<K, R>> left, std::shared_ptr<const kevent<K, R>> right, std::shared_ptr<kevent<K, R>> result;  
 
 template<class K, class streamV, class tableV, class R>
-class left_join : public partition_source<K, R>
+class left_join : public event_consumer<K, streamV>, public partition_source<K, R>
 {
   public:
   typedef std::function<void(const K& key, const streamV& left, const tableV& right, R& result)> value_joiner;
 
   left_join(topology_base& topology, std::shared_ptr<partition_source<K, streamV>> stream, std::shared_ptr<materialized_source<K, tableV>> table, value_joiner f)
-    : partition_source<K, R>(stream.get(), stream->partition())
+    : event_consumer<K, streamV>()
+    , partition_source<K, R>(stream.get(), stream->partition())
     , _stream(stream)
     , _table(table)
     , _value_joiner(f) {
@@ -47,8 +48,8 @@ class left_join : public partition_source<K, R>
     _stream->close();
   }
 
-  virtual size_t queue_len() {
-    return _queue.size();
+  virtual size_t queue_len() const {
+    return event_consumer<K, streamV>::queue_len();
   }
 
   virtual bool process_one(int64_t tick) {
@@ -100,7 +101,7 @@ class left_join : public partition_source<K, R>
   private:
   std::shared_ptr<partition_source<K, streamV>>   _stream;
   std::shared_ptr<materialized_source<K, tableV>> _table;
-  event_queue<kevent<K, streamV>>                 _queue;
+  //event_queue<kevent<K, streamV>>                 _queue;
   value_joiner                                    _value_joiner;
   metric_lag                                      _lag;
 };

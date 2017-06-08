@@ -62,14 +62,16 @@ namespace kspp {
       return (_queue.size()==0) && _source->eof());
     }
 
+    /*
     virtual size_t queue_len() {
       return _queue.size();
     }
+    */
 
   private:
     std::shared_ptr<partition_source<K, V>> _source;
     int                                     _delay;
-    event_queue<kevent<K, V>>               _queue;
+    //event_queue<kevent<K, V>>               _queue;
     metric_lag                              _lag;
   };
 } // namespace

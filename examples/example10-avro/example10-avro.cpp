@@ -37,6 +37,8 @@ int main(int argc, char **argv) {
     auto topology = builder.create_partition_topology(-1);
     auto avro_stream = topology->create_topic_sink<kspp::kafka_topic_sink<boost::uuids::uuid, int64_t, kspp::avro_serdes>>("kspp_test10_avro", avro_serdes);
 
+    topology->start(-2);
+
     std::vector<boost::uuids::uuid> ids;
     for (int i = 0; i != 10; ++i)
       ids.push_back(to_uuid(i));
@@ -46,10 +48,7 @@ int main(int argc, char **argv) {
       for (auto & i : ids) {
         avro_stream->produce(i, update_nr);
       }
-      while (avro_stream->queue_len() > 10000)
-        avro_stream->poll(0);
     }
-    topology->start(-2);
     topology->flush();
   }
 

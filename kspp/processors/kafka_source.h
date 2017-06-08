@@ -51,7 +51,8 @@ namespace kspp {
         _consumer.commit(_commit_chain.last_good_offset(), flush);
     }
 
-    virtual size_t queue_len() {
+    // TBD if we store last offset and end of stream offset we can use this...
+    virtual size_t queue_len() const {
       return 0;
     }
      

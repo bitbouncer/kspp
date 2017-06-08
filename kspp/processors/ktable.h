@@ -5,12 +5,13 @@
 
 namespace kspp {
   template<class K, class V, template <typename, typename, typename> class STATE_STORE, class CODEC=void>
-  class ktable : public materialized_source<K, V>
+  class ktable : public event_consumer<K, V>, public materialized_source<K, V>
   {
   public:
     template<typename... Args>
     ktable(topology_base& topology, std::shared_ptr<kspp::partition_source<K, V>> source, Args... args)
-      : materialized_source<K, V>(source.get(), source->partition())
+      : event_consumer<K, V>()
+      , materialized_source<K, V>(source.get(), source->partition())
       , _source(source)
       , _state_store(this->get_storage_path(topology.get_storage_path()), args...)
       , _in_count("in_count")
@@ -78,8 +79,8 @@ namespace kspp {
       return _state_store.offset();
     }
 
-    virtual size_t queue_len() {
-      return 0;
+    virtual size_t queue_len() const {
+      return event_consumer<K, V>::queue_len();
     }
 
     virtual std::shared_ptr<const krecord<K, V>> get(const K& key) {

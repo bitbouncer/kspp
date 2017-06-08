@@ -54,8 +54,8 @@ namespace kspp {
       return "stream_sink";
     }
 
-    virtual size_t queue_len() {
-      return this->_queue.size();
+    virtual size_t queue_len() const {
+      return event_consumer<K, V>::queue_len();
     }
 
     virtual void commit(bool flush) {

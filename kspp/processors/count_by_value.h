@@ -30,10 +30,10 @@ class count_by_value : public materialized_source<K, V>
     close();
   }
 
-  virtual std::string simple_name() const { 
-    return "count_by_value"; 
+  virtual std::string simple_name() const {
+    return "count_by_value";
   }
-   
+
   virtual void start() {
     _stream->start();
   }
@@ -54,8 +54,8 @@ class count_by_value : public materialized_source<K, V>
   }
   */
 
-  virtual size_t queue_len() {
-    return _queue.size();
+  virtual size_t queue_len() const {
+    return event_consumer<K, V>::queue_len();
   }
 
   virtual bool process_one(int64_t tick) {
@@ -103,11 +103,11 @@ class count_by_value : public materialized_source<K, V>
   */
   virtual void punctuate(int64_t timestamp) {
     //if (_dirty) { // keep event timestamts in counter store and only include the updated ones... TBD
-      for (auto i : _counter_store) {
-        i->event_time = timestamp;
-        this->send_to_sinks(std::make_shared<kevent<K, V>>(i));
-      }
-    //}
+    for (auto i : _counter_store) {
+      i->event_time = timestamp;
+      this->send_to_sinks(std::make_shared<kevent<K, V>>(i));
+    }
+  //}
     _dirty = false;
   }
 
@@ -127,7 +127,7 @@ class count_by_value : public materialized_source<K, V>
   private:
   std::shared_ptr<partition_source<K, V>> _stream;
   STATE_STORE<K, V, CODEC>                _counter_store;
-  event_queue<kevent<K, V>>               _queue;
+  //event_queue<kevent<K, V>>               _queue;
   int64_t                                 _punctuate_intervall;
   int64_t                                 _next_punctuate;
   bool                                    _dirty;

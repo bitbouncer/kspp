@@ -65,14 +65,14 @@ namespace kspp {
       return _source->eof() && (_queue.size() == 0);
     }
 
-    virtual size_t queue_len() {
-      return _queue.size();
+    virtual size_t queue_len() const {
+      return event_consumer<K, SV>::queue_len();
     }
 
   private:
     std::shared_ptr<partition_source<K, SV>> _source;
     extractor                                _extractor;
-    event_queue<kevent<K, SV>>               _queue;
+    //event_queue<kevent<K, SV>>               _queue;
     metric_lag                               _lag;
   };
 
@@ -148,15 +148,15 @@ namespace kspp {
       return _source->eof() && (_queue.size() == 0);
     }
 
-    virtual size_t queue_len() {
-      return _queue.size();
+    virtual size_t queue_len() const {
+      return event_consumer<K, V>::queue_len();
     }
 
     private:
     std::shared_ptr<partition_source<K, V>>          _source;
     extractor                                        _extractor;
     std::shared_ptr<commit_chain::autocommit_marker> _currrent_id; // used to briefly hold the commit open during process one
-    event_queue<kevent<K, V>>                        _queue;
+    //event_queue<kevent<K, V>>                        _queue;
     metric_lag                                       _lag;
   };
 }

@@ -3,7 +3,7 @@
 
 namespace kspp {
 template<class K, class V>
-class pipe : public partition_source<K, V>
+class pipe : public event_consumer<K, V>, public partition_source<K, V>
 {
   public:
   typedef K key_type;
@@ -11,11 +11,13 @@ class pipe : public partition_source<K, V>
   typedef kspp::kevent<K, V> record_type;
 
   pipe(topology_base& topology)
-    : partition_source<K, V>(nullptr, topology.partition()) {
+    : event_consumer<K, V>()
+    , partition_source<K, V>(nullptr, topology.partition()) {
   }
 
   pipe(topology_base& topology, std::shared_ptr<kspp::partition_source<K, V>> upstream)
-    : partition_source<K, V>(upstream.get(), upstream->partition()) {
+    : event_consumer<K, V>()
+    , partition_source<K, V>(upstream.get(), upstream->partition()) {
       upstream->add_sink([this](auto r) {
       this->send_to_sinks(r);
     });
@@ -38,8 +40,8 @@ class pipe : public partition_source<K, V>
     return produce(std::make_shared<kevent<K, V>>(std::make_shared<krecord<K, V>>(key, value, ts)));
   }
 
-  virtual size_t queue_len() {
-    return 0;
+  virtual size_t queue_len() const {
+    return event_consumer<K, V>::queue_len();
   }
 
   virtual void commit(bool force) {
@@ -50,7 +52,7 @@ class pipe : public partition_source<K, V>
 
 //<null, VALUE>
 template<class V>
-class pipe<void, V> : public partition_source<void, V>
+class pipe<void, V> : public event_consumer<void, V>, public partition_source<void, V>
 {
   public:
   typedef void key_type;
@@ -58,11 +60,13 @@ class pipe<void, V> : public partition_source<void, V>
   typedef kspp::kevent<void, V> record_type;
 
   pipe(topology_base& topology, int32_t partition)
-    : partition_source<void, V>(nullptr, topology.partition()) {
+    : event_consumer<void, V>()
+    , partition_source<void, V>(nullptr, topology.partition()) {
   }
 
   pipe(topology_base& topology, std::shared_ptr<kspp::partition_source<void, V>> upstream)
-    : partition_source<void, V>(upstream.get(), upstream->partition()) {
+    : event_consumer<void, V>()
+    , partition_source<void, V>(upstream.get(), upstream->partition()) {
     if (upstream)
       upstream->add_sink([this](auto r) {
       this->send_to_sinks(r);
@@ -86,8 +90,8 @@ class pipe<void, V> : public partition_source<void, V>
     return produce(std::make_shared<kevent<void, V>>(std::make_shared<krecord<void, V>>(value)));
   }
 
-  virtual size_t queue_len() {
-    return 0;
+  virtual size_t queue_len() const {
+    return event_consumer<void, V>::queue_len();
   }
 
   virtual void commit(bool force) {
@@ -97,7 +101,7 @@ class pipe<void, V> : public partition_source<void, V>
 };
 
 template<class K>
-class pipe<K, void> : public partition_source<K, void>
+class pipe<K, void> : public event_consumer<K, void>, public partition_source<K, void>
 {
   public:
   typedef K key_type;
@@ -105,11 +109,13 @@ class pipe<K, void> : public partition_source<K, void>
   typedef kspp::kevent<K, void> record_type;
 
   pipe(topology_base& topology)
-    : partition_source<K, void>(nullptr, topology.partition()) {
+    : event_consumer<K, void>()
+    , partition_source<K, void>(nullptr, topology.partition()) {
   }
   
   pipe(topology_base& topology, std::shared_ptr<kspp::partition_source<K, void>> upstream)
-    : partition_source<K, void>(upstream.get(), upstream->partition()) {
+    : event_consumer<K, void>()
+    , partition_source<K, void>(upstream.get(), upstream->partition()) {
     if (upstream)
       upstream->add_sink([this](std::shared_ptr<kevent<K, void>> r) {
       this->send_to_sinks(r);
@@ -133,8 +139,8 @@ class pipe<K, void> : public partition_source<K, void>
     return produce(std::make_shared<kevent<K, void>>(std::make_shared<krecord<K, void>>(key)));
   }
 
-  virtual size_t queue_len() {
-    return 0;
+  virtual size_t queue_len() const {
+    return event_consumer<K, void>::queue_len();
   }
   
   virtual void commit(bool force) {

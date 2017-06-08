@@ -63,7 +63,9 @@ class processor
   /**
   * returns the inbound queue len
   */
-  virtual size_t queue_len() = 0;
+  virtual size_t queue_len() const {
+    return 0;
+  }
 
   /**
   * Do periodic work - will be called infrequently
@@ -231,9 +233,23 @@ class topology_base
   //last sink queue size
 };
 
+template<class K, class V>
+class event_consumer
+{
+  public:
+  event_consumer() {
+  }
+
+  inline size_t queue_len() const {
+    return _queue.size();
+  }
+
+  protected:
+  kspp::event_queue<kevent<K, V>> _queue;
+};
 
 template<class K, class V>
-class partition_sink : public partition_processor
+class partition_sink : public event_consumer<K, V>, public partition_processor
 {
   public:
   typedef K key_type;
@@ -249,27 +265,28 @@ class partition_sink : public partition_processor
   }
 
   inline void produce(std::shared_ptr<krecord<K, V>> r) {
-    _queue.push_back(std::make_shared<kevent<K, V>>(r));
+    this->_queue.push_back(std::make_shared<kevent<K, V>>(r));
   }
 
   inline void produce(std::shared_ptr<kevent<K, V>> ev) {
-    _queue.push_back(ev);
+    this->_queue.push_back(ev);
   }
 
   inline void produce(const K& key, const V& value, int64_t ts = milliseconds_since_epoch()) {
-    _queue.push_back(std::make_shared<kevent<K, V>>(std::make_shared<krecord<K, V>>(key, value, ts)));
+    this->_queue.push_back(std::make_shared<kevent<K, V>>(std::make_shared<krecord<K, V>>(key, value, ts)));
   }
 
 protected:
   partition_sink(int32_t partition)
-    : partition_processor(nullptr, partition) {}
+    : event_consumer<K, V>()
+    , partition_processor(nullptr, partition) {}
 
-  kspp::event_queue<kevent<K, V>> _queue;
+  //kspp::event_queue<kevent<K, V>> _queue;
 };
 
 // specialisation for void key
 template<class V>
-class partition_sink<void, V> : public partition_processor
+class partition_sink<void, V> : public event_consumer<void, V>, public partition_processor
 {
   public:
   typedef void key_type;
@@ -285,27 +302,29 @@ class partition_sink<void, V> : public partition_processor
   }
 
   inline void produce(std::shared_ptr<krecord<void, V>> r) {
-    _queue.push_back(std::make_shared<kevent<void, V>>(r));
+    this->_queue.push_back(std::make_shared<kevent<void, V>>(r));
   }
   
   inline void produce(std::shared_ptr<kevent<void, V>> ev) {
-    _queue.push_back(ev);
+    this->_queue.push_back(ev);
    }
 
   inline void produce(const V& value, int64_t ts = milliseconds_since_epoch()) {
-    _queue.push_back(std::make_shared<kevent<void, V>>(std::make_shared<krecord<void, V>>(value, ts)));
+    this->_queue.push_back(std::make_shared<kevent<void, V>>(std::make_shared<krecord<void, V>>(value, ts)));
   }
 
   protected:
   partition_sink(int32_t partition)
-    : partition_processor(nullptr, partition) {}
+    : event_consumer<void, V>()
+    , partition_processor(nullptr, partition) {
+  }
 
-  kspp::event_queue<kevent<void, V>> _queue;
+  //kspp::event_queue<kevent<void, V>> _queue;
 };
 
 // specialisation for void value
 template<class K>
-class partition_sink<K, void> : public partition_processor
+class partition_sink<K, void> : public event_consumer<K, void>, public partition_processor
 {
   public:
   typedef K key_type;
@@ -321,22 +340,23 @@ class partition_sink<K, void> : public partition_processor
   }
 
   inline void produce(std::shared_ptr<krecord<K, void>> r) {
-    _queue.push_back(std::make_shared<kevent<K, void>>(r));
+    this->_queue.push_back(std::make_shared<kevent<K, void>>(r));
   }
   
   inline void produce(std::shared_ptr<kevent<K, void>> ev) {
-    _queue.push_back(ev);
+    this->_queue.push_back(ev);
   }
 
   inline void produce(const K& key, int64_t ts = milliseconds_since_epoch()) {
-    _queue.push_back(std::make_shared<kevent<K, void>>(std::make_shared<krecord<K, void>>(key, ts)));
+    this->_queue.push_back(std::make_shared<kevent<K, void>>(std::make_shared<krecord<K, void>>(key, ts)));
   }
 
   protected:
   partition_sink(int32_t partition)
-    : partition_processor(nullptr, partition) {}
+    : event_consumer<K, void>()
+    , partition_processor(nullptr, partition) {}
 
-  kspp::event_queue<kevent<K, void>> _queue;
+  //kspp::event_queue<kevent<K, void>> _queue;
 };
 
 //// should be replaced with murmur hash
@@ -370,7 +390,7 @@ inline uint32_t get_partition(const PK& key, size_t nr_of_partitions, std::share
   we need this class to get rid of the codec for templates..
 */
 template<class K, class V>
-class topic_sink : public generic_sink
+class topic_sink : public event_consumer<K, V>, public generic_sink
 {
 public:
   typedef K key_type;
@@ -412,8 +432,12 @@ public:
     produce(partition_hash, std::make_shared<krecord<K, V>>(key, value, ts));
   }
 
+  virtual size_t queue_len() const {
+    return event_consumer<K, V>::queue_len();
+  }
+
 protected:
-  kspp::event_queue<kevent<K, V>> _queue;
+  //kspp::event_queue<kevent<K, V>> _queue;
 };
 
 // spec for void key
@@ -571,8 +595,9 @@ class partition_source : public partition_processor
       f(p);
   }
 
-  metric_counter             _out_messages;
-  std::vector<sink_function> _sinks;
+  //kspp::event_queue<kevent<K, V>> _queue;
+  metric_counter                  _out_messages;
+  std::vector<sink_function>      _sinks;
 };
 
 template<class K, class V>

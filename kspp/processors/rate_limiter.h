@@ -9,11 +9,12 @@
 // how do we swap betweeen processing and event time??? TBD
 namespace kspp {
 template<class K, class V>
-class rate_limiter : public partition_source<K, V>
+class rate_limiter : public event_consumer<K, V>, public partition_source<K, V>
 {
   public:
   rate_limiter(topology_base& topology, std::shared_ptr<partition_source<K, V>> source, std::chrono::milliseconds agetime, size_t capacity)
-    : partition_source<K, V>(source.get(), source->partition())
+    : event_consumer<K, V>()
+    , partition_source<K, V>(source.get(), source->partition())
     , _source(source)
     , _token_bucket(std::make_shared<mem_token_bucket_store<K, size_t>>(agetime, capacity))
     , _in_count("in_count")
@@ -76,16 +77,16 @@ class rate_limiter : public partition_source<K, V>
   }
 
   virtual bool eof() const {
-    return _source->eof() && (_queue.size() == 0);
+    return _source->eof() && (queue_len() == 0);
   }
 
-  virtual size_t queue_len() {
-    return _queue.size();
+  virtual size_t queue_len() const {
+    return event_consumer<K, V>::queue_len();
   }
 
   private:
   std::shared_ptr<partition_source<K, V>>            _source;
-  event_queue<kevent<K, V>>                          _queue;
+  //event_queue<kevent<K, V>>                          _queue;
   std::shared_ptr<mem_token_bucket_store<K, size_t>> _token_bucket;
   metric_lag                                         _lag;
   metric_counter                                     _in_count;

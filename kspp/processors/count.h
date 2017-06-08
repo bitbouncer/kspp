@@ -6,12 +6,13 @@
 
 namespace kspp {
 template<class K, class V, template <typename, typename, typename> class STATE_STORE, class CODEC = void>
-class count_by_key : public materialized_source<K, V>
+class count_by_key : public event_consumer<K, void>, public materialized_source<K, V>
 {
   public:
   template<typename... Args>
   count_by_key(topology_base& topology, std::shared_ptr<partition_source<K, void>> source, std::chrono::milliseconds punctuate_intervall, Args... args)
-    : materialized_source<K, V>(source.get(), source->partition())
+    : event_consumer<K, void>()
+    , materialized_source<K, V>(source.get(), source->partition())
     , _stream(source)
     , _counter_store(this->get_storage_path(topology.get_storage_path()), args...)
     , _punctuate_intervall(punctuate_intervall.count()) // tbd we should use intervalls since epoch similar to windowed 
@@ -54,10 +55,6 @@ class count_by_key : public materialized_source<K, V>
   }
   */
 
-  virtual size_t queue_len() {
-    return _queue.size();
-  }
-
   virtual bool process_one(int64_t tick) {
     _stream->process_one(tick);
     bool processed = (_queue.size() > 0);
@@ -84,8 +81,12 @@ class count_by_key : public materialized_source<K, V>
     _stream->commit(flush);
   }
 
+  virtual size_t queue_len() const {
+    return event_consumer<K, void>::queue_len();
+  }
+
   virtual bool eof() const {
-    return _queue.size() == 0 && _stream->eof();
+    return queue_len() == 0 && _stream->eof();
   }
 
   /**
@@ -117,7 +118,7 @@ class count_by_key : public materialized_source<K, V>
   private:
   std::shared_ptr<partition_source<K, void>> _stream;
   STATE_STORE<K, V, CODEC>                   _counter_store;
-  event_queue<kevent<K, void>>               _queue;
+  //event_queue<kevent<K, void>>               _queue;
   int64_t                                    _punctuate_intervall;
   int64_t                                    _next_punctuate;
   bool                                       _dirty;
