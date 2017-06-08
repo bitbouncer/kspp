@@ -81,21 +81,35 @@ SET(LIBRDKAFKA_LIBS librdkafkacpp librdkafka lz4)
 SET(CSI_LIBS kspp ${LIBRDKAFKA_LIBS} ${CSI_AVRO_LIBS} ${CSI_ROCKSDB_LIBS} ${CSI_BOOST_LIBS} libssl libcrypto ${ZLIB_LIBS} crypt32 Ws2_32 legacy_stdio_definitions)
 
 elseif(APPLE)
-find_package(Boost COMPONENTS log date_time timer thread program_options regex  system filesystem REQUIRED)
-
-set(BOOST_LIBS
-  ${Boost_LOG_LIBRARY}
-  ${Boost_DATE_TIME_LIBRARY}
-  ${Boost_FILESYSTEM_LIBRARY}
-  ${Boost_TIMER_LIBRARY}
-  ${Boost_THREAD_LIBRARY}
-  ${Boost_PROGRAM_OPTIONS_LIBRARY}
-  ${Boost_REGEXP_LIBRARY}
+find_package(Boost COMPONENTS log_setup log thread program_options filesystem system REQUIRED)
+set(BOOST_LIBS 
+  ${Boost_LOG_LIBRARY} 
+  ${Boost_LOG_SETUP_LIBRARY}
+  ${Boost_PROGRAM_OPTIONS_LIBRARY}  
+  ${Boost_FILESYSTEM_LIBRARY} 
+  ${Boost_THREAD_LIBRARY} 
   ${Boost_SYSTEM_LIBRARY}
-  ${Boost_FILESYSTEM_LIBRARY}
-  pthread
+  pthread 
+  rt
   c
 )
+
+
+#find_package(Boost COMPONENTS log date_time timer thread program_options regex  system filesystem REQUIRED)
+#
+#set(BOOST_LIBS
+#  ${Boost_LOG_LIBRARY}
+#  ${Boost_DATE_TIME_LIBRARY}
+#  ${Boost_FILESYSTEM_LIBRARY}
+#  ${Boost_TIMER_LIBRARY}
+#  ${Boost_THREAD_LIBRARY}
+#  ${Boost_PROGRAM_OPTIONS_LIBRARY}
+#  ${Boost_REGEXP_LIBRARY}
+#  ${Boost_SYSTEM_LIBRARY}
+#  ${Boost_FILESYSTEM_LIBRARY}
+#  pthread
+#  c
+#)
 
 add_definitions(-DBOOST_LOG_DYN_LINK)
 
@@ -110,20 +124,16 @@ SET(CSI_LIBS kspp ${LIBRDKAFKA_LIBS} ${CSI_ROCKSDB_LIBS} ${BOOST_LIBS} crypto ss
 
 
 else() #LINUX
-find_package(Boost COMPONENTS log date_time timer thread program_options regex  system filesystem REQUIRED)
-
+find_package(Boost COMPONENTS log_setup log thread program_options filesystem system REQUIRED)
 set(BOOST_LIBS 
   ${Boost_LOG_LIBRARY} 
-  ${Boost_DATE_TIME_LIBRARY} 
+  ${Boost_LOG_SETUP_LIBRARY}
+  ${Boost_PROGRAM_OPTIONS_LIBRARY}  
   ${Boost_FILESYSTEM_LIBRARY} 
-  ${Boost_TIMER_LIBRARY} 
   ${Boost_THREAD_LIBRARY} 
-  ${Boost_PROGRAM_OPTIONS_LIBRARY}
-  ${Boost_REGEXP_LIBRARY}
   ${Boost_SYSTEM_LIBRARY}
-  ${Boost_FILESYSTEM_LIBRARY} 
   pthread 
-  rt 
+  rt
   c
 )
 
