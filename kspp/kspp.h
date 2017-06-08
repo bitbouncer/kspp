@@ -17,6 +17,7 @@
 #include <kspp/type_name.h>
 #include <kspp/app_info.h>
 #include <kspp/impl/queue.h>
+#include <kspp/impl/hash/murmurhash2.h>
 
 #pragma once
 namespace kspp {
@@ -338,13 +339,13 @@ class partition_sink<K, void> : public partition_processor
   kspp::event_queue<kevent<K, void>> _queue;
 };
 
-// should be replaced with murmur hash
-inline uint32_t djb_hash(const char *str, size_t len) {
-  uint32_t hash = 5381;
-  for (size_t i = 0; i < len; i++)
-    hash = ((hash << 5) + hash) + str[i];
-  return hash;
-}
+//// should be replaced with murmur hash
+//inline uint32_t djb_hash(const char *str, size_t len) {
+//  uint32_t hash = 5381;
+//  for (size_t i = 0; i < len; i++)
+//    hash = ((hash << 5) + hash) + str[i];
+//  return hash;
+//}
 
 template<class PK, class CODEC>
 inline uint32_t get_partition_hash(const PK& key, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) {
@@ -354,7 +355,8 @@ inline uint32_t get_partition_hash(const PK& key, std::shared_ptr<CODEC> codec =
   size_t ksize = 0;
   std::strstream s(key_buf, MAX_KEY_SIZE);
   ksize = codec->encode(key, s);
-  partition_hash = djb_hash(key_buf, ksize);
+  //partition_hash = djb_hash(key_buf, ksize);
+  partition_hash = MurmurHash2(key_buf, ksize, 0x9747b28c);
   return partition_hash;
 }
 
