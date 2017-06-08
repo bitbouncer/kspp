@@ -94,23 +94,6 @@ set(BOOST_LIBS
   c
 )
 
-
-#find_package(Boost COMPONENTS log date_time timer thread program_options regex  system filesystem REQUIRED)
-#
-#set(BOOST_LIBS
-#  ${Boost_LOG_LIBRARY}
-#  ${Boost_DATE_TIME_LIBRARY}
-#  ${Boost_FILESYSTEM_LIBRARY}
-#  ${Boost_TIMER_LIBRARY}
-#  ${Boost_THREAD_LIBRARY}
-#  ${Boost_PROGRAM_OPTIONS_LIBRARY}
-#  ${Boost_REGEXP_LIBRARY}
-#  ${Boost_SYSTEM_LIBRARY}
-#  ${Boost_FILESYSTEM_LIBRARY}
-#  pthread
-#  c
-#)
-
 add_definitions(-DBOOST_LOG_DYN_LINK)
 
 set(LIBRARY_OUTPUT_PATH     ${CMAKE_SOURCE_DIR}/lib)
