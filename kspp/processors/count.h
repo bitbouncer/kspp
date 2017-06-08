@@ -21,7 +21,7 @@ class count_by_key : public event_consumer<K, void>, public materialized_source<
     , _in_count("in_count")
     , _lag() {
     source->add_sink([this](auto e) {
-      _queue.push_back(e);
+      this->_queue.push_back(e);
     });
     this->add_metric(&_in_count);
     this->add_metric(&_lag);
