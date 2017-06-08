@@ -115,14 +115,6 @@ class count_by_key : public materialized_source<K, V>
   }
 
   private:
-  /*
-  boost::filesystem::path get_storage_path(boost::filesystem::path storage_path) {
-    boost::filesystem::path p(storage_path);
-    p /= sanitize_filename(simple_name() + record_type_name() + "#" + std::to_string(partition()));
-    return p;
-  }
-  */
-
   std::shared_ptr<partition_source<K, void>> _stream;
   STATE_STORE<K, V, CODEC>                   _counter_store;
   event_queue<kevent<K, void>>               _queue;

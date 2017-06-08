@@ -95,14 +95,6 @@ namespace kspp {
     }
 
   private:
-    /*
-    boost::filesystem::path get_storage_path(boost::filesystem::path storage_path) {
-      boost::filesystem::path p(storage_path);
-      p /= sanitize_filename(simple_name() + this->record_type_name() + "#" + std::to_string(this->partition()));
-      return p;
-    }
-    */
-
     std::shared_ptr<kspp::partition_source<K, V>> _source;
     STATE_STORE<K, V, CODEC>                      _state_store;
     metric_lag                                    _lag;
