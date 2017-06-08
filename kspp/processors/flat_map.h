@@ -18,7 +18,7 @@ namespace kspp {
       , _extractor(f)
       , _in_count("in_count") {
       _source->add_sink([this](auto r) {
-        _queue.push_back(r);
+        this->_queue.push_back(r);
       });
       this->add_metric(&_in_count);
       this->add_metric(&_lag);
@@ -46,10 +46,10 @@ namespace kspp {
 
     virtual bool process_one(int64_t tick) {
       _source->process_one(tick);
-      bool processed = (_queue.size() > 0);
-      while (_queue.size()) {
-        auto trans = _queue.front();
-        _queue.pop_front();
+      bool processed = (this->_queue.size() > 0);
+      while (this->_queue.size()) {
+        auto trans = this->_queue.front();
+        this->_queue.pop_front();
         _lag.add_event_time(tick, trans->event_time());
         _currrent_id = trans->id(); // we capture this to have it in push_back callback
         _extractor(trans->record(), this);

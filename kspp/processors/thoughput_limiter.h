@@ -18,7 +18,7 @@ class thoughput_limiter : public event_consumer<K, V>, public partition_source<K
     , _source(source)
     , _token_bucket(std::make_shared<mem_token_bucket_store<int, size_t>>(std::chrono::milliseconds((int) (1000.0 / messages_per_sec)), 1)) {
     _source->add_sink([this](auto r) {
-      _queue.push_back(r);
+      this->_queue.push_back(r);
     });
   }
 
@@ -46,14 +46,14 @@ class thoughput_limiter : public event_consumer<K, V>, public partition_source<K
   }
 
   virtual bool process_one(int64_t tick) {
-    if (_queue.size() == 0)
+    if (this->_queue.size() == 0)
       _source->process_one(tick);
 
-    if (_queue.size()) {
-      auto trans = _queue.front();
+    if (this->_queue.size()) {
+      auto trans = this->_queue.front();
       _lag.add_event_time(tick, trans->event_time());
       if (_token_bucket->consume(0, tick)) {
-        _queue.pop_front();
+        this->_queue.pop_front();
         this->send_to_sinks(trans);
         return true;
       }

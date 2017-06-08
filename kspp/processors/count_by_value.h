@@ -20,7 +20,7 @@ class count_by_value : public materialized_source<K, V>
     , _in_count("in_count")
     , _lag() {
     source->add_sink([this](auto e) {
-      _queue.push_back(e);
+      this->_queue.push_back(e);
     });
     this->add_metric(&_in_count);
     this->add_metric(&_lag);
@@ -54,15 +54,11 @@ class count_by_value : public materialized_source<K, V>
   }
   */
 
-  virtual size_t queue_len() const {
-    return event_consumer<K, V>::queue_len();
-  }
-
   virtual bool process_one(int64_t tick) {
     _stream->process_one(tick);
-    bool processed = (_queue.size() > 0);
-    while (_queue.size()) {
-      auto trans = _queue.front();
+    bool processed = (this->_queue.size() > 0);
+    while (this->_queue.size()) {
+      auto trans = this->_queue.front();
       // should this be on processing time our message time??? 
       // what happens at end of stream if on messaage time...
       if (_next_punctuate < trans->event_time()) {
@@ -75,7 +71,7 @@ class count_by_value : public materialized_source<K, V>
       ++_in_count;
       _lag.add_event_time(tick, trans->event_time());
       _dirty = true; // aggregated but not committed
-      _queue.pop_front();
+      this->_queue.pop_front();
       _counter_store.insert(trans->record(), trans->offset());
     }
 
@@ -94,8 +90,12 @@ class count_by_value : public materialized_source<K, V>
     _stream->commit(flush);
   }
 
+  virtual size_t queue_len() const {
+    return event_consumer<K, V>::queue_len();
+  }
+
   virtual bool eof() const {
-    return _queue.size() == 0 && _stream->eof();
+    return queue_len() == 0 && _stream->eof();
   }
 
   /**

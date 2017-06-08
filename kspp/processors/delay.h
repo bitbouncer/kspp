@@ -11,7 +11,7 @@ namespace kspp {
       , _source(source)
       , _delay(ms) {
       _source->add_sink([this](auto r) {
-        _queue.push_back(r);
+        this->_queue.push_back(r);
       });
       this->add_metric(&_lag);
     }
@@ -37,16 +37,16 @@ namespace kspp {
     }
 
     virtual bool process_one(int64_t tick) {
-      if (_queue.size()==0)
+      if (this->_queue.size()==0)
         _source->process_one();
 
-      if (_queue.size() == 0)
+      if (this->_queue.size() == 0)
         return false;
 
-      auto r = _queue.front();
+      auto r = this->_queue.front();
       _lag.add_event_time(tick, r->event_time());
       if (r->event_time + _delay > tick) {
-        _queue.pop_front();
+        this->_queue.pop_front();
         this->send_to_sinks(r);
         return true;
       }
@@ -58,15 +58,12 @@ namespace kspp {
       _source->commit(flush);
     }
 
+    virtual size_t queue_len() const {
+      return this->_queue.size();
+    }
     virtual bool eof() const {
-      return (_queue.size()==0) && _source->eof());
+      return (queue_len()==0) && _source->eof());
     }
-
-    /*
-    virtual size_t queue_len() {
-      return _queue.size();
-    }
-    */
 
   private:
     std::shared_ptr<partition_source<K, V>> _source;

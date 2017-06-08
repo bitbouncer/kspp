@@ -13,7 +13,7 @@ namespace kspp {
       , _predicate(f)
       , _predicate_false("predicate_false") {
       _source->add_sink([this](auto r) {
-        _queue.push_back(r);
+        this->_queue.push_back(r);
       });
       this->add_metric(&_lag);
       this->add_metric(&_predicate_false);
@@ -40,12 +40,12 @@ namespace kspp {
     }
 
     virtual bool process_one(int64_t tick) {
-      if (_queue.size()==0)
+      if (this->_queue.size()==0)
         _source->process_one(tick);
-      bool processed = (_queue.size() > 0);
-      while (_queue.size()) {
-        auto ev = _queue.front();
-        _queue.pop_front();
+      bool processed = (this->_queue.size() > 0);
+      while (this->_queue.size()) {
+        auto ev = this->_queue.front();
+        this->_queue.pop_front();
         _lag.add_event_time(tick, ev->event_time());
         if (_predicate(ev->record())) {
           this->send_to_sinks(ev);

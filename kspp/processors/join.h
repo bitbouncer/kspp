@@ -20,7 +20,7 @@ class left_join : public event_consumer<K, streamV>, public partition_source<K, 
     , _table(table)
     , _value_joiner(f) {
     _stream->add_sink([this](auto r) {
-      _queue.push_back(r);
+      this->_queue.push_back(r);
     });
     this->add_metric(&_lag);
   }
@@ -62,13 +62,13 @@ class left_join : public event_consumer<K, streamV>, public partition_source<K, 
 
     _stream->process_one(tick);
 
-    if (!_queue.size())
+    if (!this->_queue.size())
       return false;
 
     // reuse event time & commit it from event stream
-    while (_queue.size()) {
-      auto ev = _queue.front();
-      _queue.pop_front();
+    while (this->_queue.size()) {
+      auto ev = this->_queue.front();
+      this->_queue.pop_front();
       _lag.add_event_time(tick, ev->event_time());
       auto table_row = _table->get(ev->record()->key());
       if (table_row) {

@@ -16,7 +16,7 @@ namespace kspp {
       , _source(source)
       , _extractor(f) {
       _source->add_sink([this](auto r) {
-        _queue.push_back(r);
+        this->_queue.push_back(r);
       });
       this->add_metric(&_lag);
     }
@@ -43,11 +43,11 @@ namespace kspp {
 
     virtual bool process_one(int64_t tick) {
       _source->process_one(tick);
-      bool processed = (_queue.size() > 0);
-      while (_queue.size()) {
-        auto trans = _queue.front();
+      bool processed = (this->_queue.size() > 0);
+      while (this->_queue.size()) {
+        auto trans = this->_queue.front();
         _lag.add_event_time(tick, trans->event_time());
-        _queue.pop_front();
+        this->_queue.pop_front();
         _extractor(trans, this);
       }
       return processed;
@@ -88,7 +88,7 @@ namespace kspp {
       , _source(source)
       , _extractor(f) {
       _source->add_sink([this](auto r) {
-        _queue.push_back(r);
+        this->_queue.push_back(r);
       });
       this->add_metric(&_lag);
     }
@@ -116,7 +116,7 @@ namespace kspp {
     virtual bool process_one(int64_t tick) {
       _source->process_one(tick);
       bool processed = (_queue.size() > 0);
-      while (_queue.size()) {
+      while (this->_queue.size()) {
         auto trans = _queue.front();
         _lag.add_event_time(tick, trans->event_time());
         _queue.pop_front();
@@ -145,7 +145,7 @@ namespace kspp {
     }
 
     virtual bool eof() const {
-      return _source->eof() && (_queue.size() == 0);
+      return queue_len() == 0 && _source->eof();
     }
 
     virtual size_t queue_len() const {

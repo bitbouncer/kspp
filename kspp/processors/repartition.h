@@ -21,7 +21,7 @@ class repartition_by_foreign_key : public event_consumer<K, V>, public partition
     , _topic_sink(topic_sink)
     , _repartition_codec(repartition_codec) {
     _source->add_sink([this](auto r) {
-      _queue.push_back(r);
+      this->_queue.push_back(r);
     });
     this->add_metric(&_lag);
   }

@@ -21,7 +21,7 @@ class rate_limiter : public event_consumer<K, V>, public partition_source<K, V>
     , _out_count("out_count")
     , _rejection_count("rejection_count") {
     _source->add_sink([this](auto r) {
-      _queue.push_back(r);
+      this->_queue.push_back(r);
     });
     this->add_metric(&_lag);
     this->add_metric(&_in_count);
@@ -54,10 +54,10 @@ class rate_limiter : public event_consumer<K, V>, public partition_source<K, V>
 
   virtual bool process_one(int64_t tick) {
     _source->process_one(tick);
-    bool processed = (_queue.size() > 0);
-    while (_queue.size()) {
-      auto ev = _queue.front();
-      _queue.pop_front();
+    bool processed = (this->_queue.size() > 0);
+    while (this->_queue.size()) {
+      auto ev = this->_queue.front();
+      this->_queue.pop_front();
       ++_in_count;
       _lag.add_event_time(tick, ev->event_time());
       // milliseconds_since_epoch for processing time limiter

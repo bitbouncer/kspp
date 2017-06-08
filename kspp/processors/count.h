@@ -57,9 +57,9 @@ class count_by_key : public event_consumer<K, void>, public materialized_source<
 
   virtual bool process_one(int64_t tick) {
     _stream->process_one(tick);
-    bool processed = (_queue.size() > 0);
-    while (_queue.size()) {
-      auto trans = _queue.front();
+    bool processed = (this->_queue.size() > 0);
+    while (this->_queue.size()) {
+      auto trans = this->_queue.front();
       // should this be on processing time our message time??? 
       // what happens at end of stream if on messaage time...
       if (_next_punctuate < trans->event_time()) {
@@ -71,7 +71,7 @@ class count_by_key : public event_consumer<K, void>, public materialized_source<
       ++_in_count;
       _lag.add_event_time(tick, trans->event_time());
       _dirty = true; // aggregated but not committed
-      _queue.pop_front();
+      this->_queue.pop_front();
       _counter_store.insert(std::make_shared<krecord<K, V>>(trans->record()->key(), 1), trans->offset());
     }
     return processed;
