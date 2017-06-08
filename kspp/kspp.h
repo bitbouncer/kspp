@@ -421,7 +421,7 @@ public:
 
   inline void produce(uint32_t partition_hash, std::shared_ptr<kevent<K, V>> t) {
     auto ev2 = std::make_shared<kevent<K, V>>(t->record(), t->id(), partition_hash); // make new one since change the partition
-    _queue.push_back(ev2);
+    this->_queue.push_back(ev2);
   }
 
   inline void produce(const K& key, const V& value, int64_t ts = milliseconds_since_epoch()) {
