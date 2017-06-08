@@ -613,5 +613,11 @@ class materialized_source : public partition_source<K, V>
   materialized_source(partition_processor* upstream, int32_t partition)
     : partition_source<K, V>(upstream, partition) {
   }
+
+  virtual boost::filesystem::path get_storage_path(boost::filesystem::path storage_path) {
+    boost::filesystem::path p(storage_path);
+    p /= sanitize_filename(this->simple_name() + this->record_type_name() + "#" + std::to_string(this->partition()));
+    return p;
+  }
 };
 }; // namespace

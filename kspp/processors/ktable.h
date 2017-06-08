@@ -12,7 +12,7 @@ namespace kspp {
     ktable(topology_base& topology, std::shared_ptr<kspp::partition_source<K, V>> source, Args... args)
       : materialized_source<K, V>(source.get(), source->partition())
       , _source(source)
-      , _state_store(get_storage_path(topology.get_storage_path()), args...)
+      , _state_store(this->get_storage_path(topology.get_storage_path()), args...)
       , _in_count("in_count")
       , _state_store_count("state_store_count", [this]() { return _state_store.size(); }) {
       _source->add_sink([this](auto ev) {
@@ -95,11 +95,13 @@ namespace kspp {
     }
 
   private:
+    /*
     boost::filesystem::path get_storage_path(boost::filesystem::path storage_path) {
       boost::filesystem::path p(storage_path);
       p /= sanitize_filename(simple_name() + this->record_type_name() + "#" + std::to_string(this->partition()));
       return p;
     }
+    */
 
     std::shared_ptr<kspp::partition_source<K, V>> _source;
     STATE_STORE<K, V, CODEC>                      _state_store;

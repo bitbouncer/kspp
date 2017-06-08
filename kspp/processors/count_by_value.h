@@ -13,7 +13,7 @@ class count_by_value : public materialized_source<K, V>
   count_by_value(topology_base& topology, std::shared_ptr<partition_source<K, V>> source, std::chrono::milliseconds punctuate_intervall, Args... args)
     : materialized_source<K, V>(source.get(), source->partition())
     , _stream(source)
-    , _counter_store(get_storage_path(topology.get_storage_path()), args...)
+    , _counter_store(this->get_storage_path(topology.get_storage_path()), args...)
     , _punctuate_intervall(punctuate_intervall.count()) // tbd we should use intervalls since epoch similar to windowed 
     , _next_punctuate(0)
     , _dirty(false)
@@ -125,11 +125,13 @@ class count_by_value : public materialized_source<K, V>
   }
 
   private:
+  /*
   boost::filesystem::path get_storage_path(boost::filesystem::path storage_path) {
     boost::filesystem::path p(storage_path);
     p /= sanitize_filename(name() + record_type_name() + "#" + std::to_string(partition()));
     return p;
   }
+  */
 
   std::shared_ptr<partition_source<K, V>> _stream;
   STATE_STORE<K, V, CODEC>                _counter_store;
