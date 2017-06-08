@@ -66,10 +66,10 @@ class repartition_by_foreign_key : public event_consumer<K, V>, public partition
     }
 
     _source->process_one(tick);
-    bool processed = (_queue.size() > 0);
-    while (_queue.size()) {
-      auto ev = _queue.front();
-      _queue.pop_front();
+    bool processed = (this->_queue.size() > 0);
+    while (this->_queue.size()) {
+      auto ev = this->_queue.front();
+      this->_queue.pop_front();
       _lag.add_event_time(tick, ev->event_time());
       auto routing_row = _routing_table->get(ev->record()->key());
       if (routing_row) {
@@ -89,7 +89,7 @@ class repartition_by_foreign_key : public event_consumer<K, V>, public partition
   }
 
   virtual bool eof() const {
-    return queue_len() ==0 && _routing_table->eof() && _source->eof();
+    return queue_len() == 0 && _routing_table->eof() && _source->eof();
   }
 
   virtual void commit(bool force) {
