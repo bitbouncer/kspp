@@ -116,7 +116,7 @@ namespace kspp {
 
     virtual bool process_one(int64_t tick) {
       _source->process_one(tick);
-      bool processed = (_queue.size() > 0);
+      bool processed = (this->_queue.size() > 0);
       while (this->_queue.size()) {
         auto trans = this->_queue.front();
         _lag.add_event_time(tick, trans->event_time());
