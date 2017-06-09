@@ -63,7 +63,7 @@ namespace kspp {
     }
 
     virtual bool eof() const {
-      return _source->eof() && (_queue.size() == 0);
+      return queue_len() == 0 && _source->eof();
     }
 
     virtual size_t queue_len() const {
@@ -118,9 +118,9 @@ namespace kspp {
       _source->process_one(tick);
       bool processed = (_queue.size() > 0);
       while (this->_queue.size()) {
-        auto trans = _queue.front();
+        auto trans = this->_queue.front();
         _lag.add_event_time(tick, trans->event_time());
-        _queue.pop_front();
+        this->_queue.pop_front();
         _currrent_id = trans->id(); // we capture this to have it in push_back callback
         _extractor(trans, this);
         _currrent_id.reset(); // must be freed otherwise we continue to hold the last ev
