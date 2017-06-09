@@ -118,7 +118,6 @@ class count_by_key : public event_consumer<K, void>, public materialized_source<
   private:
   std::shared_ptr<partition_source<K, void>> _stream;
   STATE_STORE<K, V, CODEC>                   _counter_store;
-  //event_queue<kevent<K, void>>               _queue;
   int64_t                                    _punctuate_intervall;
   int64_t                                    _next_punctuate;
   bool                                       _dirty;

@@ -71,7 +71,6 @@ namespace kspp {
   private:
     std::shared_ptr<partition_source<K, V>> _source;
     predicate                               _predicate;
-    //event_queue<kevent<K, V>>               _queue;
     metric_lag                              _lag;
     metric_counter                          _predicate_false;
   };

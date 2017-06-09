@@ -127,7 +127,6 @@ class count_by_value : public materialized_source<K, V>
   private:
   std::shared_ptr<partition_source<K, V>> _stream;
   STATE_STORE<K, V, CODEC>                _counter_store;
-  //event_queue<kevent<K, V>>               _queue;
   int64_t                                 _punctuate_intervall;
   int64_t                                 _next_punctuate;
   bool                                    _dirty;

@@ -6,13 +6,14 @@
 
 namespace kspp {
   template<class K, class SV, class RV>
-  class transform_value : public partition_source<K, RV>
+  class transform_value : public event_consumer<K, SV>, public partition_source<K, RV>
   {
   public:
     typedef std::function<void(std::shared_ptr<kevent<K, SV>> record, transform_value* self)> extractor; // maybee better to pass this and send() directrly
 
     transform_value(topology_base& topology, std::shared_ptr<partition_source<K, SV>> source, extractor f)
-      : partition_source<K, RV>(source.get(), source->partition())
+      : event_consumer<K, SV>()
+      , partition_source<K, RV>(source.get(), source->partition())
       , _source(source)
       , _extractor(f) {
       _source->add_sink([this](auto r) {
@@ -72,19 +73,19 @@ namespace kspp {
   private:
     std::shared_ptr<partition_source<K, SV>> _source;
     extractor                                _extractor;
-    //event_queue<kevent<K, SV>>               _queue;
     metric_lag                               _lag;
   };
 
 
   template<class K, class V>
-  class transform : public partition_source<K, V>
+  class transform : public event_consumer<K, V>, public partition_source<K, V>
   {
     public:
     typedef std::function<void(std::shared_ptr<kevent<K, V>> record, transform* self)> extractor; // maybe better to pass this and send() directrly
 
     transform(topology_base& topology, std::shared_ptr<partition_source<K, V>> source, extractor f)
-      : partition_source<K, V>(source.get(), source->partition())
+      : event_consumer<K, V>()
+      , partition_source<K, V>(source.get(), source->partition())
       , _source(source)
       , _extractor(f) {
       _source->add_sink([this](auto r) {
@@ -156,7 +157,6 @@ namespace kspp {
     std::shared_ptr<partition_source<K, V>>          _source;
     extractor                                        _extractor;
     std::shared_ptr<commit_chain::autocommit_marker> _currrent_id; // used to briefly hold the commit open during process one
-    //event_queue<kevent<K, V>>                        _queue;
     metric_lag                                       _lag;
   };
 }

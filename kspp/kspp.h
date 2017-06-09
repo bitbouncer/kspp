@@ -376,7 +376,7 @@ inline uint32_t get_partition_hash(const PK& key, std::shared_ptr<CODEC> codec =
   std::strstream s(key_buf, MAX_KEY_SIZE);
   ksize = codec->encode(key, s);
   //partition_hash = djb_hash(key_buf, ksize);
-  partition_hash = MurmurHash2(key_buf, ksize, 0x9747b28c);
+  partition_hash = MurmurHash2(key_buf, (int) ksize, 0x9747b28c);
   return partition_hash;
 }
 

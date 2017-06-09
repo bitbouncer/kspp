@@ -98,7 +98,6 @@ class repartition_by_foreign_key : public event_consumer<K, V>, public partition
   }
 
   private:
-  //event_queue<kevent<K, V>>                            _queue;
   std::shared_ptr<partition_source<K, V>>              _source;
   std::shared_ptr<materialized_source<K, FOREIGN_KEY>> _routing_table;
   std::shared_ptr<topic_sink<K, V>>                    _topic_sink;

@@ -75,7 +75,6 @@ class thoughput_limiter : public event_consumer<K, V>, public partition_source<K
 
   private:
   std::shared_ptr<partition_source<K, V>>              _source;
-  //event_queue<kevent<K, V>>                            _queue;
   std::shared_ptr<mem_token_bucket_store<int, size_t>> _token_bucket;
   metric_lag                                           _lag;
 };
