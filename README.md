@@ -28,7 +28,7 @@ optional build avro
 ```
 git clone https://github.com/apache/avro.git
 cd avro
-git checkout release-1.8.2-rc4
+git checkout release-1.8.2
 
 cd lang/c++/
 mkdir build
@@ -173,7 +173,7 @@ copy builds\libcurl-vc%VISUALSTUDIO_VERSION_MAJOR%-x64-release-static-ipv6-sspi-
 cd ..
 
 cd avro
-git checkout release-1.8.2-rc4
+git checkout release-1.8.2
 cd lang/c++/
 rm -rf build
 mkdir build & cd build
