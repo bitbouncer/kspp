@@ -3,14 +3,6 @@
 
 using namespace std::chrono_literals;
 
-template<class T>
-size_t exact_size(T& db) {
-  size_t sz = 0;
-  for (auto& i : db)
-    ++sz;
-  return sz;
-}
-
 int main(int argc, char** argv) {
   {
     // insert 3 check size
@@ -19,14 +11,14 @@ int main(int argc, char** argv) {
     assert(store.consume(0, t0) == true);
     assert(store.consume(1, t0) == true);
     assert(store.consume(2, t0) == true);
-    assert(store.size() == 3);
-    
-    assert(exact_size(store) == 3); // tests iterators
+    assert(store.exact_size() == 3);
+
+    assert(store.exact_size() == 3); // tests iterators
 
     // consume existing key
     {
       assert(store.consume(2, t0 + 10) == true);
-      assert(store.size() == 3);
+      assert(store.exact_size() == 3);
       auto res = store.get(2);
       assert(res);
       assert(res->key() == 2);
@@ -38,7 +30,7 @@ int main(int argc, char** argv) {
     // consume existing key to fast
     {
       assert(store.consume(2, t0 + 20) == false);
-      assert(store.size() == 3);
+      assert(store.exact_size() == 3);
       auto res = store.get(2);
       assert(res);
       assert(res->key() == 2);
@@ -50,7 +42,7 @@ int main(int argc, char** argv) {
     // consume existing key after one  should be available
     {
       assert(store.consume(2, t0 + 101) == true);
-      assert(store.size() == 3);
+      assert(store.exact_size() == 3);
       auto res = store.get(2);
       assert(res);
       assert(res->key() == 2);
@@ -62,7 +54,7 @@ int main(int argc, char** argv) {
     // delete existing key 
     {
       store.del(1);
-      assert(store.size() == 2);
+      assert(store.exact_size() == 2);
       auto res = store.get(1);
       assert(res);
       assert(res->key() == 1);

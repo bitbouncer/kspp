@@ -1,4 +1,5 @@
 #include <chrono>
+#include <memory>
 #pragma once
 
 namespace kspp {

@@ -65,7 +65,7 @@ namespace kspp {
     public:
       enum seek_pos_e { BEGIN, END };
 
-      iterator_impl(std::map<K, std::shared_ptr<bucket>>& container, seek_pos_e pos)
+      iterator_impl(const std::map<K, std::shared_ptr<bucket>> &container, seek_pos_e pos)
         : _container(container)
         , _it(pos == BEGIN ? _container.begin() : _container.end()) {}
 
@@ -96,8 +96,8 @@ namespace kspp {
       }
 
     private:
-      std::map<K, std::shared_ptr<bucket>>&                   _container;
-      typename std::map<K, std::shared_ptr<bucket>>::iterator _it;
+      const std::map<K, std::shared_ptr<bucket>> &_container;
+      typename std::map<K, std::shared_ptr<bucket>>::const_iterator _it;
     };
 
   public:
@@ -187,23 +187,27 @@ namespace kspp {
     /**
     * Returns the counter for the given key
     */
-    virtual std::shared_ptr<const kspp::krecord<K, V>> get(const K& key) {
-      typename std::map<K, std::shared_ptr<bucket>>::iterator item = _buckets.find(key);
+    virtual std::shared_ptr<const kspp::krecord<K, V>> get(const K &key) const {
+      typename std::map<K, std::shared_ptr<bucket>>::const_iterator item = _buckets.find(key);
       if (item == _buckets.end()) {
         return std::make_shared<kspp::krecord<K, V>>(key, _config.capacity, -1);
       }
       return std::make_shared<kspp::krecord<K, V>>(key, item->second->token(), item->second->timestamp());
     }
 
-    virtual size_t size() const {
+    virtual size_t aprox_size() const {
       return _buckets.size();
     }
 
-    typename kspp::materialized_source<K, V>::iterator begin(void) {
+    virtual size_t exact_size() const {
+      return _buckets.size();
+    }
+
+    typename kspp::materialized_source<K, V>::iterator begin(void) const {
       return typename kspp::materialized_source<K, V>::iterator(std::make_shared<iterator_impl>(_buckets, iterator_impl::BEGIN));
     }
 
-    typename kspp::materialized_source<K, V>::iterator end() {
+    typename kspp::materialized_source<K, V>::iterator end() const {
       return typename kspp::materialized_source<K, V>::iterator(std::make_shared<iterator_impl>(_buckets, iterator_impl::END));
     }
   protected:

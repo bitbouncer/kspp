@@ -12,10 +12,9 @@ namespace kspp {
     ktable(topology_base& topology, std::shared_ptr<kspp::partition_source<K, V>> source, Args... args)
       : event_consumer<K, V>()
       , materialized_source<K, V>(source.get(), source->partition())
-      , _source(source)
-      , _state_store(this->get_storage_path(topology.get_storage_path()), args...)
-      , _in_count("in_count")
-      , _state_store_count("state_store_count", [this]() { return _state_store.size(); }) {
+      , _source(source), _state_store(this->get_storage_path(topology.get_storage_path()), args...),
+        _in_count("in_count"),
+        _state_store_count("state_store_count", [this]() { return _state_store.aprox_size(); }) {
       _source->add_sink([this](auto ev) {
         _lag.add_event_time(kspp::milliseconds_since_epoch(), ev->event_time());
         ++_in_count;
@@ -83,15 +82,15 @@ namespace kspp {
       return event_consumer<K, V>::queue_len();
     }
 
-    virtual std::shared_ptr<const krecord<K, V>> get(const K& key) {
+    virtual std::shared_ptr<const krecord <K, V>> get(const K &key) const {
       return _state_store.get(key);
     }
 
-    virtual typename kspp::materialized_source<K, V>::iterator begin(void) {
+    virtual typename kspp::materialized_source<K, V>::iterator begin(void) const {
       return _state_store.begin();
     }
 
-    virtual typename kspp::materialized_source<K, V>::iterator end() {
+    virtual typename kspp::materialized_source<K, V>::iterator end() const {
       return _state_store.end();
     }
 

@@ -202,7 +202,7 @@ namespace kspp {
       }
     }
 
-    std::shared_ptr<const krecord<K, V>> get(const K& key) {
+    std::shared_ptr<const krecord <K, V>> get(const K &key) const {
       char key_buf[MAX_KEY_SIZE];
       size_t ksize = 0;
       std::ostrstream os(key_buf, MAX_KEY_SIZE);
@@ -245,10 +245,17 @@ namespace kspp {
       }
     }
 
-    virtual size_t size() const {
+    virtual size_t aprox_size() const {
       std::string num;
       _db->GetProperty("rocksdb.estimate-num-keys", &num);
       return std::stoll(num);
+    }
+
+    virtual size_t exact_size() const {
+      size_t sz = 0;
+      for (const auto &i : *this)
+        ++sz;
+      return sz;
     }
 
     virtual void clear() {
@@ -257,11 +264,11 @@ namespace kspp {
       }
     }
 
-    typename kspp::materialized_source<K, V>::iterator begin(void) {
+    typename kspp::materialized_source<K, V>::iterator begin(void) const {
       return typename kspp::materialized_source<K, V>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::BEGIN));
     }
 
-    typename kspp::materialized_source<K, V>::iterator end() {
+    typename kspp::materialized_source<K, V>::iterator end() const {
       return typename kspp::materialized_source<K, V>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::END));
     }
 

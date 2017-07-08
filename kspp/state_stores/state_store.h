@@ -1,5 +1,7 @@
 #pragma once
 
+#include <kspp/krecord.h>
+#include <kspp/kevent.h>
 #include <kspp/kspp.h>
 #include <string>
 #include <cstdint>
@@ -39,7 +41,9 @@ class state_store
 
   virtual void start(int64_t offset) = 0;
 
-  virtual size_t size() const = 0;
+  virtual size_t aprox_size() const = 0;
+
+  virtual size_t exact_size() const = 0;
 
   // TBD really needed for counter store
   virtual void clear() = 0;
@@ -51,9 +55,11 @@ class state_store
   /**
   * Returns a key-value pair with the given key
   */
-  virtual std::shared_ptr<const krecord<K, V>> get(const K& key) = 0;
-  virtual typename kspp::materialized_source<K, V>::iterator begin() = 0;
-  virtual typename kspp::materialized_source<K, V>::iterator end() = 0;
+  virtual std::shared_ptr<const krecord<K, V>> get(const K &key) const = 0;
+
+  virtual typename kspp::materialized_source<K, V>::iterator begin() const = 0;
+
+  virtual typename kspp::materialized_source<K, V>::iterator end() const = 0;
 
   protected:
   virtual void _insert(std::shared_ptr<const krecord<K, V>> record, int64_t offset) = 0;

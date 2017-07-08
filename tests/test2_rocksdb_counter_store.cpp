@@ -9,14 +9,6 @@ static boost::filesystem::path default_directory() {
   return boost::filesystem::temp_directory_path();
 }
 
-template<class T>
-size_t exact_size(T& db) {
-  size_t sz = 0;
-  for (auto& i : db)
-    ++sz;
-  return sz;
-}
-
 int main(int argc, char** argv) {
   boost::filesystem::path path = default_directory();
   path /= "test2_rocksdb_counter_store";
@@ -31,12 +23,12 @@ int main(int argc, char** argv) {
     store.insert(std::make_shared<kspp::krecord<int32_t, int>>(0, 1, t0), -1);
     store.insert(std::make_shared<kspp::krecord<int32_t, int>>(1, 1, t0), -1);
     store.insert(std::make_shared<kspp::krecord<int32_t, int>>(2, 1, t0), -1);
-    assert(exact_size(store) == 3);
+    assert(store.exact_size() == 3);
 
     // update existing key with new value
     {
       store.insert(std::make_shared<kspp::krecord<int32_t, int>>(2, 1, t0 + 10), -1);
-      assert(exact_size(store) == 3);
+      assert(store.exact_size() == 3);
       auto record = store.get(2);
       assert(record != nullptr);
       assert(record->key() == 2);
@@ -50,7 +42,7 @@ int main(int argc, char** argv) {
     // this should be ok since this is an aggregation
     {
       store.insert(std::make_shared<kspp::krecord<int32_t, int>>(2, 2, t0), -1);
-      assert(exact_size(store) == 3);
+      assert(store.exact_size() == 3);
       auto record = store.get(2);
       assert(record != nullptr);
       assert(record->key() == 2);
@@ -63,7 +55,7 @@ int main(int argc, char** argv) {
     // update existing key with new negative value
     {
       store.insert(std::make_shared<kspp::krecord<int32_t, int>>(0, -2, t0), -1);
-      assert(exact_size(store) == 3);
+      assert(store.exact_size() == 3);
       auto record = store.get(0);
       assert(record != nullptr);
       assert(record->key() == 0);
@@ -87,7 +79,7 @@ int main(int argc, char** argv) {
     // delete existing key with new timestamp
     {
       store.insert(std::make_shared<kspp::krecord<int32_t, int>>(2, nullptr, t0 + 30), -1);
-      assert(exact_size(store) == 2);
+      assert(store.exact_size() == 2);
       auto record = store.get(2);
       assert(record == nullptr);
     }

@@ -112,15 +112,15 @@ class count_by_value : public materialized_source<K, V>
   }
 
   // inherited from kmaterialized_source
-  virtual std::shared_ptr<const krecord<K, V>> get(const K& key) {
+  virtual std::shared_ptr<const krecord<K, V>> get(const K &key) const {
     return _counter_store.get(key);
   }
 
-  virtual typename kspp::materialized_source<K, V>::iterator begin(void) {
+  virtual typename kspp::materialized_source<K, V>::iterator begin(void) const {
     return _counter_store.begin();
   }
 
-  virtual typename kspp::materialized_source<K, V>::iterator end() {
+  virtual typename kspp::materialized_source<K, V>::iterator end() const {
     return _counter_store.end();
   }
 

@@ -243,8 +243,7 @@ class avro_serdes
     }
 
     try {
-      std::auto_ptr<avro::InputStream> bin_is = avro::memoryInputStream((const uint8_t*) payload + 5, size - 5);
-      //avro::DecoderPtr bin_decoder = avro::validatingDecoder(*schema, avro::binaryDecoder());
+      auto bin_is = avro::memoryInputStream((const uint8_t *) payload + 5, size - 5);
       avro::DecoderPtr bin_decoder = avro::binaryDecoder();
       bin_decoder->init(*bin_is);
       avro::decode(*bin_decoder, dst);
@@ -497,9 +496,8 @@ template<> inline size_t avro_serdes::decode(const char* payload, size_t size, k
     return 0;
 
   try {
-    std::auto_ptr<avro::InputStream> bin_is = avro::memoryInputStream((const uint8_t*) payload + 5, size - 5);
+    auto bin_is = avro::memoryInputStream((const uint8_t *) payload + 5, size - 5);
     avro::DecoderPtr bin_decoder = avro::validatingDecoder(*validSchema, avro::binaryDecoder());
-    //avro::DecoderPtr bin_decoder = avro::binaryDecoder();
     dst.create(validSchema, schema_id);
     bin_decoder->init(*bin_is);
     avro::decode(*bin_decoder, *dst.generic_datum());

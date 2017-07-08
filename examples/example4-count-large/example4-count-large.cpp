@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
     topology->flush();
 
     for (auto i : word_counts)
-      for (auto j : *i)
+      for (const auto j : *i)
         std::cerr << j->key() << " : " << *j->value() << std::endl;
 
     topology->for_each_metrics([](kspp::metric& m) {
