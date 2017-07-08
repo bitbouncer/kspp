@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 2.8.11)
 
-option(ENABLE_AVRO    "enable avro support" OFF)
-option(ENABLE_ROCKSDB "enable rocksdb support" OFF)
-option(BUILD_SAMPLES  "build examples" OFF)
-option(BUILD_TESTS    "build tests" OFF)
+option(ENABLE_POSTGRES "enable postgres support" OFF)
+option(ENABLE_AVRO     "enable avro support" OFF)
+option(ENABLE_ROCKSDB  "enable rocksdb support" OFF)
+option(BUILD_SAMPLES   "build examples" OFF)
+option(BUILD_TESTS     "build tests" OFF)
 
 set(CMAKE_CXX_STANDARD 14)
 
@@ -136,12 +137,18 @@ SET(CSI_INCLUDE_PATH
   ${CMAKE_SOURCE_DIR}/../csi-hcl-asio
 )
 SET(CSI_LIBRARY_PATH ${CSI_LIBRARY_PATH} ${CMAKE_SOURCE_DIR}/../avro/lang/c++/build)
-SET(CSI_AVRO_LIBS avrocpp_s curl)
+SET(AVRO_LIBS avrocpp_s curl)
 endif() #AVRO
 
 if (ENABLE_ROCKSDB)	
-SET(CSI_ROCKSDB_LIBS rocksdb snappy bz2 z)
+SET(ROCKSDB_LIBS rocksdb snappy bz2 z)
 endif() #ROCKSDB
+
+if (ENABLE_POSTGRES)	
+SET(POSTGRES_LIBS pq)
+endif() #ENABLE_POSTGRES
+
+SET(LIBRDKAFKA_LIBS rdkafka++ rdkafka)
 
 SET(LIBRARY_OUTPUT_PATH     ${CMAKE_SOURCE_DIR}/lib)
 SET(EXECUTABLE_OUTPUT_PATH  ${CMAKE_SOURCE_DIR}/bin)
@@ -149,8 +156,7 @@ add_definitions(-D_FILE_OFFSET_BITS=64 -D_REENTRANT -DEXTERNAL_LOCKS -DMULTITHRE
 add_definitions(-fPIC)
 add_definitions(-DBOOST_LOG_DYN_LINK)
 add_definitions(-Wno-deprecated)
-SET(LIBRDKAFKA_LIBS rdkafka++ rdkafka)
-SET(CSI_LIBS kspp ${CSI_AVRO_LIBS} ${CSI_ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${BOOST_LIBS} crypto ssl)
+SET(CSI_LIBS kspp ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${POSTGRES_LIBS} ${BOOST_LIBS} crypto ssl)
 endif() #LINUX
 
 include_directories(${CSI_INCLUDE_PATH} ${CMAKE_SOURCE_DIR})
