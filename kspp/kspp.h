@@ -633,9 +633,12 @@ class materialized_source : public partition_source<K, V>
     bool operator!=(const iterator& other) const { return !(*this == other); }
     std::shared_ptr<const krecord<K, V>> operator*() const { return _impl->item(); }
   };
-  virtual iterator begin() = 0;
-  virtual iterator end() = 0;
-  virtual std::shared_ptr<const krecord<K, V>> get(const K& key) = 0;
+
+  virtual iterator begin() const = 0;
+
+  virtual iterator end() const = 0;
+
+  virtual std::shared_ptr<const krecord<K, V>> get(const K &key) const = 0;
 
   materialized_source(partition_processor* upstream, int32_t partition)
     : partition_source<K, V>(upstream, partition) {

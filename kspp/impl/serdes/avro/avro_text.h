@@ -17,7 +17,7 @@ template<> inline size_t text_serdes::encode(const GenericAvro& src, std::ostrea
 
   /* JSON output stream */
   //std::ostringstream oss;
-  std::auto_ptr<avro::OutputStream> json_os = avro::ostreamOutputStream(dst);
+  auto json_os = avro::ostreamOutputStream(dst);
 
   try {
     /* Encode Avro datum to JSON */

@@ -27,7 +27,8 @@ class rocksdb_windowed_store
     public:
     enum seek_pos_e { BEGIN, END };
 
-    iterator_impl(std::map<int64_t, std::shared_ptr<rocksdb::DB>>& container, std::shared_ptr<CODEC> codec, seek_pos_e pos)
+    iterator_impl(const std::map<int64_t, std::shared_ptr<rocksdb::DB>> &container, std::shared_ptr<CODEC> codec,
+                  seek_pos_e pos)
       : _container(container)
       , _outer_it(pos == BEGIN ? _container.begin() : _container.end())
       , _codec(codec) {
@@ -109,10 +110,10 @@ class rocksdb_windowed_store
     }
 
     private:
-    std::map<int64_t, std::shared_ptr<rocksdb::DB>>&                    _container;
-    typename std::map<int64_t, std::shared_ptr<rocksdb::DB>>::iterator  _outer_it;
-    typename std::unique_ptr<rocksdb::Iterator>                         _inner_it;
-    std::shared_ptr<CODEC>                                              _codec;
+    const std::map<int64_t, std::shared_ptr<rocksdb::DB>> &_container;
+    typename std::map<int64_t, std::shared_ptr<rocksdb::DB>>::const_iterator _outer_it;
+    typename std::unique_ptr<rocksdb::Iterator> _inner_it;
+    std::shared_ptr<CODEC> _codec;
   };
 
   rocksdb_windowed_store(boost::filesystem::path storage_path, std::chrono::milliseconds slot_width, size_t nr_of_slots, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
@@ -252,7 +253,7 @@ class rocksdb_windowed_store
     }
   }
 
-  std::shared_ptr<const krecord<K, V>> get(const K& key) {
+  std::shared_ptr<const krecord<K, V>> get(const K &key) const {
     char key_buf[MAX_KEY_SIZE];
     size_t ksize = 0;
     {
@@ -312,7 +313,7 @@ class rocksdb_windowed_store
     return _current_offset;
   }
 
-  virtual size_t size() const {
+  virtual size_t aprox_size() const {
     size_t count = 0;
     for (auto& i : _buckets) {
       std::string num;
@@ -322,16 +323,24 @@ class rocksdb_windowed_store
     return count;
   }
 
+  virtual size_t exact_size() const {
+    size_t sz = 0;
+    for (const auto &i : *this)
+      ++sz;
+    return sz;
+  }
+
+
   virtual void clear() {
     _buckets.clear(); // how do we kill database on disk?
     _current_offset = -1;
   }
 
-  typename kspp::materialized_source<K, V>::iterator begin(void) {
+  typename kspp::materialized_source<K, V>::iterator begin(void) const {
     return typename kspp::materialized_source<K, V>::iterator(std::make_shared<iterator_impl>(_buckets, _codec, iterator_impl::BEGIN));
   }
 
-  typename kspp::materialized_source<K, V>::iterator end() {
+  typename kspp::materialized_source<K, V>::iterator end() const {
     return typename kspp::materialized_source<K, V>::iterator(std::make_shared<iterator_impl>(_buckets, _codec, iterator_impl::END));
   }
 

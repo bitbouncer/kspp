@@ -5,20 +5,19 @@
 namespace kspp {
   template<class K, class V, class CODEC = void>
   class mem_windowed_store
-    : public state_store<K, V> {
-    
-    typedef std::map<K, std::shared_ptr<const krecord<K, V>>> bucket_type;
+          : public state_store<K, V> {
+
+    typedef std::map<K, std::shared_ptr<const krecord <K, V>>> bucket_type;
 
   public:
     class iterator_impl
-      : public kmaterialized_source_iterator_impl<K, V> {
+            : public kmaterialized_source_iterator_impl<K, V> {
 
     public:
       enum seek_pos_e { BEGIN, END };
 
-      iterator_impl(std::map <int64_t, std::shared_ptr<bucket_type>>& container, seek_pos_e pos)
-        : _container(container)
-        , _outer_it(pos == BEGIN ? _container.begin() : _container.end()) {
+      iterator_impl(const std::map<int64_t, std::shared_ptr<bucket_type>> &container, seek_pos_e pos)
+              : _container(container), _outer_it(pos == BEGIN ? _container.begin() : _container.end()) {
         if (pos == BEGIN) {
           // skip empty buckets
           while (_outer_it != _container.end() && _outer_it->second->size() == 0)
@@ -32,7 +31,7 @@ namespace kspp {
       }
 
       virtual bool valid() const {
-        return  _outer_it != _container.end();
+        return _outer_it != _container.end();
       }
 
       virtual void next() {
@@ -50,29 +49,29 @@ namespace kspp {
         }
       }
 
-      virtual std::shared_ptr<const krecord<K, V>> item() const {
+      virtual std::shared_ptr<const krecord <K, V>> item() const {
         return (_outer_it == _container.end()) ? nullptr : _inner_it->second;
       }
 
-      virtual bool operator==(const kmaterialized_source_iterator_impl<K, V>& other) const {
+      virtual bool operator==(const kmaterialized_source_iterator_impl <K, V> &other) const {
         if (valid() && !other.valid())
           return false;
         if (!valid() && !other.valid())
           return true;
         if (valid() && other.valid())
-          return (_outer_it->first == ((const iterator_impl&)other)._outer_it->first) && (_inner_it->first == ((const iterator_impl&)other)._inner_it->first);
+          return (_outer_it->first == ((const iterator_impl &) other)._outer_it->first) &&
+                 (_inner_it->first == ((const iterator_impl &) other)._inner_it->first);
         return false;
       }
 
     private:
-      std::map<int64_t, std::shared_ptr<bucket_type>>&                                                         _container;
-      typename std::map<int64_t, std::shared_ptr<std::map<K, std::shared_ptr<const krecord<K, V>>>>>::iterator _outer_it;
-      typename std::map<K, std::shared_ptr<const krecord<K, V>>>::iterator                                     _inner_it;
+      const std::map<int64_t, std::shared_ptr<bucket_type>> &_container;
+      typename std::map<int64_t, std::shared_ptr<std::map<K, std::shared_ptr<const krecord <K, V>>>>>::const_iterator _outer_it;
+      typename std::map<K, std::shared_ptr<const krecord <K, V>>>::const_iterator _inner_it;
     };
 
     mem_windowed_store(boost::filesystem::path storage_path, std::chrono::milliseconds slot_width, size_t nr_of_slots)
-      : _slot_width(slot_width.count())
-      , _nr_of_slots(nr_of_slots) {
+            : _slot_width(slot_width.count()), _nr_of_slots(nr_of_slots) {
     }
 
     virtual ~mem_windowed_store() {
@@ -92,8 +91,8 @@ namespace kspp {
       if (this->_sink) {
         std::vector<std::shared_ptr<krecord<K, V>>> tombstones;
         for (auto i = _buckets.begin(); i != upper_bound; ++i) {
-          for (auto&& j : *i->second)
-            this->_sink(std::make_shared<kevent<K,V>>(std::make_shared<krecord<K, V>>(j.first, nullptr, tick)));
+          for (auto &&j : *i->second)
+            this->_sink(std::make_shared<kevent<K, V>>(std::make_shared<krecord<K, V>>(j.first, nullptr, tick)));
         }
       }
       _buckets.erase(_buckets.begin(), upper_bound);
@@ -102,7 +101,7 @@ namespace kspp {
     /**
     * Put a key-value pair
     */
-    virtual void _insert(std::shared_ptr<const krecord<K, V>> record, int64_t offset) {
+    virtual void _insert(std::shared_ptr<const krecord <K, V>> record, int64_t offset) {
       _current_offset = std::max<int64_t>(_current_offset, offset);
       int64_t new_slot = get_slot_index(record->event_time());
       // old updates is killed straight away...
@@ -114,7 +113,8 @@ namespace kspp {
         if (record->value()) {
           auto bucket_it = _buckets.find(new_slot);
           if (bucket_it == _buckets.end()) { // new slot  
-            auto it = _buckets.insert(std::pair<int64_t, std::shared_ptr<bucket_type>>(new_slot, std::make_shared<bucket_type>()));
+            auto it = _buckets.insert(
+                    std::pair<int64_t, std::shared_ptr<bucket_type>>(new_slot, std::make_shared<bucket_type>()));
             std::shared_ptr<bucket_type> bucket = it.first->second;
             (*bucket)[record->key()] = record;
           } else { // existing slot 
@@ -130,10 +130,10 @@ namespace kspp {
 
       int64_t old_slot = get_slot_index(old_record->event_time());
 
-      if (record->value() ==nullptr) {
+      if (record->value() == nullptr) {
         auto bucket_it = _buckets.find(old_slot);
         assert(bucket_it != _buckets.end()); // should never fail - we know we have an old value
-        if (bucket_it != _buckets.end()) 
+        if (bucket_it != _buckets.end())
           bucket_it->second->erase(record->key());
         return;
       }
@@ -152,7 +152,8 @@ namespace kspp {
         // insert new value
         bucket_it = _buckets.find(new_slot);
         if (bucket_it == _buckets.end()) {  // new slot  
-          auto it = _buckets.insert(std::pair<int64_t, std::shared_ptr<bucket_type>>(new_slot, std::make_shared<bucket_type>()));
+          auto it = _buckets.insert(
+                  std::pair<int64_t, std::shared_ptr<bucket_type>>(new_slot, std::make_shared<bucket_type>()));
           std::shared_ptr<bucket_type> bucket = it.first->second;
           (*bucket)[record->key()] = record;
           assert(get_slot_index(record->event_time()) == new_slot); // make sure this item is in right slot...
@@ -186,8 +187,8 @@ namespace kspp {
     /**
     * Returns a key-value pair with the given key
     */
-    virtual std::shared_ptr<const krecord<K, V>> get(const K& key) {
-      for (auto&& i : _buckets) {
+    virtual std::shared_ptr<const krecord <K, V>> get(const K &key) const {
+      for (auto &&i : _buckets) {
         auto item = i.second->find(key);
         if (item != i.second->end()) {
           //int64_t expected = get_slot_index(item->second->event_time());
@@ -200,9 +201,16 @@ namespace kspp {
       //return (it == _store.end()) ? nullptr : it->second;
     }
 
-    virtual size_t size() const {
+    virtual size_t aprox_size() const {
       size_t sz = 0;
-      for (auto&& i : _buckets)
+      for (auto &&i : _buckets)
+        sz += i.second->size();
+      return sz;
+    }
+
+    virtual size_t exact_size() const {
+      size_t sz = 0;
+      for (auto &&i : _buckets)
         sz += i.second->size();
       return sz;
     }
@@ -212,16 +220,18 @@ namespace kspp {
       _current_offset = -1;
     }
 
-    typename kspp::materialized_source<K, V>::iterator begin(void) {
-      return typename kspp::materialized_source<K, V>::iterator(std::make_shared<iterator_impl>(_buckets, iterator_impl::BEGIN));
+    typename kspp::materialized_source<K, V>::iterator begin(void) const {
+      return typename kspp::materialized_source<K, V>::iterator(
+              std::make_shared<iterator_impl>(_buckets, iterator_impl::BEGIN));
     }
 
-    typename kspp::materialized_source<K, V>::iterator end() {
-      return typename kspp::materialized_source<K, V>::iterator(std::make_shared<iterator_impl>(_buckets, iterator_impl::END));
+    typename kspp::materialized_source<K, V>::iterator end() const {
+      return typename kspp::materialized_source<K, V>::iterator(
+              std::make_shared<iterator_impl>(_buckets, iterator_impl::END));
     }
 
   private:
-    inline int64_t get_slot_index(int64_t timestamp) {
+    inline int64_t get_slot_index(int64_t timestamp) const {
       return timestamp / _slot_width;
     }
 
@@ -239,11 +249,11 @@ namespace kspp {
     //}
 
 
-    std::shared_ptr<kspp::partition_source<K, V>>   _source;
+    std::shared_ptr<kspp::partition_source<K, V>> _source;
     std::map<int64_t, std::shared_ptr<bucket_type>> _buckets;
-    int64_t                                         _slot_width;
-    size_t                                          _nr_of_slots;
-    int64_t                                         _oldest_kept_slot;
-    int64_t                                         _current_offset;
+    int64_t _slot_width;
+    size_t _nr_of_slots;
+    int64_t _oldest_kept_slot;
+    int64_t _current_offset;
   };
 }

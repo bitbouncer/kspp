@@ -53,7 +53,7 @@ int main(int argc, char **argv) {
 
     size_t items_in_tables = 0;
     for (auto&& i : tables)
-      for (auto&& j : *i)
+      for (const auto &&j : *i)
         ++items_in_tables;
 
     size_t table_updates = 0;

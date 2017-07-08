@@ -61,6 +61,7 @@ namespace kspp {
     virtual size_t queue_len() const {
       return this->_queue.size();
     }
+
     virtual bool eof() const {
       return (queue_len()==0) && _source->eof());
     }

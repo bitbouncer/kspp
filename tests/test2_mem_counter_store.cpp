@@ -9,12 +9,12 @@ int main(int argc, char** argv) {
   store.insert(std::make_shared<kspp::krecord<int32_t, int>>(0, 1, t0), -1);
   store.insert(std::make_shared<kspp::krecord<int32_t, int>>(1, 1, t0), -1);
   store.insert(std::make_shared<kspp::krecord<int32_t, int>>(2, 1, t0), -1);
-  assert(store.size() == 3);
+  assert(store.exact_size() == 3);
 
   // update existing key with new value
   {
     store.insert(std::make_shared<kspp::krecord<int32_t, int>>(2, 1, t0 + 10), -1);
-    assert(store.size() == 3);
+    assert(store.exact_size() == 3);
     auto record = store.get(2);
     assert(record != nullptr);
     assert(record->key() == 2);
@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
   // this should be ok since this is an aggregation
   {
     store.insert(std::make_shared<kspp::krecord<int32_t, int>>(2, 2, t0), -1);
-    assert(store.size() == 3);
+    assert(store.exact_size() == 3);
     auto record = store.get(2);
     assert(record != nullptr);
     assert(record->key() == 2);
@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
   // update existing key with new negative value
   {
     store.insert(std::make_shared<kspp::krecord<int32_t, int>>(0, -2, t0), -1);
-    assert(store.size() == 3);
+    assert(store.exact_size() == 3);
     auto record = store.get(0);
     assert(record != nullptr);
     assert(record->key() == 0);
@@ -51,7 +51,7 @@ int main(int argc, char** argv) {
   // should be forbidden
   {
     store.insert(std::make_shared<kspp::krecord<int32_t, int>>(2, nullptr, t0), -1);
-    assert(store.size() == 3);
+    assert(store.exact_size() == 3);
     auto record = store.get(2);
     assert(record != nullptr);
     assert(record->key() == 2);
@@ -62,7 +62,7 @@ int main(int argc, char** argv) {
   // delete existing key with new timestamp
   {
     store.insert(std::make_shared<kspp::krecord<int32_t, int>>(2, nullptr, t0 + 30), -1);
-    assert(store.size() == 2);
+    assert(store.exact_size() == 2);
     auto record = store.get(2);
     assert(record == nullptr);
   }

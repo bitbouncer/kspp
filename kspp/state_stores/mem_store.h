@@ -11,7 +11,7 @@
     public:
       enum seek_pos_e { BEGIN, END };
 
-      iterator_impl(std::map<K, std::shared_ptr<const krecord<K, V>>>& container, seek_pos_e pos)
+      iterator_impl(const std::map<K, std::shared_ptr<const krecord<K, V>>> &container, seek_pos_e pos)
         : _container(container)
         , _it(pos == BEGIN ? _container.begin() : _container.end()) {
       }
@@ -41,8 +41,8 @@
       }
 
     private:
-      std::map<K, std::shared_ptr<const krecord<K, V>>>& _container;
-      typename std::map<K, std::shared_ptr<const krecord<K, V>>>::iterator _it;
+      const std::map<K, std::shared_ptr<const krecord<K, V>>> &_container;
+      typename std::map<K, std::shared_ptr<const krecord<K, V>>>::const_iterator _it;
     };
 
     mem_store(boost::filesystem::path storage_path){
@@ -103,7 +103,7 @@
     /**
     * Returns a key-value pair with the given key
     */
-    virtual std::shared_ptr<const krecord<K, V>> get(const K& key) {
+    virtual std::shared_ptr<const krecord<K, V>> get(const K &key) const {
       auto it = _store.find(key);
       return (it == _store.end()) ? nullptr : it->second;
     }
@@ -113,15 +113,19 @@
       _current_offset = -1;
     }
 
-    virtual size_t size() const {
+    virtual size_t aprox_size() const {
       return _store.size();
     }
 
-    typename kspp::materialized_source<K, V>::iterator begin(void) {
+    virtual size_t exact_size() const {
+      return _store.size();
+    }
+
+    typename kspp::materialized_source<K, V>::iterator begin(void) const {
       return typename kspp::materialized_source<K, V>::iterator(std::make_shared<iterator_impl>(_store, iterator_impl::BEGIN));
     }
 
-    typename kspp::materialized_source<K, V>::iterator end() {
+    typename kspp::materialized_source<K, V>::iterator end() const {
       return typename kspp::materialized_source<K, V>::iterator(std::make_shared<iterator_impl>(_store, iterator_impl::END));
     }
 
