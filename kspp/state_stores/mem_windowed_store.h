@@ -7,7 +7,7 @@ namespace kspp {
   class mem_windowed_store
           : public state_store<K, V> {
 
-    typedef std::map<K, std::shared_ptr<const krecord <K, V>>> bucket_type;
+    typedef std::map<K, std::shared_ptr<const krecord<K, V>>> bucket_type;
 
   public:
     class iterator_impl
@@ -49,11 +49,11 @@ namespace kspp {
         }
       }
 
-      virtual std::shared_ptr<const krecord <K, V>> item() const {
+      virtual std::shared_ptr<const krecord<K, V>> item() const {
         return (_outer_it == _container.end()) ? nullptr : _inner_it->second;
       }
 
-      virtual bool operator==(const kmaterialized_source_iterator_impl <K, V> &other) const {
+      virtual bool operator==(const kmaterialized_source_iterator_impl<K, V> &other) const {
         if (valid() && !other.valid())
           return false;
         if (!valid() && !other.valid())
@@ -66,8 +66,8 @@ namespace kspp {
 
     private:
       const std::map<int64_t, std::shared_ptr<bucket_type>> &_container;
-      typename std::map<int64_t, std::shared_ptr<std::map<K, std::shared_ptr<const krecord <K, V>>>>>::const_iterator _outer_it;
-      typename std::map<K, std::shared_ptr<const krecord <K, V>>>::const_iterator _inner_it;
+      typename std::map<int64_t, std::shared_ptr<std::map<K, std::shared_ptr<const krecord<K, V>>>>>::const_iterator _outer_it;
+      typename std::map<K, std::shared_ptr<const krecord<K, V>>>::const_iterator _inner_it;
     };
 
     mem_windowed_store(boost::filesystem::path storage_path, std::chrono::milliseconds slot_width, size_t nr_of_slots)
@@ -101,7 +101,7 @@ namespace kspp {
     /**
     * Put a key-value pair
     */
-    virtual void _insert(std::shared_ptr<const krecord <K, V>> record, int64_t offset) {
+    virtual void _insert(std::shared_ptr<const krecord<K, V>> record, int64_t offset) {
       _current_offset = std::max<int64_t>(_current_offset, offset);
       int64_t new_slot = get_slot_index(record->event_time());
       // old updates is killed straight away...
@@ -187,7 +187,7 @@ namespace kspp {
     /**
     * Returns a key-value pair with the given key
     */
-    virtual std::shared_ptr<const krecord <K, V>> get(const K &key) const {
+    virtual std::shared_ptr<const krecord<K, V>> get(const K &key) const {
       for (auto &&i : _buckets) {
         auto item = i.second->find(key);
         if (item != i.second->end()) {

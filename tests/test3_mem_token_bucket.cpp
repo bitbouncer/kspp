@@ -3,7 +3,7 @@
 
 using namespace std::chrono_literals;
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   {
     // insert 3 check size
     kspp::mem_token_bucket_store<int32_t, int8_t> store(100ms, 2);
@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
       assert(res);
       assert(res->key() == 2);
       assert(res->value());
-      assert(*res->value()==1);
+      assert(*res->value() == 1);
       assert(res->event_time() == t0 + 101);// more than full time period so reset
     }
 

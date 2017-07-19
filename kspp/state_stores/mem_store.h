@@ -1,23 +1,22 @@
 #include "state_store.h"
-#include <map> 
+#include <map>
 
- namespace kspp {
- template<class K, class V, class CODEC=void>
-  class mem_store 
-    : public state_store<K, V> {
+namespace kspp {
+  template<class K, class V, class CODEC=void>
+  class mem_store
+          : public state_store<K, V> {
   public:
-    class iterator_impl 
-      : public kmaterialized_source_iterator_impl<K, V> {
+    class iterator_impl
+            : public kmaterialized_source_iterator_impl<K, V> {
     public:
       enum seek_pos_e { BEGIN, END };
 
       iterator_impl(const std::map<K, std::shared_ptr<const krecord<K, V>>> &container, seek_pos_e pos)
-        : _container(container)
-        , _it(pos == BEGIN ? _container.begin() : _container.end()) {
+              : _container(container), _it(pos == BEGIN ? _container.begin() : _container.end()) {
       }
 
       virtual bool valid() const {
-        return  _it != _container.end();
+        return _it != _container.end();
       }
 
       virtual void next() {
@@ -30,13 +29,13 @@
         return (_it == _container.end()) ? nullptr : _it->second;
       }
 
-      virtual bool operator==(const kmaterialized_source_iterator_impl<K, V>& other) const {
+      virtual bool operator==(const kmaterialized_source_iterator_impl<K, V> &other) const {
         if (valid() && !other.valid())
           return false;
         if (!valid() && !other.valid())
           return true;
         if (valid() && other.valid())
-          return _it->first == ((const iterator_impl&)other)._it->first;
+          return _it->first == ((const iterator_impl &) other)._it->first;
         return false;
       }
 
@@ -45,7 +44,7 @@
       typename std::map<K, std::shared_ptr<const krecord<K, V>>>::const_iterator _it;
     };
 
-    mem_store(boost::filesystem::path storage_path){
+    mem_store(boost::filesystem::path storage_path) {
     }
 
     virtual ~mem_store() {
@@ -57,7 +56,7 @@
 
     virtual void close() {
     }
-    
+
     /**
     * Put a key-value pair if timestamp is greater or equal to existing record
     */
@@ -81,14 +80,14 @@
       else
         _store.erase(record->key());
     }
-          
+
     /**
     * commits the offset
     */
     virtual void commit(bool flush) {
       // noop
     }
-   
+
     /**
     * returns last offset
     */
@@ -122,15 +121,17 @@
     }
 
     typename kspp::materialized_source<K, V>::iterator begin(void) const {
-      return typename kspp::materialized_source<K, V>::iterator(std::make_shared<iterator_impl>(_store, iterator_impl::BEGIN));
+      return typename kspp::materialized_source<K, V>::iterator(
+              std::make_shared<iterator_impl>(_store, iterator_impl::BEGIN));
     }
 
     typename kspp::materialized_source<K, V>::iterator end() const {
-      return typename kspp::materialized_source<K, V>::iterator(std::make_shared<iterator_impl>(_store, iterator_impl::END));
+      return typename kspp::materialized_source<K, V>::iterator(
+              std::make_shared<iterator_impl>(_store, iterator_impl::END));
     }
 
   private:
     std::map<K, std::shared_ptr<const krecord<K, V>>> _store;
-    int64_t                                           _current_offset;
+    int64_t _current_offset;
   };
- }
+}

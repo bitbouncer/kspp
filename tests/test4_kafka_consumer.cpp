@@ -1,5 +1,4 @@
 #include <iostream>
-#include <string>
 #include <chrono>
 #include <cassert>
 #include <kspp/impl/sources/kafka_consumer.h>
@@ -7,21 +6,20 @@
 
 using namespace std::chrono_literals;
 
-struct record
-{
+struct record {
   std::string key;
   std::string value;
 };
 
 static std::vector<record> test_data =
-{
-  { "k0", "v0" },
-  { "k1", "v1" },
-  { "k2", "v2" },
-  { "k3", "v3" }
-};
+        {
+                {"k0", "v0"},
+                {"k1", "v1"},
+                {"k2", "v2"},
+                {"k3", "v3"}
+        };
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   kspp::kafka_producer producer("localhost", "kspp_test4", 100ms);
 
   // create a dummy consumer just to trigger kafka broker
@@ -48,7 +46,8 @@ int main(int argc, char** argv) {
     // produce some
     {
       for (auto i : test_data) {
-        int ec = producer.produce(0, kspp::kafka_producer::COPY, (void*) i.key.data(), i.key.size(), (void*) i.value.data(), i.value.size(), timestamp0, nullptr);
+        int ec = producer.produce(0, kspp::kafka_producer::COPY, (void *) i.key.data(), i.key.size(),
+                                  (void *) i.value.data(), i.value.size(), timestamp0, nullptr);
         if (ec) {
           std::cerr << ", failed to produce, reason:" << RdKafka::err2str((RdKafka::ErrorCode) ec) << std::endl;
         }
@@ -65,8 +64,8 @@ int main(int argc, char** argv) {
       if (p) {
         int64_t offset = p->offset();
         record r;
-        r.key.assign((const char*) p->key_pointer(), p->key_len());
-        r.value.assign((const char*) p->payload(), p->len());
+        r.key.assign((const char *) p->key_pointer(), p->key_len());
+        r.value.assign((const char *) p->payload(), p->len());
         assert(p->timestamp().timestamp == timestamp0);
         res.push_back(r);
       }
@@ -103,7 +102,8 @@ int main(int argc, char** argv) {
       {
         // produce some
         for (auto i : test_data) {
-          int ec = producer.produce(0, kspp::kafka_producer::COPY, (void*) i.key.data(), i.key.size(), (void*) i.value.data(), i.value.size(), timestamp2, nullptr);
+          int ec = producer.produce(0, kspp::kafka_producer::COPY, (void *) i.key.data(), i.key.size(),
+                                    (void *) i.value.data(), i.value.size(), timestamp2, nullptr);
         }
         assert(producer.flush(1000) == 0);
       }
@@ -117,8 +117,8 @@ int main(int argc, char** argv) {
             if (last_comitted_offset == -1)
               last_comitted_offset = p->offset();
             record r;
-            r.key.assign((const char*) p->key_pointer(), p->key_len());
-            r.value.assign((const char*) p->payload(), p->len());
+            r.key.assign((const char *) p->key_pointer(), p->key_len());
+            r.value.assign((const char *) p->payload(), p->len());
             assert(p->timestamp().timestamp == timestamp2);
             res.push_back(r);
           }
@@ -153,8 +153,8 @@ int main(int argc, char** argv) {
             if (first_offset == -1)
               first_offset = p->offset();
             record r;
-            r.key.assign((const char*) p->key_pointer(), p->key_len());
-            r.value.assign((const char*) p->payload(), p->len());
+            r.key.assign((const char *) p->key_pointer(), p->key_len());
+            r.value.assign((const char *) p->payload(), p->len());
             assert(p->timestamp().timestamp == timestamp2);
             res.push_back(r);
           }
@@ -162,22 +162,22 @@ int main(int argc, char** argv) {
             break;
         }
         std::cout << "reading first offset " << first_offset << std::endl;
-        assert(first_offset == last_comitted_offset+1);
+        assert(first_offset == last_comitted_offset + 1);
         assert(res.size() == 3);
         for (int i = 0; i != 3; ++i) {
-          assert(res[i].key == test_data[i+1].key);
-          assert(res[i].value == test_data[i+1].value);
+          assert(res[i].key == test_data[i + 1].key);
+          assert(res[i].value == test_data[i + 1].value);
         }
       }
     } //// test 2 phase B
   }// test 2
 
-   // test 3
-   // start from end
-   // commit offset
-   // and produce 4 records - make sure we get same 4 records
-   // stop 
-   // restart same consumer from committed offset
+  // test 3
+  // start from end
+  // commit offset
+  // and produce 4 records - make sure we get same 4 records
+  // stop
+  // restart same consumer from committed offset
   {
     int64_t timestamp3 = 3234567890;
     int64_t last_comitted_offset = -1;
@@ -194,7 +194,8 @@ int main(int argc, char** argv) {
     // produce some
     {
       for (auto i : test_data) {
-        int ec = producer.produce(0, kspp::kafka_producer::COPY, (void*) i.key.data(), i.key.size(), (void*) i.value.data(), i.value.size(), timestamp3, nullptr);
+        int ec = producer.produce(0, kspp::kafka_producer::COPY, (void *) i.key.data(), i.key.size(),
+                                  (void *) i.value.data(), i.value.size(), timestamp3, nullptr);
       }
       assert(producer.flush(1000) == 0);
     }
@@ -208,8 +209,8 @@ int main(int argc, char** argv) {
           if (last_comitted_offset == -1)
             last_comitted_offset = p->offset();
           record r;
-          r.key.assign((const char*) p->key_pointer(), p->key_len());
-          r.value.assign((const char*) p->payload(), p->len());
+          r.key.assign((const char *) p->key_pointer(), p->key_len());
+          r.value.assign((const char *) p->payload(), p->len());
           assert(p->timestamp().timestamp == timestamp3);
           res.push_back(r);
         }
@@ -242,8 +243,8 @@ int main(int argc, char** argv) {
           if (first_offset == -1)
             first_offset = p->offset();
           record r;
-          r.key.assign((const char*) p->key_pointer(), p->key_len());
-          r.value.assign((const char*) p->payload(), p->len());
+          r.key.assign((const char *) p->key_pointer(), p->key_len());
+          r.value.assign((const char *) p->payload(), p->len());
           assert(p->timestamp().timestamp == timestamp3);
           res.push_back(r);
         }
@@ -251,18 +252,18 @@ int main(int argc, char** argv) {
           break;
       }
       std::cout << "reading first offset " << first_offset << std::endl;
-      assert(first_offset == last_comitted_offset+1);
+      assert(first_offset == last_comitted_offset + 1);
       assert(res.size() == 3);
       for (int i = 0; i != 3; ++i) {
-        assert(res[i].key == test_data[i+1].key);
-        assert(res[i].value == test_data[i+1].value);
+        assert(res[i].key == test_data[i + 1].key);
+        assert(res[i].value == test_data[i + 1].value);
       }
     }
 
-   /* std::cerr << "sleep forever" << std::endl;
-    while (true) {
-      std::this_thread::sleep_for(1000ms);
-    }*/
+    /* std::cerr << "sleep forever" << std::endl;
+     while (true) {
+       std::this_thread::sleep_for(1000ms);
+     }*/
   }// test 3
   return 0;
 }

@@ -1,5 +1,4 @@
 #include <iostream>
-#include <string>
 #include <chrono>
 #include <cassert>
 #include <kspp/impl/serdes/binary_serdes.h>
@@ -10,19 +9,17 @@
 #include <kspp/state_stores/mem_store.h>
 #include <kspp/processors/kafka_source.h>
 #include <kspp/processors/ktable.h>
-#include <kspp/impl/kafka_utils.h>
 
 using namespace std::chrono_literals;
 
-struct record
-{
+struct record {
   std::string key;
   std::string value;
 };
 
 #define TEST_SIZE 1
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   kspp::kafka::wait_for_group("localhost", "dummy");
 
   std::vector<record> test_data;
@@ -32,7 +29,7 @@ int main(int argc, char** argv) {
     r.value = "value" + std::to_string(i);
     test_data.push_back(r);
   }
- 
+
   auto app_info = std::make_shared<kspp::app_info>("kspp", "test5");
   auto builder = kspp::topology_builder(app_info, "localhost", 10ms);
 
@@ -53,18 +50,20 @@ int main(int argc, char** argv) {
   {
     auto topology = builder.create_topology();
 
-    auto streams = topology->create_processors<kspp::kafka_source<std::string, std::string, kspp::binary_serdes>>(partition_list, "kspp_test5");
+    auto streams = topology->create_processors<kspp::kafka_source<std::string, std::string, kspp::binary_serdes>>(
+            partition_list, "kspp_test5");
     auto ktables = topology->create_processors<kspp::ktable<std::string, std::string, kspp::mem_store>>(streams);
 
-    auto pipe = topology->create_partition_processor<kspp::pipe<std::string, std::string>>();
-    auto table_stream = topology->create_sink<kspp::kafka_topic_sink<std::string, std::string, kspp::binary_serdes>>("kspp_test5");
+    auto pipe = topology->create_partition_processor<kspp::pipe<std::string, std::string>>(-1);
+    auto table_stream = topology->create_sink<kspp::kafka_topic_sink<std::string, std::string, kspp::binary_serdes>>(
+            "kspp_test5");
     pipe->add_sink(table_stream);
-    
+
     topology->init(); // remove
     topology->start(-1);
 
     // insert testdata in pipe
-    for (auto & i : test_data) {
+    for (auto &i : test_data) {
       pipe->produce(i.key, i.value, t0);
     }
 
@@ -77,13 +76,13 @@ int main(int argc, char** argv) {
     assert(table_stream->get_metric("in_count") == TEST_SIZE);
 
     int64_t sz = 0;
-    for (auto&& i : streams)
+    for (auto &&i : streams)
       sz += i->get_metric("in_count");
     assert(sz == TEST_SIZE);
 
     // verify timestamps on all elements in ktable
-    for (auto&& i : ktables)
-      for (auto&& j : *i) {
+    for (auto &&i : ktables)
+      for (auto &&j : *i) {
         auto ts = j->event_time();
         assert(ts == t0);
       }
@@ -95,16 +94,18 @@ int main(int argc, char** argv) {
   {
     auto topology = builder.create_topology();
 
-    auto streams = topology->create_processors<kspp::kafka_source<std::string, std::string, kspp::binary_serdes>>(partition_list, "kspp_test5");
-    auto pipe = topology->create_partition_processor<kspp::pipe<std::string, std::string>>();
-    auto table_stream = topology->create_sink<kspp::kafka_topic_sink<std::string, std::string, kspp::binary_serdes>>("kspp_test5");
+    auto streams = topology->create_processors<kspp::kafka_source<std::string, std::string, kspp::binary_serdes>>(
+            partition_list, "kspp_test5");
+    auto pipe = topology->create_partition_processor<kspp::pipe<std::string, std::string>>(-1);
+    auto table_stream = topology->create_sink<kspp::kafka_topic_sink<std::string, std::string, kspp::binary_serdes>>(
+            "kspp_test5");
     pipe->add_sink(table_stream);
 
     topology->init(); // remove
     topology->start();
 
     // insert testdata in pipe
-    for (auto & i : test_data) {
+    for (auto &i : test_data) {
       pipe->produce(i.key, i.value);
     }
 
@@ -117,7 +118,7 @@ int main(int argc, char** argv) {
     assert(table_stream->get_metric("in_count") == TEST_SIZE);
 
     int64_t sz = 0;
-    for (auto&& i : streams)
+    for (auto &&i : streams)
       sz += i->get_metric("in_count");
     assert(sz == TEST_SIZE);
   }

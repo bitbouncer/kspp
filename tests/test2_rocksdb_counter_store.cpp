@@ -3,13 +3,13 @@
 #include <kspp/impl/serdes/binary_serdes.h>
 
 static boost::filesystem::path default_directory() {
-  if (const char* env_p = std::getenv("KSPP_STATE_DIR")) {
+  if (const char *env_p = std::getenv("KSPP_STATE_DIR")) {
     return boost::filesystem::path(env_p);
   }
   return boost::filesystem::temp_directory_path();
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   boost::filesystem::path path = default_directory();
   path /= "test2_rocksdb_counter_store";
 

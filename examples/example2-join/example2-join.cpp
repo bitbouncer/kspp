@@ -1,5 +1,4 @@
 #include <iostream>
-#include <string>
 #include <chrono>
 #include <kspp/impl/serdes/binary_serdes.h>
 #include <kspp/topology_builder.h>
@@ -22,19 +21,22 @@ int main(int argc, char **argv) {
   assert(partitions1 == partitions2); // this is a requirement for the join to be meaningfull
 
   auto partition_list = kspp::get_partition_list(partitions1);
-  
+
   {
     auto topology = builder.create_topology();
-    auto streams = topology->create_processors<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_serdes>>(partition_list, "kspp_test0_eventstream");
-    auto table_sources = topology->create_processors<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_serdes>>(partition_list, "kspp_test0_table");
-    auto tables = topology->create_processors<kspp::ktable<boost::uuids::uuid, int64_t, kspp::mem_store>>(table_sources);
+    auto streams = topology->create_processors<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_serdes>>(
+            partition_list, "kspp_test0_eventstream");
+    auto table_sources = topology->create_processors<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_serdes>>(
+            partition_list, "kspp_test0_table");
+    auto tables = topology->create_processors<kspp::ktable<boost::uuids::uuid, int64_t, kspp::mem_store>>(
+            table_sources);
     auto joins = topology->create_processors<kspp::left_join<boost::uuids::uuid, int64_t, int64_t, int64_t>>(
-      streams,
-      tables,
-      [&join_count](const boost::uuids::uuid& key, const int64_t& left, const int64_t& right, int64_t& row) {
-      row = right;
-      join_count++;
-    });
+            streams,
+            tables,
+            [&join_count](const boost::uuids::uuid &key, const int64_t &left, const int64_t &right, int64_t &row) {
+              row = right;
+              join_count++;
+            });
 
     topology->init_metrics();
     topology->start(-2);
@@ -42,7 +44,7 @@ int main(int argc, char **argv) {
     // first sync table
     std::cout << "before sync" << std::endl;
     auto t0 = std::chrono::high_resolution_clock::now();
-    for (auto&& i : tables) {
+    for (auto &&i : tables) {
       i->flush();
       i->commit(true);
     }
@@ -52,12 +54,12 @@ int main(int argc, char **argv) {
     std::cout << "after sync" << " t: " << d0.count() << "ms\n" << std::endl;
 
     size_t items_in_tables = 0;
-    for (auto&& i : tables)
+    for (auto &&i : tables)
       for (const auto &&j : *i)
         ++items_in_tables;
 
     size_t table_updates = 0;
-    for (auto&& i : tables) {
+    for (auto &&i : tables) {
       table_updates += i->get_metric("in_count");
     }
 
@@ -77,7 +79,7 @@ int main(int argc, char **argv) {
     std::cout << "joins: " << join_count << " t: " << d1.count() << "ms\n";
     std::cout << "lookups per sec : " << 1000.0 * join_count / (double) d1.count() << std::endl;
 
-    topology->for_each_metrics([](kspp::metric& m) {
+    topology->for_each_metrics([](kspp::metric &m) {
       std::cerr << "metrics: " << m.name() << " : " << m.value() << std::endl;
     });
   }

@@ -31,18 +31,29 @@ int main(int argc, char **argv) {
 
   {
     auto topology = builder.create_topology();
-    auto source = topology->create_processors<kspp::kafka_source<void, std::string, kspp::text_serdes>>(partition_list, TOPIC_NAME);
+    auto source = topology->create_processors<kspp::kafka_source<void, std::string, kspp::text_serdes>>(partition_list,
+                                                                                                        TOPIC_NAME);
 
     std::regex rgx("\\s+");
-    auto word_stream = topology->create_processors<kspp::flat_map<void, std::string, std::string, void>>(source, [&rgx](const auto record, auto flat_map) {
-      std::sregex_token_iterator iter(record->value()->begin(), record->value()->end(), rgx, -1);
-      std::sregex_token_iterator end;
-      for (; iter != end; ++iter) {
-        flat_map->push_back(std::make_shared<kspp::krecord<std::string, void>>(*iter));
-      }
-    });
+    auto word_stream = topology->create_processors<kspp::flat_map<void, std::string, std::string, void>>(source,
+                                                                                                         [&rgx](const auto record,
+                                                                                                                auto flat_map) {
+                                                                                                           std::sregex_token_iterator iter(
+                                                                                                                   record->value()->begin(),
+                                                                                                                   record->value()->end(),
+                                                                                                                   rgx,
+                                                                                                                   -1);
+                                                                                                           std::sregex_token_iterator end;
+                                                                                                           for (; iter !=
+                                                                                                                  end; ++iter) {
+                                                                                                             flat_map->push_back(
+                                                                                                                     std::make_shared<kspp::krecord<std::string, void>>(
+                                                                                                                             *iter));
+                                                                                                           }
+                                                                                                         });
 
-    auto word_counts = topology->create_processors<kspp::count_by_key<std::string, int, kspp::mem_counter_store>>(word_stream, 2s);
+    auto word_counts = topology->create_processors<kspp::count_by_key<std::string, int, kspp::mem_counter_store>>(
+            word_stream, 2s);
     auto sink = topology->create_processors<kspp::stream_sink<std::string, int>>(word_counts, &std::cerr);
 
     topology->init_metrics();

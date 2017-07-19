@@ -1,17 +1,34 @@
 #pragma once
 namespace kspp {
   template<class K, class V>
-  class filter : public event_consumer<K, V>, public partition_source<K, V>
-  {
+  class filter : public event_consumer<K, V>, public partition_source<K, V> {
   public:
-    typedef std::function<bool(std::shared_ptr<const krecord<K, V>> record)> predicate; // return true to keep
+    typedef std::function<bool(std::shared_ptr<const krecord <K, V>> record)> predicate; // return true to keep
 
-    filter(topology_base& topology, std::shared_ptr<partition_source<K, V>> source, predicate f)
-      : event_consumer<K, V>()
-      , partition_source<K, V>(source.get(), source->partition())
-      , _source(source)
-      , _predicate(f)
-      , _predicate_false("predicate_false") {
+    filter(topology_base &topology, std::shared_ptr<partition_source < K, V>>
+
+    source,
+    predicate f
+    )
+    :
+
+    event_consumer<K, V>()
+    , partition_source<K, V>(source
+
+    .
+
+    get(), source
+
+    ->
+
+    partition()
+
+    )
+    ,
+    _source(source)
+    , _predicate(f)
+    , _predicate_false(
+    "predicate_false") {
       _source->add_sink([this](auto r) {
         this->_queue.push_back(r);
       });
@@ -24,9 +41,9 @@ namespace kspp {
     }
 
     virtual std::string simple_name() const {
-      return "filter"; 
+      return "filter";
     }
- 
+
     virtual void start() {
       _source->start();
     }
@@ -40,7 +57,7 @@ namespace kspp {
     }
 
     virtual bool process_one(int64_t tick) {
-      if (this->_queue.size()==0)
+      if (this->_queue.size() == 0)
         _source->process_one(tick);
       bool processed = (this->_queue.size() > 0);
       while (this->_queue.size()) {
@@ -65,13 +82,13 @@ namespace kspp {
     }
 
     virtual size_t queue_len() const {
-      return event_consumer<K, V>::queue_len();
+      return event_consumer < K, V > ::queue_len();
     }
 
   private:
-    std::shared_ptr<partition_source<K, V>> _source;
-    predicate                               _predicate;
-    metric_lag                              _lag;
-    metric_counter                          _predicate_false;
+    std::shared_ptr<partition_source < K, V>> _source;
+    predicate _predicate;
+    metric_lag _lag;
+    metric_counter _predicate_false;
   };
 } // namespace

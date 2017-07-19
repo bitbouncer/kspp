@@ -1,4 +1,5 @@
 #pragma once
+
 #include <memory>
 #include <strstream>
 #include <fstream>
@@ -13,32 +14,32 @@ namespace kspp {
   class Int64AddOperator : public rocksdb::AssociativeMergeOperator {
 
   public:
-    static bool Deserialize(const rocksdb::Slice& slice, int64_t* value) {
+    static bool Deserialize(const rocksdb::Slice &slice, int64_t *value) {
       if (slice.size() != sizeof(int64_t))
         return false;
-      memcpy((void*)value, slice.data(), sizeof(int64_t));
+      memcpy((void *) value, slice.data(), sizeof(int64_t));
       return true;
     }
 
-    static void Serialize(int64_t val, std::string* dst) {
+    static void Serialize(int64_t val, std::string *dst) {
       dst->resize(sizeof(int64_t));
-      memcpy((void*)dst->data(), &val, sizeof(int64_t));
+      memcpy((void *) dst->data(), &val, sizeof(int64_t));
     }
 
-    static bool Deserialize(const std::string& src, int64_t* value) {
+    static bool Deserialize(const std::string &src, int64_t *value) {
       if (src.size() != sizeof(int64_t))
         return false;
-      memcpy((void*)value, src.data(), sizeof(int64_t));
+      memcpy((void *) value, src.data(), sizeof(int64_t));
       return true;
     }
 
   public:
     virtual bool Merge(
-      const rocksdb::Slice& key,
-      const rocksdb::Slice* existing_value,
-      const rocksdb::Slice& value,
-      std::string* new_value,
-      rocksdb::Logger* logger) const override {
+            const rocksdb::Slice &key,
+            const rocksdb::Slice *existing_value,
+            const rocksdb::Slice &value,
+            std::string *new_value,
+            rocksdb::Logger *logger) const override {
 
       // assuming 0 if no existing value
       int64_t existing = 0;
@@ -53,7 +54,7 @@ namespace kspp {
       int64_t oper;
       if (!Deserialize(value, &oper)) {
         // if operand is corrupted, treat it as 0
-        BOOST_LOG_TRIVIAL(error)  <<"Int64AddOperator::Merge, Deserialize operand value corruption";
+        BOOST_LOG_TRIVIAL(error) << "Int64AddOperator::Merge, Deserialize operand value corruption";
         oper = 0;
       }
 
@@ -61,25 +62,22 @@ namespace kspp {
       return true;        // always return true for this, since we treat all errors as "zero".
     }
 
-    virtual const char* Name() const override {
+    virtual const char *Name() const override {
       return "Int64AddOperator";
     }
   };
 
   template<class K, class V, class CODEC>
-  class rocksdb_counter_store : public state_store<K, V>
-  {
+  class rocksdb_counter_store : public state_store<K, V> {
   public:
     enum { MAX_KEY_SIZE = 10000 };
 
-    class iterator_impl : public kmaterialized_source_iterator_impl<K, V>
-    {
+    class iterator_impl : public kmaterialized_source_iterator_impl<K, V> {
     public:
       enum seek_pos_e { BEGIN, END };
 
-      iterator_impl(rocksdb::DB* db, std::shared_ptr<CODEC> codec, seek_pos_e pos)
-        : _it(db->NewIterator(rocksdb::ReadOptions()))
-        , _codec(codec) {
+      iterator_impl(rocksdb::DB *db, std::shared_ptr<CODEC> codec, seek_pos_e pos)
+              : _it(db->NewIterator(rocksdb::ReadOptions())), _codec(codec) {
         if (pos == BEGIN) {
           _it->SeekToFirst();
         } else {
@@ -113,17 +111,18 @@ namespace kspp {
         if (!Int64AddOperator::Deserialize(value, &tmp_count))
           return nullptr;
 
-        return std::make_shared<krecord<K, V>>(tmp_key, static_cast<V>(tmp_count), milliseconds_since_epoch()); // or should we use -1.
+        return std::make_shared<krecord<K, V>>(tmp_key, static_cast<V>(tmp_count),
+                                               milliseconds_since_epoch()); // or should we use -1.
       }
 
-      virtual bool operator==(const kmaterialized_source_iterator_impl<K, V>& other) const {
+      virtual bool operator==(const kmaterialized_source_iterator_impl<K, V> &other) const {
         //fastpath...
         if (valid() && !other.valid())
           return false;
         if (!valid() && !other.valid())
           return true;
         if (valid() && other.valid())
-          return _it->key() == ((const iterator_impl&)other)._it->key();
+          return _it->key() == ((const iterator_impl &) other)._it->key();
         return false;
       }
 
@@ -133,31 +132,30 @@ namespace kspp {
 
     private:
       std::unique_ptr<rocksdb::Iterator> _it;
-      std::shared_ptr<CODEC>             _codec;
+      std::shared_ptr<CODEC> _codec;
     };
 
-    rocksdb_counter_store(boost::filesystem::path storage_path, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-      : _offset_storage_path(storage_path)
-      , _codec(codec)
-      , _current_offset(-1)
-      , _last_comitted_offset(-1)
-      , _last_flushed_offset(-1) {
+    rocksdb_counter_store(boost::filesystem::path storage_path,
+                          std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
+            : _offset_storage_path(storage_path), _codec(codec), _current_offset(-1), _last_comitted_offset(-1),
+              _last_flushed_offset(-1) {
       boost::filesystem::create_directories(boost::filesystem::path(storage_path));
       _offset_storage_path /= "kspp_offset.bin";
       rocksdb::Options options;
       options.merge_operator.reset(new Int64AddOperator);
       options.create_if_missing = true;
-      rocksdb::DB* tmp = nullptr;
+      rocksdb::DB *tmp = nullptr;
       auto s = rocksdb::DB::Open(options, storage_path.generic_string(), &tmp);
       _db.reset(tmp);
       if (!s.ok()) {
-        BOOST_LOG_TRIVIAL(error) << " rocksdb_counter_store, failed to open rocks db, path:" << storage_path.generic_string();
+        BOOST_LOG_TRIVIAL(error) << " rocksdb_counter_store, failed to open rocks db, path:"
+                                 << storage_path.generic_string();
       }
 
       if (boost::filesystem::exists(_offset_storage_path)) {
         std::ifstream is(_offset_storage_path.generic_string(), std::ios::binary);
         int64_t tmp;
-        is.read((char*) &tmp, sizeof(int64_t));
+        is.read((char *) &tmp, sizeof(int64_t));
         if (is.good()) {
           _current_offset = tmp;
           _last_comitted_offset = tmp;
@@ -192,8 +190,7 @@ namespace kspp {
       size_t ksize = 0;
       std::strstream s(key_buf, MAX_KEY_SIZE);
       ksize = _codec->encode(record->key(), s);
-      if (record->value())
-      {
+      if (record->value()) {
         std::string serialized;
         Int64AddOperator::Serialize((int64_t) *record->value(), &serialized);
         auto status = _db->Merge(rocksdb::WriteOptions(), rocksdb::Slice(key_buf, ksize), serialized);
@@ -202,7 +199,7 @@ namespace kspp {
       }
     }
 
-    std::shared_ptr<const krecord <K, V>> get(const K &key) const {
+    std::shared_ptr<const krecord<K, V>> get(const K &key) const {
       char key_buf[MAX_KEY_SIZE];
       size_t ksize = 0;
       std::ostrstream os(key_buf, MAX_KEY_SIZE);
@@ -238,7 +235,7 @@ namespace kspp {
       if (flush || ((_last_comitted_offset - _last_flushed_offset) > 10000)) {
         if (_last_flushed_offset != _last_comitted_offset) {
           std::ofstream os(_offset_storage_path.generic_string(), std::ios::binary);
-          os.write((char*) &_last_comitted_offset, sizeof(int64_t));
+          os.write((char *) &_last_comitted_offset, sizeof(int64_t));
           _last_flushed_offset = _last_comitted_offset;
           os.flush();
         }
@@ -259,27 +256,31 @@ namespace kspp {
     }
 
     virtual void clear() {
-      for (auto it = iterator_impl(_db.get(), _codec, iterator_impl::BEGIN), end_ = iterator_impl(_db.get(), _codec, iterator_impl::END); it!= end_; it.next()) {
+      for (auto it = iterator_impl(_db.get(), _codec, iterator_impl::BEGIN), end_ = iterator_impl(_db.get(), _codec,
+                                                                                                  iterator_impl::END);
+           it != end_; it.next()) {
         auto s = _db->Delete(rocksdb::WriteOptions(), it._key_slice());
       }
     }
 
     typename kspp::materialized_source<K, V>::iterator begin(void) const {
-      return typename kspp::materialized_source<K, V>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::BEGIN));
+      return typename kspp::materialized_source<K, V>::iterator(
+              std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::BEGIN));
     }
 
     typename kspp::materialized_source<K, V>::iterator end() const {
-      return typename kspp::materialized_source<K, V>::iterator(std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::END));
+      return typename kspp::materialized_source<K, V>::iterator(
+              std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::END));
     }
 
   private:
-  boost::filesystem::path      _offset_storage_path;
-  std::unique_ptr<rocksdb::DB> _db;    // maybe this should be a shared ptr since we're letting iterators out...
-  std::shared_ptr<CODEC>       _codec;
-  int64_t                      _current_offset;
-  int64_t                      _last_comitted_offset;
-  int64_t                      _last_flushed_offset;
-  //const std::shared_ptr<rocksdb::ReadOptions>   _read_options;
-  //const std::shared_ptr<rocksdb::WriteOptions>  _write_options;
+    boost::filesystem::path _offset_storage_path;
+    std::unique_ptr<rocksdb::DB> _db;    // maybe this should be a shared ptr since we're letting iterators out...
+    std::shared_ptr<CODEC> _codec;
+    int64_t _current_offset;
+    int64_t _last_comitted_offset;
+    int64_t _last_flushed_offset;
+    //const std::shared_ptr<rocksdb::ReadOptions>   _read_options;
+    //const std::shared_ptr<rocksdb::WriteOptions>  _write_options;
   };
 };

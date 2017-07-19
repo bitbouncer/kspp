@@ -5,13 +5,13 @@
 using namespace std::chrono_literals;
 
 static boost::filesystem::path default_directory() {
-  if (const char* env_p = std::getenv("KSPP_STATE_DIR")) {
+  if (const char *env_p = std::getenv("KSPP_STATE_DIR")) {
     return boost::filesystem::path(env_p);
   }
   return boost::filesystem::temp_directory_path();
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   boost::filesystem::path path = default_directory();
   path /= "test2_rocksdb_store";
 
@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
     boost::filesystem::remove_all(path);
 
   {
-  // insert 3 check size
+    // insert 3 check size
     kspp::rocksdb_store<int32_t, std::string, kspp::binary_serdes> store(path);
     auto t0 = kspp::milliseconds_since_epoch();
     store.insert(std::make_shared<kspp::krecord<int32_t, std::string>>(0, "value0", t0), -1);
