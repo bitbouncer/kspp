@@ -3,7 +3,7 @@
 
 using namespace std::chrono_literals;
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   // insert 3 check size
   kspp::mem_windowed_store<int32_t, std::string> store("", 100ms, 10);
 

@@ -1,8 +1,9 @@
 #include <cassert>
 #include <kspp/state_stores/mem_counter_store.h>
+
 using namespace std::chrono_literals;
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   // insert 3 check size
   kspp::mem_counter_store<int32_t, int> store("");
   auto t0 = kspp::milliseconds_since_epoch();

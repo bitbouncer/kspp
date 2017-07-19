@@ -34,8 +34,8 @@ int main(int argc, char **argv) {
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example10-avro");
   auto builder = kspp::topology_builder(app_info, "10.101.100.136", 1000ms);
   {
-    auto topology = builder.create_partition_topology(-1);
-    auto avro_stream = topology->create_topic_sink<kspp::kafka_topic_sink<boost::uuids::uuid, int64_t, kspp::avro_serdes>>("kspp_test10_avro", avro_serdes);
+    auto topology = builder.create_topology();
+    auto avro_stream = topology->create_sink<kspp::kafka_topic_sink<boost::uuids::uuid, int64_t, kspp::avro_serdes>>("kspp_test10_avro", avro_serdes);
     topology->start(-2);
 
     std::vector<boost::uuids::uuid> ids;

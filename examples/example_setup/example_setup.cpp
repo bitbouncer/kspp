@@ -18,10 +18,12 @@ static boost::uuids::uuid to_uuid(int64_t x) {
 int main(int argc, char **argv) {
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "test_setup");
   auto builder = kspp::topology_builder(app_info, "localhost", 100ms);
-  auto topology = builder.create_partition_topology(-1);
+  auto topology = builder.create_topology();
 
-  auto table_stream = topology->create_topic_sink<kspp::kafka_topic_sink<boost::uuids::uuid, int64_t, kspp::binary_serdes>>("kspp_test0_table");
-  auto event_stream = topology->create_topic_sink<kspp::kafka_topic_sink<boost::uuids::uuid, int64_t, kspp::binary_serdes>>("kspp_test0_eventstream");
+  auto table_stream = topology->create_sink<kspp::kafka_topic_sink<boost::uuids::uuid, int64_t, kspp::binary_serdes>>(
+          "kspp_test0_table");
+  auto event_stream = topology->create_sink<kspp::kafka_topic_sink<boost::uuids::uuid, int64_t, kspp::binary_serdes>>(
+          "kspp_test0_eventstream");
 
   topology->init_metrics();
 
@@ -31,23 +33,23 @@ int main(int argc, char **argv) {
 
   std::cerr << "creating " << table_stream->simple_name() << std::endl;
   for (int64_t update_nr = 0; update_nr != 100; ++update_nr) {
-    for (auto & i : ids) {
-     table_stream->produce(i, update_nr);
+    for (auto &i : ids) {
+      table_stream->produce(i, update_nr);
     }
   }
 
   std::cerr << "creating " << event_stream->simple_name() << std::endl;
   for (int64_t event_nr = 0; event_nr != 100; ++event_nr) {
-    for (auto & i : ids) {
+    for (auto &i : ids) {
       event_stream->produce(i, event_nr);
     }
   }
-  
+
   topology->flush();
-  
-  topology->for_each_metrics([](kspp::metric& m) {
+
+  topology->for_each_metrics([](kspp::metric &m) {
     std::cerr << m.tags() << " " << m.name() << " : " << m.value() << std::endl;
   });
-  
+
   return 0;
 }

@@ -3,35 +3,30 @@
 #include <cstdint>
 #include <kspp/kspp.h>
 #include "state_store.h"
+
 #pragma once
 
 namespace kspp {
   template<class K, class V>
-  class mem_token_bucket_store : public state_store<K, V>
-  {
+  class mem_token_bucket_store : public state_store<K, V> {
   protected:
-    struct config
-    {
+    struct config {
       config(int64_t filltime_, V capacity_)
-        : filltime(filltime_)
-        , capacity(capacity_)
-        , min_tick(std::max<int64_t>(1, filltime_ / capacity_))
-        , fillrate_per_ms(((double)capacity) / filltime) {}
+              : filltime(filltime_), capacity(capacity_), min_tick(std::max<int64_t>(1, filltime_ / capacity_)),
+                fillrate_per_ms(((double) capacity) / filltime) {}
 
       int64_t filltime;
-      V       capacity;
+      V capacity;
       int64_t min_tick;
-      double  fillrate_per_ms;
+      double fillrate_per_ms;
     };
 
-    class bucket
-    {
+    class bucket {
     public:
       bucket(V capacity)
-        : _tokens(capacity)
-        , _tstamp(0) {}
+              : _tokens(capacity), _tstamp(0) {}
 
-      inline bool consume_one(const config* conf, int64_t ts) {
+      inline bool consume_one(const config *conf, int64_t ts) {
         __age(conf, ts);
         if (_tokens == 0)
           return false;
@@ -48,29 +43,29 @@ namespace kspp {
       }
 
     protected:
-      void __age(const config* conf, int64_t ts) {
+      void __age(const config *conf, int64_t ts) {
         auto delta_ts = ts - _tstamp;
-        int64_t delta_count = (int64_t)(delta_ts * conf->fillrate_per_ms);
+        int64_t delta_count = (int64_t) (delta_ts * conf->fillrate_per_ms);
         if (delta_count > 0) { // no ageing on negative deltas
           _tstamp = ts;
           _tokens = (V) std::min<int64_t>(conf->capacity, _tokens + delta_count);
         }
       }
-      V       _tokens;
+
+      V _tokens;
       int64_t _tstamp;
     }; // class bucket
 
     class iterator_impl
-      : public kmaterialized_source_iterator_impl<K, V> {
+            : public kmaterialized_source_iterator_impl<K, V> {
     public:
       enum seek_pos_e { BEGIN, END };
 
       iterator_impl(const std::map<K, std::shared_ptr<bucket>> &container, seek_pos_e pos)
-        : _container(container)
-        , _it(pos == BEGIN ? _container.begin() : _container.end()) {}
+              : _container(container), _it(pos == BEGIN ? _container.begin() : _container.end()) {}
 
       virtual bool valid() const {
-        return  _it != _container.end();
+        return _it != _container.end();
       }
 
       virtual void next() {
@@ -82,16 +77,16 @@ namespace kspp {
       virtual std::shared_ptr<const krecord<K, V>> item() const {
         if (_it == _container.end())
           return nullptr;
-       return std::make_shared<kspp::krecord<K, V>>(_it->first, _it->second->token(), _it->second->timestamp());
+        return std::make_shared<kspp::krecord<K, V>>(_it->first, _it->second->token(), _it->second->timestamp());
       }
 
-      virtual bool operator==(const kmaterialized_source_iterator_impl<K, V>& other) const {
+      virtual bool operator==(const kmaterialized_source_iterator_impl<K, V> &other) const {
         if (valid() && !other.valid())
           return false;
         if (!valid() && !other.valid())
           return true;
         if (valid() && other.valid())
-          return _it->first == ((const iterator_impl&)other)._it->first;
+          return _it->first == ((const iterator_impl &) other)._it->first;
         return false;
       }
 
@@ -102,9 +97,7 @@ namespace kspp {
 
   public:
     mem_token_bucket_store(std::chrono::milliseconds agetime, V capacity)
-      : state_store<K, V>()
-      , _config(agetime.count(), capacity)
-      , _current_offset(-1) {
+            : state_store<K, V>(), _config(agetime.count(), capacity), _current_offset(-1) {
     }
 
     virtual ~mem_token_bucket_store() {
@@ -139,7 +132,7 @@ namespace kspp {
     * Adds count to bucket
     * returns true if bucket has capacity
     */
-    virtual bool consume(const K& key, int64_t timestamp) {
+    virtual bool consume(const K &key, int64_t timestamp) {
       typename std::map<K, std::shared_ptr<bucket>>::iterator item = _buckets.find(key);
       if (item == _buckets.end()) {
         auto b = std::make_shared<bucket>(_config.capacity);
@@ -172,7 +165,7 @@ namespace kspp {
     /**
     * Deletes a counter
     */
-    virtual void del(const K& key) {
+    virtual void del(const K &key) {
       _buckets.erase(key);
     }
 
@@ -204,16 +197,19 @@ namespace kspp {
     }
 
     typename kspp::materialized_source<K, V>::iterator begin(void) const {
-      return typename kspp::materialized_source<K, V>::iterator(std::make_shared<iterator_impl>(_buckets, iterator_impl::BEGIN));
+      return typename kspp::materialized_source<K, V>::iterator(
+              std::make_shared<iterator_impl>(_buckets, iterator_impl::BEGIN));
     }
 
     typename kspp::materialized_source<K, V>::iterator end() const {
-      return typename kspp::materialized_source<K, V>::iterator(std::make_shared<iterator_impl>(_buckets, iterator_impl::END));
+      return typename kspp::materialized_source<K, V>::iterator(
+              std::make_shared<iterator_impl>(_buckets, iterator_impl::END));
     }
+
   protected:
-    const config                         _config;
+    const config _config;
     std::map<K, std::shared_ptr<bucket>> _buckets;
-    int64_t                              _current_offset;
+    int64_t _current_offset;
   };
 
 };

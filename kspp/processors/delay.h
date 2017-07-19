@@ -1,15 +1,12 @@
 #pragma once
 namespace kspp {
   template<class K, class V>
-  class delay : public partition_source<K, V>
-  {
+  class delay : public partition_source<K, V> {
   public:
-    typedef std::function<bool(std::shared_ptr<kevent<K, V>> record)> predicate; // return true to keep
+    typedef std::function<bool(std::shared_ptr < kevent < K, V >> record)> predicate; // return true to keep
 
-    delay(topology_base& topology, std::shared_ptr<partition_source<K, V>> source, int ms)
-      : partition_source<K, V>(source->partition())
-      , _source(source)
-      , _delay(ms) {
+    delay(topology_base &topology, std::shared_ptr <partition_source<K, V>> source, int ms)
+            : partition_source<K, V>(source->partition()), _source(source), _delay(ms) {
       _source->add_sink([this](auto r) {
         this->_queue.push_back(r);
       });
@@ -20,8 +17,8 @@ namespace kspp {
       close();
     }
 
-    virtual std::string simple_name() const { 
-      return "delay"; 
+    virtual std::string simple_name() const {
+      return "delay";
     }
 
     virtual void start() {
@@ -37,7 +34,7 @@ namespace kspp {
     }
 
     virtual bool process_one(int64_t tick) {
-      if (this->_queue.size()==0)
+      if (this->_queue.size() == 0)
         _source->process_one();
 
       if (this->_queue.size() == 0)
@@ -63,12 +60,12 @@ namespace kspp {
     }
 
     virtual bool eof() const {
-      return (queue_len()==0) && _source->eof());
+      return (queue_len() == 0) && _source->eof());
     }
 
   private:
-    std::shared_ptr<partition_source<K, V>> _source;
-    int                                     _delay;
-    metric_lag                              _lag;
+    std::shared_ptr <partition_source<K, V>> _source;
+    int _delay;
+    metric_lag _lag;
   };
 } // namespace

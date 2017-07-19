@@ -2,21 +2,39 @@
 #include <boost/log/trivial.hpp>
 #include <kspp/kspp.h>
 #include <deque>
+
 #pragma once
 
 namespace kspp {
   template<class SK, class SV, class RK, class RV>
-  class flat_map : public event_consumer<SK, SV>, public partition_source<RK, RV>
-  {
+  class flat_map : public event_consumer<SK, SV>, public partition_source<RK, RV> {
   public:
-    typedef std::function<void(std::shared_ptr<const krecord<SK, SV>> record, flat_map* self)> extractor;
+    typedef std::function<void(std::shared_ptr<const krecord <SK, SV>> record, flat_map *self)> extractor;
 
-    flat_map(topology_base& topology, std::shared_ptr<partition_source<SK, SV>> source, extractor f)
-      : event_consumer<SK, SV>()
-      , partition_source<RK, RV>(source.get(), source->partition())
-      , _source(source)
-      , _extractor(f)
-      , _in_count("in_count") {
+    flat_map(topology_base &topology, std::shared_ptr<partition_source < SK, SV>>
+
+    source,
+    extractor f
+    )
+    :
+
+    event_consumer<SK, SV>()
+    , partition_source<RK, RV>(source
+
+    .
+
+    get(), source
+
+    ->
+
+    partition()
+
+    )
+    ,
+    _source(source)
+    , _extractor(f)
+    , _in_count(
+    "in_count") {
       _source->add_sink([this](auto r) {
         this->_queue.push_back(r);
       });
@@ -68,22 +86,25 @@ namespace kspp {
     }
 
     virtual size_t queue_len() const {
-      return event_consumer<SK, SV>::queue_len();
+      return event_consumer < SK, SV > ::queue_len();
     }
 
     /**
     * use from from extractor callback
     */
-    inline void push_back(std::shared_ptr<krecord<RK, RV>> record) {
-      this->send_to_sinks(std::make_shared<kevent<RK, RV>>(record, _currrent_id));
+    inline void push_back(std::shared_ptr<krecord < RK, RV>>
+
+    record) {
+      this->send_to_sinks(std::make_shared<kevent < RK, RV>>
+      (record, _currrent_id));
     }
 
   private:
-    std::shared_ptr<partition_source<SK, SV>>        _source;
-    extractor                                        _extractor;
+    std::shared_ptr<partition_source < SK, SV>>        _source;
+    extractor _extractor;
     std::shared_ptr<commit_chain::autocommit_marker> _currrent_id; // used to briefly hold the commit open during process one
-    metric_counter                                   _in_count;
-    metric_lag                                       _lag;
+    metric_counter _in_count;
+    metric_lag _lag;
   };
 }
 
