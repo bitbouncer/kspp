@@ -37,6 +37,8 @@ namespace kspp {
 
     int32_t commit(int64_t offset, bool flush = false);
 
+    inline int64_t commited() const { return _can_be_committed; }
+
     int update_eof();
 
   private:

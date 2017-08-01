@@ -17,3 +17,8 @@ if (ENABLE_AVRO)
     add_subdirectory(example11-avro-file)
     add_subdirectory(example12-generic-avro)
 endif ()
+
+if (ENABLE_ZK)
+    add_subdirectory(example13-zk)
+endif ()
+

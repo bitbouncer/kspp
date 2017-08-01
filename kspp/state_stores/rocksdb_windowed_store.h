@@ -203,9 +203,11 @@ namespace kspp {
           rocksdb::DB *tmp = nullptr;
           auto s = rocksdb::DB::Open(options, path.generic_string(), &tmp);
           if (!s.ok()) {
-            BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", failed to open rocks db, path:"
+            BOOST_LOG_TRIVIAL(error) << "rocksdb_windowed_store, failed to open rocks db, path:"
                                      << path.generic_string();
-            return;
+
+            throw std::runtime_error(
+                    std::string("rocksdb_windowed_store, failed to open rocks db, path:") + path.generic_string());
           }
           auto it = _buckets.insert(
                   std::pair<int64_t, std::shared_ptr<rocksdb::DB>>(new_slot, std::shared_ptr<rocksdb::DB>(tmp)));
@@ -225,7 +227,7 @@ namespace kspp {
           if (bucket_it != _buckets.end()) {
             auto status = bucket_it->second->Delete(rocksdb::WriteOptions(), rocksdb::Slice(key_buf, ksize));
             if (!status.ok()) {
-              BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", Delete failed, path:"
+              BOOST_LOG_TRIVIAL(error) << "rocksdb_windowed_store, delete failed, path:"
                                        << _storage_path.generic_string() << ", slot:" << bucket_it->first;
             }
           }

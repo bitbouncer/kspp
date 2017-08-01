@@ -108,8 +108,10 @@ namespace kspp {
       auto s = rocksdb::DB::Open(options, storage_path.generic_string(), &tmp);
       _db.reset(tmp);
       if (!s.ok()) {
-        BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", failed to open rocks db, path:"
+        BOOST_LOG_TRIVIAL(error) << "rocksdb_store, failed to open rocks db, path:"
                                  << storage_path.generic_string();
+        throw std::runtime_error(
+                std::string("rocksdb_store, failed to open rocks db, path:") + storage_path.generic_string());
       }
       assert(s.ok());
 

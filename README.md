@@ -19,13 +19,16 @@ optional build rocksdb
 ```
 git clone https://github.com/facebook/rocksdb.git
 cd rocksdb
-git checkout v5.3.4
-make -j8 static_lib
+git checkout v5.6.1
+make -j8 shared_lib
+sudo make install-shared
 cd ..
 ```
 
 optional build avro
 ```
+sudo apt-get install -y libcurl-dev
+
 git clone https://github.com/apache/avro.git
 cd avro
 git checkout release-1.8.2
@@ -43,11 +46,41 @@ git clone https://github.com/bitbouncer/csi-async.git
 git clone https://github.com/bitbouncer/csi-hcl-asio.git
 ```
 
+optional build folly and zookeeper support
+```
+#folly dependencies
+sudo apt-get install g++ automake autoconf autoconf-archive libtool libboost-all-dev libevent-dev libdouble-conversion-dev libgoogle-glog-dev \
+    libgflags-dev liblz4-dev liblzma-dev libsnappy-dev make zlib1g-dev binutils-dev libjemalloc-dev libssl-dev pkg-config libiberty-dev
+#zookeeper deps
+sudo apt-get install -y libzookeeper-mt-dev
+
+git clone https://github.com/facebook/folly.git
+git clone https://github.com/skarlsson/zk.git
+
+(cd folly/test && \
+ rm -rf gtest && \
+ wget https://github.com/google/googletest/archive/release-1.8.0.tar.gz && \
+ tar zxf release-1.8.0.tar.gz && \
+ rm -f release-1.8.0.tar.gz && \
+ mv googletest-release-1.8.0 gtest)
+
+cd folly
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release ..
+cd ..
+cd ..
+
+
+```
+
+
+
 build librdkafka & kspp
 ```
 git clone https://github.com/edenhill/librdkafka.git
 cd librdkafka
-git checkout v0.9.5
+git checkout v0.11.0
 ./configure
 make -j8
 sudo make install

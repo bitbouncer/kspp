@@ -97,7 +97,7 @@ namespace kspp {
         _it->Next();
       }
 
-      virtual std::shared_ptr<const krecord<K, V>> item() const {
+      virtual std::shared_ptr<const krecord <K, V>> item() const {
         if (!_it->Valid())
           return nullptr;
         rocksdb::Slice key = _it->key();
@@ -115,7 +115,7 @@ namespace kspp {
                                                milliseconds_since_epoch()); // or should we use -1.
       }
 
-      virtual bool operator==(const kmaterialized_source_iterator_impl<K, V> &other) const {
+      virtual bool operator==(const kmaterialized_source_iterator_impl <K, V> &other) const {
         //fastpath...
         if (valid() && !other.valid())
           return false;
@@ -148,8 +148,10 @@ namespace kspp {
       auto s = rocksdb::DB::Open(options, storage_path.generic_string(), &tmp);
       _db.reset(tmp);
       if (!s.ok()) {
-        BOOST_LOG_TRIVIAL(error) << " rocksdb_counter_store, failed to open rocks db, path:"
+        BOOST_LOG_TRIVIAL(error) << "rocksdb_counter_store, failed to open rocks db, path:"
                                  << storage_path.generic_string();
+        throw std::runtime_error(
+                std::string("rocksdb_counter_store, failed to open rocks db, path:") + storage_path.generic_string());
       }
 
       if (boost::filesystem::exists(_offset_storage_path)) {
@@ -184,7 +186,7 @@ namespace kspp {
     /**
     * Put or delete a record
     */
-    virtual void _insert(std::shared_ptr<const krecord<K, V>> record, int64_t offset) {
+    virtual void _insert(std::shared_ptr<const krecord <K, V>> record, int64_t offset) {
       _current_offset = std::max<int64_t>(_current_offset, offset);
       char key_buf[MAX_KEY_SIZE];
       size_t ksize = 0;
@@ -199,7 +201,7 @@ namespace kspp {
       }
     }
 
-    std::shared_ptr<const krecord<K, V>> get(const K &key) const {
+    std::shared_ptr<const krecord <K, V>> get(const K &key) const {
       char key_buf[MAX_KEY_SIZE];
       size_t ksize = 0;
       std::ostrstream os(key_buf, MAX_KEY_SIZE);

@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.8.11)
 
 option(ENABLE_AVRO "enable avro support" OFF)
 option(ENABLE_ROCKSDB "enable rocksdb support" OFF)
+option(ENABLE_ZK "enable zk support" OFF)
 option(BUILD_SAMPLES "build examples" OFF)
 option(BUILD_TESTS "build tests" OFF)
 
@@ -136,12 +137,27 @@ else () #LINUX
                 ${CMAKE_SOURCE_DIR}/../csi-hcl-asio
                 )
         SET(CSI_LIBRARY_PATH ${CSI_LIBRARY_PATH} ${CMAKE_SOURCE_DIR}/../avro/lang/c++/build)
-        SET(AVRO_LIBS avrocpp_s curl)
+        #        SET(AVRO_LIBS avrocpp_s curl)
+        SET(AVRO_LIBS avrocpp curl)
     endif () #AVRO
 
     if (ENABLE_ROCKSDB)
         SET(ROCKSDB_LIBS rocksdb snappy bz2 z)
     endif () #ROCKSDB
+
+    if (ENABLE_ZK)
+        SET(CSI_INCLUDE_PATH
+                ${CSI_INCLUDE_PATH}
+                ${CMAKE_SOURCE_DIR}/../zk/src
+                ${CMAKE_SOURCE_DIR}/../folly
+                )
+        file(GLOB zk_lib_files
+                ${CMAKE_CURRENT_SOURCE_DIR}/../zk/src/*.*
+                )
+        add_library(csi-zk STATIC ${zk_lib_files})
+        SET(LIBZK_LIBS csi-zk)
+    endif () #ZK
+
 
     SET(LIBRDKAFKA_LIBS rdkafka++ rdkafka)
 
@@ -151,7 +167,7 @@ else () #LINUX
     add_definitions(-fPIC)
     add_definitions(-DBOOST_LOG_DYN_LINK)
     add_definitions(-Wno-deprecated)
-    SET(CSI_LIBS kspp ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${BOOST_LIBS} crypto ssl)
+    SET(CSI_LIBS kspp ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${BOOST_LIBS} crypto ssl)
 endif () #LINUX
 
 include_directories(${CSI_INCLUDE_PATH} ${CMAKE_SOURCE_DIR})

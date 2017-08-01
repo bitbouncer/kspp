@@ -37,7 +37,7 @@ namespace kspp {
     }
 
     virtual void close() {
-      if (_commit_chain.last_good_offset() >= 0)
+      if (_commit_chain.last_good_offset() >= 0 && _consumer.commited() > _commit_chain.last_good_offset())
         _consumer.commit(_commit_chain.last_good_offset(), true);
       _consumer.close();
     }
