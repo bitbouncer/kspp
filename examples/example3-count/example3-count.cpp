@@ -2,7 +2,6 @@
 #include <string>
 #include <chrono>
 #include <regex>
-#include <cstdlib>
 #include <kspp/impl/serdes/text_serdes.h>
 #include <kspp/topology_builder.h>
 #include <kspp/processors/flat_map.h>
@@ -12,20 +11,15 @@
 #include <kspp/sinks/kafka_sink.h>
 #include <kspp/sinks/stream_sink.h>
 #include <kspp/impl/kafka_utils.h>
+#include <kspp/utils.h>
 
 using namespace std::chrono_literals;
 
 #define TOPIC_NAME "kspp_TextInput"
 
-std::string default_kafka_broker() {
-  if (const char* env_p = std::getenv("KAFKA_BROKER"))
-    return std::string(env_p);
-  return "localhost";
-}
-
 int main(int argc, char **argv) {
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example3-count");
-  auto builder = kspp::topology_builder(app_info, default_kafka_broker(), 100ms);
+  auto builder = kspp::topology_builder(app_info, kspp::utils::default_kafka_broker(), 100ms);
 
   {
     auto topology = builder.create_topology();

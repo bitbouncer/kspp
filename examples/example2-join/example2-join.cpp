@@ -7,13 +7,14 @@
 #include <kspp/processors/join.h>
 #include <kspp/state_stores/mem_store.h>
 #include <kspp/impl/kafka_utils.h>
+#include <kspp/utils.h>
 
 using namespace std::chrono_literals;
 
 int main(int argc, char **argv) {
   size_t join_count = 0;
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example2-join");
-  auto builder = kspp::topology_builder(app_info, "localhost", 100ms);
+  auto builder = kspp::topology_builder(app_info, kspp::utils::default_kafka_broker(), 100ms);
 
   auto partitions1 = kspp::kafka::get_number_partitions(builder.brokers(), "kspp_test0_eventstream");
   auto partitions2 = kspp::kafka::get_number_partitions(builder.brokers(), "kspp_test0_table");

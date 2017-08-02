@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <iostream>
 #include <string>
 #include <chrono>
@@ -10,14 +11,14 @@
 #include <kspp/state_stores/mem_store.h>
 #include <kspp/sinks/kafka_sink.h>
 #include <kspp/sinks/stream_sink.h>
-#include <assert.h>
 #include <kspp/impl/kafka_utils.h>
+#include <kspp/utils.h>
 
 using namespace std::chrono_literals;
 
 int main(int argc, char **argv) {
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example5-repartition");
-  auto builder = kspp::topology_builder(app_info, "localhost", 100ms);
+  auto builder = kspp::topology_builder(app_info, kspp::utils::default_kafka_broker(), 100ms);
 
   {
     auto topology = builder.create_topology();

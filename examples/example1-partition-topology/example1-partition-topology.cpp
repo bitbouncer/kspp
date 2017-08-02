@@ -12,6 +12,7 @@
 #include <kspp/state_stores/mem_store.h>
 #include <kspp/state_stores/mem_windowed_store.h>
 #include <kspp/impl/kafka_utils.h>
+#include <kspp/utils.h>
 
 #define PARTITION 0
 using namespace std::chrono_literals;
@@ -170,7 +171,7 @@ std::string ksource_to_string(const T &ksource) {
 
 int main(int argc, char **argv) {
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example1-basic");
-  auto builder = kspp::topology_builder(app_info, "localhost", 100ms);
+  auto builder = kspp::topology_builder(app_info, kspp::utils::default_kafka_broker(), 100ms);
 
 
   {

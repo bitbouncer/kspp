@@ -12,7 +12,7 @@
 #include <kspp/processors/flat_map.h>
 #include <kspp/processors/kafka_source.h>
 #include <kspp/state_stores/mem_counter_store.h>
-//#include <kspp/state_stores/mem_store.h>
+#include <kspp/utils.h>
 #include <kspp/impl/kafka_utils.h>
 
 using namespace std::chrono_literals;
@@ -32,7 +32,7 @@ int main(int argc, char **argv) {
   auto avro_serdes = std::make_shared<kspp::avro_serdes>(schema_registry);
 
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example10-avro");
-  auto builder = kspp::topology_builder(app_info, "10.101.100.136", 1000ms);
+  auto builder = kspp::topology_builder(app_info, kspp::utils::default_kafka_broker(), 1000ms);
   {
     auto topology = builder.create_topology();
     auto avro_stream = topology->create_sink<kspp::kafka_topic_sink<boost::uuids::uuid, int64_t, kspp::avro_serdes>>("kspp_test10_avro", avro_serdes);

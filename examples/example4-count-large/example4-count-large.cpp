@@ -10,6 +10,7 @@
 #include <kspp/processors/kafka_source.h>
 #include <kspp/sinks/kafka_sink.h>
 #include <kspp/impl/kafka_utils.h>
+#include <kspp/utils.h>
 
 using namespace std::chrono_literals;
 
@@ -17,7 +18,7 @@ using namespace std::chrono_literals;
 
 int main(int argc, char **argv) {
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example4-count");
-  auto builder = kspp::topology_builder(app_info, "localhost", 100ms);
+  auto builder = kspp::topology_builder(app_info, kspp::utils::default_kafka_broker(), 100ms);
 
   {
     auto partitions = kspp::kafka::get_number_partitions(builder.brokers(), "kspp_test_text");
