@@ -32,7 +32,7 @@ T get_nullable_value(const avro::GenericRecord& record, std::string name, T defa
 
 int main(int argc, char **argv) {
   // maybe we should add http:// here...
-  auto schema_registry = std::make_shared<kspp::avro_schema_registry>("localhost:8081");
+  auto schema_registry = std::make_shared<kspp::avro_schema_registry>(kspp::utils::default_schema_registry());
   auto avro_serdes = std::make_shared<kspp::avro_serdes>(schema_registry);
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example12-generic-avro");
   auto builder = kspp::topology_builder(app_info, kspp::utils::default_kafka_broker(), 1000ms);

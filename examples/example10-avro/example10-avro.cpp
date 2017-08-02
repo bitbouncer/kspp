@@ -27,8 +27,7 @@ int main(int argc, char **argv) {
   size_t join_count = 0;
 
   // maybe we should add http:// here...
-  auto schema_registry = std::make_shared<kspp::avro_schema_registry>(
-          "10.101.100.136:8081,10.101.100.137:8081,10.101.100.138:8081");
+  auto schema_registry = std::make_shared<kspp::avro_schema_registry>(kspp::utils::default_schema_registry());
   auto avro_serdes = std::make_shared<kspp::avro_serdes>(schema_registry);
 
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example10-avro");
