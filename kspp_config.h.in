@@ -1,0 +1,3 @@
+// the configured options and settings for KSPP
+#define KSPP_VERSION_MAJOR @KSPP_VERSION_MAJOR@
+#define KSPP_VERSION_MINOR @KSPP_VERSION_MINOR@
