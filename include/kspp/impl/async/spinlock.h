@@ -3,7 +3,7 @@
 #include <mutex>
 #pragma once
 
-namespace csi {
+namespace kspp {
 class spinlock
 {
   public:

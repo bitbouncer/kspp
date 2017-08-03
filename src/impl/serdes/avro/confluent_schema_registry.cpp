@@ -87,17 +87,17 @@ registry::registry(boost::asio::io_service& ios, std::vector<std::string> base_u
 
 void registry::put_schema(std::string schema_name, std::shared_ptr<avro::ValidSchema> schema, put_callback put_cb) {
   auto shared_result = std::make_shared<rpc_put_schema_result>();
-  auto work = std::make_shared<csi::async::work<int>>(csi::async::SEQUENTIAL, csi::async::FIRST_SUCCESS); // should we do random order??  can we send rpc result to work...
+  auto work = std::make_shared<kspp::async::work<int>>(kspp::async::SEQUENTIAL, kspp::async::FIRST_SUCCESS); // should we do random order??  can we send rpc result to work...
   auto encoded_string = encode_put_schema_request(schema);
   //std::cerr << encoded_string << std::endl;
 
   for (auto&& i : _base_urls) {
     std::string uri = i + "/subjects/" + schema_name + "/versions";
-    work->push_back([this, uri, encoded_string, shared_result](csi::async::work<int>::callback cb) {
+    work->push_back([this, uri, encoded_string, shared_result](kspp::async::work<int>::callback cb) {
       std::vector<std::string> headers = {"Content-Type: application/vnd.schemaregistry.v1+json"};
-      auto request = std::make_shared<csi::http::request>(csi::http::POST, uri, headers, 100ms);
+      auto request = std::make_shared<kspp::http::request>(kspp::http::POST, uri, headers, 100ms);
       request->append(encoded_string);
-      _http.perform_async(request, [cb, shared_result](std::shared_ptr<csi::http::request> request) {
+      _http.perform_async(request, [cb, shared_result](std::shared_ptr<kspp::http::request> request) {
         if (request->http_result() >= 200 && request->http_result() < 300) {
           BOOST_LOG_TRIVIAL(trace) << "confluent::registry::put_schema on_complete data: " << request->uri() << " got " << request->rx_content_length() << " bytes";
           std::string copy_of_bytes(request->rx_content()); // TBD remove me!!!
@@ -123,13 +123,13 @@ void registry::put_schema(std::string schema_name, std::shared_ptr<avro::ValidSc
 
 void registry::get_schema(int32_t schema_id, get_callback get_cb) {
   auto shared_result = std::make_shared<rpc_get_result>();
-  auto work = std::make_shared<csi::async::work<int>>(csi::async::SEQUENTIAL, csi::async::FIRST_SUCCESS); // should we do random order??  can we send rpc result to work...
+  auto work = std::make_shared<kspp::async::work<int>>(kspp::async::SEQUENTIAL, kspp::async::FIRST_SUCCESS); // should we do random order??  can we send rpc result to work...
   for (auto&& i : _base_urls) {
     std::string uri = i + "/schemas/ids/" + std::to_string(schema_id);
-    work->push_back([this, uri, shared_result](csi::async::work<int>::callback cb) {
+    work->push_back([this, uri, shared_result](kspp::async::work<int>::callback cb) {
       std::vector<std::string> headers = {"Accept: application/vnd.schemaregistry.v1+json"};
-      auto request = std::make_shared<csi::http::request>(csi::http::GET, uri, headers, 100ms); // move to api
-      _http.perform_async(request, [cb, shared_result](std::shared_ptr<csi::http::request> request) {
+      auto request = std::make_shared<kspp::http::request>(kspp::http::GET, uri, headers, 100ms); // move to api
+      _http.perform_async(request, [cb, shared_result](std::shared_ptr<kspp::http::request> request) {
         if (request->http_result() >= 200 && request->http_result() < 300) {
           BOOST_LOG_TRIVIAL(trace) << "confluent::registry::get_schema on_complete data: " << request->uri() << " got " << request->rx_content_length() << " bytes";
           std::string copy_of_bytes(request->rx_content());

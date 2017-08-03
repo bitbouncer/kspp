@@ -12,7 +12,6 @@
 #include <atomic>
 #include <thread>
 #include <mutex>
-
 #include <sstream>
 #include <curl/curl.h>
 #include <boost/asio.hpp>
@@ -22,12 +21,9 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/log/trivial.hpp>
-//#include "http_request.h"
-//#include "http_defs.h"
-
 #pragma once
 
-namespace csi {
+namespace kspp {
   namespace http {
     enum status_type {
       undefined = 0,
@@ -139,8 +135,8 @@ default:                                   return boost::lexical_cast<std::strin
       PURGE = 25
     };
 
-    inline const std::string &to_string(csi::http::method_t e) {
-      static const std::string table[csi::http::PURGE + 1]
+    inline const std::string &to_string(kspp::http::method_t e) {
+      static const std::string table[kspp::http::PURGE + 1]
               {
                       "DELETE",
                       "GET",
@@ -213,19 +209,19 @@ default:                                   return boost::lexical_cast<std::strin
     };
 
     class request {
-      friend class csi::http::client;
+      friend class kspp::http::client;
 
     public:
       typedef boost::function<void(std::shared_ptr<request>)> callback;
 
-      request(csi::http::method_t method, const std::string &uri, const std::vector<std::string> &headers,
+      request(kspp::http::method_t method, const std::string &uri, const std::vector<std::string> &headers,
               const std::chrono::milliseconds &timeout, bool verbose = false) :
               _transport_ok(true),
               _method(method),
               _uri(uri),
               _curl_verbose(verbose),
               _timeoutX(timeout),
-              _http_result(csi::http::undefined),
+              _http_result(kspp::http::undefined),
               _tx_headers(headers),
               _tx_stream(std::ios_base::ate | std::ios_base::in | std::ios_base::out),
               _curl_easy(NULL),
@@ -252,7 +248,7 @@ default:                                   return boost::lexical_cast<std::strin
 
         _curl_done = false;
         _transport_ok = true;
-        _http_result = csi::http::undefined;
+        _http_result = kspp::http::undefined;
 
         _rx_headers.clear();
         _rx_buffer.clear();
@@ -305,14 +301,14 @@ default:                                   return boost::lexical_cast<std::strin
 
       inline const std::string &uri() const { return _uri; }
 
-      inline csi::http::status_type http_result() const { return _http_result; }
+      inline kspp::http::status_type http_result() const { return _http_result; }
 
       inline bool transport_result() const { return _transport_ok; }
 
       inline bool ok() const { return _transport_ok && (_http_result >= 200) && (_http_result < 300); }
 
       std::string get_rx_header(const std::string &header) const {
-        for (std::vector<csi::http::header_t>::const_iterator i = _rx_headers.begin(); i != _rx_headers.end(); ++i) {
+        for (std::vector<kspp::http::header_t>::const_iterator i = _rx_headers.begin(); i != _rx_headers.end(); ++i) {
           if (boost::iequals(header, i->name))
             return i->value;
         }
@@ -320,10 +316,10 @@ default:                                   return boost::lexical_cast<std::strin
       }
 
     private:
-      csi::http::method_t _method;
+      kspp::http::method_t _method;
       std::string _uri;
       std::vector<std::string> _tx_headers;
-      std::vector<csi::http::header_t> _rx_headers;
+      std::vector<kspp::http::header_t> _rx_headers;
       std::chrono::steady_clock::time_point _start_ts;
       std::chrono::steady_clock::time_point _end_ts;
       std::chrono::milliseconds _timeoutX;
@@ -334,7 +330,7 @@ default:                                   return boost::lexical_cast<std::strin
       //RX
       buffer _rx_buffer;
 
-      csi::http::status_type _http_result;
+      kspp::http::status_type _http_result;
       bool _transport_ok;
 
       //curl stuff
@@ -346,7 +342,7 @@ default:                                   return boost::lexical_cast<std::strin
     };
 
     inline std::shared_ptr<request>
-    create_http_request(csi::http::method_t method, const std::string &uri, const std::vector<std::string> &headers,
+    create_http_request(kspp::http::method_t method, const std::string &uri, const std::vector<std::string> &headers,
                         const std::chrono::milliseconds &timeout, bool verbose = false) {
       return std::make_shared<request>(method, uri, headers, timeout, verbose);
 
@@ -434,18 +430,18 @@ default:                                   return boost::lexical_cast<std::strin
         return (_curl_handles_still_running == 0);
       }
 
-      void perform_async(std::shared_ptr<csi::http::request> request, csi::http::request::callback cb) {
+      void perform_async(std::shared_ptr<kspp::http::request> request, kspp::http::request::callback cb) {
         request->_callback = cb;
         _io_service.post([this, request]() {
           _perform(request);
         });
       }
 
-      std::shared_ptr<csi::http::request> perform(std::shared_ptr<csi::http::request> request, bool verbose) {
+      std::shared_ptr<kspp::http::request> perform(std::shared_ptr<kspp::http::request> request, bool verbose) {
         request->_curl_verbose = verbose;
-        std::promise<std::shared_ptr<csi::http::request>> p;
-        std::future<std::shared_ptr<csi::http::request>> f = p.get_future();
-        perform_async(request, [&p](std::shared_ptr<csi::http::request> result) {
+        std::promise<std::shared_ptr<kspp::http::request>> p;
+        std::future<std::shared_ptr<kspp::http::request>> f = p.get_future();
+        perform_async(request, [&p](std::shared_ptr<kspp::http::request> result) {
           p.set_value(result);
         });
         f.wait();
@@ -453,7 +449,7 @@ default:                                   return boost::lexical_cast<std::strin
       }
 
     protected:
-      void _perform(std::shared_ptr<csi::http::request> request) {
+      void _perform(std::shared_ptr<kspp::http::request> request) {
         request->curl_start(request); // increments usage count and keeps object around until curl thinks its done.
 
         curl_easy_setopt(request->_curl_easy, CURLOPT_OPENSOCKETFUNCTION, &client::_opensocket_cb);
@@ -480,17 +476,17 @@ default:                                   return boost::lexical_cast<std::strin
 
 
         switch (request->_method) {
-          case csi::http::GET:
+          case kspp::http::GET:
             curl_easy_setopt(request->_curl_easy, CURLOPT_HTTPGET, 1);
             curl_easy_setopt(request->_curl_easy, CURLOPT_FOLLOWLOCATION, 1L);
             break;
 
-          case csi::http::PUT:
+          case kspp::http::PUT:
             curl_easy_setopt(request->_curl_easy, CURLOPT_UPLOAD, 1L);
             curl_easy_setopt(request->_curl_easy, CURLOPT_INFILESIZE_LARGE, (curl_off_t) request->tx_content_length());
             break;
 
-          case csi::http::POST:
+          case kspp::http::POST:
             curl_easy_setopt(request->_curl_easy, CURLOPT_POST, 1);
             curl_easy_setopt(request->_curl_easy, CURLOPT_POSTFIELDSIZE_LARGE,
                              (curl_off_t) request->tx_content_length()); // must be different in post and put???
@@ -645,7 +641,7 @@ default:                                   return boost::lexical_cast<std::strin
 
           if (!tcp_socket) {
             BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << ", socket: " << s
-                                     << " is a c - ares socket, ignoring";
+                                     << " is a c-ares socket, ignoring";
             return 0;
           }
         }
@@ -796,9 +792,9 @@ default:                                   return boost::lexical_cast<std::strin
             long http_result = 0;
             CURLcode curl_res = curl_easy_getinfo(e, CURLINFO_RESPONSE_CODE, &http_result);
             if (curl_res == CURLE_OK)
-              context->_http_result = (csi::http::status_type) http_result;
+              context->_http_result = (kspp::http::status_type) http_result;
             else
-              context->_http_result = (csi::http::status_type) 0;
+              context->_http_result = (kspp::http::status_type) 0;
 
             context->_end_ts = std::chrono::steady_clock::now();
             context->_curl_done = true;
@@ -810,7 +806,6 @@ default:                                   return boost::lexical_cast<std::strin
                 context->_transport_ok = false;
               }
             }
-
 
             BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << ", CURLMSG_DONE, http : "
                                      << to_string(context->_method) << " " << context->uri() << " res = " << http_result
@@ -840,7 +835,7 @@ default:                                   return boost::lexical_cast<std::strin
         return sz;
       }
 
-      static size_t write_callback_buffer(void *ptr, size_t size, size_t nmemb, csi::http::buffer *buf) {
+      static size_t write_callback_buffer(void *ptr, size_t size, size_t nmemb, kspp::http::buffer *buf) {
         size_t sz = size * nmemb;
         BOOST_LOG_TRIVIAL(trace) << BOOST_CURRENT_FUNCTION << ", in size: " << sz;
         buf->append((const uint8_t *) ptr, sz);
@@ -855,7 +850,7 @@ default:                                   return boost::lexical_cast<std::strin
         return actual;
       }
 
-      static size_t parse_headers(void *buffer, size_t size, size_t nmemb, std::vector<csi::http::header_t> *v) {
+      static size_t parse_headers(void *buffer, size_t size, size_t nmemb, std::vector<kspp::http::header_t> *v) {
         size_t sz = size * nmemb;;
         char *begin = (char *) buffer;
         if (v) {
@@ -867,7 +862,7 @@ default:                                   return boost::lexical_cast<std::strin
             char *value_begin = separator + 1;
             while (isspace(*value_begin)) value_begin++; // leading white spaces
             size_t datalen = newline - value_begin;
-            v->emplace_back(csi::http::header_t(std::string(begin, separator), std::string(value_begin, newline)));
+            v->emplace_back(kspp::http::header_t(std::string(begin, separator), std::string(value_begin, newline)));
           }
         }
         return sz;

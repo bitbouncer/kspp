@@ -7,7 +7,7 @@
 
 #pragma once
 
-namespace csi {
+namespace kspp {
   namespace async {
 
     enum end_condition_t { FIRST_FAIL, FIRST_SUCCESS, ALL }; // could this be a user defined function instead??

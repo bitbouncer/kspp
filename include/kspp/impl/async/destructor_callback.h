@@ -1,7 +1,8 @@
 #include <functional>
+#include <cassert>
 #pragma once
 
-namespace csi {
+namespace kspp {
 namespace async {
 template <typename Value>
 class destructor_callback
