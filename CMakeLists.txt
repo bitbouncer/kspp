@@ -140,12 +140,14 @@ else () #LINUX
     endif ()
 
     if (ENABLE_AVRO)
+	find_package(RapidJSON REQUIRED)
+        SET(CSI_INCLUDE_PATH ${RapidJSON_INCLUDE_DIR})
+
         SET(CSI_INCLUDE_PATH
                 ${CSI_INCLUDE_PATH}
                 ${CMAKE_SOURCE_DIR}/../avro/lang/c++/include
-                ${CMAKE_SOURCE_DIR}/../rapidjson/include
-                ${CMAKE_SOURCE_DIR}/../csi-async
-                ${CMAKE_SOURCE_DIR}/../csi-hcl-asio
+                #${CMAKE_SOURCE_DIR}/../csi-async
+                #${CMAKE_SOURCE_DIR}/../csi-hcl-asio
                 )
         SET(CSI_LIBRARY_PATH ${CSI_LIBRARY_PATH} ${CMAKE_SOURCE_DIR}/../avro/lang/c++/build)
         #        SET(AVRO_LIBS avrocpp_s curl)
@@ -236,6 +238,8 @@ file(GLOB KSPP_INCLUDE_FILES
         include/kspp/impl/sinks/*.h
         include/kspp/impl/serdes/*.h
         include/kspp/impl/hash/*.h
+        include/kspp/impl/http/*.h
+        include/kspp/impl/async/*.h
         )
 
 if (ENABLE_AVRO)

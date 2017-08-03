@@ -1,6 +1,6 @@
 #include <map>
 #include <avro/Schema.hh>
-#include <csi_hcl_asio/http_client.h>
+#include <kspp/impl/http/http_client.h>
 #pragma once
 
 namespace confluent

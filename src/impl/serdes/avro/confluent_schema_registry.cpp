@@ -8,8 +8,7 @@
 #include <boost/log/trivial.hpp>
 #include <boost/log/expressions.hpp>
 #include <avro/Compiler.hh>
-#include <csi-async/async.h>
-#include <csi_hcl_asio/http_client.h>
+#include <kspp/impl/async/async.h>
 
 using namespace std::chrono_literals;
 

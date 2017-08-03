@@ -42,6 +42,13 @@ sudo make install
 cd ../../../..
 
 git clone https://github.com/miloyip/rapidjson.git
+cd rapidjson
+mkdir build
+cd build
+cmake -DRAPIDJSON_BUILD_EXAMPLES=OFF -DRAPIDJSON_BUILD_DOC=OFF -DRAPIDJSON_BUILD_TESTS=OFF ..
+sudo make install
+cd ../..
+
 git clone https://github.com/bitbouncer/csi-async.git
 git clone https://github.com/bitbouncer/csi-hcl-asio.git
 ```
