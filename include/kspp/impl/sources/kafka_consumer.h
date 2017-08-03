@@ -1,3 +1,4 @@
+#include <chrono>
 #include <memory>
 #include <librdkafka/rdkafkacpp.h>
 #pragma once

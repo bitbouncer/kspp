@@ -1,7 +1,7 @@
+#include <kspp/impl/sources/kafka_consumer.h>
 #include <thread>
 #include <chrono>
 #include <boost/log/trivial.hpp>
-#include "kafka_consumer.h"
 #include <kspp/impl/kafka_utils.h>
 
 #define LOGPREFIX_ERROR BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", topic:" << _topic << ":" << _partition

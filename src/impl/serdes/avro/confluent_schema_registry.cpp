@@ -1,8 +1,7 @@
+#include <kspp/impl/serdes/avro/confluent_schema_registry.h>
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/prettywriter.h>
-
-#include "confluent_schema_registry.h"
 #include <future>
 #include <memory>
 #include <boost/log/core.hpp>

@@ -1,7 +1,7 @@
+#include <kspp/metrics/influx_metrics_reporter.h>
 #include <kspp/topology_builder.h>
 #include <kspp/impl/serdes/text_serdes.h>
 #include <kspp/sinks/kafka_sink.h>
-#include "influx_metrics_reporter.h"
 
 using namespace std::chrono_literals;
 

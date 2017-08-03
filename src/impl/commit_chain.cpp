@@ -1,4 +1,4 @@
-#include "commit_chain.h"
+#include <kspp/impl/commit_chain.h>
 #include <boost/log/trivial.hpp>
 
 namespace kspp {

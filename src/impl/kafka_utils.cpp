@@ -1,4 +1,4 @@
-#include "kafka_utils.h"
+#include <kspp/impl/kafka_utils.h>
 #include <thread>
 #include <boost/log/trivial.hpp>
 #include <librdkafka/rdkafka.h>

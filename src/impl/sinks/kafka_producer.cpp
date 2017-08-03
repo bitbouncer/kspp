@@ -1,7 +1,6 @@
+#include <kspp/impl/sinks/kafka_producer.h>
 #include <thread>
-#include <chrono>
 #include <boost/log/trivial.hpp>
-#include "kafka_producer.h"
 
 #define LOGPREFIX_ERROR BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", topic:" << _topic
 #define LOG_INFO(EVENT)  BOOST_LOG_TRIVIAL(info) << "kafka_producer: " << EVENT << ", topic:" << _topic
