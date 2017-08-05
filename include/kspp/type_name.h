@@ -1,7 +1,6 @@
 #include <cstdint>
 #include <string>
 #include <boost/uuid/uuid.hpp>
-
 #pragma once
 
 namespace kspp {

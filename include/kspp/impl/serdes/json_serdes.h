@@ -1,9 +1,9 @@
-#pragma once
 #include <boost/uuid/uuid.hpp>
 #include <ostream>
 #include <istream>
 #include <vector>
 #include <typeinfo>
+#pragma once
 
 namespace kspp {
 class json_serdes

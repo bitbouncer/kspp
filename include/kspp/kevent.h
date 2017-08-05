@@ -1,8 +1,8 @@
-#include "krecord.h"
 #include <cstdint>
 #include <cassert>
 #include <memory>
-#include "impl/commit_chain.h"
+#include <kspp/krecord.h>
+#include <kspp/impl/commit_chain.h>
 
 #pragma once
 

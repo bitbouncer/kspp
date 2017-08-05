@@ -4,7 +4,8 @@
 #include <sstream>
 #include <avro/Encoder.hh>
 #include <kspp/impl/serdes/text_serdes.h>
-#include "avro_generic.h"
+#include <kspp/impl/serdes/avro/avro_generic.h>
+#include <glog/logging.h>
 #pragma once
 
 namespace kspp {
@@ -27,7 +28,7 @@ template<> inline size_t text_serdes::encode(const GenericAvro& src, std::ostrea
 
   }
   catch (const avro::Exception& e) {
-    std::cerr << "Binary to JSON transformation failed: " << e.what();
+    LOG(ERROR) << "Binary to JSON transformation failed: " << e.what();
     //errstr = std::string("Binary to JSON transformation failed: ") + e.what();
     return 0;
   }

@@ -1,7 +1,5 @@
 #include <string>
-
 #pragma once
-
 
 namespace kspp {
   struct app_info {

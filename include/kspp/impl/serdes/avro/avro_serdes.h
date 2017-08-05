@@ -12,8 +12,9 @@
 #include <avro/Compiler.hh>
 #include <avro/Generic.hh>
 #include <avro/Specific.hh>
-#include "confluent_schema_registry.h"
-#include "avro_generic.h"
+#include <kspp/impl/serdes/avro/confluent_schema_registry.h>
+#include <kspp/impl/serdes/avro/avro_generic.h>
+#include <glog/logging.h>
 #pragma once
 
 namespace kspp {
@@ -37,11 +38,11 @@ class avro_schema_registry
     future.wait();
     auto rpc_result = future.get();
     if (rpc_result.ec) {
-      std::cerr << "schema_registry put failed: ec" << rpc_result.ec << std::endl;
+      LOG(ERROR) << "schema_registry put failed: ec" << rpc_result.ec;
       return -1;
     }
 
-    std::cerr << "schema_registry put OK: id" << rpc_result.schema_id << std::endl;
+    LOG(INFO) << "schema_registry put OK: id" << rpc_result.schema_id;
     return rpc_result.schema_id;
   }
 
@@ -55,7 +56,7 @@ class avro_schema_registry
     future.wait();
     auto rpc_result = future.get();
     if (rpc_result.ec) {
-      std::cerr << "schema_registry get failed: ec" << rpc_result.ec << std::endl;
+      LOG(ERROR) << "schema_registry get failed: ec" << rpc_result.ec;
       return nullptr;
     }
     
@@ -250,7 +251,7 @@ class avro_serdes
       return bin_is->byteCount() + 5;
     }
     catch (const avro::Exception &e) {
-      std::cerr << "Avro deserialization failed: " << e.what();
+      LOG(ERROR) << "Avro deserialization failed: " << e.what();
       return 0;
     }
     return 0; // should never get here

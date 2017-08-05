@@ -4,7 +4,6 @@
 #include <cstdint>
 #include <future>
 #include <cassert>
-
 #pragma once
 
 namespace kspp {

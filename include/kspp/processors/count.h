@@ -10,48 +10,18 @@ namespace kspp {
   class count_by_key : public event_consumer<K, void>, public materialized_source<K, V> {
   public:
     template<typename... Args>
-    count_by_key(topology_base &topology, std::shared_ptr<partition_source < K, void>>
-
-    source,
-    std::chrono::milliseconds punctuate_intervall, Args
-    ... args)
-    :
-
-    event_consumer<K, void>()
-    , materialized_source<K, V>(source
-
-    .
-
-    get(), source
-
-    ->
-
-    partition()
-
-    )
-    ,
-    _stream(source)
-    , _counter_store(
-    this->
-    get_storage_path(topology
-    .
-
-    get_storage_path()
-
-    ), args...)
-    ,
-    _punctuate_intervall(punctuate_intervall
-    .
-
-    count()
-
-    ) // tbd we should use intervalls since epoch similar to windowed
+    count_by_key(topology_base &topology,
+                 std::shared_ptr<partition_source<K, void>> source,
+    std::chrono::milliseconds punctuate_intervall, Args ... args)
+    : event_consumer<K, void>()
+    , materialized_source<K, V>(source.get(), source->partition())
+    , _stream(source)
+    , _counter_store(this->get_storage_path(topology.get_storage_path()), args...)
+    , _punctuate_intervall(punctuate_intervall.count()) // tbd we should use intervalls since epoch similar to windowed
     , _next_punctuate(0)
     , _dirty(false)
     , _in_count("in_count")
-    ,
-
-    _lag() {
+    , _lag() {
       source->add_sink([this](auto e) {
         this->_queue.push_back(e);
       });

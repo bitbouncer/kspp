@@ -1,7 +1,6 @@
 #include <string>
 #include <chrono>
 #include <functional>
-
 #pragma once
 
 namespace kspp {
