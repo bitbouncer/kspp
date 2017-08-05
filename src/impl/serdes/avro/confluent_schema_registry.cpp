@@ -4,9 +4,7 @@
 #include <rapidjson/prettywriter.h>
 #include <future>
 #include <memory>
-#include <boost/log/core.hpp>
-#include <boost/log/trivial.hpp>
-#include <boost/log/expressions.hpp>
+#include <glog/logging.h>
 #include <avro/Compiler.hh>
 #include <kspp/impl/async/async.h>
 
@@ -99,17 +97,17 @@ void registry::put_schema(std::string schema_name, std::shared_ptr<avro::ValidSc
       request->append(encoded_string);
       _http.perform_async(request, [cb, shared_result](std::shared_ptr<kspp::http::request> request) {
         if (request->http_result() >= 200 && request->http_result() < 300) {
-          BOOST_LOG_TRIVIAL(trace) << "confluent::registry::put_schema on_complete data: " << request->uri() << " got " << request->rx_content_length() << " bytes";
+          //BOOST_LOG_TRIVIAL(trace) << "confluent::registry::put_schema on_complete data: " << request->uri() << " got " << request->rx_content_length() << " bytes";
           std::string copy_of_bytes(request->rx_content()); // TBD remove me!!!
           if (decode_put_schema_request_response((char*) request->rx_content(), request->rx_content_length(), &shared_result->schema_id)) { // the json parser overwrites the internal buffer so logging before this line
-            BOOST_LOG_TRIVIAL(trace) << "confluent::registry::put_schema returned id:" << shared_result->schema_id;
+            //BOOST_LOG_TRIVIAL(trace) << "confluent::registry::put_schema returned id:" << shared_result->schema_id;
             cb(0);
             return;
           } else {
-            BOOST_LOG_TRIVIAL(error) << "confluent::registry::put_schema return value unexpected bytes:" << copy_of_bytes;
+            LOG(ERROR) << "confluent::registry::put_schema return value unexpected bytes:" << copy_of_bytes;
           }
         } else {
-          BOOST_LOG_TRIVIAL(error) << "confluent::registry::put_schema: " << request->uri() << " HTTPRES = " << request->http_result() << ", " << (request->rx_content_length() ? request->rx_content() : "");
+          LOG(ERROR) << "confluent::registry::put_schema: " << request->uri() << " HTTPRES = " << request->http_result() << ", " << (request->rx_content_length() ? request->rx_content() : "");
         }
         cb(-1);
       });
@@ -131,7 +129,7 @@ void registry::get_schema(int32_t schema_id, get_callback get_cb) {
       auto request = std::make_shared<kspp::http::request>(kspp::http::GET, uri, headers, 100ms); // move to api
       _http.perform_async(request, [cb, shared_result](std::shared_ptr<kspp::http::request> request) {
         if (request->http_result() >= 200 && request->http_result() < 300) {
-          BOOST_LOG_TRIVIAL(trace) << "confluent::registry::get_schema on_complete data: " << request->uri() << " got " << request->rx_content_length() << " bytes";
+          //BOOST_LOG_TRIVIAL(trace) << "confluent::registry::get_schema on_complete data: " << request->uri() << " got " << request->rx_content_length() << " bytes";
           std::string copy_of_bytes(request->rx_content());
           shared_result->schema = std::make_shared<avro::ValidSchema>();
           if (decode_get_schema_request_response((char*) request->rx_content(), request->rx_content_length(), shared_result->schema)) { // the json parser overwrites the internal buffer so logging before this line
@@ -139,10 +137,10 @@ void registry::get_schema(int32_t schema_id, get_callback get_cb) {
             cb(0);
             return;
           } else {
-            BOOST_LOG_TRIVIAL(error) << "confluent::registry::get_schema return value unexpected bytes:" << copy_of_bytes;
+            LOG(ERROR) << "confluent::registry::get_schema return value unexpected bytes:" << copy_of_bytes;
           }
         } else {
-          BOOST_LOG_TRIVIAL(error) << "confluent::registry::get_schema: " << request->uri() << " HTTPRES = " << request->http_result() << ", " << (request->rx_content_length() ? request->rx_content() : "");
+          LOG(ERROR) << "confluent::registry::get_schema: " << request->uri() << " HTTPRES = " << request->http_result() << ", " << (request->rx_content_length() ? request->rx_content() : "");
         }
         cb(-1);
       });

@@ -1,7 +1,7 @@
 #include <kspp/kspp.h>
 #include <cstdlib>
 #include <boost/filesystem.hpp>
-#include <boost/log/trivial.hpp>
+#include <glog/logging.h>
 
 #pragma once
 
@@ -112,7 +112,7 @@ namespace kspp {
                      boost::filesystem::path root_path = default_directory())
             : _app_info(app_info), _next_topology_id(0), _brokers(brokers), _max_buffering(max_buffering),
               _root_path(root_path) {
-      BOOST_LOG_TRIVIAL(info) << "topology_builder created, " << to_string(*_app_info) << ", kafka_brokers:" << brokers
+      LOG(INFO) << "topology_builder created, " << to_string(*_app_info) << ", kafka_brokers:" << brokers
                               << ", max_buffering:" << max_buffering.count() << "ms,  root_path:" << root_path;
     }
 

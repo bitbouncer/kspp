@@ -4,7 +4,7 @@
 #include <strstream>
 #include <fstream>
 #include <boost/filesystem.hpp>
-#include <boost/log/trivial.hpp>
+#include <glog/logging.h>
 
 #include <kspp/kspp.h>
 #include "state_store.h"
@@ -86,8 +86,7 @@ namespace kspp {
         auto tmp_value = std::make_shared<V>();
         size_t consumed = _codec->decode(value.data() + sizeof(int64_t), actual_sz, *tmp_value);
         if (consumed != actual_sz) {
-          BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", decode payload failed, consumed:" << consumed
-                                   << ", actual sz:" << actual_sz;
+          LOG(ERROR) << ", decode payload failed, consumed:" << consumed << ", actual sz:" << actual_sz;
           return nullptr;
         }
         return std::make_shared<krecord<K, V>>(tmp_key, tmp_value, timestamp);
@@ -203,7 +202,7 @@ namespace kspp {
           rocksdb::DB *tmp = nullptr;
           auto s = rocksdb::DB::Open(options, path.generic_string(), &tmp);
           if (!s.ok()) {
-            BOOST_LOG_TRIVIAL(error) << "rocksdb_windowed_store, failed to open rocks db, path:"
+            LOG(ERROR) << "rocksdb_windowed_store, failed to open rocks db, path:"
                                      << path.generic_string();
 
             throw std::runtime_error(
@@ -227,7 +226,7 @@ namespace kspp {
           if (bucket_it != _buckets.end()) {
             auto status = bucket_it->second->Delete(rocksdb::WriteOptions(), rocksdb::Slice(key_buf, ksize));
             if (!status.ok()) {
-              BOOST_LOG_TRIVIAL(error) << "rocksdb_windowed_store, delete failed, path:"
+              LOG(ERROR) << "rocksdb_windowed_store, delete failed, path:"
                                        << _storage_path.generic_string() << ", slot:" << bucket_it->first;
             }
           }
@@ -277,7 +276,7 @@ namespace kspp {
           auto tmp_value = std::make_shared<V>();
           size_t consumed = _codec->decode(payload.data() + sizeof(int64_t), actual_sz, *tmp_value);
           if (consumed != actual_sz) {
-            BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", decode payload failed, consumed:" << consumed
+            LOG(ERROR) << ", decode payload failed, consumed:" << consumed
                                      << ", actual sz:" << actual_sz;
             return nullptr;
           }

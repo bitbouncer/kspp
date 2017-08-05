@@ -1,12 +1,8 @@
 #include <kspp/impl/sources/kafka_consumer.h>
 #include <thread>
 #include <chrono>
-#include <boost/log/trivial.hpp>
+#include <glog/logging.h>
 #include <kspp/impl/kafka_utils.h>
-
-#define LOGPREFIX_ERROR BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", topic:" << _topic << ":" << _partition
-#define LOG_INFO(EVENT)  BOOST_LOG_TRIVIAL(info) << "kafka_consumer: " << EVENT << ", topic:" << _topic << ":" << _partition
-#define LOG_DEBUG(EVENT)  BOOST_LOG_TRIVIAL(debug) << "kafka_consumer: " << EVENT << ", topic:" << _topic << ":" << _partition
 
 using namespace std::chrono_literals;
 
@@ -67,8 +63,7 @@ kafka_consumer::kafka_consumer(std::string brokers, std::string topic, int32_t p
     set_config(conf.get(), "default_topic_conf", tconf.get());
   }
   catch (std::invalid_argument& e) {
-    BOOST_LOG_TRIVIAL(fatal) << "topic:" << _topic << ", bad config " << e.what();
-    exit(1);
+    LOG(FATAL) << "topic:" << _topic << ", partition:" << _partition << ", bad config " << e.what();
   }
  
   /*
@@ -77,10 +72,9 @@ kafka_consumer::kafka_consumer(std::string brokers, std::string topic, int32_t p
   std::string errstr;
   _consumer = std::unique_ptr<RdKafka::KafkaConsumer>(RdKafka::KafkaConsumer::create(conf.get(), errstr));
   if (!_consumer) {
-    LOGPREFIX_ERROR << ", failed to create consumer, reason: " << errstr;
-    exit(-1);
+    LOG(FATAL) << "topic:" << _topic << ", partition:" << _partition << ", failed to create consumer, reason: " << errstr;
   }
-  LOG_INFO("created");
+  LOG(INFO) << "topic:" << _topic << ", partition:" << _partition << ", created";
   // really try to make sure the partition & group exist before we continue
   kspp::kafka::wait_for_partition(_consumer.get(), _topic, _partition);
   //kspp::kafka::wait_for_group(brokers, consumer_group); something seems to wrong in rdkafka master....
@@ -101,7 +95,7 @@ void kafka_consumer::close() {
   _closed = true;
   if (_consumer) {
     _consumer->close();
-    LOG_INFO("closed") << ", consumed " << _msg_cnt << " messages (" << _msg_bytes << " bytes)";
+    LOG(INFO) << "topic:" << _topic << ", partition:" << _partition << ", closed - consumed " << _msg_cnt << " messages (" << _msg_bytes << " bytes)";
   }
   _consumer = nullptr;
 }
@@ -113,8 +107,7 @@ void kafka_consumer::start(int64_t offset) {
   _topic_partition[0]->set_offset(offset);
   RdKafka::ErrorCode err0 = _consumer->assign(_topic_partition);
   if (err0) {
-    LOGPREFIX_ERROR << ", failed to subscribe, reason:" << RdKafka::err2str(err0);
-    exit(1);
+    LOG(FATAL) << "topic:" << _topic << ", partition:" << _partition << ", failed to subscribe, reason:" << RdKafka::err2str(err0);
   }
   update_eof();
 }
@@ -129,8 +122,7 @@ void kafka_consumer::start() {
 void kafka_consumer::stop() {
   RdKafka::ErrorCode err = _consumer->unassign();
   if (err) {
-    LOGPREFIX_ERROR << ", failed to stop, reason:" << RdKafka::err2str(err);
-    exit(1);
+    LOG(FATAL) << "topic:" << _topic << ", partition:" << _partition <<  ", failed to stop, reason:" << RdKafka::err2str(err);
   }
 }
 
@@ -139,7 +131,7 @@ int kafka_consumer::update_eof(){
   int64_t high = 0;
   RdKafka::ErrorCode ec = _consumer->query_watermark_offsets(_topic, _partition, &low, &high, 1000);
   if (ec) {
-    LOGPREFIX_ERROR << ", failed to query_watermark_offsets, reason:" << RdKafka::err2str(ec);
+    LOG(ERROR) << "topic:" << _topic << ", partition:" << _partition << ", consumer.query_watermark_offsets failed, reason:" << RdKafka::err2str(ec);
     return ec;
   }
   if (low == high) {
@@ -147,7 +139,7 @@ int kafka_consumer::update_eof(){
   } else {
     auto ec = _consumer->position(_topic_partition);
     if (ec) {
-      LOGPREFIX_ERROR << ", failed to query position, reason:" << RdKafka::err2str(ec);
+      LOG(ERROR) << "topic:" << _topic << "partition:" << _partition << ", consumer.position failed, reason:" << RdKafka::err2str(ec);
       return ec;
     }
     auto cursor = _topic_partition[0]->offset();
@@ -158,7 +150,7 @@ int kafka_consumer::update_eof(){
 
 std::unique_ptr<RdKafka::Message> kafka_consumer::consume() {
   if (_closed || _consumer == nullptr) {
-    LOGPREFIX_ERROR << ", consume failed: closed()";
+    LOG(ERROR) << "topic:" << _topic << "partition:" << _partition << ", consume failed: closed()";
     return nullptr; // already closed
   }
 
@@ -181,13 +173,13 @@ std::unique_ptr<RdKafka::Message> kafka_consumer::consume() {
     case RdKafka::ERR__UNKNOWN_TOPIC:
     case RdKafka::ERR__UNKNOWN_PARTITION:
       _eof = true;
-      LOGPREFIX_ERROR << ", consume failed: " << msg->errstr();
+      LOG(ERROR) << "topic:" << _topic << "partition:" << _partition << ", consume failed: " << msg->errstr();
       break;
 
     default:
       /* Errors */
       _eof = true;
-      LOGPREFIX_ERROR << ", consume failed: " << msg->errstr();
+      LOG(ERROR) << "topic:" << _topic << "partition:" << _partition << ", consume failed: " << msg->errstr();
   }
   return nullptr;
 }
@@ -197,7 +189,7 @@ int32_t kafka_consumer::commit(int64_t offset, bool flush) {
     return 0;
 
   if (_closed || _consumer == nullptr) {
-    LOGPREFIX_ERROR << ", commit on closed consumer";
+    LOG(ERROR) << "topic:" << _topic << "partition:" << _partition << ", commit on closed consumer";
     return -1; // already closed
   }
 
@@ -210,22 +202,22 @@ int32_t kafka_consumer::commit(int64_t offset, bool flush) {
   _can_be_committed = offset;
   RdKafka::ErrorCode ec = RdKafka::ERR_NO_ERROR;
   if (flush) {
-    LOG_INFO("commiting(flush)") << ", " << _can_be_committed;
+    LOG(INFO) << "topic:" << _topic << "partition:" << _partition << ", commiting(flush)" << ", offset:" << _can_be_committed;
     _topic_partition[0]->set_offset(_can_be_committed);
     ec = _consumer->commitSync(_topic_partition);
     if (ec == RdKafka::ERR_NO_ERROR) {
       _last_committed = _can_be_committed;
     } else {
-      LOGPREFIX_ERROR << ", failed to commit, reason:" << RdKafka::err2str(ec);
+      LOG(ERROR) << "topic:" << _topic << "partition:" << _partition << ", failed to commit, reason:" << RdKafka::err2str(ec);
     }
   } else if ((_last_committed + _max_pending_commits) < _can_be_committed) {
-    LOG_DEBUG("commiting(lazy)") << ", " << _can_be_committed;
+    DLOG(INFO) << "topic:" << _topic << ":, partition: " << _partition << ", lazy commit:" << ", offset:" << _can_be_committed;
     _topic_partition[0]->set_offset(_can_be_committed);
     ec = _consumer->commitAsync(_topic_partition);
     if (ec == RdKafka::ERR_NO_ERROR) {
       _last_committed = _can_be_committed;
     } else {
-      LOGPREFIX_ERROR << ", failed to commit, reason:" << RdKafka::err2str(ec);
+      LOG(ERROR) << "topic:" << _topic << "partition:" << _partition << ", failed to commit, reason:" << RdKafka::err2str(ec);
     }
   }
   // TBD add time based autocommit 

@@ -4,7 +4,7 @@
 #include <strstream>
 #include <fstream>
 #include <boost/filesystem.hpp>
-#include <boost/log/trivial.hpp>
+#include <glog/logging.h>
 #include <rocksdb/db.h>
 #include <rocksdb/merge_operator.h>
 #include <kspp/kspp.h>
@@ -46,7 +46,7 @@ namespace kspp {
       if (existing_value) {
         if (!Deserialize(*existing_value, &existing)) {
           // if existing_value is corrupted, treat it as 0
-          BOOST_LOG_TRIVIAL(error) << "Int64AddOperator::Merge existing_value value corruption";
+          LOG(ERROR) << "Int64AddOperator::Merge existing_value value corruption";
           existing = 0;
         }
       }
@@ -54,7 +54,7 @@ namespace kspp {
       int64_t oper;
       if (!Deserialize(value, &oper)) {
         // if operand is corrupted, treat it as 0
-        BOOST_LOG_TRIVIAL(error) << "Int64AddOperator::Merge, Deserialize operand value corruption";
+        LOG(ERROR) << "Int64AddOperator::Merge, Deserialize operand value corruption";
         oper = 0;
       }
 
@@ -148,7 +148,7 @@ namespace kspp {
       auto s = rocksdb::DB::Open(options, storage_path.generic_string(), &tmp);
       _db.reset(tmp);
       if (!s.ok()) {
-        BOOST_LOG_TRIVIAL(error) << "rocksdb_counter_store, failed to open rocks db, path:"
+        LOG(ERROR) << "rocksdb_counter_store, failed to open rocks db, path:"
                                  << storage_path.generic_string();
         throw std::runtime_error(
                 std::string("rocksdb_counter_store, failed to open rocks db, path:") + storage_path.generic_string());

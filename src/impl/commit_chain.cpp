@@ -1,5 +1,5 @@
 #include <kspp/impl/commit_chain.h>
-#include <boost/log/trivial.hpp>
+#include <glog/logging.h>
 
 namespace kspp {
   commit_chain::commit_chain(std::string topic, int32_t partition)
@@ -56,8 +56,8 @@ void commit_chain::set_handler(std::function <void(int64_t offset, int32_t ec)> 
         _last_good_offset = offset;
       } else {
         _first_ec = ec;
-        BOOST_LOG_TRIVIAL(fatal) << "commit_chain failed, topic " << _topic << ":" << _partition
-                                 << ", failure at offset:" << offset << ", ec:" << ec;
+        LOG(FATAL) << "commit_chain failed, topic " << _topic << ":" << _partition
+                   << ", failure at offset:" << offset << ", ec:" << ec;
       }
     }
   }

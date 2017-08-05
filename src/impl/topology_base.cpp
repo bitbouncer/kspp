@@ -11,15 +11,15 @@ namespace kspp {
                                boost::filesystem::path root_path)
           : _app_info(ai), _is_init(false), _topology_id(topology_id), _brokers(brokers),
             _max_buffering_time(max_buffering), _root_path(root_path), _next_gc_ts(0) {
-    BOOST_LOG_TRIVIAL(info) << "topology created, name:" << name();
+    LOG(INFO) << "topology created, name:" << name();
   }
 
   topology_base::~topology_base() {
-    BOOST_LOG_TRIVIAL(info) << "topology, name:" << name() << " terminating";
+    LOG(INFO) << "topology, name:" << name() << " terminating";
     _top_partition_processors.clear();
     _partition_processors.clear();
     _sinks.clear();
-    BOOST_LOG_TRIVIAL(info) << "topology, name:" << name() << " terminated";
+    LOG(INFO) << "topology, name:" << name() << " terminated";
   }
 
   std::string topology_base::app_id() const {
@@ -103,10 +103,10 @@ namespace kspp {
           upstream_of_something = true;
       }
       if (!upstream_of_something) {
-        BOOST_LOG_TRIVIAL(info) << "topology << " << name() << ": adding " << i->simple_name() << " to top";
+        LOG(INFO) << "topology << " << name() << ": adding " << i->simple_name() << " to top";
         _top_partition_processors.push_back(i);
       } else {
-        BOOST_LOG_TRIVIAL(info) << "topology << " << name() << ": skipping poll of " << i->simple_name();
+        LOG(INFO) << "topology << " << name() << ": skipping poll of " << i->simple_name();
       }
     }
     _is_init = true;
@@ -232,15 +232,14 @@ namespace kspp {
     boost::filesystem::path top_of_topology(_root_path);
     top_of_topology /= sanitize_filename(_app_info->identity());
     top_of_topology /= sanitize_filename(_topology_id);
-    BOOST_LOG_TRIVIAL(debug) << "topology " << _app_info->identity() << ": creating local storage at "
-                             << top_of_topology;
+    DLOG(INFO) << "topology " << _app_info->identity() << ": creating local storage at " << top_of_topology;
     auto res = boost::filesystem::create_directories(top_of_topology);
     // seems to be a bug in boost - always return false...
     //if (!res)
     //  BOOST_LOG_TRIVIAL(error) << "topology " << _app_info->identity() << ": failed to create local storage at " << top_of_topology;
     // so we check if the directory exists after instead...
     if (!boost::filesystem::exists(top_of_topology))
-      BOOST_LOG_TRIVIAL(error) << "topology " << _app_info->identity() << ": failed to create local storage at "
+      LOG(ERROR) << "topology " << _app_info->identity() << ": failed to create local storage at "
                                << top_of_topology;
     return top_of_topology;
   }

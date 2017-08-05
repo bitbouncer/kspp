@@ -10,8 +10,8 @@
 #include <strstream>
 #include <boost/filesystem.hpp>
 #include <boost/uuid/uuid.hpp>
-#include <boost/log/trivial.hpp>
 #include <boost/algorithm/string/replace.hpp>
+#include <glog/logging.h>
 #include <kspp/metrics/metrics.h>
 #include <kspp/kevent.h>
 #include <kspp/type_name.h>

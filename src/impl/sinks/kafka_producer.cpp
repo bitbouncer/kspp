@@ -1,6 +1,6 @@
 #include <kspp/impl/sinks/kafka_producer.h>
 #include <thread>
-#include <boost/log/trivial.hpp>
+#include <glog/logging.h>
 
 #define LOGPREFIX_ERROR BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", topic:" << _topic
 #define LOG_INFO(EVENT)  BOOST_LOG_TRIVIAL(info) << "kafka_producer: " << EVENT << ", topic:" << _topic
@@ -117,7 +117,7 @@ kafka_producer::kafka_producer(std::string brokers, std::string topic, std::chro
     set_config(conf.get(), "default_topic_conf", tconf.get());
   }
   catch (std::invalid_argument& e) {
-    BOOST_LOG_TRIVIAL(fatal) << "topic:" << _topic << ", bad config " << e.what();
+    LOG(FATAL) << "topic:" << _topic << ", bad config " << e.what();
     exit(1);
   }
 
@@ -126,7 +126,7 @@ kafka_producer::kafka_producer(std::string brokers, std::string topic, std::chro
   */
   _producer = std::unique_ptr<RdKafka::Producer>(RdKafka::Producer::create(conf.get(), errstr));
   if (!_producer) {
-    LOGPREFIX_ERROR << ", failed to create producer:" << errstr;
+    LOG(FATAL) << "topic:" << _topic << ", failed to create producer:" << errstr;
     exit(1);
   }
 
@@ -150,7 +150,7 @@ kafka_producer::kafka_producer(std::string brokers, std::string topic, std::chro
   _rd_topic = std::unique_ptr<RdKafka::Topic>(RdKafka::Topic::create(_producer.get(), _topic, tconf.get(), errstr));
 
   if (!_rd_topic) {
-    LOGPREFIX_ERROR << ", failed to create topic: " << errstr;
+    LOG(FATAL) << "topic:" << _topic << ", failed to create topic: " << errstr;
     exit(1);
   }
 
@@ -174,13 +174,13 @@ kafka_producer::kafka_producer(std::string brokers, std::string topic, std::chro
       }
     }
     if (_nr_of_partitions == 0 || nr_available != _nr_of_partitions) {
-      LOGPREFIX_ERROR << ", waiting for partitions leader to be available";
+      LOG(WARNING) << "topic:" << _topic << ", waiting for partitions leader to be available";
       std::this_thread::sleep_for(1s);
     }
   }
   delete md;
 
-  LOG_INFO("created");
+  LOG(INFO) << "topic:" << _topic << ", kafka producer created";
 }
 
 kafka_producer::~kafka_producer() {
@@ -194,13 +194,13 @@ void kafka_producer::close() {
   _closed = true;
 
   if (_producer && _producer->outq_len() > 0) {
-    LOG_INFO("closing") << ", waiting for " << _producer->outq_len() << " messages to be written...";
+    LOG(INFO) << "topic:" << _topic << ", kafka producer closing - waiting for " << _producer->outq_len() << " messages to be written...";
   }
 
   // quick flush then exit anyway
   auto ec = _producer->flush(2000);
   if (ec) {
-    LOG_INFO("closing") << ", flush did not finish in 2 sec " << RdKafka::err2str(ec);
+    LOG(INFO) << "topic:" << _topic << ", kafka producer flush did not finish in 2 sec " << RdKafka::err2str(ec);
   }
 
   // should we still keep trying here???
@@ -213,7 +213,7 @@ void kafka_producer::close() {
 
   _rd_topic = nullptr;
   _producer = nullptr;
-  LOG_INFO("closed") << ", produced " << _msg_cnt << " messages (" << _msg_bytes << " bytes)";
+  LOG(INFO) << "topic:" << _topic << ", kafka producer closed - produced " << _msg_cnt << " messages (" << _msg_bytes << " bytes)";
 }
 
 
@@ -232,12 +232,12 @@ int kafka_producer::produce(uint32_t partition_hash, memory_management_mode mode
 
   RdKafka::ErrorCode ec = _producer->produce(_topic, -1, 0, value, valuesz, key, keysz, timestamp, user_data); // note not using _rd_topic anymore...?
   if (ec == RdKafka::ERR__QUEUE_FULL) {
-    BOOST_LOG_TRIVIAL(debug) << "kafka_producer, topic:" << _topic << ", queue full - retrying, msg_count (" << _msg_cnt << ")";
+    DLOG(INFO) << "kafka_producer, topic:" << _topic << ", queue full - retrying, msg_count (" << _msg_cnt << ")";
     delete user_data;
     return ec;
-  }
-  if (ec != RdKafka::ERR_NO_ERROR) {
-    BOOST_LOG_TRIVIAL(error) << "kafka_producer, topic:" << _topic << ", produce failed: " << RdKafka::err2str(ec);
+  }  else if (ec != RdKafka::ERR_NO_ERROR) {
+    LOG(ERROR) << "kafka_producer, topic:" << _topic << ", produce failed: " << RdKafka::err2str(ec);
+    // should this be a fatal?
     delete user_data; // how do we signal failure to send data... the consumer should probably not continue...
     return ec;
   }

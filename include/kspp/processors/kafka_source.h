@@ -1,13 +1,11 @@
 #include <memory>
 #include <strstream>
 #include <boost/filesystem.hpp>
-#include <boost/log/trivial.hpp>
+#include <glog/logging.h>
 #include <kspp/kspp.h>
 #include <kspp/impl/sources/kafka_consumer.h>
 
 #pragma once
-
-//#define LOGPREFIX_ERROR BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << this->processor_name() << "-" <<  CODEC::name()
 #define KSPP_LOG_NAME this->simple_name() << "-" << CODEC::name()
 
 namespace kspp {
@@ -115,11 +113,11 @@ namespace kspp {
 
         size_t consumed = this->_codec->decode((const char *) ref->key_pointer(), ref->key_len(), tmp_key);
         if (consumed == 0) {
-          BOOST_LOG_TRIVIAL(error) << KSPP_LOG_NAME << ", decode key failed, actual key sz:" << ref->key_len();
+          LOG(ERROR) << KSPP_LOG_NAME << ", decode key failed, actual key sz:" << ref->key_len();
           return nullptr;
         } else if (consumed != ref->key_len()) {
-          BOOST_LOG_TRIVIAL(error) << KSPP_LOG_NAME << ", decode key failed, consumed: " << consumed << ", actual: "
-                                   << ref->key_len();
+          LOG(ERROR) << KSPP_LOG_NAME << ", decode key failed, consumed: " << consumed << ", actual: "
+                     << ref->key_len();
           return nullptr;
         }
       }
@@ -131,11 +129,11 @@ namespace kspp {
         tmp_value = std::make_shared<V>();
         size_t consumed = this->_codec->decode((const char *) ref->payload(), sz, *tmp_value);
         if (consumed == 0) {
-          BOOST_LOG_TRIVIAL(error) << KSPP_LOG_NAME << ", decode value failed, size:" << sz;
+          LOG(ERROR) << KSPP_LOG_NAME << ", decode value failed, size:" << sz;
           return nullptr;
         } else if (consumed != sz) {
-          BOOST_LOG_TRIVIAL(error) << KSPP_LOG_NAME << ", decode value failed, consumed: " << consumed << ", actual: "
-                                   << sz;
+          LOG(ERROR) << KSPP_LOG_NAME << ", decode value failed, consumed: " << consumed << ", actual: "
+                     << sz;
           return nullptr;
         }
       }
@@ -174,12 +172,11 @@ namespace kspp {
         }
 
         if (consumed == 0) {
-          BOOST_LOG_TRIVIAL(error) << KSPP_LOG_NAME << ", decode value failed, size:" << sz;
+          LOG(ERROR) << KSPP_LOG_NAME << ", decode value failed, size:" << sz;
           return nullptr;
         }
 
-        BOOST_LOG_TRIVIAL(error) << KSPP_LOG_NAME << ", decode value failed, consumed: " << consumed << ", actual: "
-                                 << sz;
+        LOG(ERROR) << KSPP_LOG_NAME << ", decode value failed, consumed: " << consumed << ", actual: " << sz;
         return nullptr;
       }
       return nullptr; // just parsed an empty message???
@@ -209,11 +206,11 @@ namespace kspp {
       K tmp_key;
       size_t consumed = this->_codec->decode((const char *) ref->key_pointer(), ref->key_len(), tmp_key);
       if (consumed == 0) {
-        BOOST_LOG_TRIVIAL(error) << KSPP_LOG_NAME << ", decode key failed, actual key sz:" << ref->key_len();
+        LOG(ERROR) << KSPP_LOG_NAME << ", decode key failed, actual key sz:" << ref->key_len();
         return nullptr;
       } else if (consumed != ref->key_len()) {
-        BOOST_LOG_TRIVIAL(error) << KSPP_LOG_NAME << ", decode key failed, consumed: " << consumed << ", actual: "
-                                 << ref->key_len();
+        LOG(ERROR) << KSPP_LOG_NAME << ", decode key failed, consumed: " << consumed << ", actual: "
+                   << ref->key_len();
         return nullptr;
       }
       auto record = std::make_shared<krecord<K, void>>(tmp_key, timestamp);

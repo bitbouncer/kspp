@@ -1,5 +1,4 @@
 #include <functional>
-#include <boost/log/trivial.hpp>
 #include <kspp/kspp.h>
 #include <deque>
 

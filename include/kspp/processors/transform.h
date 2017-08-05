@@ -1,5 +1,5 @@
 #include <functional>
-#include <boost/log/trivial.hpp>
+#include <glog/logging.h>
 #include <kspp/kspp.h>
 #include <deque>
 

@@ -20,7 +20,7 @@
 #include <boost/thread/condition_variable.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string.hpp>
-#include <boost/log/trivial.hpp>
+#include <glog/logging.h>
 #pragma once
 
 namespace kspp {
@@ -413,13 +413,13 @@ default:                                   return boost::lexical_cast<std::strin
 
       void close() {
         _closing = true;
-        BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION;
+        //BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION;
         _timer.cancel();
         if (_multi) {
-          BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << "before curl_multi_cleanup(_multi);";
+          //BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << "before curl_multi_cleanup(_multi);";
           _io_service.post([this]() {
-            BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << ", curl_multi_cleanup(_multi): "
-                                     << _multi;
+            //BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << ", curl_multi_cleanup(_multi): "
+            //                         << _multi;
             curl_multi_cleanup(_multi);
             _multi = NULL;
           });
@@ -539,14 +539,14 @@ default:                                   return boost::lexical_cast<std::strin
         // retrieve cert info
         curl_easy_setopt(request->_curl_easy, CURLOPT_CERTINFO, 1);
         request->_start_ts = std::chrono::steady_clock::now();
-        BOOST_LOG_TRIVIAL(debug) << BOOST_CURRENT_FUNCTION << ", method: " << to_string(request->_method) << ", uri: "
+        DLOG(INFO) << BOOST_CURRENT_FUNCTION << ", method: " << to_string(request->_method) << ", uri: "
                                  << request->_uri << ", content_length: " << request->tx_content_length();
         CURLMcode rc = curl_multi_add_handle(_multi, request->_curl_easy);
       }
 
       // must not be called within curl callbacks - post a asio message instead
       void _poll_remove(std::shared_ptr<request> p) {
-        BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << ", handle: " << p->_curl_easy;
+        //BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << ", handle: " << p->_curl_easy;
         curl_multi_remove_handle(_multi, p->_curl_easy);
       }
 
@@ -566,8 +566,7 @@ default:                                   return boost::lexical_cast<std::strin
           tcp_socket->open(boost::asio::ip::tcp::v4(), ec);
 
           if (ec) {
-            BOOST_LOG_TRIVIAL(error) << this << ", " << BOOST_CURRENT_FUNCTION << ", open failed, socket: " << ec
-                                     << ", (" << ec.message() << ")";
+            LOG(ERROR) << this << ", " << ", open failed, socket: " << ec << ", (" << ec.message() << ")";
             delete tcp_socket;
             return CURL_SOCKET_BAD;
           }
@@ -578,7 +577,7 @@ default:                                   return boost::lexical_cast<std::strin
             spinlock::scoped_lock xxx(_spinlock);
             _socket_map.insert(std::pair<curl_socket_t, boost::asio::ip::tcp::socket *>(sockfd, tcp_socket));
           }
-          BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << " open ok, socket: " << sockfd;
+          //BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << " open ok, socket: " << sockfd;
           return sockfd;
         }
         // IPV6
@@ -590,8 +589,7 @@ default:                                   return boost::lexical_cast<std::strin
           boost::system::error_code ec;
           tcp_socket->open(boost::asio::ip::tcp::v6(), ec);
           if (ec) {
-            BOOST_LOG_TRIVIAL(error) << this << ", " << BOOST_CURRENT_FUNCTION << ", open failed, socket: " << ec
-                                     << ", (" << ec.message() << ")";
+            LOG(ERROR) << this << ", open failed, socket: " << ec << ", (" << ec.message() << ")";
             delete tcp_socket;
             return CURL_SOCKET_BAD;
           }
@@ -602,11 +600,11 @@ default:                                   return boost::lexical_cast<std::strin
             spinlock::scoped_lock xxx(_spinlock);
             _socket_map.insert(std::pair<curl_socket_t, boost::asio::ip::tcp::socket *>(sockfd, tcp_socket));
           }
-          BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << " open ok, socket: " << sockfd;
+          //BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << " open ok, socket: " << sockfd;
           return sockfd;
         }
 
-        BOOST_LOG_TRIVIAL(error) << "http_client::opensocket_cb unsupported address family";
+        LOG(ERROR) << "http_client::opensocket_cb unsupported address family";
         return CURL_SOCKET_BAD;
       }
 
@@ -640,8 +638,8 @@ default:                                   return boost::lexical_cast<std::strin
           }
 
           if (!tcp_socket) {
-            BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << ", socket: " << s
-                                     << " is a c-ares socket, ignoring";
+            //BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << ", socket: " << s
+            //                         << " is a c-ares socket, ignoring";
             return 0;
           }
         }
@@ -650,7 +648,7 @@ default:                                   return boost::lexical_cast<std::strin
 
         switch (what) {
           case CURL_POLL_IN:
-            BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << ", CURL_POLL_IN, socket: " << s;
+            //BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << ", CURL_POLL_IN, socket: " << s;
             tcp_socket->async_read_some(boost::asio::null_buffers(),
                                         [this, tcp_socket, context](const boost::system::error_code &ec,
                                                                     std::size_t bytes_transferred) {
@@ -658,7 +656,7 @@ default:                                   return boost::lexical_cast<std::strin
                                         });
             break;
           case CURL_POLL_OUT:
-            BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << ", CURL_POLL_OUT, socket: " << s;
+            //BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << ", CURL_POLL_OUT, socket: " << s;
             tcp_socket->async_write_some(boost::asio::null_buffers(),
                                          [this, tcp_socket, context](const boost::system::error_code &ec,
                                                                      std::size_t bytes_transferred) {
@@ -666,7 +664,7 @@ default:                                   return boost::lexical_cast<std::strin
                                          });
             break;
           case CURL_POLL_INOUT:
-            BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << ", CURL_POLL_INOUT, socket: " << s;
+            //BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << ", CURL_POLL_INOUT, socket: " << s;
             tcp_socket->async_read_some(boost::asio::null_buffers(),
                                         [this, tcp_socket, context](const boost::system::error_code &ec,
                                                                     std::size_t bytes_transferred) {
@@ -754,7 +752,7 @@ default:                                   return boost::lexical_cast<std::strin
       }
 
       int closesocket_cb(curl_socket_t item) {
-        BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << ", socket: " << item;
+        //BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << ", socket: " << item;
         {
           spinlock::scoped_lock xxx(_spinlock);
           std::map<curl_socket_t, boost::asio::ip::tcp::socket *>::iterator it = _socket_map.find(item);
@@ -767,7 +765,7 @@ default:                                   return boost::lexical_cast<std::strin
             //curl_multi_assign(_multi, it->first, NULL); // we need to remove this at once since curl likes to reuse sockets
             _socket_map.erase(it);
             _io_service.post([this, s]() {
-              BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << ", socket: " << s;
+              //BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << ", socket: " << s;
               delete s; // must be deleted after operations on socket completed. therefore the _io_service.post
             });
           }
@@ -807,9 +805,9 @@ default:                                   return boost::lexical_cast<std::strin
               }
             }
 
-            BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << ", CURLMSG_DONE, http : "
-                                     << to_string(context->_method) << " " << context->uri() << " res = " << http_result
-                                     << " " << context->milliseconds() << " ms";
+            //BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << ", CURLMSG_DONE, http : "
+            //                         << to_string(context->_method) << " " << context->uri() << " res = " << http_result
+            //                         << " " << context->milliseconds() << " ms";
 
             if (context->_callback) {
               // lets make sure the character in the buffer after the content is NULL
@@ -830,14 +828,14 @@ default:                                   return boost::lexical_cast<std::strin
       // static helpers
       static size_t write_callback_std_stream(void *ptr, size_t size, size_t nmemb, std::ostream *stream) {
         size_t sz = size * nmemb;
-        BOOST_LOG_TRIVIAL(trace) << BOOST_CURRENT_FUNCTION << ", in size: " << sz;
+        //BOOST_LOG_TRIVIAL(trace) << BOOST_CURRENT_FUNCTION << ", in size: " << sz;
         stream->write((char *) ptr, sz);
         return sz;
       }
 
       static size_t write_callback_buffer(void *ptr, size_t size, size_t nmemb, kspp::http::buffer *buf) {
         size_t sz = size * nmemb;
-        BOOST_LOG_TRIVIAL(trace) << BOOST_CURRENT_FUNCTION << ", in size: " << sz;
+        //BOOST_LOG_TRIVIAL(trace) << BOOST_CURRENT_FUNCTION << ", in size: " << sz;
         buf->append((const uint8_t *) ptr, sz);
         return sz;
       }
@@ -846,7 +844,7 @@ default:                                   return boost::lexical_cast<std::strin
         size_t max_sz = size * nmemb;
         stream->read((char *) ptr, max_sz);
         size_t actual = stream->gcount();
-        BOOST_LOG_TRIVIAL(trace) << BOOST_CURRENT_FUNCTION << ", out size: " << actual;
+        //BOOST_LOG_TRIVIAL(trace) << BOOST_CURRENT_FUNCTION << ", out size: " << actual;
         return actual;
       }
 

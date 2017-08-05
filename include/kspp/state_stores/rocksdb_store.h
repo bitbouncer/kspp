@@ -4,7 +4,7 @@
 #include <strstream>
 #include <fstream>
 #include <boost/filesystem.hpp>
-#include <boost/log/trivial.hpp>
+#include <glog/logging.h>
 #include <kspp/kspp.h>
 #include "state_store.h"
 
@@ -69,8 +69,7 @@ namespace kspp {
         auto tmp_value = std::make_shared<V>();
         size_t consumed = _codec->decode(value.data() + sizeof(int64_t), actual_sz, *tmp_value);
         if (consumed != actual_sz) {
-          BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", decode payload failed, consumed:" << consumed
-                                   << ", actual sz:" << actual_sz;
+          LOG(ERROR) << ", decode payload failed, consumed:" << consumed                                   << ", actual sz:" << actual_sz;
           return nullptr;
         }
         return std::make_shared<krecord<K, V>>(tmp_key, tmp_value, timestamp);
@@ -108,8 +107,7 @@ namespace kspp {
       auto s = rocksdb::DB::Open(options, storage_path.generic_string(), &tmp);
       _db.reset(tmp);
       if (!s.ok()) {
-        BOOST_LOG_TRIVIAL(error) << "rocksdb_store, failed to open rocks db, path:"
-                                 << storage_path.generic_string();
+        LOG(ERROR) << "rocksdb_store, failed to open rocks db, path:"                              << storage_path.generic_string();
         throw std::runtime_error(
                 std::string("rocksdb_store, failed to open rocks db, path:") + storage_path.generic_string());
       }
@@ -193,7 +191,7 @@ namespace kspp {
       auto tmp_value = std::make_shared<V>();
       size_t consumed = _codec->decode(payload.data() + sizeof(int64_t), actual_sz, *tmp_value);
       if (consumed != actual_sz) {
-        BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION << ", decode payload failed, consumed:" << consumed
+        LOG(ERROR) << BOOST_CURRENT_FUNCTION << ", decode payload failed, consumed:" << consumed
                                  << ", actual sz:" << actual_sz;
         return nullptr;
       }

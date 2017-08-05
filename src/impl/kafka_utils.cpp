@@ -1,11 +1,9 @@
 #include <kspp/impl/kafka_utils.h>
 #include <thread>
-#include <boost/log/trivial.hpp>
+#include <glog/logging.h>
 #include <librdkafka/rdkafka.h>
 
 using namespace std::chrono_literals;
-
-#define LOGPREFIX_ERROR BOOST_LOG_TRIVIAL(error) << BOOST_CURRENT_FUNCTION
 
 namespace kspp {
   namespace kafka {
@@ -16,18 +14,18 @@ namespace kspp {
       * Set configuration properties
       */
       if (conf->set("metadata.broker.list", brokers, errstr) != RdKafka::Conf::CONF_OK) {
-        LOGPREFIX_ERROR << ", failed to set metadata.broker.list " << errstr;
+        LOG(ERROR) << ", failed to set metadata.broker.list " << errstr;
         exit(1);
       }
 
       if (conf->set("api.version.request", "true", errstr) != RdKafka::Conf::CONF_OK) {
-        LOGPREFIX_ERROR << ", failed to set api.version.request " << errstr;
+        LOG(ERROR) << ", failed to set api.version.request " << errstr;
         exit(1);
       }
 
       auto producer = std::unique_ptr<RdKafka::Producer>(RdKafka::Producer::create(conf.get(), errstr));
       if (!producer) {
-        LOGPREFIX_ERROR << ", failed to create producer:" << errstr;
+        LOG(ERROR) << ", failed to create producer:" << errstr;
         exit(1);
       }
 
@@ -45,7 +43,7 @@ namespace kspp {
           }
         }
         if (nr_of_partitions == 0) {
-          LOGPREFIX_ERROR << ", waiting for topic " << topic << " to be available";
+          LOG(ERROR) << ", waiting for topic " << topic << " to be available";
           std::this_thread::sleep_for(1s);
         }
       }
@@ -60,18 +58,18 @@ namespace kspp {
       * Set configuration properties
       */
       if (conf->set("metadata.broker.list", brokers, errstr) != RdKafka::Conf::CONF_OK) {
-        LOGPREFIX_ERROR << ", failed to set metadata.broker.list " << errstr;
+        LOG(ERROR) << ", failed to set metadata.broker.list " << errstr;
         return -1;
       }
 
       if (conf->set("api.version.request", "true", errstr) != RdKafka::Conf::CONF_OK) {
-        LOGPREFIX_ERROR << ", failed to set api.version.request " << errstr;
+        LOG(ERROR) << ", failed to set api.version.request " << errstr;
         return -1;
       }
 
       auto producer = std::unique_ptr<RdKafka::Producer>(RdKafka::Producer::create(conf.get(), errstr));
       if (!producer) {
-        LOGPREFIX_ERROR << ", failed to create producer:" << errstr;
+        LOG(ERROR) << ", failed to create producer:" << errstr;
         return -1;
       }
 
@@ -94,7 +92,7 @@ namespace kspp {
           }
         }
         if (!is_available) {
-          LOGPREFIX_ERROR << ", waiting for partitions leader to be available";
+          LOG(ERROR) << ", waiting for partitions leader to be available";
           std::this_thread::sleep_for(1s);
         }
       }
@@ -123,7 +121,7 @@ namespace kspp {
           }
         }
         if (!is_available) {
-          LOGPREFIX_ERROR << ", waiting for partitions leader to be available";
+          LOG(ERROR) << ", waiting for partitions leader to be available";
           std::this_thread::sleep_for(1s);
         }
       }
@@ -154,7 +152,7 @@ namespace kspp {
           }
         }
         if (nr_of_partitions == 0 || nr_available != nr_of_partitions) {
-          LOGPREFIX_ERROR << ", waiting for all partitions leader to be available";
+          LOG(ERROR) << ", waiting for all partitions leader to be available";
           std::this_thread::sleep_for(1s);
         }
       }
@@ -168,14 +166,14 @@ namespace kspp {
       /* Create Kafka C handle */
       if (!(rk = rd_kafka_new(RD_KAFKA_PRODUCER, nullptr,
                               errstr, sizeof(errstr)))) {
-        LOGPREFIX_ERROR << "Failed to create new producer: " << errstr;
+        LOG(ERROR) << "Failed to create new producer: " << errstr;
         rd_kafka_destroy(rk);
         return -1;
       }
 
       /* Add brokers */
       if (rd_kafka_brokers_add(rk, brokers.c_str()) == 0) {
-        LOGPREFIX_ERROR << "No valid brokers specified";
+        LOG(ERROR) << "No valid brokers specified";
         rd_kafka_destroy(rk);
         return -1;
       }
@@ -188,7 +186,7 @@ namespace kspp {
       *        by librdkafka. */
       do {
         if (err) {
-          LOGPREFIX_ERROR << "Retrying group list in 1s, ec: " << rd_kafka_err2str(err);
+          LOG(ERROR) << "Retrying group list in 1s, ec: " << rd_kafka_err2str(err);
           std::this_thread::sleep_for(1s);
         }
         err = rd_kafka_list_groups(rk, group_id.c_str(), &grplist, 5000);
@@ -197,7 +195,7 @@ namespace kspp {
                retries-- > 0);
 
       if (err) {
-        LOGPREFIX_ERROR << "Failed to retrieve groups, ec: " << rd_kafka_err2str(err);
+        LOG(ERROR) << "Failed to retrieve groups, ec: " << rd_kafka_err2str(err);
         rd_kafka_destroy(rk);
         return -1;
       }
@@ -212,14 +210,14 @@ namespace kspp {
       /* Create Kafka C handle */
       if (!(rk = rd_kafka_new(RD_KAFKA_PRODUCER, nullptr,
                               errstr, sizeof(errstr)))) {
-        LOGPREFIX_ERROR << "Failed to create new producer: " << errstr;
+        LOG(ERROR) << "Failed to create new producer: " << errstr;
         rd_kafka_destroy(rk);
         return -1;
       }
 
       /* Add brokers */
       if (rd_kafka_brokers_add(rk, brokers.c_str()) == 0) {
-        LOGPREFIX_ERROR << "No valid brokers specified";
+        LOG(ERROR) << "No valid brokers specified";
         rd_kafka_destroy(rk);
         return -1;
       }
@@ -241,7 +239,7 @@ namespace kspp {
                retries-- > 0);
 
       if (err) {
-        LOGPREFIX_ERROR << "Failed to retrieve groups, ec: " << rd_kafka_err2str(err);
+        LOG(ERROR) << "Failed to retrieve groups, ec: " << rd_kafka_err2str(err);
         rd_kafka_destroy(rk);
         return -1;
       }

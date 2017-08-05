@@ -119,13 +119,10 @@ elseif (APPLE)
 
 
 else () #LINUX
-    find_package(Boost COMPONENTS log_setup log thread program_options filesystem system REQUIRED)
+    find_package(Boost COMPONENTS program_options filesystem system REQUIRED)
     set(BOOST_LIBS
-            ${Boost_LOG_LIBRARY}
-            ${Boost_LOG_SETUP_LIBRARY}
             ${Boost_PROGRAM_OPTIONS_LIBRARY}
             ${Boost_FILESYSTEM_LIBRARY}
-            ${Boost_THREAD_LIBRARY}
             ${Boost_SYSTEM_LIBRARY}
             pthread
             rt
@@ -140,14 +137,12 @@ else () #LINUX
     endif ()
 
     if (ENABLE_AVRO)
-	find_package(RapidJSON REQUIRED)
+        find_package(RapidJSON REQUIRED)
         SET(CSI_INCLUDE_PATH ${RapidJSON_INCLUDE_DIR})
 
         SET(CSI_INCLUDE_PATH
                 ${CSI_INCLUDE_PATH}
                 ${CMAKE_SOURCE_DIR}/../avro/lang/c++/include
-                #${CMAKE_SOURCE_DIR}/../csi-async
-                #${CMAKE_SOURCE_DIR}/../csi-hcl-asio
                 )
         SET(CSI_LIBRARY_PATH ${CSI_LIBRARY_PATH} ${CMAKE_SOURCE_DIR}/../avro/lang/c++/build)
         #        SET(AVRO_LIBS avrocpp_s curl)
@@ -162,7 +157,6 @@ else () #LINUX
         SET(CSI_INCLUDE_PATH
                 ${CSI_INCLUDE_PATH}
                 ${CMAKE_SOURCE_DIR}/../zk/src
-                ${CMAKE_SOURCE_DIR}/../folly
                 )
         file(GLOB zk_lib_files
                 ${CMAKE_CURRENT_SOURCE_DIR}/../zk/src/*.*
@@ -178,9 +172,9 @@ else () #LINUX
     SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/bin)
     add_definitions(-D_FILE_OFFSET_BITS=64 -D_REENTRANT -DEXTERNAL_LOCKS -DMULTITHREAD)
     add_definitions(-fPIC)
-    add_definitions(-DBOOST_LOG_DYN_LINK)
+    #add_definitions(-DBOOST_LOG_DYN_LINK)
     add_definitions(-Wno-deprecated)
-    SET(CSI_LIBS kspp ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${BOOST_LIBS} crypto ssl)
+    SET(CSI_LIBS kspp ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${BOOST_LIBS} glog crypto ssl)
 endif () #LINUX
 
 include_directories(${CSI_INCLUDE_PATH} ${CMAKE_SOURCE_DIR}/include)
@@ -251,17 +245,17 @@ SET(KSPP_INCLUDE_FILES  ${KSPP_INCLUDE_FILES} ${KSPP_AVRO_INCLUDE} )
 
 add_library(kspp_s STATIC ${LIB_SRCS} ${KSPP_AVRO_SRCS} ${KSPP_INCLUDE_FILES})
 
-INSTALL(TARGETS kspp_s 
+INSTALL(TARGETS kspp_s
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
-)
+        )
 
 add_library(kspp SHARED ${LIB_SRCS} ${KSPP_AVRO_SRCS} ${KSPP_INCLUDE_FILES})
 
 INSTALL(TARGETS kspp
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
-)
+        )
 
 INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/include/ DESTINATION include)
 
