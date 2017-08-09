@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 rm -rf build bin lib
 mkdir build
 cd build

@@ -5,16 +5,16 @@ namespace kspp
 {
   namespace utils
   {
-    inline std::string default_kafka_broker() {
-      if (const char* env_p = std::getenv("KAFKA_BROKER"))
+    inline std::string default_kafka_broker_uri() {
+      if (const char* env_p = std::getenv("KAFKA_BROKER_URI"))
         return std::string(env_p);
-      return "localhost:9092";
+      return std::string("plaintext://localhost:9092");
     }
 
-      inline std::string default_schema_registry() {
-      if (const char* env_p = std::getenv("CONFLUENT_SCHEMA_REGISRY"))
+      inline std::string default_schema_registry_uri() {
+      if (const char* env_p = std::getenv("CONFLUENT_SCHEMA_REGISTRY_URI"))
         return std::string(env_p);
-      return "localhost:8081";
+      return std::string("http://localhost:8081");
     }
   }
 }

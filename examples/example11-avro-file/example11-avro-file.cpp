@@ -26,13 +26,11 @@ static boost::uuids::uuid to_uuid(int64_t x) {
 
 int main(int argc, char **argv) {
   size_t join_count = 0;
-
-  // maybe we should add http:// here...
-  auto schema_registry = std::make_shared<kspp::avro_schema_registry>(kspp::utils::default_schema_registry());
+  auto schema_registry = std::make_shared<kspp::avro_schema_registry>(kspp::utils::default_schema_registry_uri());
   auto avro_serdes = std::make_shared<kspp::avro_serdes>(schema_registry);
 
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example10-avro");
-  auto builder = kspp::topology_builder(app_info, kspp::utils::default_kafka_broker(), 1000ms);
+  auto builder = kspp::topology_builder(app_info, kspp::utils::default_kafka_broker_uri(), 1000ms);
   {
     auto topology = builder.create_topology();
     auto avro_stream = topology->create_sink<kspp::kafka_topic_sink<boost::uuids::uuid, int64_t, kspp::avro_serdes>>("kspp_test10_avro", avro_serdes);

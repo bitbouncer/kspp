@@ -31,11 +31,10 @@ T get_nullable_value(const avro::GenericRecord& record, std::string name, T defa
 }
 
 int main(int argc, char **argv) {
-  // maybe we should add http:// here...
-  auto schema_registry = std::make_shared<kspp::avro_schema_registry>(kspp::utils::default_schema_registry());
+  auto schema_registry = std::make_shared<kspp::avro_schema_registry>(kspp::utils::default_schema_registry_uri());
   auto avro_serdes = std::make_shared<kspp::avro_serdes>(schema_registry);
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example12-generic-avro");
-  auto builder = kspp::topology_builder(app_info, kspp::utils::default_kafka_broker(), 1000ms);
+  auto builder = kspp::topology_builder(app_info, kspp::utils::default_kafka_broker_uri(), 1000ms);
 
   auto partitions = kspp::kafka::get_number_partitions(builder.brokers(), "postgres_mqtt_device_auth_view");
   auto partition_list = kspp::get_partition_list(partitions);
@@ -48,7 +47,9 @@ int main(int argc, char **argv) {
       const avro::GenericRecord& r = datum->value<avro::GenericRecord>();
       try {
         int id = get_nullable_value(r, "id", -1);
-        std::string hash = get_nullable_value(r, "hash", "");
+        std::string pid = get_nullable_value(r, "pid", "");
+        std::string hash = get_nullable_value(r, "api_key_hash", "");
+        std::string broker_uri = get_nullable_value(r, "broker_url", "");
 
         flat_map->push_back(
                 std::make_shared<kspp::krecord<int, std::string>>(id, "nisse"));

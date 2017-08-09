@@ -10,11 +10,11 @@ class GenericAvro
     : _schema_id(-1) {
   }
 
-  GenericAvro(std::shared_ptr<avro::ValidSchema> s, int32_t schema_id) {
+  GenericAvro(std::shared_ptr<const avro::ValidSchema> s, int32_t schema_id) {
     create(s, schema_id);
   }
 
-  void create(std::shared_ptr<avro::ValidSchema> s, int32_t schema_id) {
+  void create(std::shared_ptr<const avro::ValidSchema> s, int32_t schema_id) {
     _valid_schema = s;
     _generic_datum = std::make_shared<avro::GenericDatum>(*_valid_schema);
     _schema_id = schema_id;
@@ -37,8 +37,8 @@ class GenericAvro
   }
 
   private:
-  std::shared_ptr<avro::GenericDatum> _generic_datum;
-  std::shared_ptr<avro::ValidSchema>  _valid_schema;
-  int32_t                             _schema_id;
+  std::shared_ptr<avro::GenericDatum>      _generic_datum;
+  std::shared_ptr<const avro::ValidSchema> _valid_schema;
+  int32_t                                  _schema_id;
 };
 };

@@ -40,9 +40,9 @@ namespace confluent {
 
     registry(boost::asio::io_service &ios, std::vector<std::string> base_urls); // how to give a vector??
     //void close(); // remove
-    void put_schema(std::string name, std::shared_ptr<avro::ValidSchema>, put_callback);
+    void put_schema(std::string name, std::shared_ptr<const avro::ValidSchema>, put_callback);
 
-    std::future<rpc_put_schema_result> put_schema(std::string name, std::shared_ptr<avro::ValidSchema> schema) {
+    std::future<rpc_put_schema_result> put_schema(std::string name, std::shared_ptr<const avro::ValidSchema> schema) {
       auto p = std::make_shared<std::promise<rpc_put_schema_result>>();
       put_schema(name, schema, [p](rpc_put_schema_result result) {
         p->set_value(result);
@@ -63,7 +63,7 @@ namespace confluent {
   private:
     kspp::http::client _http;
     std::vector<std::string> _base_urls;
-    std::map<int32_t, boost::shared_ptr<avro::ValidSchema>> _registry;
+    std::map<int32_t, boost::shared_ptr<const avro::ValidSchema>> _registry;
   };
 };
 
