@@ -9,9 +9,11 @@ namespace kspp {
     typedef V value_type;
     typedef kspp::kevent<K, V> record_type;
 
-    merge(topology_base &topology, std::vector<partition_source<K, V>*> upstream, int32_t partition)
+    // fix this so source must be descendant from partition source...
+    template<class source>
+    merge(topology_base &topology, const std::vector<std::shared_ptr<source>>& upstream, int32_t partition=-1)
             : event_consumer<K, V>()
-              , partition_source<K, V>(nullptr, -1) {
+              , partition_source<K, V>(nullptr, partition) {
       for (auto&& i : upstream) {
         i->add_sink([this](auto r) {
           this->send_to_sinks(r);
@@ -57,9 +59,9 @@ namespace kspp {
     typedef V value_type;
     typedef kspp::kevent<void, V> record_type;
 
-    merge(topology_base &topology, std::vector<partition_source<void, V>*> upstream, int32_t partition)
+    merge(topology_base &topology, std::vector<partition_source<void, V>*> upstream, int32_t partition=-1)
             : event_consumer<void, V>()
-              , partition_source<void, V>(nullptr, -1) {
+              , partition_source<void, V>(nullptr, partition) {
       for (auto&& i : upstream) {
         i->add_sink([this](auto r) {
           this->send_to_sinks(r);
@@ -105,9 +107,9 @@ namespace kspp {
     typedef void value_type;
     typedef kspp::kevent<K, void> record_type;
 
-    merge(topology_base &topology, std::vector<partition_source<K, void>*> upstream, int32_t partition)
+    merge(topology_base &topology, std::vector<partition_source<K, void>*> upstream, int32_t partition=-1)
             : event_consumer<K, void>()
-              , partition_source<K, void>(nullptr, -1) {
+              , partition_source<K, void>(nullptr, partition) {
       for (auto&& i : upstream) {
         i->add_sink([this](auto r) {
           this->send_to_sinks(r);

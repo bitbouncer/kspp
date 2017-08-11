@@ -57,9 +57,9 @@ int main(int argc, char **argv) {
     auto word_counts = topology->create_processors<kspp::count_by_key<std::string, int, kspp::mem_counter_store>>(
             word_stream, 2s);
 
-    auto merged = topology->merge<std::string, int>(word_counts, -1);
+    auto merged = topology->merge(word_counts);
 
-    auto sink = topology->create_partition_processor<kspp::stream_sink<std::string, int>>(merged, &std::cerr);
+    auto sink = topology->create_processor<kspp::stream_sink<std::string, int>>(merged, &std::cerr);
 
     topology->init_metrics();
     topology->start(-2);

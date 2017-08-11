@@ -565,6 +565,8 @@ namespace kspp {
   class partition_source : public partition_processor {
   public:
     using sink_function = typename std::function<void(std::shared_ptr<kevent<K, V>>)>;
+    typedef K key_type;
+    typedef V value_type;
 
     partition_source(partition_processor *upstream, int32_t partition)
             : partition_processor(upstream, partition), _out_messages("out_message_count") {

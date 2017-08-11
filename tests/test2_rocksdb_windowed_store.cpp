@@ -1,18 +1,12 @@
 #include <cassert>
 #include <kspp/state_stores/rocksdb_windowed_store.h>
 #include <kspp/impl/serdes/binary_serdes.h>
-
-static boost::filesystem::path default_directory() {
-  if (const char *env_p = std::getenv("KSPP_STATE_DIR")) {
-    return boost::filesystem::path(env_p);
-  }
-  return boost::filesystem::temp_directory_path();
-}
+#include <kspp/utils.h>
 
 using namespace std::chrono_literals;
 
 int main(int argc, char **argv) {
-  boost::filesystem::path path = default_directory();
+  boost::filesystem::path path = kspp::utils::default_statestore_directory();
   path /= "test2_rocksdb_windowed_store";
 
   if (boost::filesystem::exists(path))
