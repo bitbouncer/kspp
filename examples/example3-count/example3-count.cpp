@@ -6,6 +6,7 @@
 #include <kspp/topology_builder.h>
 #include <kspp/processors/flat_map.h>
 #include <kspp/processors/count.h>
+#include <kspp/processors/pipe.h>
 #include <kspp/processors/kafka_source.h>
 #include <kspp/state_stores/mem_counter_store.h>
 #include <kspp/sinks/kafka_sink.h>
@@ -55,7 +56,10 @@ int main(int argc, char **argv) {
 
     auto word_counts = topology->create_processors<kspp::count_by_key<std::string, int, kspp::mem_counter_store>>(
             word_stream, 2s);
-    auto sink = topology->create_processors<kspp::stream_sink<std::string, int>>(word_counts, &std::cerr);
+
+    auto merged = topology->merge<std::string, int>(word_counts, -1);
+
+    auto sink = topology->create_partition_processor<kspp::stream_sink<std::string, int>>(merged, &std::cerr);
 
     topology->init_metrics();
     topology->start(-2);

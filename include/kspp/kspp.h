@@ -120,11 +120,19 @@ namespace kspp {
     virtual ~partition_processor() {}
 
     size_t depth() const {
-      return _upstream ? _upstream->depth() + 1 : 0;
+      size_t depth =0;
+      for(auto i : upstream_) {
+        std::max<size_t>(depth, i->depth()+1);
+      }
+      return depth;
     }
 
     virtual bool eof() const {
-      return _upstream ? _upstream->eof() : true;
+      for(auto i : upstream_) {
+        if (i->eof()==false)
+          return false;
+      }
+      return true;
     }
 
     virtual void poll(int timeout) {}
@@ -132,10 +140,10 @@ namespace kspp {
     virtual void punctuate(int64_t timestamp) {}
 
     virtual void close() {
-      if (_upstream) {
-        _upstream->close();
-        _upstream = nullptr;
-      }
+      for(auto i : upstream_){
+        i->close();
+       }
+      upstream_.clear();
     }
 
     inline int32_t partition() const {
@@ -146,8 +154,8 @@ namespace kspp {
       while (!eof())
         if (!process_one(kspp::milliseconds_since_epoch())) { ;
         }
-      if (_upstream)
-        _upstream->flush();
+      for(auto i : upstream_)
+        i->flush();
       while (!eof())
         if (!process_one(kspp::milliseconds_since_epoch())) { ;
         }
@@ -155,30 +163,53 @@ namespace kspp {
     }
 
     virtual void start() {
-      if (_upstream)
-        _upstream->start();
+      for(auto i : upstream_)
+        i->start();
     }
 
     virtual void start(int64_t offset) {
-      if (_upstream)
-        _upstream->start(offset);
+      for(auto i : upstream_)
+        i->start(offset);
     }
 
     virtual void commit(bool flush) = 0;
 
     bool is_upstream(const partition_processor *node) const {
-      if (_upstream == nullptr)
-        return false;
-      if (_upstream == node)
-        return true;
-      return _upstream->is_upstream(node);
-    }
+      // direct children?
+      for(auto i : upstream_)
+      {
+        if (i == node)
+          return true;
+      }
+
+      // further up?
+      for(auto i : upstream_){
+        if (i->is_upstream(node))
+          return true;
+      }
+      return false;
+     }
 
   protected:
     partition_processor(partition_processor *upstream, int32_t partition)
-            : _upstream(upstream), _partition(partition) {}
+            : _partition(partition) {
+      if (upstream)
+        upstream_.push_back(upstream);
+    }
 
-    partition_processor *_upstream;
+    /*
+     * partition_processor(std::vector<partition_processor*> upstream, int32_t partition)
+            : _partition(partition) {
+      upstream_.insert(upstream_.end(), upstream.begin(), upstream.end());
+    }
+     */
+
+    void add_upstream(partition_processor* p){
+      upstream_.push_back(p);
+    }
+
+
+    std::vector<partition_processor*> upstream_;
     const int32_t _partition;
   };
 
