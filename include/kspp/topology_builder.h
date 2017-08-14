@@ -100,14 +100,8 @@ namespace kspp {
       return boost::filesystem::temp_directory_path();
     }
 
-    static std::string default_kafka_broker() {
-      if (const char *env_p = std::getenv("KAFKA_BROKER"))
-        return std::string(env_p);
-      return "localhost";
-    }
-
-    topology_builder(std::shared_ptr<app_info> app_info,
-                     std::string brokers = default_kafka_broker(),
+   topology_builder(std::shared_ptr<app_info> app_info,
+                     std::string brokers = kspp::utils::default_kafka_broker(),
                      std::chrono::milliseconds max_buffering = std::chrono::milliseconds(1000),
                      boost::filesystem::path root_path = default_directory())
             : _app_info(app_info), _next_topology_id(0), _brokers(brokers), _max_buffering(max_buffering),
