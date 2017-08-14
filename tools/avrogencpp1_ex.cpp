@@ -307,10 +307,10 @@ string CodeGen::generateRecordType(const NodePtr &n) {
   {
     os_ << "//avro extension\n";
     //os_ << "  static inline const boost::uuids::uuid    schema_hash()      { static const boost::uuids::uuid _hash(boost::uuids::string_generator()(\"" << to_string(hash_) << "\")); return _hash; }\n";
-    os_ << "  static inline const char*                       schema_as_string() { return \"" << escaped_schema_string_
-        << "\"; } \n";
-    os_
-            << "  static std::shared_ptr<const avro::ValidSchema> valid_schema()     { static const std::shared_ptr<const avro::ValidSchema> _validSchema(std::make_shared<const avro::ValidSchema>(avro::compileJsonSchemaFromString(schema_as_string()))); return _validSchema; }\n";
+    os_ << "  static inline const char*                       schema_as_string() { return \"" << escaped_schema_string_ << "\"; } \n";
+    os_ << "  static std::shared_ptr<const avro::ValidSchema> valid_schema()     { static const std::shared_ptr<const avro::ValidSchema> _validSchema(std::make_shared<const avro::ValidSchema>(avro::compileJsonSchemaFromString(schema_as_string()))); return _validSchema; }\n";
+    os_ << "  static std::string                              name()             { return \""
+        << (inNamespace_ ? ns_ + "::" + n->name().fullname() : n->name().fullname()) << "\"; } \n";
   }
 
   os_ << "};\n\n";
@@ -779,6 +779,7 @@ void CodeGen::generate(const ValidSchema &schema) {
       << "#include \"" << includePrefix_ << "Specific.hh\"\n"
       << "#include \"" << includePrefix_ << "Encoder.hh\"\n"
       << "#include \"" << includePrefix_ << "Decoder.hh\"\n"
+      << "#include \"" << includePrefix_ << "Compiler.hh\"\n"
       << "\n";
 
   if (!ns_.empty()) {

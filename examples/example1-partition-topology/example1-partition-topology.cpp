@@ -171,12 +171,12 @@ std::string ksource_to_string(const T &ksource) {
 
 int main(int argc, char **argv) {
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example1-basic");
-  auto builder = kspp::topology_builder(app_info, kspp::utils::default_kafka_broker(), 100ms);
+  auto builder = kspp::topology_builder(app_info, kspp::utils::default_kafka_broker_uri(), 100ms);
 
 
   {
     auto topology = builder.create_topology();
-    auto sink = topology->create_partition_processor<kspp::kafka_partition_sink<int64_t, page_view_data, kspp::binary_serdes>>(
+    auto sink = topology->create_processor<kspp::kafka_partition_sink<int64_t, page_view_data, kspp::binary_serdes>>(
             PARTITION, "kspp_PageViews");
     sink->produce(1, {1440557383335, 1, "/home?user=1"});
     sink->produce(1, {1440557383335, 1, "/home?user=1"});
@@ -188,7 +188,7 @@ int main(int argc, char **argv) {
 
   {
     auto topology = builder.create_topology();
-    auto sink = topology->create_partition_processor<kspp::kafka_partition_sink<int64_t, user_profile_data, kspp::binary_serdes>>(
+    auto sink = topology->create_processor<kspp::kafka_partition_sink<int64_t, user_profile_data, kspp::binary_serdes>>(
             PARTITION, "kspp_UserProfile");
     sink->produce(1, {1440557383335, 1, "user1@aol.com"});
     sink->produce(5, {1440557383345, 5, "user5@gmail.com"});
@@ -198,28 +198,25 @@ int main(int argc, char **argv) {
 
   {
     auto topology = builder.create_topology();
-    auto pageviews = topology->create_partition_processor<kspp::kafka_source<int64_t, page_view_data, kspp::binary_serdes>>(
+    auto pageviews = topology->create_processor<kspp::kafka_source<int64_t, page_view_data, kspp::binary_serdes>>(
             PARTITION, "kspp_PageViews");
-    auto userprofiles = topology->create_partition_processor<kspp::kafka_source<int64_t, user_profile_data, kspp::binary_serdes>>(
+    auto userprofiles = topology->create_processor<kspp::kafka_source<int64_t, user_profile_data, kspp::binary_serdes>>(
             PARTITION, "kspp_UserProfile");
-    auto pw_sink = topology->create_partition_processor<kspp::stream_sink<int64_t, page_view_data>>(                                                                                                   pageviews,
-                                                                                                    &std::cerr);
-    auto up_sink = topology->create_partition_processor<kspp::stream_sink<int64_t, user_profile_data>>(
-                                                                                                       userprofiles,
-                                                                                                       &std::cerr);
+    auto pw_sink = topology->create_processor<kspp::stream_sink<int64_t, page_view_data>>(pageviews, &std::cerr);
+    auto up_sink = topology->create_processor<kspp::stream_sink<int64_t, user_profile_data>>(userprofiles, &std::cerr);
     topology->start(-2);
     topology->flush();
   }
 
   {
     auto topology = builder.create_topology();
-    auto stream = topology->create_partition_processor<kspp::kafka_source<int64_t, page_view_data, kspp::binary_serdes>>(
+    auto stream = topology->create_processor<kspp::kafka_source<int64_t, page_view_data, kspp::binary_serdes>>(
             PARTITION, "kspp_PageViews");
-    auto table_source = topology->create_partition_processor<kspp::kafka_source<int64_t, user_profile_data, kspp::binary_serdes>>(
+    auto table_source = topology->create_processor<kspp::kafka_source<int64_t, user_profile_data, kspp::binary_serdes>>(
             PARTITION, "kspp_UserProfile");
-    auto table = topology->create_partition_processor<kspp::ktable<int64_t, user_profile_data, kspp::mem_store>>(
+    auto table = topology->create_processor<kspp::ktable<int64_t, user_profile_data, kspp::mem_store>>(
              table_source);
-    auto join = topology->create_partition_processor<kspp::left_join<int64_t, page_view_data, user_profile_data, page_view_decorated>>(
+    auto join = topology->create_processor<kspp::left_join<int64_t, page_view_data, user_profile_data, page_view_decorated>>(
 
             stream,
             table,
@@ -230,7 +227,7 @@ int main(int argc, char **argv) {
               row.time = left.time;
               row.url = left.url;
             });
-    auto sink = topology->create_partition_processor<kspp::kafka_partition_sink<int64_t, page_view_decorated, kspp::binary_serdes>>(
+    auto sink = topology->create_processor<kspp::kafka_partition_sink<int64_t, page_view_decorated, kspp::binary_serdes>>(
             PARTITION, "kspp_PageViewsDecorated");
     topology->init_metrics();
     join->add_sink(sink);
@@ -245,11 +242,11 @@ int main(int argc, char **argv) {
 
   {
     auto topology = builder.create_topology();
-    auto table_source = topology->create_partition_processor<kspp::kafka_source<int64_t, user_profile_data, kspp::binary_serdes>>(
+    auto table_source = topology->create_processor<kspp::kafka_source<int64_t, user_profile_data, kspp::binary_serdes>>(
             PARTITION, "kspp_UserProfile");
-    auto table1 = topology->create_partition_processor<kspp::ktable<int64_t, user_profile_data, kspp::mem_store>>(
+    auto table1 = topology->create_processor<kspp::ktable<int64_t, user_profile_data, kspp::mem_store>>(
             table_source);
-    auto table2 = topology->create_partition_processor<kspp::ktable<int64_t, user_profile_data, kspp::mem_windowed_store>>(
+    auto table2 = topology->create_processor<kspp::ktable<int64_t, user_profile_data, kspp::mem_windowed_store>>(
             table_source, 1000ms, 10); // 500ms slots and 10 of them...
     topology->start();
     topology->flush();

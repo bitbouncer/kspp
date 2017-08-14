@@ -1,40 +1,28 @@
 #include <kspp/kspp.h>
-
 #pragma once
 
 namespace kspp {
   template<class K, class V>
-  class pipe : public event_consumer<K, V>, public partition_source<K, V> {
+  class merge : public event_consumer<K, V>, public partition_source<K, V> {
   public:
     typedef K key_type;
     typedef V value_type;
     typedef kspp::kevent<K, V> record_type;
 
-    pipe(topology_base &topology, int32_t partition)
-            : event_consumer<K, V>(), partition_source<K, V>(nullptr, partition) {
-    }
-
-    pipe(topology_base &topology, std::shared_ptr<kspp::partition_source<K, V>> upstream)
-            : event_consumer<K, V>(), partition_source<K, V>(upstream.get(), upstream->partition()) {
-      upstream->add_sink([this](auto r) {
-        this->send_to_sinks(r);
-      });
-    }
-
-    pipe(topology_base &topology, std::vector<std::shared_ptr<kspp::partition_source<K, V>>> upstream, int32_t partition)
+    // fix this so source must be descendant from partition source...
+    template<class source>
+    merge(topology_base &topology, const std::vector<std::shared_ptr<source>>& upstream, int32_t partition=-1)
             : event_consumer<K, V>()
               , partition_source<K, V>(nullptr, partition) {
-      for (auto i : upstream) {
-        this->add_upstream(i.get());
+      for (auto&& i : upstream) {
         i->add_sink([this](auto r) {
           this->send_to_sinks(r);
         });
       }
     }
 
-
     virtual std::string simple_name() const {
-      return "pipe";
+      return "merge";
     }
 
     virtual bool process_one(int64_t tick) {
@@ -65,37 +53,25 @@ namespace kspp {
 
 //<null, VALUE>
   template<class V>
-  class pipe<void, V> : public event_consumer<void, V>, public partition_source<void, V> {
+  class merge<void, V> : public event_consumer<void, V>, public partition_source<void, V> {
   public:
     typedef void key_type;
     typedef V value_type;
     typedef kspp::kevent<void, V> record_type;
 
-    pipe(topology_base &topology, int32_t partition)
-            : event_consumer<void, V>(), partition_source<void, V>(nullptr, partition) {
-    }
-
-    pipe(topology_base &topology, std::shared_ptr<kspp::partition_source<void, V>> upstream)
-            : event_consumer<void, V>(), partition_source<void, V>(upstream.get(), upstream->partition()) {
-      if (upstream)
-        upstream->add_sink([this](auto r) {
-          this->send_to_sinks(r);
-        });
-    }
-
-    pipe(topology_base &topology, std::vector<std::shared_ptr<kspp::partition_source<void, V>>> upstream, int32_t partition)
+    merge(topology_base &topology, std::vector<partition_source<void, V>*> upstream, int32_t partition=-1)
             : event_consumer<void, V>()
               , partition_source<void, V>(nullptr, partition) {
-      for (auto i : upstream) {
-        this->add_upstream(i.get());
+      for (auto&& i : upstream) {
         i->add_sink([this](auto r) {
           this->send_to_sinks(r);
         });
       }
     }
 
+
     virtual std::string simple_name() const {
-      return "pipe";
+      return "merge";
     }
 
     virtual bool process_one(int64_t tick) {
@@ -125,29 +101,16 @@ namespace kspp {
   };
 
   template<class K>
-  class pipe<K, void> : public event_consumer<K, void>, public partition_source<K, void> {
+  class merge<K, void> : public event_consumer<K, void>, public partition_source<K, void> {
   public:
     typedef K key_type;
     typedef void value_type;
     typedef kspp::kevent<K, void> record_type;
 
-    pipe(topology_base &topology, int32_t partition)
-            : event_consumer<K, void>(), partition_source<K, void>(nullptr, partition) {
-    }
-
-    pipe(topology_base &topology, std::shared_ptr<kspp::partition_source<K, void>> upstream)
-            : event_consumer<K, void>(), partition_source<K, void>(upstream.get(), upstream->partition()) {
-      if (upstream)
-        upstream->add_sink([this](std::shared_ptr<kevent<K, void>> r) {
-          this->send_to_sinks(r);
-        });
-    }
-
-    pipe(topology_base &topology, std::vector<std::shared_ptr<kspp::partition_source<K, void>>> upstream, int32_t partition)
+    merge(topology_base &topology, std::vector<partition_source<K, void>*> upstream, int32_t partition=-1)
             : event_consumer<K, void>()
               , partition_source<K, void>(nullptr, partition) {
-      for (auto i : upstream) {
-        this->add_upstream(i.get());
+      for (auto&& i : upstream) {
         i->add_sink([this](auto r) {
           this->send_to_sinks(r);
         });
@@ -155,7 +118,7 @@ namespace kspp {
     }
 
     virtual std::string simple_name() const {
-      return "pipe";
+      return "merge";
     }
 
     virtual bool process_one(int64_t tick) {

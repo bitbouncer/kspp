@@ -18,7 +18,7 @@ using namespace std::chrono_literals;
 
 int main(int argc, char **argv) {
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example5-repartition");
-  auto builder = kspp::topology_builder(app_info, kspp::utils::default_kafka_broker(), 100ms);
+  auto builder = kspp::topology_builder(app_info, kspp::utils::default_kafka_broker_uri(), 100ms);
 
   {
     auto topology = builder.create_topology();

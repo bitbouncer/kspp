@@ -6,6 +6,7 @@
 #include <kspp/topology_builder.h>
 #include <kspp/processors/flat_map.h>
 #include <kspp/processors/count.h>
+#include <kspp/processors/pipe.h>
 #include <kspp/processors/kafka_source.h>
 #include <kspp/state_stores/mem_counter_store.h>
 #include <kspp/sinks/kafka_sink.h>
@@ -19,7 +20,7 @@ using namespace std::chrono_literals;
 
 int main(int argc, char **argv) {
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example3-count");
-  auto builder = kspp::topology_builder(app_info, kspp::utils::default_kafka_broker(), 100ms);
+  auto builder = kspp::topology_builder(app_info, kspp::utils::default_kafka_broker_uri(), 100ms);
 
   {
     auto topology = builder.create_topology();
@@ -55,7 +56,10 @@ int main(int argc, char **argv) {
 
     auto word_counts = topology->create_processors<kspp::count_by_key<std::string, int, kspp::mem_counter_store>>(
             word_stream, 2s);
-    auto sink = topology->create_processors<kspp::stream_sink<std::string, int>>(word_counts, &std::cerr);
+
+    auto merged = topology->merge(word_counts);
+
+    auto sink = topology->create_processor<kspp::stream_sink<std::string, int>>(merged, &std::cerr);
 
     topology->init_metrics();
     topology->start(-2);

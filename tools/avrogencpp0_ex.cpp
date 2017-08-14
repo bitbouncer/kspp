@@ -427,7 +427,6 @@ string CodeGen::generateUnionType(const NodePtr &n) {
   }
 
   const string result = unionName();
-
   os_ << "struct " << result << " {\n"
       << "private:\n"
       << "    size_t idx_;\n"

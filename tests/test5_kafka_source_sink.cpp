@@ -54,7 +54,7 @@ int main(int argc, char **argv) {
             partition_list, "kspp_test5");
     auto ktables = topology->create_processors<kspp::ktable<std::string, std::string, kspp::mem_store>>(streams);
 
-    auto pipe = topology->create_partition_processor<kspp::pipe<std::string, std::string>>(-1);
+    auto pipe = topology->create_processor<kspp::pipe<std::string, std::string>>(-1);
     auto table_stream = topology->create_sink<kspp::kafka_topic_sink<std::string, std::string, kspp::binary_serdes>>(
             "kspp_test5");
     pipe->add_sink(table_stream);
@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
 
     auto streams = topology->create_processors<kspp::kafka_source<std::string, std::string, kspp::binary_serdes>>(
             partition_list, "kspp_test5");
-    auto pipe = topology->create_partition_processor<kspp::pipe<std::string, std::string>>(-1);
+    auto pipe = topology->create_processor<kspp::pipe<std::string, std::string>>(-1);
     auto table_stream = topology->create_sink<kspp::kafka_topic_sink<std::string, std::string, kspp::binary_serdes>>(
             "kspp_test5");
     pipe->add_sink(table_stream);

@@ -30,7 +30,7 @@ static inline void add_member(std::shared_ptr<rapidjson::Document> document, std
   document->AddMember(ks, vs, allocator);
 }
 
-std::string encode_put_schema_request(std::shared_ptr<avro::ValidSchema> schema) {
+std::string encode_put_schema_request(std::shared_ptr<const avro::ValidSchema> schema) {
   auto s = normalize(*schema);
   auto document = std::make_shared<rapidjson::Document>();
   document->SetObject();
@@ -83,7 +83,7 @@ registry::registry(boost::asio::io_service& ios, std::vector<std::string> base_u
   _http(ios),
   _base_urls(base_urls) {}
 
-void registry::put_schema(std::string schema_name, std::shared_ptr<avro::ValidSchema> schema, put_callback put_cb) {
+void registry::put_schema(std::string schema_name, std::shared_ptr<const avro::ValidSchema> schema, put_callback put_cb) {
   auto shared_result = std::make_shared<rpc_put_schema_result>();
   auto work = std::make_shared<kspp::async::work<int>>(kspp::async::SEQUENTIAL, kspp::async::FIRST_SUCCESS); // should we do random order??  can we send rpc result to work...
   auto encoded_string = encode_put_schema_request(schema);

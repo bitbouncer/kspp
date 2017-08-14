@@ -14,7 +14,6 @@ endif ()
 
 if (ENABLE_AVRO)
     add_subdirectory(example10-avro)
-    add_subdirectory(example11-avro-file)
     add_subdirectory(example12-generic-avro)
 endif ()
 
