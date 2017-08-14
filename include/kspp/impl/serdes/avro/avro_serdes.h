@@ -89,7 +89,8 @@ namespace kspp {
 
   public:
     avro_serdes(std::shared_ptr<avro_schema_registry> registry)
-            : _registry(registry) {}
+            : _registry(registry) {
+    }
 
     static std::string name() { return "kspp::avro"; }
 

@@ -25,7 +25,7 @@ namespace kspp {
                                                    std::string prefix, std::string tags)
           : _run(true), _topic(topic), _prefix(prefix), _tags(tags), _hostname(hostname()) {
     _metrics_topology = builder.create_topology();
-    _sink = _metrics_topology->create_sink<kspp::kafka_topic_sink<std::string, std::string, kspp::text_serdes>>(_topic);
+    _sink = _metrics_topology->create_sink<kspp::kafka_sink<std::string, std::string, kspp::text_serdes>>(_topic);
 
     _thread = std::make_shared<std::thread>([this]() {
       std::string base_string = _prefix + (_tags.size()>0 ? "," + _tags : "");

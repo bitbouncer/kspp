@@ -34,7 +34,7 @@ int main(int argc, char **argv) {
   auto builder = kspp::topology_builder(app_info, kspp::utils::default_kafka_broker_uri(), 1000ms);
   {
     auto topology = builder.create_topology();
-    auto avro_stream = topology->create_sink<kspp::kafka_topic_sink<boost::uuids::uuid, int64_t, kspp::avro_serdes>>(
+    auto avro_stream = topology->create_sink<kspp::kafka_sink<boost::uuids::uuid, int64_t, kspp::avro_serdes>>(
             "kspp_test10_avro", avro_serdes);
 
     topology->start(-2);
@@ -100,7 +100,7 @@ int main(int argc, char **argv) {
     auto topology = builder.create_topology();
     auto sources = topology->create_processors<kspp::kafka_source<kspp::GenericAvro, kspp::GenericAvro, kspp::avro_serdes>>(
             partition_list, "kspp_test10_avro", avro_serdes);
-    auto sink = topology->create_sink<kspp::kafka_topic_sink<kspp::GenericAvro, kspp::GenericAvro, kspp::avro_serdes>>(
+    auto sink = topology->create_sink<kspp::kafka_sink<kspp::GenericAvro, kspp::GenericAvro, kspp::avro_serdes>>(
             sources, "kspp_test10_avro_B", avro_serdes);
     topology->init_metrics();
     topology->start(-2);

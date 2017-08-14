@@ -1,13 +1,13 @@
-#include <kspp/impl/sinks/kafka_producer.h>
+#include <kspp/beta/raw_kafka_producer.h>
 #include <thread>
 #include <glog/logging.h>
 
 using namespace std::chrono_literals;
 
 namespace kspp {
-struct producer_user_data
+struct raw_producer_user_data
 {
-  producer_user_data(void* key, size_t keysz, void* val, size_t valsz, uint32_t hash, std::shared_ptr<commit_chain::autocommit_marker> marker)
+  raw_producer_user_data(void* key, size_t keysz, void* val, size_t valsz, uint32_t hash, std::shared_ptr<commit_chain::autocommit_marker> marker)
     : key_ptr(key)
     , key_sz(keysz)
     , val_ptr(val)
@@ -16,7 +16,7 @@ struct producer_user_data
     , autocommit_marker(marker) {
   }
 
-  ~producer_user_data() {
+  ~raw_producer_user_data() {
     if (key_ptr)
       free(key_ptr);
     if (val_ptr)
@@ -34,23 +34,26 @@ struct producer_user_data
   size_t                                           val_sz;
 };
 
-int32_t kafka_producer::MyHashPartitionerCb::partitioner_cb(const RdKafka::Topic *topic, const std::string *key, int32_t partition_cnt, void *msg_opaque) {
-  producer_user_data*  extra = (producer_user_data*) msg_opaque;
+int32_t raw_kafka_producer::MyHashPartitionerCb::partitioner_cb(const RdKafka::Topic *topic, const std::string *key, int32_t partition_cnt, void *msg_opaque) {
+  raw_producer_user_data*  extra = (raw_producer_user_data*) msg_opaque;
   int32_t partition = extra->partition_hash % partition_cnt;
   return partition;
 }
 
-kafka_producer::MyDeliveryReportCb::MyDeliveryReportCb() :
-  _status(RdKafka::ErrorCode::ERR_NO_ERROR) {}
+  raw_kafka_producer::MyDeliveryReportCb::MyDeliveryReportCb() :
+  _status(RdKafka::ErrorCode::ERR_NO_ERROR) {
+  }
 
-void kafka_producer::MyDeliveryReportCb::dr_cb(RdKafka::Message& message) {
-  producer_user_data* extra = (producer_user_data*) message.msg_opaque();
+void raw_kafka_producer::MyDeliveryReportCb::dr_cb(RdKafka::Message& message) {
+  raw_producer_user_data* extra = (raw_producer_user_data*) message.msg_opaque();
+  LOG_IF(FATAL, extra==nullptr) << "no user data in callback";
 
-  if (message.err() != RdKafka::ErrorCode::ERR_NO_ERROR) {
+  if (message.err() == RdKafka::ErrorCode::ERR_NO_ERROR) {
+    extra->autocommit_marker->set_offset(message.offset());
+  } else {
     extra->autocommit_marker->fail(message.err());
     _status = message.err();
   }
-  assert(extra);
   delete extra;
 };
 
@@ -82,7 +85,7 @@ static void set_config(RdKafka::Conf* conf, std::string key, RdKafka::Conf* topi
   }
 }
 
-kafka_producer::kafka_producer(std::string brokers, std::string topic, std::chrono::milliseconds max_buffering_time)
+  raw_kafka_producer::raw_kafka_producer(std::string brokers, std::string topic, std::chrono::milliseconds max_buffering_time)
   : _topic(topic)
   , _msg_cnt(0)
   , _msg_bytes(0)
@@ -107,7 +110,7 @@ kafka_producer::kafka_producer(std::string brokers, std::string topic, std::chro
     set_config(conf.get(), "socket.nagle.disable", "true");
     set_config(conf.get(), "socket.max.fails", "1000000");
     set_config(conf.get(), "message.send.max.retries", "1000000");
-
+    set_config(tconf.get(), "produce.offset.report", "true");
     // should this be in this order? it was the opposite??
     set_config(tconf.get(), "partitioner_cb", &_default_partitioner);
     set_config(conf.get(), "default_topic_conf", tconf.get());
@@ -125,22 +128,6 @@ kafka_producer::kafka_producer(std::string brokers, std::string topic, std::chro
     LOG(FATAL) << "topic:" << _topic << ", failed to create producer:" << errstr;
     exit(1);
   }
-
-  //std::unique_ptr<RdKafka::Conf> tconf(RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC));
-
-  /*
-  if (conf->set("default_topic_conf", tconf.get(), errstr) != RdKafka::Conf::CONF_OK) {
-    LOGPREFIX_ERROR << ", failed to set default_topic_conf " << errstr;
-    exit(1);
-  }
-  */
-
-  /*
-  if (tconf->set("partitioner_cb", &_default_partitioner, errstr) != RdKafka::Conf::CONF_OK) {
-    LOGPREFIX_ERROR << ", failed to create partitioner: " << errstr;
-    exit(1);
-  }
-  */
 
   // we have to keep this around otherwise the paritioner does not work...
   _rd_topic = std::unique_ptr<RdKafka::Topic>(RdKafka::Topic::create(_producer.get(), _topic, tconf.get(), errstr));
@@ -179,12 +166,12 @@ kafka_producer::kafka_producer(std::string brokers, std::string topic, std::chro
   LOG(INFO) << "topic:" << _topic << ", kafka producer created";
 }
 
-kafka_producer::~kafka_producer() {
+  raw_kafka_producer::~raw_kafka_producer() {
   if (!_closed)
     close();
 }
 
-void kafka_producer::close() {
+void raw_kafka_producer::close() {
   if (_closed)
     return;
   _closed = true;
@@ -213,9 +200,9 @@ void kafka_producer::close() {
 }
 
 
-int kafka_producer::produce(uint32_t partition_hash, memory_management_mode mode, void* key, size_t keysz, void* value, size_t valuesz, int64_t timestamp, std::shared_ptr<commit_chain::autocommit_marker> autocommit_marker) {
-  producer_user_data* user_data = nullptr;
-  if (mode == kafka_producer::COPY) {
+int raw_kafka_producer::produce(uint32_t partition_hash, memory_management_mode mode, void* key, size_t keysz, void* value, size_t valuesz, int64_t timestamp, std::shared_ptr<commit_chain::autocommit_marker> autocommit_marker) {
+  raw_producer_user_data* user_data = nullptr;
+  if (mode == raw_kafka_producer::COPY) {
     void* pkey = malloc(keysz);
     memcpy(pkey, key, keysz);
     key = pkey;
@@ -224,7 +211,7 @@ int kafka_producer::produce(uint32_t partition_hash, memory_management_mode mode
     memcpy(pval, value, valuesz);
     value = pval;
   }
-  user_data = new producer_user_data(key, keysz, value, valuesz, partition_hash, autocommit_marker);
+  user_data = new raw_producer_user_data(key, keysz, value, valuesz, partition_hash, autocommit_marker);
 
   RdKafka::ErrorCode ec = _producer->produce(_topic, -1, 0, value, valuesz, key, keysz, timestamp, user_data); // note not using _rd_topic anymore...?
   if (ec == RdKafka::ERR__QUEUE_FULL) {

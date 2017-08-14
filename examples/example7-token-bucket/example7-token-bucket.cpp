@@ -27,7 +27,7 @@ int main(int argc, char **argv) {
   auto builder = kspp::topology_builder(app_info, kspp::utils::default_kafka_broker_uri(), 100ms);
   {
     auto topology = builder.create_topology();
-    auto sink = topology->create_sink<kspp::kafka_topic_sink<void, std::string, kspp::text_serdes>>(TOPIC_NAME);
+    auto sink = topology->create_sink<kspp::kafka_sink<void, std::string, kspp::text_serdes>>(TOPIC_NAME);
     for (int i = 0; i != 100; ++i) {
       sink->produce("hello kafka streams");
       sink->produce("more text to parse");

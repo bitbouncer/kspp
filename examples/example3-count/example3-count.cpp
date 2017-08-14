@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
 
   {
     auto topology = builder.create_topology();
-    auto sink = topology->create_sink<kspp::kafka_topic_sink<void, std::string, kspp::text_serdes>>(TOPIC_NAME);
+    auto sink = topology->create_sink<kspp::kafka_sink<void, std::string, kspp::text_serdes>>(TOPIC_NAME);
     sink->produce("hello kafka streams");
   }
 

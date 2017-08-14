@@ -35,7 +35,7 @@ int main(int argc, char **argv) {
       }
     });
 
-    auto word_sink = topology->create_sink<kspp::kafka_topic_sink<std::string, void, kspp::text_serdes>>("kspp_test_words");
+    auto word_sink = topology->create_sink<kspp::kafka_sink<std::string, void, kspp::text_serdes>>("kspp_test_words");
     for (auto i : word_streams)
       i->add_sink(word_sink);
 

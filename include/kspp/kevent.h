@@ -10,14 +10,16 @@ namespace kspp {
   template<class K, class V>
   class kevent {
   public:
-    kevent(std::shared_ptr<const krecord<K, V>> r,
-           std::shared_ptr<commit_chain::autocommit_marker> autocommit_marker = nullptr)
-            : _record(r), _autocommit_marker(autocommit_marker), _partition_hash(-1) {
+    kevent(std::shared_ptr<const krecord<K, V>> r, std::shared_ptr<commit_chain::autocommit_marker> autocommit_marker = nullptr)
+            : _record(r)
+              , _autocommit_marker(autocommit_marker)
+              , _partition_hash(-1) {
     }
 
-    kevent(std::shared_ptr<const krecord<K, V>> r, std::shared_ptr<commit_chain::autocommit_marker> autocommit_marker,
-           uint32_t partition_hash)
-            : _record(r), _autocommit_marker(autocommit_marker), _partition_hash(partition_hash) {
+    kevent(std::shared_ptr<const krecord<K, V>> r, std::shared_ptr<commit_chain::autocommit_marker> autocommit_marker, uint32_t partition_hash)
+            : _record(r)
+              , _autocommit_marker(autocommit_marker)
+              , _partition_hash(partition_hash) {
     }
 
     inline int64_t event_time() const {

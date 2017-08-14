@@ -2,8 +2,7 @@
 #include <memory>
 #include <functional>
 #include <sstream>
-#include <kspp/kspp.h>
-#include <kspp/impl/sinks/kafka_producer.h>
+#include <kspp/beta/raw_kafka_producer.h>
 
 #pragma once
 
@@ -21,40 +20,37 @@ namespace kspp {
   };
 
   template<class K, class V, class CODEC>
-  class kafka_sink_base : public topic_sink<K, V> {
+  class raw_kafka_sink_base {
   public:
+    virtual ~raw_kafka_sink_base() {}
+
     enum { MAX_KEY_SIZE = 1000 };
 
     using partitioner = typename kafka_partitioner_base<K>::partitioner;
 
-    std::string simple_name() const override {
+    std::string simple_name() const {
       return "kafka_sink(" + _impl.topic() + ")";
     }
 
-    void close() override {
+    void close() {
       flush();
       return _impl.close();
     }
 
-    size_t queue_len() const override {
+    size_t queue_len() const {
       return topic_sink<K, V>::queue_len() + _impl.queue_len();
     }
 
-    void poll(int timeout) override {
+    void poll(int timeout) {
       return _impl.poll(timeout);
     }
 
-    /*
-     * void commit(bool flush) override {
-      // noop
-    }
-     */
-
-    void flush() override {
+    void flush() {
       while (!eof()) {
         process_one(kspp::milliseconds_since_epoch());
         poll(0);
       }
+
       while (true) {
         auto ec = _impl.flush(1000);
         if (ec == 0)
@@ -62,12 +58,12 @@ namespace kspp {
       }
     }
 
-    bool eof() const override {
+    bool eof() const {
       return this->_queue.size() == 0;
     }
 
     // lets try to get as much as possible from queue to librdkafka - stop when queue is empty or librdkafka fails
-    bool process_one(int64_t tick) override {
+    bool process_one(int64_t tick) {
       size_t count = 0;
       while (this->_queue.size()) {
         auto ev = this->_queue.front();
@@ -84,6 +80,8 @@ namespace kspp {
           // expected and retriable
           return (count > 0);
         }
+
+        LOG(FATAL) << "RDKafa permanent failure - exiting ec:" << ec;
         // permanent failure - need to stop TBD
         return (count > 0);
       } // while
@@ -91,21 +89,27 @@ namespace kspp {
     }
 
   protected:
-    kafka_sink_base(std::string brokers, std::string topic, std::chrono::milliseconds max_buffering_time, partitioner p,
+    raw_kafka_sink_base(std::string brokers, std::string topic, std::chrono::milliseconds max_buffering_time, partitioner p,
                     std::shared_ptr<CODEC> codec)
-            : topic_sink<K, V>(), _codec(codec), _impl(brokers, topic, max_buffering_time), _partitioner(p),
-              _in_count("in_count"), _lag() {
+    :  _codec(codec)
+    , _impl(brokers, topic, max_buffering_time)
+    , _partitioner(p)
+    , _in_count("in_count")
+    , _lag() {
       this->add_metric(&_in_count);
       this->add_metric(&_lag);
     }
 
-    kafka_sink_base(std::string brokers, std::string topic, std::chrono::milliseconds max_buffering_time,
+    raw_kafka_sink_base(std::string brokers, std::string topic, std::chrono::milliseconds max_buffering_time,
                     std::shared_ptr<CODEC> codec)
-            : topic_sink<K, V>(), _codec(codec), _impl(brokers, topic, max_buffering_time), _in_count("in_count"),
-              _lag() {
+            : _codec(codec)
+              , _impl(brokers, topic, max_buffering_time)
+              , _in_count("in_count")
+              , _lag() {
       this->add_metric(&_in_count);
       this->add_metric(&_lag);
     }
+
 
     virtual int handle_event(std::shared_ptr<kevent<K, V>>) = 0;
 
@@ -113,33 +117,86 @@ namespace kspp {
       return _codec;
     }
 
+    void add_metric(metric *p) {
+      _metrics.push_back(p);
+    }
+
+    std::vector<metric *> _metrics;
+
+    kspp::event_queue<kevent<K, V>> _queue;
     std::shared_ptr<CODEC> _codec;
-    kafka_producer _impl;
+    raw_kafka_producer _impl;
     partitioner _partitioner;
     metric_counter _in_count;
     metric_lag _lag;
   };
 
   template<class K, class V, class CODEC>
-  class kafka_sink : public kafka_sink_base<K, V, CODEC> {
+  class raw_kafka_sink : public raw_kafka_sink_base<K, V, CODEC> {
   public:
     enum { MAX_KEY_SIZE = 1000 };
 
     using partitioner = typename kafka_partitioner_base<K>::partitioner;
 
-    kafka_sink(topology_base &topology, std::string topic, partitioner p,
+    raw_kafka_sink(std::string brokers, std::string topic, std::chrono::milliseconds max_buffering_time, partitioner p,
                      std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : kafka_sink_base<K, V, CODEC>(topology.brokers(), topic, topology.max_buffering_time(), p, codec) {
+            : raw_kafka_sink_base<K, V, CODEC>(brokers, topic, max_buffering_time, p, codec) {
+      std::stringstream dummy;
+      K k;
+      LOG_IF(FATAL, this->_codec->encode(k, dummy)<=0) << "Failed to register schema - aborting";
+
+      V v;
+      LOG_IF(FATAL, this->_codec->encode(v, dummy)<=0) << "Failed to register schema - aborting";
     }
 
-    kafka_sink(topology_base &topology, std::string topic,
+    raw_kafka_sink(std::string brokers, std::string topic, std::chrono::milliseconds max_buffering_time,
                      std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : kafka_sink_base<K, V, CODEC>(topology.brokers(), topic, topology.max_buffering_time(), codec) {
+            : raw_kafka_sink_base<K, V, CODEC>(brokers, topic, max_buffering_time, codec) {
+      std::stringstream dummy;
+      K k;
+      LOG_IF(FATAL, this->_codec->encode(k, dummy)<=0) << "Failed to register schema - aborting";
+
+      V v;
+      LOG_IF(FATAL, this->_codec->encode(v, dummy)<=0) << "Failed to register schema - aborting";
     }
 
-    ~kafka_sink() override {
+    ~raw_kafka_sink() override {
       this->close();
     }
+
+    inline void produce(std::shared_ptr<const krecord<K, V>> r, std::function<void(int64_t offset, int32_t ec)> callback) {
+      auto am = std::make_shared<commit_chain::autocommit_marker>(callback);
+      this->_queue.push_back(std::make_shared<kevent<K, V>>(r, am));
+    }
+
+    /*
+     * inline void produce(std::shared_ptr<kevent<K, V>> ev) {
+      this->_queue.push_back(ev);
+    }*/
+
+
+     inline void produce(uint32_t partition_hash, std::shared_ptr<const krecord<K, V>> r, std::function<void(int64_t offset, int32_t ec)> callback) {
+      auto am = std::make_shared<commit_chain::autocommit_marker>(callback);
+      this->_queue.push_back(std::make_shared<kevent<K, V>>(r, am, partition_hash));
+    }
+
+    /*
+    inline void produce(uint32_t partition_hash, std::shared_ptr<kevent<K, V>> t) {
+      auto ev2 = std::make_shared<kevent<K, V>>(t->record(), t->id(),
+                                                partition_hash); // make new one since change the partition
+      this->_queue.push_back(ev2);
+    }
+     */
+
+    inline void produce(const K &key, const V &value, int64_t ts, std::function<void(int64_t offset, int32_t ec)> callback) {
+      produce(std::make_shared<const krecord<K, V>>(key, value, ts), callback);
+    }
+
+    inline void
+    produce(uint32_t partition_hash, const K &key, const V &value, int64_t ts, std::function<void(int64_t offset, int32_t ec)> callback) {
+      produce(partition_hash, std::make_shared<const krecord<K, V>>(key, value, ts), callback);
+    }
+
 
   protected:
     int handle_event(std::shared_ptr<kevent<K, V>> ev) override {
@@ -167,21 +224,23 @@ namespace kspp {
         vp = malloc(vsize);   // must match the free in kafka_producer TBD change to new[] and a memory pool
         vs.read((char *) vp, vsize);
       }
-      return this->_impl.produce(partition_hash, kafka_producer::FREE, kp, ksize, vp, vsize, ev->event_time(),
-                                 ev->id());
+      return this->_impl.produce(partition_hash, raw_kafka_producer::FREE, kp, ksize, vp, vsize, ev->event_time(), ev->id());
     }
   };
 
 //<null, VALUE>
   template<class V, class CODEC>
-  class kafka_sink<void, V, CODEC> : public kafka_sink_base<void, V, CODEC> {
+  class raw_kafka_sink<void, V, CODEC> : public raw_kafka_sink_base<void, V, CODEC> {
   public:
-    kafka_sink(topology_base &topology, std::string topic,
+    raw_kafka_sink(std::string brokers, std::string topic, std::chrono::milliseconds max_buffering_time,
                      std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : kafka_sink_base<void, V, CODEC>(topology.brokers(), topic, topology.max_buffering_time(), codec) {
+            : raw_kafka_sink_base<void, V, CODEC>(brokers, topic, max_buffering_time, codec) {
+      std::stringstream dummy;
+      V v;
+      LOG_IF(FATAL, this->_codec->encode(v, dummy)<=0) << "Failed to register schema - aborting";
     }
 
-    ~kafka_sink() override {
+    ~raw_kafka_sink() override {
       this->close();
     }
 
@@ -201,30 +260,38 @@ namespace kspp {
         assert(false);
         return 0; // no writing of null key and null values
       }
-      return this->_impl.produce(partition_hash, kafka_producer::FREE, nullptr, 0, vp, vsize, ev->event_time(),
+      return this->_impl.produce(partition_hash, raw_kafka_producer::FREE, nullptr, 0, vp, vsize, ev->event_time(),
                                  ev->id());
     }
   };
 
   // <key, nullptr>
   template<class K, class CODEC>
-  class kafka_sink<K, void, CODEC> : public kafka_sink_base<K, void, CODEC> {
+  class raw_kafka_sink<K, void, CODEC> : public raw_kafka_sink_base<K, void, CODEC> {
   public:
     using partitioner = typename kafka_partitioner_base<K>::partitioner;
 
-    kafka_sink(topology_base &topology, std::string topic, partitioner p,
+    raw_kafka_sink(std::string brokers, std::string topic, std::chrono::milliseconds max_buffering_time, partitioner p,
                      std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : kafka_sink_base<K, void, CODEC>(topology.brokers(), topic, topology.max_buffering_time(), p, codec) {
+            : raw_kafka_sink_base<K, void, CODEC>(brokers, topic, max_buffering_time, p, codec) {
+      std::stringstream dummy;
+      K k;
+      LOG_IF(FATAL, this->_codec->encode(k, dummy)<=0) << "Failed to register schema - aborting";
     }
 
-    kafka_sink(topology_base &topology, std::string topic,
+    raw_kafka_sink(std::string brokers, std::string topic, std::chrono::milliseconds max_buffering_time,
                      std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : kafka_sink_base<K, void, CODEC>(topology.brokers(), topic, topology.max_buffering_time(), codec) {
+            : raw_kafka_sink_base<K, void, CODEC>(brokers, topic, max_buffering_time, codec) {
+      std::stringstream dummy;
+      K k;
+      LOG_IF(FATAL, this->_codec->encode(k, dummy)<=0) << "Failed to register schema - aborting";
     }
 
-    ~kafka_sink() override {
+    ~raw_kafka_sink() override {
       this->close();
     }
+
+
 
   protected:
     int handle_event(std::shared_ptr<kevent<K, void>> ev) override {
@@ -243,7 +310,7 @@ namespace kspp {
       kp = malloc(ksize);  // must match the free in kafka_producer TBD change to new[] and a memory pool
       ks.read((char *) kp, ksize);
 
-      return this->_impl.produce(partition_hash, kafka_producer::FREE, kp, ksize, nullptr, 0, ev->event_time(),
+      return this->_impl.produce(partition_hash, raw_kafka_producer::FREE, kp, ksize, nullptr, 0, ev->event_time(),
                                  ev->id());
     }
   };

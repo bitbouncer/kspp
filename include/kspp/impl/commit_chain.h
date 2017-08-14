@@ -30,6 +30,10 @@ namespace kspp {
         return _offset;
       }
 
+      inline void set_offset(int64_t offs) {
+        _offset = offs;
+      }
+
       inline int32_t ec() const {
         return _ec;
       }

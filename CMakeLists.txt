@@ -211,6 +211,7 @@ file(GLOB LIB_SRCS
         src/impl/sinks/*.cpp
         src/impl/serdes/*.cpp
         src/impl/hash/*.cpp
+        src/beta/*.cpp
         )
 
 file(GLOB KSPP_INCLUDE_FILES
@@ -234,6 +235,7 @@ file(GLOB KSPP_INCLUDE_FILES
         include/kspp/impl/hash/*.h
         include/kspp/impl/http/*.h
         include/kspp/impl/async/*.h
+        include/beta/*.h
         )
 
 if (ENABLE_AVRO)
