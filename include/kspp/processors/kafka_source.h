@@ -16,45 +16,39 @@ namespace kspp {
       close();
     }
 
-    virtual std::string simple_name() const {
+    std::string simple_name() const override {
       return "kafka_source(" + _consumer.topic() + ")";
     }
 
-    /*
-    virtual std::string full_name() const {
-      return "kafka_source(" + _consumer.topic() + "#" + std::to_string(_consumer.partition()) + ")-codec(" + CODEC::name() + ")[" + type_name<K>::get() + ", " + type_name<V>::get() + "]";
-    }
-    */
-
-    virtual void start(int64_t offset) {
+   void start(int64_t offset) override {
       _consumer.start(offset);
     }
 
-    virtual void start() {
+    void start() override {
       _consumer.start();
     }
 
-    virtual void close() {
+    void close() override {
       if (_commit_chain.last_good_offset() >= 0 && _consumer.commited() > _commit_chain.last_good_offset())
         _consumer.commit(_commit_chain.last_good_offset(), true);
       _consumer.close();
     }
 
-    virtual inline bool eof() const {
+     bool eof() const override {
       return _consumer.eof();
     }
 
-    virtual void commit(bool flush) {
+    void commit(bool flush) override {
       if (_commit_chain.last_good_offset() > 0)
         _consumer.commit(_commit_chain.last_good_offset(), flush);
     }
 
     // TBD if we store last offset and end of stream offset we can use this...
-    virtual size_t queue_len() const {
+    size_t queue_len() const override {
       return 0;
     }
 
-    virtual bool process_one(int64_t tick) {
+    bool process_one(int64_t tick) override {
       auto p = _consumer.consume();
       if (!p)
         return false;
@@ -103,7 +97,7 @@ namespace kspp {
                                              topology.max_buffering_time(), codec) {}
 
   protected:
-    std::shared_ptr<kevent<K, V>> parse(const std::unique_ptr<RdKafka::Message> &ref) {
+    std::shared_ptr<kevent<K, V>> parse(const std::unique_ptr<RdKafka::Message> &ref) override {
       if (!ref)
         return nullptr;
 
@@ -158,7 +152,7 @@ namespace kspp {
     }
 
   protected:
-    std::shared_ptr<kevent<void, V>> parse(const std::unique_ptr<RdKafka::Message> &ref) {
+    std::shared_ptr<kevent<void, V>> parse(const std::unique_ptr<RdKafka::Message> &ref) override {
       if (!ref)
         return nullptr;
       size_t sz = ref->len();
@@ -198,7 +192,7 @@ namespace kspp {
     }
 
   protected:
-    std::shared_ptr<kevent<K, void>> parse(const std::unique_ptr<RdKafka::Message> &ref) {
+    std::shared_ptr<kevent<K, void>> parse(const std::unique_ptr<RdKafka::Message> &ref) override {
       if (!ref || ref->key_len() == 0)
         return nullptr;
 

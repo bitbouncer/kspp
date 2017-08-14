@@ -29,67 +29,61 @@ namespace kspp {
       this->add_metric(&_state_store_count);
     }
 
-    virtual ~ktable() {
+    ~ktable() override {
       close();
     }
 
-    virtual std::string simple_name() const {
+    std::string simple_name() const override {
       return "ktable";
     }
 
-    /*
-    virtual std::string full_name() const {
-      return "ktable<" + STATE_STORE<K, V, CODEC>::type_name() + ">";
-    }
-    */
-
-    virtual void start() {
+    void start() override {
       _source->start(_state_store.offset());
     }
 
-    virtual void start(int64_t offset) {
+    void start(int64_t offset) override {
       _state_store.start(offset);
       _source->start(offset);
     }
 
-    virtual void commit(bool flush) {
+    void commit(bool flush) override {
       _state_store.commit(flush);
     }
 
-    virtual void close() {
+    void close() override {
       _source->close();
       _state_store.close();
     }
 
-    virtual bool eof() const {
+    bool eof() const override {
       return _source->eof();
     }
 
-    virtual bool process_one(int64_t tick) {
+    bool process_one(int64_t tick) override {
       return _source->process_one(tick);
     }
 
-    virtual void garbage_collect(int64_t tick) {
+    void garbage_collect(int64_t tick) override {
       _state_store.garbage_collect(tick);
     }
 
-    virtual int64_t offset() const {
+    int64_t offset() const {
       return _state_store.offset();
     }
 
-    virtual size_t queue_len() const {
+    size_t queue_len() const override {
       return event_consumer<K, V>::queue_len();
     }
 
-    virtual std::shared_ptr<const krecord <K, V>> get(const K &key) const {
+    std::shared_ptr<const krecord <K, V>> get(const K &key) const override {
       return _state_store.get(key);
     }
 
-    virtual typename kspp::materialized_source<K, V>::iterator begin(void) const {
+    typename kspp::materialized_source<K, V>::iterator begin(void) const override {
       return _state_store.begin();
     }
 
-    virtual typename kspp::materialized_source<K, V>::iterator end() const {
+    typename kspp::materialized_source<K, V>::iterator end() const override {
       return _state_store.end();
     }
 

@@ -25,30 +25,24 @@ namespace kspp {
       return "kafka_partition_sink(" + _impl.topic() + ")";
     }
 
-    /*
-    virtual std::string full_name() const {
-      return "kafka_partition_sink(" + _impl.topic() + "#" + std::to_string(_fixed_partition) + ")-codec(" + CODEC::name() + ")[" + type_name<K>::get() + ", " + type_name<V>::get() + "]";
-    }
-    */
-
-    virtual void close() {
+    void close() override {
       flush();
       return _impl.close();
     }
 
-    virtual size_t queue_len() const {
+    size_t queue_len() const override {
       return event_consumer<K, V>::queue_len() + _impl.queue_len();
     }
 
-    virtual void poll(int timeout) {
+    void poll(int timeout) override {
       return _impl.poll(timeout);
     }
 
-    virtual void commit(bool flush) {
+    void commit(bool flush) override {
       // noop
     }
 
-    virtual void flush() {
+    void flush() override {
       while (!eof()) {
         process_one(kspp::milliseconds_since_epoch());
         poll(0);
@@ -61,11 +55,11 @@ namespace kspp {
       }
     }
 
-    virtual bool eof() const {
+    bool eof() const override {
       return this->_queue.size() == 0;
     }
 
-    virtual bool process_one(int64_t tick) {
+    bool process_one(int64_t tick) override {
       size_t count = 0;
       while (this->_queue.size()) {
         auto ev = this->_queue.front();
@@ -80,9 +74,7 @@ namespace kspp {
     }
 
   protected:
-    virtual int handle_event(std::shared_ptr<kevent < K, V>>
-
-    ) = 0;
+    virtual int handle_event(std::shared_ptr<kevent < K, V>>) = 0;
 
     kafka_producer _impl;
     std::shared_ptr<CODEC> _codec;
@@ -100,14 +92,12 @@ namespace kspp {
                                                      topology.max_buffering_time(), codec) {
     }
 
-    virtual ~kafka_partition_sink() {
+    ~kafka_partition_sink() override {
       this->close();
     }
 
   protected:
-    virtual int handle_event(std::shared_ptr<kevent < K, V>>
-
-    ev){
+    int handle_event(std::shared_ptr<kevent < K, V>> ev) override {
       void *kp = nullptr;
       void *vp = nullptr;
       size_t ksize = 0;
@@ -139,14 +129,12 @@ namespace kspp {
                                                         topology.max_buffering_time(), codec) {
     }
 
-    virtual ~kafka_partition_sink() {
+    ~kafka_partition_sink() override {
       this->close();
     }
 
   protected:
-    virtual int handle_event(std::shared_ptr<kevent < void, V>>
-
-    ev) {
+    int handle_event(std::shared_ptr<kevent < void, V>> ev) override {
       void *vp = nullptr;
       size_t vsize = 0;
 
@@ -174,14 +162,12 @@ namespace kspp {
                                                         topology.max_buffering_time(), codec) {
     }
 
-    virtual ~kafka_partition_sink() {
+    ~kafka_partition_sink() override {
       this->close();
     }
 
   protected:
-    virtual int handle_event(std::shared_ptr<kevent < K, void>>
-
-    ev) {
+    int handle_event(std::shared_ptr<kevent < K, void>> ev) override {
       void *kp = nullptr;
       size_t ksize = 0;
       std::stringstream ks;

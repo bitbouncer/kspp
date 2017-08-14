@@ -1,7 +1,6 @@
 #include <functional>
-#include <kspp/kspp.h>
 #include <deque>
-
+#include <kspp/kspp.h>
 #pragma once
 
 namespace kspp {
@@ -10,30 +9,12 @@ namespace kspp {
   public:
     typedef std::function<void(std::shared_ptr<const krecord <SK, SV>> record, flat_map *self)> extractor;
 
-    flat_map(topology_base &topology, std::shared_ptr<partition_source < SK, SV>>
-
-    source,
-    extractor f
-    )
-    :
-
-    event_consumer<SK, SV>()
-    , partition_source<RK, RV>(source
-
-    .
-
-    get(), source
-
-    ->
-
-    partition()
-
-    )
-    ,
-    _source(source)
+    flat_map(topology_base &topology, std::shared_ptr<partition_source < SK, SV>> source, extractor f)
+    : event_consumer<SK, SV>()
+    , partition_source<RK, RV>(source.get(), source->partition())
+    , _source(source)
     , _extractor(f)
-    , _in_count(
-    "in_count") {
+    , _in_count("in_count") {
       _source->add_sink([this](auto r) {
         this->_queue.push_back(r);
       });
@@ -45,23 +26,23 @@ namespace kspp {
       close();
     }
 
-    virtual std::string simple_name() const {
+    std::string simple_name() const override {
       return "flat_map";
     }
 
-    virtual void start() {
+    void start() override {
       _source->start();
     }
 
-    virtual void start(int64_t offset) {
+    void start(int64_t offset) override {
       _source->start(offset);
     }
 
-    virtual void close() {
+    void close() override {
       _source->close();
     }
 
-    virtual bool process_one(int64_t tick) {
+    bool process_one(int64_t tick) override {
       _source->process_one(tick);
       bool processed = (this->_queue.size() > 0);
       while (this->_queue.size()) {
@@ -76,26 +57,23 @@ namespace kspp {
       return processed;
     }
 
-    virtual void commit(bool flush) {
+    void commit(bool flush) override {
       _source->commit(flush);
     }
 
-    virtual bool eof() const {
+    bool eof() const override {
       return queue_len() == 0 && _source->eof();
     }
 
-    virtual size_t queue_len() const {
+    size_t queue_len() const override {
       return event_consumer < SK, SV > ::queue_len();
     }
 
     /**
     * use from from extractor callback
     */
-    inline void push_back(std::shared_ptr<krecord < RK, RV>>
-
-    record) {
-      this->send_to_sinks(std::make_shared<kevent < RK, RV>>
-      (record, _currrent_id));
+    inline void push_back(std::shared_ptr<krecord < RK, RV>> record) {
+      this->send_to_sinks(std::make_shared<kevent < RK, RV>>(record, _currrent_id));
     }
 
   private:

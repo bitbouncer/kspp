@@ -34,7 +34,7 @@ namespace kspp {
     }
 
   public:
-    virtual bool Merge(
+    bool Merge(
             const rocksdb::Slice &key,
             const rocksdb::Slice *existing_value,
             const rocksdb::Slice &value,
@@ -62,7 +62,7 @@ namespace kspp {
       return true;        // always return true for this, since we treat all errors as "zero".
     }
 
-    virtual const char *Name() const override {
+    const char *Name() const override {
       return "Int64AddOperator";
     }
   };
@@ -87,17 +87,17 @@ namespace kspp {
         }
       }
 
-      virtual bool valid() const {
+      bool valid() const override {
         return _it->Valid();
       }
 
-      virtual void next() {
+      void next() override {
         if (!_it->Valid())
           return;
         _it->Next();
       }
 
-      virtual std::shared_ptr<const krecord <K, V>> item() const {
+      std::shared_ptr<const krecord <K, V>> item() const override {
         if (!_it->Valid())
           return nullptr;
         rocksdb::Slice key = _it->key();
@@ -115,7 +115,7 @@ namespace kspp {
                                                milliseconds_since_epoch()); // or should we use -1.
       }
 
-      virtual bool operator==(const kmaterialized_source_iterator_impl <K, V> &other) const {
+      bool operator==(const kmaterialized_source_iterator_impl <K, V> &other) const override {
         //fastpath...
         if (valid() && !other.valid())
           return false;
@@ -166,16 +166,16 @@ namespace kspp {
       }
     }
 
-    ~rocksdb_counter_store() {
+    ~rocksdb_counter_store() override {
       close();
     }
 
-    void close() {
+    void close() override {
       _db = nullptr;
       //BOOST_LOG_TRIVIAL(info) << BOOST_CURRENT_FUNCTION << ", " << _name << " close()";
     }
 
-    virtual void garbage_collect(int64_t tick) {
+    void garbage_collect(int64_t tick) override {
       // nothing to do
     }
 
@@ -186,7 +186,7 @@ namespace kspp {
     /**
     * Put or delete a record
     */
-    virtual void _insert(std::shared_ptr<const krecord <K, V>> record, int64_t offset) {
+    void _insert(std::shared_ptr<const krecord <K, V>> record, int64_t offset) override {
       _current_offset = std::max<int64_t>(_current_offset, offset);
       char key_buf[MAX_KEY_SIZE];
       size_t ksize = 0;
@@ -201,7 +201,7 @@ namespace kspp {
       }
     }
 
-    std::shared_ptr<const krecord <K, V>> get(const K &key) const {
+    std::shared_ptr<const krecord <K, V>> get(const K &key) const override {
       char key_buf[MAX_KEY_SIZE];
       size_t ksize = 0;
       std::ostrstream os(key_buf, MAX_KEY_SIZE);
@@ -219,12 +219,12 @@ namespace kspp {
     /**
     * returns last offset
     */
-    virtual int64_t offset() const {
+    int64_t offset() const override {
       return _current_offset;
     }
 
     //should we allow writing -2 in store??
-    virtual void start(int64_t offset) {
+    void start(int64_t offset) override {
       _current_offset = offset;
       commit(true);
     }
@@ -232,7 +232,7 @@ namespace kspp {
     /**
     * commits the offset
     */
-    virtual void commit(bool flush) {
+    void commit(bool flush) override {
       _last_comitted_offset = _current_offset;
       if (flush || ((_last_comitted_offset - _last_flushed_offset) > 10000)) {
         if (_last_flushed_offset != _last_comitted_offset) {
@@ -244,20 +244,20 @@ namespace kspp {
       }
     }
 
-    virtual size_t aprox_size() const {
+    size_t aprox_size() const override {
       std::string num;
       _db->GetProperty("rocksdb.estimate-num-keys", &num);
       return std::stoll(num);
     }
 
-    virtual size_t exact_size() const {
+    size_t exact_size() const override {
       size_t sz = 0;
       for (const auto &i : *this)
         ++sz;
       return sz;
     }
 
-    virtual void clear() {
+    void clear() override {
       for (auto it = iterator_impl(_db.get(), _codec, iterator_impl::BEGIN), end_ = iterator_impl(_db.get(), _codec,
                                                                                                   iterator_impl::END);
            it != end_; it.next()) {

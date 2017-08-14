@@ -2,7 +2,6 @@
 #include <chrono>
 #include <deque>
 #include <kspp/kspp.h>
-
 #pragma once
 
 namespace kspp {
@@ -33,31 +32,24 @@ namespace kspp {
       close();
     }
 
-    virtual std::string simple_name() const {
+    std::string simple_name() const override {
       return "count_by_key";
     }
 
-    virtual void start() {
+    void start() override {
       _stream->start();
     }
 
-    virtual void start(int64_t offset) {
+    void start(int64_t offset) override {
       _counter_store.clear(); // the completely erases the counters... only valid for -2...
       _stream->start(offset);
     }
 
-    virtual void close() {
+    void close() override {
       _stream->close();
     }
 
-    /*
-    virtual int produce(std::shared_ptr<kevent<K, void>> r) {
-      _queue.push_back(r);
-      return 0;
-    }
-    */
-
-    virtual bool process_one(int64_t tick) {
+    bool process_one(int64_t tick) override {
       _stream->process_one(tick);
       bool processed = (this->_queue.size() > 0);
       while (this->_queue.size()) {
@@ -79,22 +71,22 @@ namespace kspp {
       return processed;
     }
 
-    virtual void commit(bool flush) {
+    void commit(bool flush) override {
       _stream->commit(flush);
     }
 
-    virtual size_t queue_len() const {
+    size_t queue_len() const override {
       return event_consumer < K, void > ::queue_len();
     }
 
-    virtual bool eof() const {
+    bool eof() const override {
       return queue_len() == 0 && _stream->eof();
     }
 
     /**
     take a snapshot of state and post it to sinks
     */
-    virtual void punctuate(int64_t timestamp) {
+    void punctuate(int64_t timestamp) override{
       if (_dirty) { // keep event timestamps in counter store and only include the updated ones... TBD
         for (auto i : _counter_store) {
           //we need to create a new instance
@@ -106,15 +98,15 @@ namespace kspp {
     }
 
     // inherited from kmaterialized_source
-    virtual std::shared_ptr<const krecord <K, V>> get(const K &key) const {
+    std::shared_ptr<const krecord <K, V>> get(const K &key) const override{
       return _counter_store.get(key);
     }
 
-    virtual typename kspp::materialized_source<K, V>::iterator begin(void) const {
+    typename kspp::materialized_source<K, V>::iterator begin(void) const override {
       return _counter_store.begin();
     }
 
-    virtual typename kspp::materialized_source<K, V>::iterator end() const {
+    typename kspp::materialized_source<K, V>::iterator end() const override {
       return _counter_store.end();
     }
 

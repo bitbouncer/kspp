@@ -64,23 +64,23 @@ namespace kspp {
       iterator_impl(const std::map<K, std::shared_ptr<bucket>> &container, seek_pos_e pos)
               : _container(container), _it(pos == BEGIN ? _container.begin() : _container.end()) {}
 
-      virtual bool valid() const {
+      bool valid() const override {
         return _it != _container.end();
       }
 
-      virtual void next() {
+      void next() override {
         if (_it == _container.end())
           return;
         ++_it;
       }
 
-      virtual std::shared_ptr<const krecord<K, V>> item() const {
+      std::shared_ptr<const krecord<K, V>> item() const override {
         if (_it == _container.end())
           return nullptr;
         return std::make_shared<kspp::krecord<K, V>>(_it->first, _it->second->token(), _it->second->timestamp());
       }
 
-      virtual bool operator==(const kmaterialized_source_iterator_impl<K, V> &other) const {
+      bool operator==(const kmaterialized_source_iterator_impl<K, V> &other) const override {
         if (valid() && !other.valid())
           return false;
         if (!valid() && !other.valid())
@@ -100,31 +100,28 @@ namespace kspp {
             : state_store<K, V>(), _config(agetime.count(), capacity), _current_offset(-1) {
     }
 
-    virtual ~mem_token_bucket_store() {
-    }
-
     static std::string type_name() {
       return "mem_token_bucket_store";
     }
 
-    virtual void close() {
+    void close() override {
     }
 
     /**
     * commits the offset
     */
-    virtual void commit(bool flush) {
+    void commit(bool flush) override {
       // noop
     }
 
     /**
     * returns last offset
     */
-    virtual int64_t offset() const {
+    int64_t offset() const override {
       return _current_offset;
     }
 
-    virtual void start(int64_t offset) {
+    void start(int64_t offset) override {
       _current_offset = offset;
     }
 
@@ -132,7 +129,7 @@ namespace kspp {
     * Adds count to bucket
     * returns true if bucket has capacity
     */
-    virtual bool consume(const K &key, int64_t timestamp) {
+    bool consume(const K &key, int64_t timestamp)  {
       typename std::map<K, std::shared_ptr<bucket>>::iterator item = _buckets.find(key);
       if (item == _buckets.end()) {
         auto b = std::make_shared<bucket>(_config.capacity);
@@ -144,7 +141,7 @@ namespace kspp {
     }
 
     //this can and will override bucket capacity but bucket will stay in correct state
-    virtual void _insert(std::shared_ptr<const krecord<K, V>> record, int64_t offset) {
+    void _insert(std::shared_ptr<const krecord<K, V>> record, int64_t offset) override {
       _current_offset = std::max<int64_t>(_current_offset, offset);
       if (record->value() == nullptr) {
         _buckets.erase(record->key());
@@ -165,14 +162,14 @@ namespace kspp {
     /**
     * Deletes a counter
     */
-    virtual void del(const K &key) {
+    void del(const K &key)  {
       _buckets.erase(key);
     }
 
     /**
     * erases all counters
     */
-    virtual void clear() {
+    void clear() override {
       _buckets.clear();
       _current_offset = -1;
     }
@@ -180,7 +177,7 @@ namespace kspp {
     /**
     * Returns the counter for the given key
     */
-    virtual std::shared_ptr<const kspp::krecord<K, V>> get(const K &key) const {
+    std::shared_ptr<const kspp::krecord<K, V>> get(const K &key) const override {
       typename std::map<K, std::shared_ptr<bucket>>::const_iterator item = _buckets.find(key);
       if (item == _buckets.end()) {
         return std::make_shared<kspp::krecord<K, V>>(key, _config.capacity, -1);
@@ -188,11 +185,11 @@ namespace kspp {
       return std::make_shared<kspp::krecord<K, V>>(key, item->second->token(), item->second->timestamp());
     }
 
-    virtual size_t aprox_size() const {
+    size_t aprox_size() const override {
       return _buckets.size();
     }
 
-    virtual size_t exact_size() const {
+    size_t exact_size() const override {
       return _buckets.size();
     }
 

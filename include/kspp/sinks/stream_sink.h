@@ -46,23 +46,23 @@ public:
     source->add_sink(this);
   }
 
-  virtual ~stream_sink() {
+  ~stream_sink() override {
     this->flush();;
   }
 
-  virtual std::string simple_name() const {
+  std::string simple_name() const override {
     return "stream_sink";
   }
 
-  virtual size_t queue_len() const {
+  size_t queue_len() const override {
     return event_consumer<K, V>::queue_len();
   }
 
-  virtual void commit(bool flush) {
+  void commit(bool flush) override {
     // noop
   }
 
-  virtual bool process_one(int64_t tick) {
+  bool process_one(int64_t tick) override {
     size_t count = 0;
     while (this->_queue.size()) {
       auto ev = this->_queue.front();

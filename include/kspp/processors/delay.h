@@ -1,3 +1,4 @@
+#include <kspp/kspp.h>
 #pragma once
 namespace kspp {
   template<class K, class V>
@@ -17,23 +18,23 @@ namespace kspp {
       close();
     }
 
-    virtual std::string simple_name() const {
+    std::string simple_name() const override {
       return "delay";
     }
 
-    virtual void start() {
+    void start() override {
       _source->start();
     }
 
-    virtual void start(int64_t offset) {
+    void start(int64_t offset) override {
       _source->start(offset);
     }
 
-    virtual void close() {
+    void close() override {
       _source->close();
     }
 
-    virtual bool process_one(int64_t tick) {
+    bool process_one(int64_t tick) override {
       if (this->_queue.size() == 0)
         _source->process_one();
 
@@ -51,15 +52,15 @@ namespace kspp {
       return false;
     }
 
-    virtual void commit(flush) {
+    void commit(flush) override {
       _source->commit(flush);
     }
 
-    virtual size_t queue_len() const {
+    size_t queue_len() const override {
       return this->_queue.size();
     }
 
-    virtual bool eof() const {
+    bool eof() const override  {
       return (queue_len() == 0) && _source->eof());
     }
 

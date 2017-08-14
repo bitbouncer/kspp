@@ -10,10 +10,12 @@ namespace kspp {
   class transform_value : public event_consumer<K, SV>, public partition_source<K, RV> {
   public:
     typedef std::function<void(std::shared_ptr < kevent < K, SV >> record,
-                               transform_value * self)> extractor; // maybee better to pass this and send() directrly
+                               transform_value * self)> extractor; // maybe better to pass this and send() directrly
 
     transform_value(topology_base &topology, std::shared_ptr <partition_source<K, SV>> source, extractor f)
-            : event_consumer<K, SV>(), partition_source<K, RV>(source.get(), source->partition()), _source(source),
+            : event_consumer<K, SV>()
+              , partition_source<K, RV>(source.get(), source->partition())
+              , _source(source),
               _extractor(f) {
       _source->add_sink([this](auto r) {
         this->_queue.push_back(r);
@@ -25,23 +27,23 @@ namespace kspp {
       close();
     }
 
-    virtual std::string simple_name() const {
+    std::string simple_name() const override {
       return "transform_value";
     }
 
-    virtual void start() {
+    void start() override {
       _source->start();
     }
 
-    virtual void start(int64_t offset) {
+    void start(int64_t offset) override {
       _source->start(offset);
     }
 
-    virtual void close() {
+    void close() override {
       _source->close();
     }
 
-    virtual bool process_one(int64_t tick) {
+    bool process_one(int64_t tick) override {
       _source->process_one(tick);
       bool processed = (this->_queue.size() > 0);
       while (this->_queue.size()) {
@@ -57,15 +59,15 @@ namespace kspp {
       this->send_to_sinks(r);
     }
 
-    virtual void commit(bool flush) {
+    void commit(bool flush) override {
       _source->commit(flush);
     }
 
-    virtual bool eof() const {
+    bool eof() const override {
       return queue_len() == 0 && _source->eof();
     }
 
-    virtual size_t queue_len() const {
+    size_t queue_len() const override {
       return event_consumer<K, SV>::queue_len();
     }
 
@@ -83,8 +85,10 @@ namespace kspp {
                                transform * self)> extractor; // maybe better to pass this and send() directrly
 
     transform(topology_base &topology, std::shared_ptr <partition_source<K, V>> source, extractor f)
-            : event_consumer<K, V>(), partition_source<K, V>(source.get(), source->partition()), _source(source),
-              _extractor(f) {
+            : event_consumer<K, V>()
+              , partition_source<K, V>(source.get(), source->partition())
+              , _source(source)
+              , _extractor(f) {
       _source->add_sink([this](auto r) {
         this->_queue.push_back(r);
       });
@@ -95,23 +99,23 @@ namespace kspp {
       close();
     }
 
-    virtual std::string simple_name() const {
+    std::string simple_name() const override {
       return "transform";
     }
 
-    virtual void start() {
+    void start() override {
       _source->start();
     }
 
-    virtual void start(int64_t offset) {
+    void start(int64_t offset) override {
       _source->start(offset);
     }
 
-    virtual void close() {
+    void close() override {
       _source->close();
     }
 
-    virtual bool process_one(int64_t tick) {
+    bool process_one(int64_t tick) override {
       _source->process_one(tick);
       bool processed = (this->_queue.size() > 0);
       while (this->_queue.size()) {
@@ -125,12 +129,6 @@ namespace kspp {
       return processed;
     }
 
-    /*
-    void push_back(std::shared_ptr<kevent<K, V>> r) {
-      this->send_to_sinks(r);
-    }
-    */
-
     /**
     * use from from extractor callback
     */
@@ -138,15 +136,15 @@ namespace kspp {
       this->send_to_sinks(std::make_shared < kevent < K, V >> (record, _currrent_id));
     }
 
-    virtual void commit(bool flush) {
+    void commit(bool flush) override {
       _source->commit(flush);
     }
 
-    virtual bool eof() const {
+    bool eof() const override {
       return queue_len() == 0 && _source->eof();
     }
 
-    virtual size_t queue_len() const {
+    size_t queue_len() const override {
       return event_consumer<K, V>::queue_len();
     }
 

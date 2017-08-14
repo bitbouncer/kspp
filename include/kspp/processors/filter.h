@@ -1,3 +1,4 @@
+#include <kspp/kspp.h>
 #pragma once
 namespace kspp {
   template<class K, class V>
@@ -5,30 +6,12 @@ namespace kspp {
   public:
     typedef std::function<bool(std::shared_ptr<const krecord <K, V>> record)> predicate; // return true to keep
 
-    filter(topology_base &topology, std::shared_ptr<partition_source < K, V>>
-
-    source,
-    predicate f
-    )
-    :
-
-    event_consumer<K, V>()
-    , partition_source<K, V>(source
-
-    .
-
-    get(), source
-
-    ->
-
-    partition()
-
-    )
-    ,
-    _source(source)
+    filter(topology_base &topology, std::shared_ptr<partition_source < K, V>> source, predicate f)
+    : event_consumer<K, V>()
+    , partition_source<K, V>(source.get(), source->partition())
+    , _source(source)
     , _predicate(f)
-    , _predicate_false(
-    "predicate_false") {
+    , _predicate_false("predicate_false") {
       _source->add_sink([this](auto r) {
         this->_queue.push_back(r);
       });
@@ -40,23 +23,23 @@ namespace kspp {
       close();
     }
 
-    virtual std::string simple_name() const {
+    std::string simple_name() const override {
       return "filter";
     }
 
-    virtual void start() {
+    void start() override {
       _source->start();
     }
 
-    virtual void start(int64_t offset) {
+    void start(int64_t offset) override {
       _source->start(offset);
     }
 
-    virtual void close() {
+    void close() override {
       _source->close();
     }
 
-    virtual bool process_one(int64_t tick) {
+    bool process_one(int64_t tick) override {
       if (this->_queue.size() == 0)
         _source->process_one(tick);
       bool processed = (this->_queue.size() > 0);
@@ -73,15 +56,15 @@ namespace kspp {
       return processed;
     }
 
-    virtual void commit(bool flush) {
+    void commit(bool flush) override {
       _source->commit(flush);
     }
 
-    virtual bool eof() const {
+    bool eof() const override {
       return (queue_len() == 0) && _source->eof();
     }
 
-    virtual size_t queue_len() const {
+    size_t queue_len() const override {
       return event_consumer < K, V > ::queue_len();
     }
 

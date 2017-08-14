@@ -45,11 +45,11 @@ namespace kspp {
         }
       }
 
-      virtual bool valid() const {
+      bool valid() const override {
         return (_outer_it != _container.end());
       }
 
-      virtual void next() {
+      void next() override {
         if (_outer_it == _container.end())
           return;
 
@@ -67,7 +67,7 @@ namespace kspp {
         }
       }
 
-      virtual std::shared_ptr<const krecord<K, V>> item() const {
+      std::shared_ptr<const krecord<K, V>> item() const override {
         if (!_inner_it->Valid())
           return nullptr;
         rocksdb::Slice key = _inner_it->key();
@@ -92,7 +92,7 @@ namespace kspp {
         return std::make_shared<krecord<K, V>>(tmp_key, tmp_value, timestamp);
       }
 
-      virtual bool operator==(const kmaterialized_source_iterator_impl<K, V> &other) const {
+      bool operator==(const kmaterialized_source_iterator_impl<K, V> &other) const override {
         //fastpath...
         if (valid() && !other.valid())
           return false;
@@ -137,7 +137,7 @@ namespace kspp {
       // we look for directories names with digits
     }
 
-    ~rocksdb_windowed_store() {
+    ~rocksdb_windowed_store() override {
       close();
     }
 
@@ -145,11 +145,11 @@ namespace kspp {
       return "rocksdb_windowed_store";
     }
 
-    void close() {
+    void close() override {
       _buckets.clear();
     }
 
-    virtual void garbage_collect(int64_t tick) {
+    void garbage_collect(int64_t tick) override {
       _oldest_kept_slot = get_slot_index(tick) - (_nr_of_slots - 1);
       auto upper_bound = _buckets.lower_bound(_oldest_kept_slot);
 
@@ -176,7 +176,7 @@ namespace kspp {
     // this respects strong ordering of timestamp and makes shure we only have one value
     // a bit slow but samantically correct
     // TBD add option to speed this up either by storing all values or disregarding timestamps
-    virtual void _insert(std::shared_ptr<const krecord<K, V>> record, int64_t offset) {
+    void _insert(std::shared_ptr<const krecord<K, V>> record, int64_t offset) override {
       _current_offset = std::max<int64_t>(_current_offset, offset);
       int64_t new_slot = get_slot_index(record->event_time());
       // old updates is killed straight away...
@@ -253,7 +253,7 @@ namespace kspp {
       }
     }
 
-    std::shared_ptr<const krecord<K, V>> get(const K &key) const {
+    std::shared_ptr<const krecord<K, V>> get(const K &key) const override {
       char key_buf[MAX_KEY_SIZE];
       size_t ksize = 0;
       {
@@ -287,7 +287,7 @@ namespace kspp {
     }
 
     //should we allow writing -2 in store??
-    virtual void start(int64_t offset) {
+    void start(int64_t offset) override {
       _current_offset = offset;
       commit(true);
     }
@@ -295,7 +295,7 @@ namespace kspp {
     /**
     * commits the offset
     */
-    virtual void commit(bool flush) {
+    void commit(bool flush) override {
       _last_comitted_offset = _current_offset;
       if (flush || ((_last_comitted_offset - _last_flushed_offset) > 10000)) {
         if (_last_flushed_offset != _last_comitted_offset) {
@@ -310,11 +310,11 @@ namespace kspp {
     /**
     * returns last offset
     */
-    virtual int64_t offset() const {
+    int64_t offset() const override {
       return _current_offset;
     }
 
-    virtual size_t aprox_size() const {
+    size_t aprox_size() const override{
       size_t count = 0;
       for (auto &i : _buckets) {
         std::string num;
@@ -324,7 +324,7 @@ namespace kspp {
       return count;
     }
 
-    virtual size_t exact_size() const {
+    size_t exact_size() const override {
       size_t sz = 0;
       for (const auto &i : *this)
         ++sz;
@@ -332,17 +332,17 @@ namespace kspp {
     }
 
 
-    virtual void clear() {
+    void clear() override {
       _buckets.clear(); // how do we kill database on disk?
       _current_offset = -1;
     }
 
-    typename kspp::materialized_source<K, V>::iterator begin(void) const {
+    typename kspp::materialized_source<K, V>::iterator begin(void) const override {
       return typename kspp::materialized_source<K, V>::iterator(
               std::make_shared<iterator_impl>(_buckets, _codec, iterator_impl::BEGIN));
     }
 
-    typename kspp::materialized_source<K, V>::iterator end() const {
+    typename kspp::materialized_source<K, V>::iterator end() const override {
       return typename kspp::materialized_source<K, V>::iterator(
               std::make_shared<iterator_impl>(_buckets, _codec, iterator_impl::END));
     }

@@ -27,34 +27,30 @@ namespace kspp {
 
     using partitioner = typename kafka_partitioner_base<K>::partitioner;
 
-    virtual std::string simple_name() const {
+    std::string simple_name() const override {
       return "kafka_sink(" + _impl.topic() + ")";
     }
 
-    /*
-    virtual std::string full_name() const {
-      return "kafka_topic_sink(" + _impl.topic() + ")-codec(" + CODEC::name() + ")[" + type_name<K>::get() + ", " + type_name<V>::get() + "]";
-    }
-    */
-
-    virtual void close() {
+    void close() override {
       flush();
       return _impl.close();
     }
 
-    virtual size_t queue_len() const {
+    size_t queue_len() const override {
       return topic_sink<K, V>::queue_len() + _impl.queue_len();
     }
 
-    virtual void poll(int timeout) {
+    void poll(int timeout) override {
       return _impl.poll(timeout);
     }
 
-    virtual void commit(bool flush) {
+    /*
+     * void commit(bool flush) override {
       // noop
     }
+     */
 
-    virtual void flush() {
+    void flush() override {
       while (!eof()) {
         process_one(kspp::milliseconds_since_epoch());
         poll(0);
@@ -66,12 +62,12 @@ namespace kspp {
       }
     }
 
-    virtual bool eof() const {
+    bool eof() const override {
       return this->_queue.size() == 0;
     }
 
     // lets try to get as much as possible from queue to librdkafka - stop when queue is empty or librdkafka fails
-    virtual bool process_one(int64_t tick) {
+    bool process_one(int64_t tick) override {
       size_t count = 0;
       while (this->_queue.size()) {
         auto ev = this->_queue.front();
@@ -141,12 +137,12 @@ namespace kspp {
             : kafka_sink_base<K, V, CODEC>(topology.brokers(), topic, topology.max_buffering_time(), codec) {
     }
 
-    virtual ~kafka_topic_sink() {
+    ~kafka_topic_sink() override {
       this->close();
     }
 
   protected:
-    virtual int handle_event(std::shared_ptr<kevent<K, V>> ev) {
+    int handle_event(std::shared_ptr<kevent<K, V>> ev) override {
       uint32_t partition_hash = 0;
 
       if (ev->has_partition_hash())
@@ -185,12 +181,12 @@ namespace kspp {
             : kafka_sink_base<void, V, CODEC>(topology.brokers(), topic, topology.max_buffering_time(), codec) {
     }
 
-    virtual ~kafka_topic_sink() {
+    ~kafka_topic_sink() override {
       this->close();
     }
 
   protected:
-    virtual int handle_event(std::shared_ptr<kevent<void, V>> ev) {
+    int handle_event(std::shared_ptr<kevent<void, V>> ev) override {
       static uint32_t s_partition = 0;
       uint32_t partition_hash = ev->has_partition_hash() ? ev->partition_hash() : ++s_partition;
       void *vp = nullptr;
@@ -226,12 +222,12 @@ namespace kspp {
             : kafka_sink_base<K, void, CODEC>(topology.brokers(), topic, topology.max_buffering_time(), codec) {
     }
 
-    virtual ~kafka_topic_sink() {
+    ~kafka_topic_sink() override {
       this->close();
     }
 
   protected:
-    virtual int handle_event(std::shared_ptr<kevent<K, void>> ev) {
+    int handle_event(std::shared_ptr<kevent<K, void>> ev) override {
       uint32_t partition_hash = 0;
       if (ev->has_partition_hash())
         partition_hash = ev->partition_hash();

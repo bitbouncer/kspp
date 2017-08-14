@@ -30,11 +30,11 @@ namespace kspp {
         }
       }
 
-      virtual bool valid() const {
+      bool valid() const override {
         return _outer_it != _container.end();
       }
 
-      virtual void next() {
+      void next() override {
         if (_outer_it == _container.end())
           return;
         ++_inner_it;
@@ -49,11 +49,11 @@ namespace kspp {
         }
       }
 
-      virtual std::shared_ptr<const krecord<K, V>> item() const {
+      std::shared_ptr<const krecord<K, V>> item() const override {
         return (_outer_it == _container.end()) ? nullptr : _inner_it->second;
       }
 
-      virtual bool operator==(const kmaterialized_source_iterator_impl<K, V> &other) const {
+      bool operator==(const kmaterialized_source_iterator_impl<K, V> &other) const override {
         if (valid() && !other.valid())
           return false;
         if (!valid() && !other.valid())
@@ -74,17 +74,14 @@ namespace kspp {
             : _slot_width(slot_width.count()), _nr_of_slots(nr_of_slots) {
     }
 
-    virtual ~mem_windowed_store() {
-    }
-
     static std::string type_name() {
       return "mem_windowed_store";
     }
 
-    virtual void close() {
+    void close() override {
     }
 
-    virtual void garbage_collect(int64_t tick) {
+    void garbage_collect(int64_t tick) override {
       _oldest_kept_slot = get_slot_index(tick) - (_nr_of_slots - 1);
       auto upper_bound = _buckets.lower_bound(_oldest_kept_slot);
 
@@ -101,7 +98,7 @@ namespace kspp {
     /**
     * Put a key-value pair
     */
-    virtual void _insert(std::shared_ptr<const krecord<K, V>> record, int64_t offset) {
+    void _insert(std::shared_ptr<const krecord<K, V>> record, int64_t offset) override {
       _current_offset = std::max<int64_t>(_current_offset, offset);
       int64_t new_slot = get_slot_index(record->event_time());
       // old updates is killed straight away...
@@ -169,25 +166,25 @@ namespace kspp {
     /**
     * commits the offset
     */
-    virtual void commit(bool flush) {
+    void commit(bool flush) override {
       // noop
     }
 
     /**
     * returns last offset
     */
-    virtual int64_t offset() const {
+    int64_t offset() const override {
       return _current_offset;
     }
 
-    virtual void start(int64_t offset) {
+    void start(int64_t offset) override {
       _current_offset = offset;
     }
 
     /**
     * Returns a key-value pair with the given key
     */
-    virtual std::shared_ptr<const krecord<K, V>> get(const K &key) const {
+    std::shared_ptr<const krecord<K, V>> get(const K &key) const override {
       for (auto &&i : _buckets) {
         auto item = i.second->find(key);
         if (item != i.second->end()) {
@@ -201,21 +198,21 @@ namespace kspp {
       //return (it == _store.end()) ? nullptr : it->second;
     }
 
-    virtual size_t aprox_size() const {
+    size_t aprox_size() const override {
       size_t sz = 0;
       for (auto &&i : _buckets)
         sz += i.second->size();
       return sz;
     }
 
-    virtual size_t exact_size() const {
+    size_t exact_size() const override {
       size_t sz = 0;
       for (auto &&i : _buckets)
         sz += i.second->size();
       return sz;
     }
 
-    virtual void clear() {
+    void clear() override {
       _buckets.clear();
       _current_offset = -1;
     }

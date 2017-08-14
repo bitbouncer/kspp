@@ -197,17 +197,9 @@ namespace kspp {
         upstream_.push_back(upstream);
     }
 
-    /*
-     * partition_processor(std::vector<partition_processor*> upstream, int32_t partition)
-            : _partition(partition) {
-      upstream_.insert(upstream_.end(), upstream.begin(), upstream.end());
-    }
-     */
-
-    void add_upstream(partition_processor* p){
+   void add_upstream(partition_processor* p){
       upstream_.push_back(p);
     }
-
 
     std::vector<partition_processor*> upstream_;
     const int32_t _partition;
@@ -294,11 +286,11 @@ namespace kspp {
     typedef V value_type;
     typedef kspp::kevent<K, V> record_type;
 
-    virtual std::string key_type_name() const {
+    std::string key_type_name() const override {
       return type_name<K>::get();
     }
 
-    virtual std::string value_type_name() const {
+    std::string value_type_name() const override {
       return type_name<V>::get();
     }
 
@@ -329,11 +321,11 @@ namespace kspp {
     typedef V value_type;
     typedef kspp::kevent<void, V> record_type;
 
-    virtual std::string key_type_name() const {
+    std::string key_type_name() const override {
       return "void";
     }
 
-    virtual std::string value_type_name() const {
+    std::string value_type_name() const override {
       return type_name<V>::get();
     }
 

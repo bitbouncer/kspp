@@ -15,21 +15,21 @@ namespace kspp {
               : _container(container), _it(pos == BEGIN ? _container.begin() : _container.end()) {
       }
 
-      virtual bool valid() const {
+      bool valid() const override {
         return _it != _container.end();
       }
 
-      virtual void next() {
+      void next() override {
         if (_it == _container.end())
           return;
         ++_it;
       }
 
-      virtual std::shared_ptr<const krecord<K, V>> item() const {
+      std::shared_ptr<const krecord<K, V>> item() const override {
         return (_it == _container.end()) ? nullptr : _it->second;
       }
 
-      virtual bool operator==(const kmaterialized_source_iterator_impl<K, V> &other) const {
+      bool operator==(const kmaterialized_source_iterator_impl<K, V> &other) const override {
         if (valid() && !other.valid())
           return false;
         if (!valid() && !other.valid())
@@ -47,18 +47,16 @@ namespace kspp {
     mem_counter_store(boost::filesystem::path storage_path) {
     }
 
-    virtual ~mem_counter_store() {}
-
     static std::string type_name() {
       return "mem_counter_store";
     }
 
-    virtual void close() {}
+    void close() override {}
 
     /**
     * Put a key-value pair
     */
-    virtual void _insert(std::shared_ptr<const krecord<K, V>> record, int64_t offset) {
+    void _insert(std::shared_ptr<const krecord<K, V>> record, int64_t offset) override {
       _current_offset = std::max<int64_t>(_current_offset, offset);
       auto item = _store.find(record->key());
 
@@ -88,39 +86,39 @@ namespace kspp {
     /**
     * commits the offset
     */
-    virtual void commit(bool flush) {
+    void commit(bool flush) override {
       // noop
     }
 
     /**
     * returns last offset
     */
-    virtual int64_t offset() const {
+    int64_t offset() const override {
       return _current_offset;
     }
 
-    virtual void start(int64_t offset) {
+    void start(int64_t offset) override {
       _current_offset = offset;
     }
 
     /**
     * Returns a key-value pair with the given key
     */
-    virtual std::shared_ptr<const krecord<K, V>> get(const K &key) const {
+    std::shared_ptr<const krecord<K, V>> get(const K &key) const override {
       auto it = _store.find(key);
       return (it == _store.end()) ? nullptr : it->second;
     }
 
-    virtual void clear() {
+    void clear() override {
       _store.clear();
       _current_offset = -1;
     }
 
-    virtual size_t aprox_size() const {
+    size_t aprox_size() const override {
       return _store.size();
     }
 
-    virtual size_t exact_size() const {
+    size_t exact_size() const override {
       return _store.size();
     }
 

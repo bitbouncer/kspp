@@ -21,33 +21,34 @@ namespace kspp {
       }
     }
 
-    virtual std::string simple_name() const {
+    std::string simple_name() const override {
       return "merge";
     }
 
-    virtual bool process_one(int64_t tick) {
+    bool process_one(int64_t tick) override {
       bool processed = false;
       for (auto i : this->upstream_)
         processed = i->process_one(tick);
       return processed;
     }
 
-    virtual int produce(std::shared_ptr<kevent < K, V>> r) {
+    size_t queue_len() const override {
+      return event_consumer<K, V>::queue_len();
+    }
+
+    void commit(bool force) override {
+      for (auto i : this->upstream_)
+        i->commit(force);
+    }
+
+    // do we have the right hierarchy since those are not overridden and they should????
+    int produce(std::shared_ptr<kevent < K, V>> r) {
       this->send_to_sinks(r);
       return 0;
     }
 
-    inline int produce(const K &key, const V &value, int64_t ts = kspp::milliseconds_since_epoch()) {
+    int produce(const K &key, const V &value, int64_t ts = kspp::milliseconds_since_epoch()) {
       return produce(std::make_shared<kevent<K, V>>(std::make_shared<krecord<K, V>>(key, value, ts)));
-    }
-
-    virtual size_t queue_len() const {
-      return event_consumer<K, V>::queue_len();
-    }
-
-    virtual void commit(bool force) {
-      for (auto i : this->upstream_)
-        i->commit(force);
     }
   };
 
@@ -69,35 +70,35 @@ namespace kspp {
       }
     }
 
-
-    virtual std::string simple_name() const {
+    std::string simple_name() const override {
       return "merge";
     }
 
-    virtual bool process_one(int64_t tick) {
+    bool process_one(int64_t tick) override {
       bool processed = false;
       for (auto i : this->upstream_)
         processed = i->process_one(tick);
       return processed;
     }
 
-    virtual int produce(std::shared_ptr<kevent < void, V>> r) {
+    size_t queue_len() const override {
+      return event_consumer<void, V>::queue_len();
+    }
+
+    void commit(bool force) override {
+      for (auto i : this->upstream_)
+        i->commit(force);
+    }
+
+    int produce(std::shared_ptr<kevent < void, V>> r) {
       this->send_to_sinks(r);
       return 0;
     }
 
-    inline int produce(const V &value) {
+    int produce(const V &value) {
       return produce(std::make_shared<kevent<void, V>>(std::make_shared<krecord<void, V>>(value)));
     }
 
-    virtual size_t queue_len() const {
-      return event_consumer<void, V>::queue_len();
-    }
-
-    virtual void commit(bool force) {
-      for (auto i : this->upstream_)
-        i->commit(force);
-    }
   };
 
   template<class K>
@@ -117,33 +118,33 @@ namespace kspp {
       }
     }
 
-    virtual std::string simple_name() const {
+    std::string simple_name() const override {
       return "merge";
     }
 
-    virtual bool process_one(int64_t tick) {
+    bool process_one(int64_t tick) override {
       bool processed = false;
       for (auto i : this->upstream_)
         processed = i->process_one(tick);
       return processed;
     }
 
-    virtual int produce(std::shared_ptr<kevent < K, void>> r) {
+    size_t queue_len() const override {
+      return event_consumer<K, void>::queue_len();
+    }
+
+    void commit(bool force) override {
+      for (auto i : this->upstream_)
+        i->commit(force);
+    }
+
+    int produce(std::shared_ptr<kevent < K, void>> r) {
       this->send_to_sinks(r);
       return 0;
     }
 
-    inline int produce(const K &key) {
+    int produce(const K &key) {
       return produce(std::make_shared<kevent<K, void>>(std::make_shared<krecord<K, void>>(key)));
-    }
-
-    virtual size_t queue_len() const {
-      return event_consumer<K, void>::queue_len();
-    }
-
-    virtual void commit(bool force) {
-      for (auto i : this->upstream_)
-        i->commit(force);
     }
   };
 };

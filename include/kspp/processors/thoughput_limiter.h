@@ -12,27 +12,10 @@ namespace kspp {
   template<class K, class V>
   class thoughput_limiter : public event_consumer<K, V>, public partition_source<K, V> {
   public:
-    thoughput_limiter(topology_base &topology, std::shared_ptr<partition_source < K, V>>
-
-    source,
-    double messages_per_sec
-    )
-    :
-
-    event_consumer<K, V>()
-    , partition_source<K, V>(source
-
-    .
-
-    get(), source
-
-    ->
-
-    partition()
-
-    )
-    ,
-    _source(source)
+    thoughput_limiter(topology_base &topology, std::shared_ptr<partition_source < K, V>> source, double messages_per_sec)
+    : event_consumer<K, V>()
+    , partition_source<K, V>(source.get(), source->partition())
+    , _source(source)
     , _token_bucket(std::make_shared<mem_token_bucket_store < int, size_t>>
     (std::chrono::milliseconds((
     int) (1000.0 / messages_per_sec)), 1)) {
@@ -45,26 +28,25 @@ namespace kspp {
       close();
     }
 
-    virtual std::string simple_name() const {
+    std::string simple_name() const override {
       return "thoughput_limiter";
     }
 
-    virtual void start() {
+    void start() override {
       _source->start();
     }
 
-    virtual void start(int64_t offset) {
+    void start(int64_t offset) override {
       _source->start(offset);
-
       if (offset == -2)
         _token_bucket->clear();
     }
 
-    virtual void close() {
+    void close() override {
       _source->close();
     }
 
-    virtual bool process_one(int64_t tick) {
+    bool process_one(int64_t tick) override {
       if (this->_queue.size() == 0)
         _source->process_one(tick);
 
@@ -80,15 +62,15 @@ namespace kspp {
       return false;
     }
 
-    virtual void commit(bool flush) {
+    void commit(bool flush) override {
       _source->commit(flush);
     }
 
-    virtual bool eof() const {
+    bool eof() const override {
       return _source->eof() && (queue_len() == 0);
     }
 
-    virtual size_t queue_len() const {
+    size_t queue_len() const override {
       return event_consumer < K, V > ::queue_len();
     }
 

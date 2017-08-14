@@ -15,26 +15,10 @@ namespace kspp {
 
     left_join(topology_base &topology, std::shared_ptr<partition_source < K, streamV>>
 
-    stream, std::shared_ptr<materialized_source < K, tableV>> table,
-    value_joiner f
-    )
-    :
-
-    event_consumer<K, streamV>()
-    , partition_source<K, R>(stream
-
-    .
-
-    get(), stream
-
-    ->
-
-    partition()
-
-    )
-    ,
-
-    _stream (stream)
+    stream, std::shared_ptr<materialized_source < K, tableV>> table, value_joiner f)
+    : event_consumer<K, streamV>()
+    , partition_source<K, R>(stream.get(), stream->partition())
+    , _stream (stream)
     , _table(table)
     , _value_joiner(f) {
       _stream->add_sink([this](auto r) {
@@ -47,30 +31,30 @@ namespace kspp {
       close();
     }
 
-    virtual std::string simple_name() const {
+    std::string simple_name() const override {
       return "left_join";
     }
 
-    virtual void start() {
+    void start() override {
       _table->start();
       _stream->start();
     }
 
-    virtual void start(int64_t offset) {
+    void start(int64_t offset) override {
       _table->start();
       _stream->start(offset);
     }
 
-    virtual void close() {
+    void close() override {
       _table->close();
       _stream->close();
     }
 
-    virtual size_t queue_len() const {
+    size_t queue_len() const override {
       return event_consumer < K, streamV > ::queue_len();
     }
 
-    virtual bool process_one(int64_t tick) {
+    bool process_one(int64_t tick) override {
       if (!_table->eof()) {
         // just eat it... no join since we only joins with events????
         if (_table->process_one(tick))
@@ -107,12 +91,12 @@ namespace kspp {
       return true;
     }
 
-    virtual void commit(bool flush) {
+    void commit(bool flush) override {
       _table->commit(flush);
       _stream->commit(flush);
     }
 
-    virtual bool eof() const {
+    bool eof() const override {
       return _table->eof() && _stream->eof();
     }
 
