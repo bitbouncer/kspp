@@ -244,6 +244,25 @@ namespace kspp {
       this->close();
     }
 
+    inline void produce(std::shared_ptr<krecord<void, V>> r, std::function<void(int64_t offset, int32_t ec)> callback) {
+      auto am = std::make_shared<commit_chain::autocommit_marker>(callback);
+      this->_queue.push_back(std::make_shared<kevent<void, V>>(r, am));
+    }
+
+    inline void produce(uint32_t partition_hash, std::shared_ptr<const krecord<void, V>> r, std::function<void(int64_t offset, int32_t ec)> callback) {
+      auto am = std::make_shared<commit_chain::autocommit_marker>(callback);
+      this->_queue.push_back(std::make_shared<kevent<void, V>>(r, am, partition_hash));
+    }
+
+    inline void produce(const V &value, int64_t ts, std::function<void(int64_t offset, int32_t ec)> callback) {
+      produce(std::make_shared<const krecord<void, V>>(value, ts), callback);
+    }
+
+    inline void
+    produce(uint32_t partition_hash, const V &value, int64_t ts, std::function<void(int64_t offset, int32_t ec)> callback) {
+      produce(partition_hash, std::make_shared<const krecord<void, V>>(value, ts), callback);
+    }
+
   protected:
     int handle_event(std::shared_ptr<kevent<void, V>> ev) override {
       static uint32_t s_partition = 0;
@@ -291,7 +310,24 @@ namespace kspp {
       this->close();
     }
 
+    inline void produce(std::shared_ptr<const krecord<K, void>> r, std::function<void(int64_t offset, int32_t ec)> callback) {
+      auto am = std::make_shared<commit_chain::autocommit_marker>(callback);
+      this->_queue.push_back(std::make_shared<kevent<K, void>>(r, am));
+    }
 
+    inline void produce(uint32_t partition_hash, std::shared_ptr<const krecord<K, void>> r, std::function<void(int64_t offset, int32_t ec)> callback) {
+      auto am = std::make_shared<commit_chain::autocommit_marker>(callback);
+      this->_queue.push_back(std::make_shared<kevent<K, void>>(r, am, partition_hash));
+    }
+
+    inline void produce(const K &key, int64_t ts, std::function<void(int64_t offset, int32_t ec)> callback) {
+      produce(std::make_shared<const krecord<K, void>>(key, ts), callback);
+    }
+
+    inline void
+    produce(uint32_t partition_hash, const K &key, int64_t ts, std::function<void(int64_t offset, int32_t ec)> callback) {
+      produce(partition_hash, std::make_shared<const krecord<K, void>>(key, ts), callback);
+    }
 
   protected:
     int handle_event(std::shared_ptr<kevent<K, void>> ev) override {

@@ -236,7 +236,7 @@ file(GLOB KSPP_INCLUDE_FILES
         include/kspp/impl/hash/*.h
         include/kspp/impl/http/*.h
         include/kspp/impl/async/*.h
-        include/beta/*.h
+        include/kspp/beta/*.h
         )
 
 if (ENABLE_AVRO)
