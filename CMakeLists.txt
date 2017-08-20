@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 2.8.11)
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
+
 option(ENABLE_AVRO "enable avro support" OFF)
 option(ENABLE_ROCKSDB "enable rocksdb support" OFF)
 option(ENABLE_ZK "enable zk support" OFF)
@@ -132,26 +134,25 @@ else () #LINUX
     SET(CSI_INCLUDE_PATH ${Boost_INCLUDE_DIR})
 
     if (ENABLE_ROCKSDB)
-        SET(CSI_INCLUDE_PATH ${CSI_INCLUDE_PATH} ${CMAKE_SOURCE_DIR}/../rocksdb/include)
-        SET(CSI_LIBRARY_PATH ${CSI_LIBRARY_PATH} ${CMAKE_SOURCE_DIR}/../rocksdb)
+        find_package(RocksDB REQUIRED)
+        SET(CSI_INCLUDE_PATH ${CSI_INCLUDE_PATH} ${ROCKSDB_INCLUDE_DIRS})
+        #SET(CSI_LIBRARY_PATH ${CSI_LIBRARY_PATH} ${CMAKE_SOURCE_DIR}/../rocksdb)
+        SET(ROCKSDB_LIBS ${ROCKSDB_LIBRARIES} snappy bz2 z)
     endif ()
 
     if (ENABLE_AVRO)
-        find_package(RapidJSON REQUIRED)
-        SET(CSI_INCLUDE_PATH ${RapidJSON_INCLUDE_DIR})
+        find_package(rapidjson REQUIRED)
+        find_package(AvroCPP REQUIRED)
 
         SET(CSI_INCLUDE_PATH
                 ${CSI_INCLUDE_PATH}
-                ${CMAKE_SOURCE_DIR}/../avro/lang/c++/include
-                )
-        SET(CSI_LIBRARY_PATH ${CSI_LIBRARY_PATH} ${CMAKE_SOURCE_DIR}/../avro/lang/c++/build)
+                ${RAPIDJSON_INCLUDEDIR}
+                ${AVRO_INCLUDE_DIRS})
+
         #        SET(AVRO_LIBS avrocpp_s curl)
-        SET(AVRO_LIBS avrocpp curl)
+        SET(AVRO_LIBS ${AVRO_LIBRARIES} curl)
     endif () #AVRO
 
-    if (ENABLE_ROCKSDB)
-        SET(ROCKSDB_LIBS rocksdb snappy bz2 z)
-    endif () #ROCKSDB
 
     if (ENABLE_ZK)
         SET(CSI_INCLUDE_PATH

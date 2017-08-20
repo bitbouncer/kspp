@@ -13,7 +13,7 @@ Platforms: Windows / Linux / Mac
 Install build tools
 ```
 sudo apt-get install -y automake autogen shtool libtool git wget cmake unzip build-essential libboost-all-dev g++ python-dev autotools-dev libicu-dev zlib1g-dev openssl libssl-dev libbz2-dev libsnappy-dev libgoogle-glog-dev libgflags-dev
-sudo apt-get install -y libjansson-dev  libcurl4-openssl-dev liblzma-dev pkg-config
+sudo apt-get install -y libjansson-dev  libcurl4-openssl-dev liblzma-dev pkg-config rapidjson-dev
 ```
 optional build rocksdb 
 ```
@@ -27,8 +27,6 @@ cd ..
 
 optional build avro
 ```
-sudo apt-get install -y libcurl-dev
-
 git clone https://github.com/apache/avro.git
 cd avro
 git checkout release-1.8.2
@@ -41,16 +39,6 @@ make -j8
 sudo make install
 cd ../../../..
 
-git clone https://github.com/miloyip/rapidjson.git
-cd rapidjson
-mkdir build
-cd build
-cmake -DRAPIDJSON_BUILD_EXAMPLES=OFF -DRAPIDJSON_BUILD_DOC=OFF -DRAPIDJSON_BUILD_TESTS=OFF ..
-sudo make install
-cd ../..
-
-git clone https://github.com/bitbouncer/csi-async.git
-git clone https://github.com/bitbouncer/csi-hcl-asio.git
 ```
 
 optional build folly and zookeeper support
