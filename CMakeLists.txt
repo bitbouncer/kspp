@@ -47,8 +47,7 @@ if (WIN32)
                 ${CMAKE_SOURCE_DIR}/../avro/lang/c++/include
                 ${CMAKE_SOURCE_DIR}/../curl/include
                 ${CMAKE_SOURCE_DIR}/../rapidjson/include
-                ${CMAKE_SOURCE_DIR}/../csi-async
-                ${CMAKE_SOURCE_DIR}/../csi-hcl-asio)
+                )
 
         SET(CSI_LIBRARY_PATH
                 ${CSI_LIBRARY_PATH}
@@ -223,6 +222,7 @@ file(GLOB KSPP_INCLUDE_FILES
         include/kspp/kevent.h
         include/kspp/type_name.h
         include/kspp/topology_builder.h
+        include/kspp/schema_registry.h
         include/kspp/utils.h
         include/kspp/metrics/*.h
         include/kspp/sinks/*.h
