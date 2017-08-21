@@ -240,8 +240,10 @@ file(GLOB KSPP_INCLUDE_FILES
         )
 
 if (ENABLE_AVRO)
-    file(GLOB KSPP_AVRO_SRCS src/impl/serdes/avro/*.cpp)
-    file(GLOB KSPP_AVRO_INCLUDE include/kspp/impl/serdes/avro/*.h)
+    file(GLOB KSPP_AVRO_SRCS src/impl/avro/*.cpp)
+    file(GLOB KSPP_AVRO_INCLUDE
+            include/kspp/avro/*.h
+            include/kspp/impl/serdes/avro/*.h)
 endif ()
 
 SET(KSPP_INCLUDE_FILES  ${KSPP_INCLUDE_FILES} ${KSPP_AVRO_INCLUDE} )

@@ -1,5 +1,7 @@
 #include <map>
 #include <regex>
+#include <future>
+#include <memory>
 #include <avro/Schema.hh>
 #include <kspp/impl/http/http_client.h>
 #pragma once

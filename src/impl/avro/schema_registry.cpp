@@ -1,9 +1,7 @@
-#include <kspp/schema_registry.h>
+#include <kspp/avro/schema_registry.h>
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/prettywriter.h>
-#include <future>
-#include <memory>
 #include <glog/logging.h>
 #include <avro/Compiler.hh>
 #include <kspp/impl/async/async.h>

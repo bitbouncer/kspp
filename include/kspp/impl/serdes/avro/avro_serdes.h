@@ -12,7 +12,7 @@
 #include <avro/Generic.hh>
 #include <avro/Specific.hh>
 #include <kspp/impl/serdes/avro/avro_generic.h>
-#include <kspp/schema_registry.h>
+#include <kspp/avro/schema_registry.h>
 #include <glog/logging.h>
 #pragma once
 
