@@ -54,6 +54,9 @@ namespace kspp {
     int wait_for_partition(std::string brokers, std::string topic, int32_t partition) {
       std::string errstr;
       std::unique_ptr<RdKafka::Conf> conf(RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL));
+
+      LOG_IF(FATAL, partition<0);
+
       /*
       * Set configuration properties
       */
@@ -92,7 +95,7 @@ namespace kspp {
           }
         }
         if (!is_available) {
-          LOG(ERROR) << ", waiting for partitions leader to be available";
+          LOG(ERROR) << ", waiting for partitions leader to be available, " << topic << ":" << partition;
           std::this_thread::sleep_for(1s);
         }
       }
@@ -101,6 +104,8 @@ namespace kspp {
     }
 
     int wait_for_partition(RdKafka::Handle *handle, std::string topic, int32_t partition) {
+      LOG_IF(FATAL, partition<0);
+
       std::string errstr;
       // make sure the partition exist before we continue
       RdKafka::Metadata *md = NULL;
@@ -121,7 +126,7 @@ namespace kspp {
           }
         }
         if (!is_available) {
-          LOG(ERROR) << ", waiting for partitions leader to be available";
+          LOG(ERROR) << ", waiting for partitions leader to be available, " << topic << ":" << partition;
           std::this_thread::sleep_for(1s);
         }
       }
@@ -152,7 +157,7 @@ namespace kspp {
           }
         }
         if (nr_of_partitions == 0 || nr_available != nr_of_partitions) {
-          LOG(ERROR) << ", waiting for all partitions leader to be available";
+          LOG(ERROR) << ", waiting for partitions leader to be available, " << topic;
           std::this_thread::sleep_for(1s);
         }
       }

@@ -172,7 +172,6 @@ else () #LINUX
     SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/bin)
     add_definitions(-D_FILE_OFFSET_BITS=64 -D_REENTRANT -DEXTERNAL_LOCKS -DMULTITHREAD)
     add_definitions(-fPIC)
-    #add_definitions(-DBOOST_LOG_DYN_LINK)
     add_definitions(-Wno-deprecated)
     SET(CSI_LIBS kspp ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${BOOST_LIBS} glog crypto ssl)
 endif () #LINUX

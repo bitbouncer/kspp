@@ -87,9 +87,9 @@ namespace kspp {
   template<class K, class V, class CODEC>
   class kafka_source : public kafka_source_base<K, V, CODEC> {
   public:
-    kafka_source(topology_base &topology, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
+    /*kafka_source(topology_base &topology, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
             : kafka_source_base<K, V, CODEC>(topology.brokers(), topic, -1, topology.group_id(),
-                                             topology.max_buffering_time(), codec) {}
+                                             topology.max_buffering_time(), codec) {} */
 
     kafka_source(topology_base &topology, int32_t partition, std::string topic,
                  std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
@@ -140,10 +140,11 @@ namespace kspp {
   template<class V, class CODEC>
   class kafka_source<void, V, CODEC> : public kafka_source_base<void, V, CODEC> {
   public:
-    kafka_source(topology_base &topology, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
+    /*kafka_source(topology_base &topology, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
             : kafka_source_base<void, V, CODEC>(topology.brokers(), topic, -1, topology.group_id(),
                                                 topology.max_buffering_time(), codec) {
     }
+     */
 
     kafka_source(topology_base &topology, int32_t partition, std::string topic,
                  std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
@@ -181,9 +182,11 @@ namespace kspp {
   template<class K, class CODEC>
   class kafka_source<K, void, CODEC> : public kafka_source_base<K, void, CODEC> {
   public:
-    kafka_source(topology_base &topology, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
+    /*
+     * kafka_source(topology_base &topology, std::string topic, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
             : kafka_source_base<K, void, CODEC>(topology.brokers(), topic, -1, topology.group_id(),
                                                 topology.max_buffering_time(), codec) {}
+                                                */
 
     kafka_source(topology_base &topology, int32_t partition, std::string topic,
                  std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())

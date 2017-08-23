@@ -103,10 +103,10 @@ namespace kspp {
           upstream_of_something = true;
       }
       if (!upstream_of_something) {
-        LOG(INFO) << "topology << " << name() << ": adding " << i->simple_name() << " to top";
+        DLOG(INFO) << "topology << " << name() << ": adding " << i->simple_name() << " to top";
         _top_partition_processors.push_back(i);
       } else {
-        LOG(INFO) << "topology << " << name() << ": skipping poll of " << i->simple_name();
+        DLOG(INFO) << "topology << " << name() << ": skipping poll of " << i->simple_name();
       }
     }
     _is_init = true;
