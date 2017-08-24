@@ -1,6 +1,6 @@
 #include <deque>
 #include <memory>
-#include <kspp/impl/async/spinlock.h>
+#include <kspp/utils/spinlock.h>
 #pragma once
 
 namespace kspp {

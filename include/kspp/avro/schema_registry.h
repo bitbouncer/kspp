@@ -3,7 +3,7 @@
 #include <future>
 #include <memory>
 #include <avro/Schema.hh>
-#include <kspp/impl/http/http_client.h>
+#include <kspp/utils/http_client.h>
 #pragma once
 
 namespace kspp {

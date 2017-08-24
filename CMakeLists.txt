@@ -222,9 +222,11 @@ file(GLOB KSPP_INCLUDE_FILES
         include/kspp/type_name.h
         include/kspp/topology_builder.h
         include/kspp/schema_registry.h
+        include/kspp/utils/*
         include/kspp/utils.h
         include/kspp/metrics/*.h
         include/kspp/sinks/*.h
+        include/kspp/sources/*.h
         include/kspp/codecs/*.h
         include/kspp/processors/*.h
         include/kspp/state_stores/*.h
@@ -233,8 +235,6 @@ file(GLOB KSPP_INCLUDE_FILES
         include/kspp/impl/sinks/*.h
         include/kspp/impl/serdes/*.h
         include/kspp/impl/hash/*.h
-        include/kspp/impl/http/*.h
-        include/kspp/impl/async/*.h
         include/kspp/beta/*.h
         )
 

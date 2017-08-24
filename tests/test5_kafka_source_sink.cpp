@@ -5,9 +5,9 @@
 #include <kspp/impl/kafka_utils.h>
 #include <kspp/topology_builder.h>
 #include <kspp/sinks/kafka_sink.h>
-#include <kspp/processors/pipe.h>
+#include <kspp/sources/pipe.h>
 #include <kspp/state_stores/mem_store.h>
-#include <kspp/processors/kafka_source.h>
+#include <kspp/sources/kafka_source.h>
 #include <kspp/processors/ktable.h>
 
 using namespace std::chrono_literals;

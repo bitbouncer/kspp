@@ -3,12 +3,12 @@
 #include <kspp/impl/serdes/binary_serdes.h>
 #include <kspp/impl/serdes/text_serdes.h>
 #include <kspp/topology_builder.h>
+#include <kspp/sources/kafka_source.h>
 #include <kspp/processors/ktable.h>
-#include <kspp/processors/kafka_source.h>
+#include <kspp/processors/join.h>
 #include <kspp/sinks/kafka_sink.h>
 #include <kspp/sinks/kafka_partition_sink.h>
 #include <kspp/sinks/stream_sink.h>
-#include <kspp/processors/join.h>
 #include <kspp/state_stores/mem_store.h>
 #include <kspp/state_stores/mem_windowed_store.h>
 #include <kspp/impl/kafka_utils.h>

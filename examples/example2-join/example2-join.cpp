@@ -2,7 +2,7 @@
 #include <chrono>
 #include <kspp/impl/serdes/binary_serdes.h>
 #include <kspp/topology_builder.h>
-#include <kspp/processors/kafka_source.h>
+#include <kspp/sources/kafka_source.h>
 #include <kspp/processors/ktable.h>
 #include <kspp/processors/join.h>
 #include <kspp/state_stores/mem_store.h>

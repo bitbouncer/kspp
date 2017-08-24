@@ -4,10 +4,10 @@
 #include <regex>
 #include <kspp/impl/serdes/text_serdes.h>
 #include <kspp/topology_builder.h>
-#include <kspp/processors/kafka_source.h>
+#include <kspp/sources/kafka_source.h>
 #include <kspp/processors/filter.h>
 #include <kspp/processors/flat_map.h>
-#include <kspp/processors/pipe.h>
+#include <kspp/sources/pipe.h>
 #include <kspp/sinks/stream_sink.h>
 #include <kspp/sinks/kafka_sink.h>
 #include <kspp/impl/kafka_utils.h>

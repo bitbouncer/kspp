@@ -9,7 +9,7 @@
 #include <kspp/processors/join.h>
 #include <kspp/processors/count.h>
 #include <kspp/processors/flat_map.h>
-#include <kspp/processors/kafka_source.h>
+#include <kspp/sources/kafka_source.h>
 #include <kspp/state_stores/mem_counter_store.h>
 #include <kspp/impl/kafka_utils.h>
 #include <kspp/utils.h>

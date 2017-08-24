@@ -4,7 +4,7 @@
 #include <rapidjson/prettywriter.h>
 #include <glog/logging.h>
 #include <avro/Compiler.hh>
-#include <kspp/impl/async/async.h>
+#include <kspp/utils/async.h>
 
 using namespace std::chrono_literals;
 namespace kspp {
