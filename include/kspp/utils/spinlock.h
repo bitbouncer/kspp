@@ -37,4 +37,4 @@ class spinlock
   spinlock(spinlock const&) = delete;
   spinlock & operator=(spinlock const&) = delete;
 };
-}; // namespace
+} // namespace

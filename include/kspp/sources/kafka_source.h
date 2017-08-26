@@ -216,5 +216,5 @@ namespace kspp {
       return std::make_shared<kevent<K, void>>(record, this->_commit_chain.create(ref->offset()));
     }
   };
-};
+}
 

@@ -94,4 +94,4 @@ namespace kspp {
     metric_counter _in_count;
     metric_evaluator _state_store_count;
   };
-};
+}

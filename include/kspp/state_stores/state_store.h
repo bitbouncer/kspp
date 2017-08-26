@@ -66,4 +66,4 @@ namespace kspp {
 
     sink_function _sink;
   };
-};
+}

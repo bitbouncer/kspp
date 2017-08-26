@@ -46,4 +46,4 @@ namespace kspp {
   inline std::string to_string(const app_info &obj) {
     return obj.identity();
   }
-};
+}

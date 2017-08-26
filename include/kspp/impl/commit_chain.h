@@ -85,4 +85,4 @@ namespace kspp {
     int32_t _first_ec;
     std::shared_ptr<autocommit_marker> _next;
   };
-};
+}

@@ -173,4 +173,4 @@ namespace kspp {
     std::chrono::milliseconds _max_buffering;
     boost::filesystem::path _root_path;
   };
-};
+}

@@ -247,5 +247,5 @@ namespace kspp {
                                  ev->id());
     }
   };
-};
+}
 

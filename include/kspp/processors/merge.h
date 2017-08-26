@@ -147,4 +147,4 @@ namespace kspp {
       return produce(std::make_shared<kevent<K, void>>(std::make_shared<krecord<K, void>>(key)));
     }
   };
-};
+}

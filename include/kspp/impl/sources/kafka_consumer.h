@@ -57,5 +57,5 @@ namespace kspp {
     bool                                    _eof;
     bool                                    _closed;
   };
-};
+}
 

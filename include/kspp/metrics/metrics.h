@@ -123,4 +123,4 @@ namespace kspp {
   private:
     evaluator _f;
   };
-};
+}

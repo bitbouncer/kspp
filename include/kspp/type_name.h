@@ -29,4 +29,4 @@ namespace kspp {
 
   template<>
   struct type_name<boost::uuids::uuid> { static inline const std::string get() { return "uuid"; }};
-}; // namespace
+} // namespace

@@ -679,4 +679,4 @@ namespace kspp {
       return p;
     }
   };
-}; // namespace
+} // namespace
