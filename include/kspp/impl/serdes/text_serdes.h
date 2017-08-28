@@ -148,6 +148,5 @@ template<> inline size_t text_serdes::decode(std::istream& src, boost::uuids::uu
   dst = gen(s);
   return s.size();
 }
-
-};
+}
 
