@@ -12,8 +12,7 @@ Platforms: Windows / Linux / Mac
 
 Install build tools
 ```
-sudo apt-get install -y automake autogen shtool libtool git wget cmake unzip build-essential libboost-all-dev g++ python-dev autotools-dev libicu-dev zlib1g-dev openssl libssl-dev libbz2-dev libsnappy-dev libgoogle-glog-dev libgflags-dev
-sudo apt-get install -y libjansson-dev  libcurl4-openssl-dev liblzma-dev pkg-config rapidjson-dev
+sudo apt-get install -y automake autogen shtool libtool git wget cmake unzip build-essential libboost-all-dev g++ python-dev autotools-dev libicu-dev zlib1g-dev openssl libssl-dev libbz2-dev libsnappy-dev libgoogle-glog-dev libgflags-dev libjansson-dev libcurl4-openssl-dev liblzma-dev pkg-config
 ```
 optional build rocksdb 
 ```
@@ -23,22 +22,6 @@ git checkout v5.6.1
 make -j8 shared_lib
 sudo make install-shared
 cd ..
-```
-
-optional build avro
-```
-git clone https://github.com/apache/avro.git
-cd avro
-git checkout release-1.8.2
-
-cd lang/c++/
-mkdir build
-cd build
-cmake -DCMAKE_BUILD_TYPE=Release ..
-make -j8
-sudo make install
-cd ../../../..
-
 ```
 
 optional build folly and zookeeper support
@@ -65,14 +48,37 @@ cd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
 cd ..
 cd ..
-
-
 ```
 
-
-
-build librdkafka & kspp
+Install a late RapidJson, avro and librdkafka
 ```
+wget -O rapidjson.tar.gz "https://github.com/miloyip/rapidjson/archive/v1.1.0.tar.gz" && \
+   mkdir -p rapidjson && \
+   tar \
+      --extract \
+      --file rapidjson.tar.gz \
+      --directory rapidjson \
+      --strip-components 1 && \
+ cd rapidjson && \
+   mkdir build && \
+   cd build && \
+   cmake -DRAPIDJSON_BUILD_EXAMPLES=OFF -DRAPIDJSON_BUILD_DOC=OFF -DRAPIDJSON_BUILD_TESTS=OFF .. && \
+   sudo make install && \
+ cd ../.. && \
+ rm rapidjson.tar.gz && \
+ rm -rf rapidjson
+
+git clone https://github.com/apache/avro.git
+cd avro
+git checkout release-1.8.2
+cd lang/c++/
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release ..
+make -j8
+sudo make install
+cd ../../../..
+
 git clone https://github.com/edenhill/librdkafka.git
 cd librdkafka
 git checkout v0.11.0
@@ -80,7 +86,10 @@ git checkout v0.11.0
 make -j8
 sudo make install
 cd ..
+```
 
+build kspp
+```
 git clone https://github.com/bitbouncer/kspp.git
 cd kspp
 ./rebuild.sh
