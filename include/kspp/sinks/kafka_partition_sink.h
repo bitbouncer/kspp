@@ -178,5 +178,5 @@ namespace kspp {
                                  ev->event_time(), ev->id());
     }
   };
-};
+}
 

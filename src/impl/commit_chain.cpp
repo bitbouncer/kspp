@@ -61,5 +61,4 @@ void commit_chain::set_handler(std::function <void(int64_t offset, int32_t ec)> 
       }
     }
   }
-
-};
+}

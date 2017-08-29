@@ -285,4 +285,4 @@ namespace kspp {
     //const std::shared_ptr<rocksdb::ReadOptions>   _read_options;
     //const std::shared_ptr<rocksdb::WriteOptions>  _write_options;
   };
-};
+}

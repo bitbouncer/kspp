@@ -223,4 +223,4 @@ int32_t kafka_consumer::commit(int64_t offset, bool flush) {
   // TBD add time based autocommit 
   return ec;
 }
-}; // namespace
+} // namespace

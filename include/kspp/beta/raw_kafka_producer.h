@@ -78,6 +78,6 @@ class raw_kafka_producer
   MyHashPartitionerCb                _default_partitioner;
   MyDeliveryReportCb                 _delivery_report_cb;
 };
-}; // namespace
+} // namespace
 
 

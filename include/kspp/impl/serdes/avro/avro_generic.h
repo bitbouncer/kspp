@@ -41,4 +41,4 @@ class GenericAvro
   std::shared_ptr<const avro::ValidSchema> _valid_schema;
   int32_t                                  _schema_id;
 };
-};
+}

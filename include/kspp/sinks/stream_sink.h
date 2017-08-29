@@ -75,4 +75,4 @@ public:
   std::ostream &_os;
   std::shared_ptr<kspp::text_serdes> _codec;
 };
-};
+}

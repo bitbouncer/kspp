@@ -188,4 +188,4 @@ namespace kspp {
     }
 
   };
-};
+}

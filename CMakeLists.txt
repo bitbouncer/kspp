@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.11)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
-option(ENABLE_AVRO "enable avro support" OFF)
+option(ENABLE_AVRO "enable avro support" ON)
 option(ENABLE_ROCKSDB "enable rocksdb support" OFF)
 option(ENABLE_ZK "enable zk support" OFF)
 option(BUILD_SAMPLES "build examples" OFF)
@@ -12,6 +12,10 @@ set (KSPP_VERSION_MAJOR 1)
 set (KSPP_VERSION_MINOR 0)
 
 set(CMAKE_CXX_STANDARD 14)
+
+#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wpedantic -g -O0")
+#set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wpedantic -O2")
+
 
 # configure a header file to pass some of the CMake settings
 # to the source code
@@ -219,7 +223,7 @@ file(GLOB KSPP_INCLUDE_FILES
         include/kspp/kspp.h
         include/kspp/krecord.h
         include/kspp/kevent.h
-        include/kspp/type_name.h
+        include/kspp/type_name.h-Wpedantic
         include/kspp/topology_builder.h
         include/kspp/schema_registry.h
         include/kspp/utils/*

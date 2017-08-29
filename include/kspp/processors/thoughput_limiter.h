@@ -79,4 +79,4 @@ namespace kspp {
     std::shared_ptr<mem_token_bucket_store < int, size_t>> _token_bucket;
     metric_lag _lag;
   };
-}; // namespace
+} // namespace

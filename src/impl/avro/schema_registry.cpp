@@ -137,12 +137,11 @@ namespace kspp {
           auto request = std::make_shared<kspp::http::request>(kspp::http::GET, uri, headers, 100ms); // move to api
           _http.perform_async(request, [cb, shared_result](std::shared_ptr<kspp::http::request> request) {
             if (request->http_result() >= 200 && request->http_result() < 300) {
-              //BOOST_LOG_TRIVIAL(trace) << "confluent::registry::get_schema on_complete data: " << request->uri() << " got " << request->rx_content_length() << " bytes";
+              LOG(INFO) << "confluent::registry::get_schema: " << request->uri() << " got " << request->rx_content_length() << " bytes, in " << request->milliseconds() << " ms";
               std::string copy_of_bytes(request->rx_content());
               shared_result->schema = std::make_shared<avro::ValidSchema>();
               if (decode_get_schema_request_response((char *) request->rx_content(), request->rx_content_length(),
                                                      shared_result->schema)) { // the json parser overwrites the internal buffer so logging before this line
-                //BOOST_LOG_TRIVIAL(trace) << "confluent::registry::get_schema returned id:" << shared_result->result;
                 cb(0);
                 return;
               } else {
@@ -162,77 +161,5 @@ namespace kspp {
         get_cb(*shared_result);
       });
     }
-
-//void registry::get_schema_by_id(int32_t id, get_callback cb) {
-//  //we should check that we don't have it in cache and post reply directy in trhat case. TBD
-
-//  std::string uri = "http://" + _address + "/schemas/ids/" + std::to_string(id);
-
-//  _http.perform_async(
-//    csi::create_http_request(csi::http::GET, uri, { "Content-Type: application/vnd.schemaregistry.v1+json" },
-//    std::chrono::milliseconds(1000)),
-//    [this, id, cb](csi::http_client::call_context::handle state) {
-//    if(state->http_result() >= 200 && state->http_result() < 300) {
-//      BOOST_LOG_TRIVIAL(debug) << "confluent::registry get_schema_by_id: " << state->uri() << " -> " << to_string(state->rx_content());
-//      get_schema_by_id_resp resp;
-//      if(csi::json_spirit_decode(state->rx_content(), resp)) {
-//        //mutex??
-//        std::map<int32_t, boost::shared_ptr<avro::ValidSchema>>::const_iterator item = _registry.find(id);
-//        if(item != _registry.end()) {
-//          cb(state, item->second); // return the one we already have - kill the new one...
-//          return;
-//        }
-//        std::pair<int32_t, boost::shared_ptr<avro::ValidSchema>> x(id, resp._schema);
-//        _registry.insert(x);
-//        cb(state, resp._schema);
-//        return;
-//      } else {
-//        BOOST_LOG_TRIVIAL(error) << "confluent::registry::get_schema_by_id return value unexpected: " << to_string(state->rx_content());
-//        cb(state, NULL); // fix a bad state here!!!
-//        return;
-//      }
-//    } else {
-//      BOOST_LOG_TRIVIAL(error) << "confluent::registry get_schema_by_id uri: " << state->uri() << " HTTPRES = " << state->http_result();
-//    }
-//    cb(state, NULL);
-//  });
-//}
-
-//std::shared_ptr<avro::ValidSchema> registry::get_schema_by_id(int32_t id) {
-//  //lookup in cache first
-//  //mutex???
-//  std::map<int32_t, boost::shared_ptr<avro::ValidSchema>>::const_iterator item = _registry.find(id);
-//  if(item != _registry.end())
-//    return item->second;
-
-//  //std::pair<std::shared_ptr<csi::http_client::call_context>, boost::shared_ptr<avro::ValidSchema>>
-//  std::promise<std::pair<std::shared_ptr<csi::http_client::call_context>, boost::shared_ptr<avro::ValidSchema>>> p;
-//  std::future<std::pair<std::shared_ptr<csi::http_client::call_context>, boost::shared_ptr<avro::ValidSchema>>>  f = p.get_future();
-//  get_schema_by_id(id, [&p](std::shared_ptr<csi::http_client::call_context> call_context, std::shared_ptr<avro::ValidSchema> schema) {
-//    std::pair<std::shared_ptr<csi::http_client::call_context>, std::shared_ptr<avro::ValidSchema>> res(call_context, schema);
-//    p.set_value(res);
-//  });
-//  f.wait();
-//  std::pair<std::shared_ptr<csi::http_client::call_context>, std::shared_ptr<avro::ValidSchema>> res = f.get();
-//  int32_t http_res = res.first->http_result();
-//  if(http_res >= 200 && http_res < 300) {
-//    //add to in cache first
-//    return res.second;
-//  }
-//  //exception???
-//  return NULL;
-//}
-
-
-//int32_t registry::get_cached_schema(boost::shared_ptr<avro::ValidSchema> p)
-//{
-// //lookup in cache first
-// //mutex???
-// std::map<int32_t, boost::shared_ptr<avro::ValidSchema>>::const_iterator item = _registry.find(id);
-// if (item != _registry.end())
-//	 return item->second;
-
-//}
-
-  }; // namespace
-}; // kspp
+  } // namespace
+} // kspp

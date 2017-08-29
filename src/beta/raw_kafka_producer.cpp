@@ -55,7 +55,7 @@ void raw_kafka_producer::MyDeliveryReportCb::dr_cb(RdKafka::Message& message) {
     _status = message.err();
   }
   delete extra;
-};
+}
 
 static void set_config(RdKafka::Conf* conf, std::string key, std::string value) {
   std::string errstr;
@@ -229,4 +229,4 @@ int raw_kafka_producer::produce(uint32_t partition_hash, memory_management_mode 
   _msg_bytes += (valuesz + keysz);
   return 0;
 }
-}; // namespace
+} // namespace

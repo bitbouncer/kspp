@@ -131,5 +131,5 @@ template<> inline size_t binary_serdes::decode(std::istream& src, boost::uuids::
   src.read((char*) dst.data, 16);
   return src.good() ? 16 : 0;
 }
-};
+}
 

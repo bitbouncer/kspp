@@ -216,5 +216,5 @@ namespace kspp {
       scheduling_t _scheduling;
       end_condition_t _end_condition;
     };
-  };
-};
+  }
+}

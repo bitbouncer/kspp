@@ -875,5 +875,5 @@ default:                                   return boost::lexical_cast<std::strin
       std::string _user_agent_header;
       bool _closing;
     };
-  }; // namespace
-}; // namespace 
+  } // namespace
+} // namespace

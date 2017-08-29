@@ -157,7 +157,7 @@ namespace kspp {
     dst << s;
     return s.size();
   }
-}; // namespace kspp
+} // namespace kspp
 
 template<class T>
 std::string ksource_to_string(const T &ksource) {

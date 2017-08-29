@@ -243,6 +243,5 @@ namespace kspp {
                                << top_of_topology;
     return top_of_topology;
   }
-
-};
+}
 

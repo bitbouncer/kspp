@@ -85,4 +85,4 @@ namespace kspp {
       reporter->add_metrics(i);
     return reporter;
   }
-};
+}

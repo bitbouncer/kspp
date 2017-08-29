@@ -208,5 +208,4 @@ namespace kspp {
     std::map<K, std::shared_ptr<bucket>> _buckets;
     int64_t _current_offset;
   };
-
-};
+}

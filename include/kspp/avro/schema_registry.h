@@ -72,7 +72,7 @@ namespace kspp {
       std::vector<std::string> _base_urls;
       std::map<int32_t, boost::shared_ptr<const avro::ValidSchema>> _registry;
     };
-  };
+  }
 
 
   class avro_schema_registry
@@ -138,4 +138,4 @@ namespace kspp {
     std::shared_ptr<confluent::registry>                  _registry;
     std::map<int32_t, std::shared_ptr<const avro::ValidSchema>> _cache;
   };
-}; // kspp
+} // kspp
