@@ -4,17 +4,17 @@
 using namespace std::chrono_literals;
 
 namespace kspp {
-  topology_base::topology_base(std::shared_ptr<app_info> ai,
+  topology::topology(std::shared_ptr<app_info> ai,
                                std::string topology_id,
                                std::string brokers,
-                               std::chrono::milliseconds max_buffering,
-                               boost::filesystem::path root_path)
+                               std::chrono::milliseconds max_buffering
+                               )
           : _app_info(ai), _is_init(false), _topology_id(topology_id), _brokers(brokers),
-            _max_buffering_time(max_buffering), _root_path(root_path), _next_gc_ts(0) {
+            _max_buffering_time(max_buffering), _next_gc_ts(0) {
     LOG(INFO) << "topology created, name:" << name();
   }
 
-  topology_base::~topology_base() {
+  topology::~topology() {
     LOG(INFO) << "topology, name:" << name() << " terminating";
     _top_partition_processors.clear();
     _partition_processors.clear();
@@ -22,27 +22,27 @@ namespace kspp {
     LOG(INFO) << "topology, name:" << name() << " terminated";
   }
 
-  std::string topology_base::app_id() const {
+  std::string topology::app_id() const {
     return _app_info->identity();
   }
 
-  std::string topology_base::group_id() const {
+  std::string topology::group_id() const {
     return _app_info->group_id();
   }
 
-  std::string topology_base::topology_id() const {
+  std::string topology::topology_id() const {
     return _topology_id;
   }
 
-  std::string topology_base::brokers() const {
+  std::string topology::brokers() const {
     return _brokers;
   }
 
-  std::chrono::milliseconds topology_base::max_buffering_time() const {
+  std::chrono::milliseconds topology::max_buffering_time() const {
     return _max_buffering_time;
   }
 
-  std::string topology_base::name() const {
+  std::string topology::name() const {
     return "[" + _app_info->identity() + "]" + _topology_id;
   }
 
@@ -57,7 +57,7 @@ namespace kspp {
     return s4;
   }
 
-  void topology_base::init_metrics() {
+  void topology::init_metrics() {
     for (auto i : _partition_processors) {
       for (auto j : i->get_metrics()) {
         std::string metrics_tags = "depth=" + std::to_string(i->depth())
@@ -83,7 +83,7 @@ namespace kspp {
     }
   }
 
-  void topology_base::for_each_metrics(std::function<void(kspp::metric &)> f) {
+  void topology::for_each_metrics(std::function<void(kspp::metric &)> f) {
     for (auto i : _partition_processors)
       for (auto j : i->get_metrics())
         f(*j);
@@ -93,7 +93,7 @@ namespace kspp {
         f(*j);
   }
 
-  void topology_base::init() {
+  void topology::init() {
     _top_partition_processors.clear();
 
     for (auto i : _partition_processors) {
@@ -112,7 +112,7 @@ namespace kspp {
     _is_init = true;
   }
 
-  bool topology_base::eof() {
+  bool topology::eof() {
     for (auto &&i : _top_partition_processors) {
       if (!i->eof())
         return false;
@@ -120,7 +120,7 @@ namespace kspp {
     return true;
   }
 
-  int topology_base::process_one() {
+  int topology::process_one() {
     // this needs to be done to to trigger callbacks
     for (auto i : _sinks)
       i->poll(0);
@@ -160,14 +160,14 @@ namespace kspp {
     return res;
   }
 
-  void topology_base::close() {
+  void topology::close() {
     for (auto i : _partition_processors)
       i->close();
     for (auto i : _sinks)
       i->close();
   }
 
-  void topology_base::start() {
+  void topology::start() {
     if (!_is_init)
       init();
     for (auto &&i : _top_partition_processors)
@@ -176,7 +176,7 @@ namespace kspp {
     //  i->start();
   }
 
-  void topology_base::start(int offset) {
+  void topology::start(int offset) {
     if (!_is_init)
       init();
     for (auto &&i : _top_partition_processors)
@@ -185,7 +185,7 @@ namespace kspp {
     //  i->start(offset);
   }
 
-  void topology_base::commit(bool force) {
+  void topology::commit(bool force) {
     if (!_is_init)
       init();
     for (auto &&i : _top_partition_processors)
@@ -197,7 +197,7 @@ namespace kspp {
 // we might have stuff in sinks that needs to be flushed before processing in following steps can finish
 // TBD how to capture this??
 // for now we start with a flush of the sinks but that is not enough
-  void topology_base::flush() {
+  void topology::flush() {
     while (true) {
       for (auto i : _sinks)
         i->flush();
@@ -228,18 +228,31 @@ namespace kspp {
     }
   }
 
-  boost::filesystem::path topology_base::get_storage_path() {
+  void topology::set_storage_path(boost::filesystem::path root_path) {
+    _root_path = root_path;
+    if (!boost::filesystem::exists(root_path)) {
+      auto res = boost::filesystem::create_directories(_root_path);
+      // seems to be a bug in boost - always return false...
+      if (!boost::filesystem::exists(root_path))
+        LOG(FATAL) << "topology " << _app_info->identity() << ": failed to create storage path at : " << root_path;
+    }
+  }
+
+  boost::filesystem::path topology::get_storage_path() {
+    // if no storage path has been set - let an eventual state store handle this problem
+    // only disk based one need this and we pass storage path to all state stores (mem ones also)
+    if (_root_path.size()==0)
+      return _root_path;
+
     boost::filesystem::path top_of_topology(_root_path);
     top_of_topology /= sanitize_filename(_app_info->identity());
     top_of_topology /= sanitize_filename(_topology_id);
     DLOG(INFO) << "topology " << _app_info->identity() << ": creating local storage at " << top_of_topology;
     auto res = boost::filesystem::create_directories(top_of_topology);
     // seems to be a bug in boost - always return false...
-    //if (!res)
-    //  BOOST_LOG_TRIVIAL(error) << "topology " << _app_info->identity() << ": failed to create local storage at " << top_of_topology;
     // so we check if the directory exists after instead...
     if (!boost::filesystem::exists(top_of_topology))
-      LOG(ERROR) << "topology " << _app_info->identity() << ": failed to create local storage at "
+      LOG(FATAL) << "topology " << _app_info->identity() << ": failed to create local storage at "
                                << top_of_topology;
     return top_of_topology;
   }

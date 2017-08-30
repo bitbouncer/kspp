@@ -127,12 +127,12 @@ namespace kspp {
 
     using partitioner = typename kafka_partitioner_base<K>::partitioner;
 
-    kafka_sink(topology_base &topology, std::string topic, partitioner p,
+    kafka_sink(topology &topology, std::string topic, partitioner p,
                      std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
             : kafka_sink_base<K, V, CODEC>(topology.brokers(), topic, topology.max_buffering_time(), p, codec) {
     }
 
-    kafka_sink(topology_base &topology, std::string topic,
+    kafka_sink(topology &topology, std::string topic,
                      std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
             : kafka_sink_base<K, V, CODEC>(topology.brokers(), topic, topology.max_buffering_time(), codec) {
     }
@@ -176,7 +176,7 @@ namespace kspp {
   template<class V, class CODEC>
   class kafka_sink<void, V, CODEC> : public kafka_sink_base<void, V, CODEC> {
   public:
-    kafka_sink(topology_base &topology, std::string topic,
+    kafka_sink(topology &topology, std::string topic,
                      std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
             : kafka_sink_base<void, V, CODEC>(topology.brokers(), topic, topology.max_buffering_time(), codec) {
     }
@@ -212,12 +212,12 @@ namespace kspp {
   public:
     using partitioner = typename kafka_partitioner_base<K>::partitioner;
 
-    kafka_sink(topology_base &topology, std::string topic, partitioner p,
+    kafka_sink(topology &topology, std::string topic, partitioner p,
                      std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
             : kafka_sink_base<K, void, CODEC>(topology.brokers(), topic, topology.max_buffering_time(), p, codec) {
     }
 
-    kafka_sink(topology_base &topology, std::string topic,
+    kafka_sink(topology &topology, std::string topic,
                      std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
             : kafka_sink_base<K, void, CODEC>(topology.brokers(), topic, topology.max_buffering_time(), codec) {
     }

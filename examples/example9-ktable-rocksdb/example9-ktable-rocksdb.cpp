@@ -45,6 +45,7 @@ int main(int argc, char **argv) {
       auto partition_list = kspp::get_partition_list(partitions);
 
       auto topology = builder.create_topology();
+      topology->set_storage_path(kspp::utils::default_statestore_directory());
       auto sources = topology->create_processors<kspp::kafka_source<void, std::string, kspp::text_serdes>>(
               partition_list, TOPIC_NAME);
 

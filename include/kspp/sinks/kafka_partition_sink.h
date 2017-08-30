@@ -86,10 +86,13 @@ namespace kspp {
   template<class K, class V, class CODEC>
   class kafka_partition_sink : public kafka_partition_sink_base<K, V, CODEC> {
   public:
-    kafka_partition_sink(topology_base &topology, int32_t partition, std::string topic,
+    kafka_partition_sink(topology &t, int32_t partition, std::string topic,
                          std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : kafka_partition_sink_base<K, V, CODEC>(topology.brokers(), topic, partition,
-                                                     topology.max_buffering_time(), codec) {
+            : kafka_partition_sink_base<K, V, CODEC>(t.brokers(),
+                                                     topic,
+                                                     partition,
+                                                     t.max_buffering_time(),
+                                                     codec) {
     }
 
     ~kafka_partition_sink() override {
@@ -123,10 +126,13 @@ namespace kspp {
   template<class V, class CODEC>
   class kafka_partition_sink<void, V, CODEC> : public kafka_partition_sink_base<void, V, CODEC> {
   public:
-    kafka_partition_sink(topology_base &topology, int32_t partition, std::string topic,
+    kafka_partition_sink(topology &t, int32_t partition, std::string topic,
                          std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : kafka_partition_sink_base<void, V, CODEC>(topology.brokers(), topic, partition,
-                                                        topology.max_buffering_time(), codec) {
+            : kafka_partition_sink_base<void, V, CODEC>(t.brokers(),
+                                                        topic,
+                                                        partition,
+                                                        t.max_buffering_time(),
+                                                        codec) {
     }
 
     ~kafka_partition_sink() override {
@@ -156,10 +162,13 @@ namespace kspp {
   template<class K, class CODEC>
   class kafka_partition_sink<K, void, CODEC> : public kafka_partition_sink_base<K, void, CODEC> {
   public:
-    kafka_partition_sink(topology_base &topology, int32_t partition, std::string topic,
+    kafka_partition_sink(topology &t, int32_t partition, std::string topic,
                          std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : kafka_partition_sink_base<K, void, CODEC>(topology.brokers(), topic, partition,
-                                                        topology.max_buffering_time(), codec) {
+            : kafka_partition_sink_base<K, void, CODEC>(t.brokers(),
+                                                        topic,
+                                                        partition,
+                                                        t.max_buffering_time(),
+                                                        codec) {
     }
 
     ~kafka_partition_sink() override {

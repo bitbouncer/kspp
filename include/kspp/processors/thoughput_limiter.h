@@ -12,7 +12,7 @@ namespace kspp {
   template<class K, class V>
   class thoughput_limiter : public event_consumer<K, V>, public partition_source<K, V> {
   public:
-    thoughput_limiter(topology_base &topology, std::shared_ptr<partition_source < K, V>> source, double messages_per_sec)
+    thoughput_limiter(topology &t, std::shared_ptr<partition_source < K, V>> source, double messages_per_sec)
     : event_consumer<K, V>()
     , partition_source<K, V>(source.get(), source->partition())
     , _source(source)

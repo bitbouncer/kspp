@@ -6,7 +6,7 @@ namespace kspp {
   public:
     typedef std::function<bool(std::shared_ptr<const krecord <K, V>> record)> predicate; // return true to keep
 
-    filter(topology_base &topology, std::shared_ptr<partition_source < K, V>> source, predicate f)
+    filter(topology &t, std::shared_ptr<partition_source < K, V>> source, predicate f)
     : event_consumer<K, V>()
     , partition_source<K, V>(source.get(), source->partition())
     , _source(source)

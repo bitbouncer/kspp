@@ -120,6 +120,7 @@ namespace kspp {
             : _storage_path(storage_path), _offset_storage_path(storage_path), _slot_width(slot_width.count()),
               _nr_of_slots(nr_of_slots), _codec(codec), _current_offset(-1), _last_comitted_offset(-1),
               _last_flushed_offset(-1), _oldest_kept_slot(-1) {
+      LOG_IF(FATAL, storage_path.size()==0);
       boost::filesystem::create_directories(boost::filesystem::path(storage_path));
       _offset_storage_path /= "kspp_offset.bin";
 
@@ -202,7 +203,7 @@ namespace kspp {
           rocksdb::DB *tmp = nullptr;
           auto s = rocksdb::DB::Open(options, path.generic_string(), &tmp);
           if (!s.ok()) {
-            LOG(ERROR) << "rocksdb_windowed_store, failed to open rocks db, path:"
+            LOG(FATAL) << "rocksdb_windowed_store, failed to open rocks db, path:"
                                      << path.generic_string();
 
             throw std::runtime_error(

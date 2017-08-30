@@ -9,18 +9,18 @@ namespace kspp {
     typedef V value_type;
     typedef kspp::kevent<K, V> record_type;
 
-    pipe(topology_base &topology, int32_t partition)
+    pipe(topology &t, int32_t partition)
             : event_consumer<K, V>(), partition_source<K, V>(nullptr, partition) {
     }
 
-    pipe(topology_base &topology, std::shared_ptr<kspp::partition_source<K, V>> upstream)
+    pipe(topology &topology, std::shared_ptr<kspp::partition_source<K, V>> upstream)
             : event_consumer<K, V>(), partition_source<K, V>(upstream.get(), upstream->partition()) {
       upstream->add_sink([this](auto r) {
         this->send_to_sinks(r);
       });
     }
 
-    pipe(topology_base &topology, std::vector<std::shared_ptr<kspp::partition_source<K, V>>> upstream, int32_t partition)
+    pipe(topology &t, std::vector<std::shared_ptr<kspp::partition_source<K, V>>> upstream, int32_t partition)
             : event_consumer<K, V>()
               , partition_source<K, V>(nullptr, partition) {
       for (auto i : upstream) {
@@ -72,11 +72,11 @@ namespace kspp {
     typedef V value_type;
     typedef kspp::kevent<void, V> record_type;
 
-    pipe(topology_base &topology, int32_t partition)
+    pipe(topology &t, int32_t partition)
             : event_consumer<void, V>(), partition_source<void, V>(nullptr, partition) {
     }
 
-    pipe(topology_base &topology, std::shared_ptr<kspp::partition_source<void, V>> upstream)
+    pipe(topology &t, std::shared_ptr<kspp::partition_source<void, V>> upstream)
             : event_consumer<void, V>(), partition_source<void, V>(upstream.get(), upstream->partition()) {
       if (upstream)
         upstream->add_sink([this](auto r) {
@@ -84,7 +84,7 @@ namespace kspp {
         });
     }
 
-    pipe(topology_base &topology, std::vector<std::shared_ptr<kspp::partition_source<void, V>>> upstream, int32_t partition)
+    pipe(topology &t, std::vector<std::shared_ptr<kspp::partition_source<void, V>>> upstream, int32_t partition)
             : event_consumer<void, V>()
               , partition_source<void, V>(nullptr, partition) {
       for (auto i : upstream) {
@@ -134,11 +134,11 @@ namespace kspp {
     typedef void value_type;
     typedef kspp::kevent<K, void> record_type;
 
-    pipe(topology_base &topology, int32_t partition)
+    pipe(topology &t, int32_t partition)
             : event_consumer<K, void>(), partition_source<K, void>(nullptr, partition) {
     }
 
-    pipe(topology_base &topology, std::shared_ptr<kspp::partition_source<K, void>> upstream)
+    pipe(topology &t, std::shared_ptr<kspp::partition_source<K, void>> upstream)
             : event_consumer<K, void>(), partition_source<K, void>(upstream.get(), upstream->partition()) {
       if (upstream)
         upstream->add_sink([this](std::shared_ptr<kevent<K, void>> r) {
@@ -146,7 +146,7 @@ namespace kspp {
         });
     }
 
-    pipe(topology_base &topology, std::vector<std::shared_ptr<kspp::partition_source<K, void>>> upstream, int32_t partition)
+    pipe(topology &t, std::vector<std::shared_ptr<kspp::partition_source<K, void>>> upstream, int32_t partition)
             : event_consumer<K, void>()
               , partition_source<K, void>(nullptr, partition) {
       for (auto i : upstream) {

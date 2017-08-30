@@ -69,7 +69,7 @@ namespace kspp {
         auto tmp_value = std::make_shared<V>();
         size_t consumed = _codec->decode(value.data() + sizeof(int64_t), actual_sz, *tmp_value);
         if (consumed != actual_sz) {
-          LOG(ERROR) << ", decode payload failed, consumed:" << consumed                                   << ", actual sz:" << actual_sz;
+          LOG(ERROR) << "rocksdb_store decode payload failed, consumed:" << consumed << ", actual sz:" << actual_sz;
           return nullptr;
         }
         return std::make_shared<krecord<K, V>>(tmp_key, tmp_value, timestamp);
@@ -99,6 +99,7 @@ namespace kspp {
     rocksdb_store(boost::filesystem::path storage_path, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
             : _offset_storage_path(storage_path), _codec(codec), _current_offset(-1), _last_comitted_offset(-1),
               _last_flushed_offset(-1) {
+      LOG_IF(FATAL, storage_path.size()==0);
       boost::filesystem::create_directories(boost::filesystem::path(storage_path));
       _offset_storage_path /= "kspp_offset.bin";
       rocksdb::Options options;
@@ -107,11 +108,10 @@ namespace kspp {
       auto s = rocksdb::DB::Open(options, storage_path.generic_string(), &tmp);
       _db.reset(tmp);
       if (!s.ok()) {
-        LOG(ERROR) << "rocksdb_store, failed to open rocks db, path:"                              << storage_path.generic_string();
+        LOG(FATAL) << "rocksdb_store, failed to open rocks db, path:" << storage_path.generic_string();
         throw std::runtime_error(
                 std::string("rocksdb_store, failed to open rocks db, path:") + storage_path.generic_string());
       }
-      assert(s.ok());
 
       if (boost::filesystem::exists(_offset_storage_path)) {
         std::ifstream is(_offset_storage_path.generic_string(), std::ios::binary);
@@ -191,8 +191,7 @@ namespace kspp {
       auto tmp_value = std::make_shared<V>();
       size_t consumed = _codec->decode(payload.data() + sizeof(int64_t), actual_sz, *tmp_value);
       if (consumed != actual_sz) {
-        LOG(ERROR) << BOOST_CURRENT_FUNCTION << ", decode payload failed, consumed:" << consumed
-                                 << ", actual sz:" << actual_sz;
+        LOG(ERROR) << "rockdb_store, decode payload failed, consumed:" << consumed << ", actual sz:" << actual_sz;
         return nullptr;
       }
       return std::make_shared<krecord<K, V>>(key, tmp_value, timestamp);

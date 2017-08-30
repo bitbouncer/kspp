@@ -13,7 +13,7 @@ namespace kspp {
   public:
     typedef std::function<void(const K &key, const streamV &left, const tableV &right, R &result)> value_joiner;
 
-    left_join(topology_base &topology, std::shared_ptr<partition_source < K, streamV>>
+    left_join(topology &t, std::shared_ptr<partition_source < K, streamV>>
 
     stream, std::shared_ptr<materialized_source < K, tableV>> table, value_joiner f)
     : event_consumer<K, streamV>()

@@ -9,8 +9,8 @@ namespace kspp {
   template<class K, class V, class FOREIGN_KEY, class CODEC>
   class repartition_by_foreign_key : public event_consumer<K, V>, public partition_processor {
   public:
-    repartition_by_foreign_key(topology_base &topology,
-                               std::shared_ptr<partition_source < K, V>> source,
+    repartition_by_foreign_key(topology &t,
+        std::shared_ptr<partition_source < K, V>> source,
     std::shared_ptr<materialized_source < K, FOREIGN_KEY>> routing_table,
     std::shared_ptr<topic_sink < K, V>> topic_sink,
     std::shared_ptr<CODEC> repartition_codec = std::make_shared<CODEC>())

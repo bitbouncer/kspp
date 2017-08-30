@@ -9,7 +9,7 @@ namespace kspp {
   public:
     typedef std::function<void(std::shared_ptr<const krecord <SK, SV>> record, flat_map *self)> extractor;
 
-    flat_map(topology_base &topology, std::shared_ptr<partition_source < SK, SV>> source, extractor f)
+    flat_map(topology &t, std::shared_ptr<partition_source < SK, SV>> source, extractor f)
     : event_consumer<SK, SV>()
     , partition_source<RK, RV>(source.get(), source->partition())
     , _source(source)

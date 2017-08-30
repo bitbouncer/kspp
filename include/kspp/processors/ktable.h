@@ -9,9 +9,9 @@ namespace kspp {
   class ktable : public event_consumer<K, V>, public materialized_source<K, V> {
   public:
     template<typename... Args>
-    ktable(topology_base &topology, std::shared_ptr<kspp::partition_source<K, V>> source, Args... args)
+    ktable(topology &t, std::shared_ptr<kspp::partition_source<K, V>> source, Args... args)
             : event_consumer<K, V>(), materialized_source<K, V>(source.get(), source->partition()), _source(source),
-              _state_store(this->get_storage_path(topology.get_storage_path()), args...),
+              _state_store(this->get_storage_path(t.get_storage_path()), args...),
               _in_count("in_count"),
               _state_store_count("state_store_count", [this]() { return _state_store.aprox_size(); }) {
       _source->add_sink([this](auto ev) {

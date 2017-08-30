@@ -18,7 +18,6 @@
 #include <kspp/app_info.h>
 #include <kspp/impl/queue.h>
 #include <kspp/impl/hash/murmurhash2.h>
-
 #pragma once
 namespace kspp {
 
@@ -28,6 +27,10 @@ namespace kspp {
   std::vector<int> parse_partition_list(std::string s);
 
   std::vector<int> get_partition_list(int32_t nr_of_partitions);
+
+
+  class topology;
+
 
   class processor {
   public:
@@ -142,7 +145,7 @@ namespace kspp {
     virtual void close() {
       for(auto i : upstream_){
         i->close();
-       }
+      }
       upstream_.clear();
     }
 
@@ -188,16 +191,16 @@ namespace kspp {
           return true;
       }
       return false;
-     }
+    }
 
   protected:
     partition_processor(partition_processor *upstream, int32_t partition)
-            : _partition(partition) {
+        : _partition(partition) {
       if (upstream)
         upstream_.push_back(upstream);
     }
 
-   void add_upstream(partition_processor* p){
+    void add_upstream(partition_processor* p){
       upstream_.push_back(p);
     }
 
@@ -205,65 +208,7 @@ namespace kspp {
     const int32_t _partition;
   };
 
-  class topology_base {
-  protected:
-    topology_base(std::shared_ptr<app_info> ai,
-                  std::string topology_id,
-                  std::string brokers,
-                  std::chrono::milliseconds max_buffering,
-                  boost::filesystem::path root_path);
 
-    virtual ~topology_base();
-
-  public:
-    std::string app_id() const;
-
-    std::string group_id() const;
-
-    std::string topology_id() const;
-
-    std::string brokers() const;
-
-    std::string name() const;
-
-    std::chrono::milliseconds max_buffering_time() const;
-
-    void init_metrics();
-
-    void for_each_metrics(std::function<void(kspp::metric &)> f);
-
-    void init();
-
-    bool eof();
-
-    int process_one();
-
-    void close();
-
-    void start();
-
-    void start(int offset);
-
-    void commit(bool force);
-
-    void flush();
-
-    boost::filesystem::path get_storage_path();
-
-  protected:
-    bool _is_init;
-    std::shared_ptr<app_info> _app_info;
-    std::string _topology_id;
-    std::string _brokers;
-    std::chrono::milliseconds _max_buffering_time;
-    boost::filesystem::path _root_path;
-    std::vector<std::shared_ptr<partition_processor>> _partition_processors;
-    std::vector<std::shared_ptr<generic_sink>> _sinks;
-    std::vector<std::shared_ptr<partition_processor>> _top_partition_processors;
-    int64_t _next_gc_ts;
-    //next sink queue check loop count;
-    //last sink queue size
-  };
 
   template<class K, class V>
   class event_consumer {
@@ -308,7 +253,7 @@ namespace kspp {
 
   protected:
     partition_sink(int32_t partition)
-            : event_consumer<K, V>(), partition_processor(nullptr, partition) {}
+        : event_consumer<K, V>(), partition_processor(nullptr, partition) {}
 
     //kspp::event_queue<kevent<K, V>> _queue;
   };
@@ -343,7 +288,7 @@ namespace kspp {
 
   protected:
     partition_sink(int32_t partition)
-            : event_consumer<void, V>(), partition_processor(nullptr, partition) {
+        : event_consumer<void, V>(), partition_processor(nullptr, partition) {
     }
 
     //kspp::event_queue<kevent<void, V>> _queue;
@@ -379,7 +324,7 @@ namespace kspp {
 
   protected:
     explicit partition_sink(int32_t partition)
-            : event_consumer<K, void>(), partition_processor(nullptr, partition) {}
+        : event_consumer<K, void>(), partition_processor(nullptr, partition) {}
   };
 
   template<class PK, class CODEC>
@@ -561,7 +506,7 @@ namespace kspp {
     typedef V value_type;
 
     partition_source(partition_processor *upstream, int32_t partition)
-            : partition_processor(upstream, partition), _out_messages("out_message_count") {
+        : partition_processor(upstream, partition), _out_messages("out_message_count") {
       this->add_metric(&_out_messages);
     }
 
@@ -635,11 +580,11 @@ namespace kspp {
   class materialized_source : public partition_source<K, V> {
   public:
     class iterator : public std::iterator<
-            std::forward_iterator_tag,            // iterator_category
-            std::shared_ptr<const krecord<K, V>>, // value_type
-            long,                                 // difference_type
-            std::shared_ptr<const krecord<K, V>> *,// pointer
-            std::shared_ptr<const krecord<K, V>>  // reference
+        std::forward_iterator_tag,            // iterator_category
+        std::shared_ptr<const krecord<K, V>>, // value_type
+        long,                                 // difference_type
+        std::shared_ptr<const krecord<K, V>> *,// pointer
+        std::shared_ptr<const krecord<K, V>>  // reference
     > {
       std::shared_ptr<kmaterialized_source_iterator_impl<K, V>> _impl;
     public:
@@ -670,7 +615,7 @@ namespace kspp {
     virtual std::shared_ptr<const krecord<K, V>> get(const K &key) const = 0;
 
     materialized_source(partition_processor *upstream, int32_t partition)
-            : partition_source<K, V>(upstream, partition) {
+        : partition_source<K, V>(upstream, partition) {
     }
 
     virtual boost::filesystem::path get_storage_path(boost::filesystem::path storage_path) {
@@ -678,5 +623,313 @@ namespace kspp {
       p /= sanitize_filename(this->simple_name() + this->record_type_name() + "#" + std::to_string(this->partition()));
       return p;
     }
+  };
+
+
+
+
+  template<class K, class V>
+  class merge : public event_consumer<K, V>, public partition_source<K, V> {
+  public:
+    typedef K key_type;
+    typedef V value_type;
+    typedef kspp::kevent<K, V> record_type;
+
+    // fix this so source must be descendant from partition source...
+    template<class source>
+    merge(topology &unused, const std::vector<std::shared_ptr<source>>& upstream, int32_t partition=-1)
+        : event_consumer<K, V>()
+        , partition_source<K, V>(nullptr, partition) {
+      for (auto&& i : upstream) {
+        i->add_sink([this](auto r) {
+          this->send_to_sinks(r);
+        });
+      }
+    }
+
+    std::string simple_name() const override {
+      return "merge";
+    }
+
+    bool process_one(int64_t tick) override {
+      bool processed = false;
+      for (auto i : this->upstream_)
+        processed = i->process_one(tick);
+      return processed;
+    }
+
+    size_t queue_len() const override {
+      return event_consumer<K, V>::queue_len();
+    }
+
+    void commit(bool force) override {
+      for (auto i : this->upstream_)
+        i->commit(force);
+    }
+
+    // do we have the right hierarchy since those are not overridden and they should????
+    int produce(std::shared_ptr<kevent < K, V>> r) {
+      this->send_to_sinks(r);
+      return 0;
+    }
+
+    int produce(const K &key, const V &value, int64_t ts = kspp::milliseconds_since_epoch()) {
+      return produce(std::make_shared<kevent<K, V>>(std::make_shared<krecord<K, V>>(key, value, ts)));
+    }
+  };
+
+//<null, VALUE>
+  template<class V>
+  class merge<void, V> : public event_consumer<void, V>, public partition_source<void, V> {
+  public:
+    typedef void key_type;
+    typedef V value_type;
+    typedef kspp::kevent<void, V> record_type;
+
+    merge(topology &unused, std::vector<partition_source<void, V>*> upstream, int32_t partition=-1)
+        : event_consumer<void, V>()
+        , partition_source<void, V>(nullptr, partition) {
+      for (auto&& i : upstream) {
+        i->add_sink([this](auto r) {
+          this->send_to_sinks(r);
+        });
+      }
+    }
+
+    std::string simple_name() const override {
+      return "merge";
+    }
+
+    bool process_one(int64_t tick) override {
+      bool processed = false;
+      for (auto i : this->upstream_)
+        processed = i->process_one(tick);
+      return processed;
+    }
+
+    size_t queue_len() const override {
+      return event_consumer<void, V>::queue_len();
+    }
+
+    void commit(bool force) override {
+      for (auto i : this->upstream_)
+        i->commit(force);
+    }
+
+    int produce(std::shared_ptr<kevent < void, V>> r) {
+      this->send_to_sinks(r);
+      return 0;
+    }
+
+    int produce(const V &value) {
+      return produce(std::make_shared<kevent<void, V>>(std::make_shared<krecord<void, V>>(value)));
+    }
+
+  };
+
+  template<class K>
+  class merge<K, void> : public event_consumer<K, void>, public partition_source<K, void> {
+  public:
+    typedef K key_type;
+    typedef void value_type;
+    typedef kspp::kevent<K, void> record_type;
+
+    merge(topology &unused, std::vector<partition_source<K, void>*> upstream, int32_t partition=-1)
+        : event_consumer<K, void>()
+        , partition_source<K, void>(nullptr, partition) {
+      for (auto&& i : upstream) {
+        i->add_sink([this](auto r) {
+          this->send_to_sinks(r);
+        });
+      }
+    }
+
+    std::string simple_name() const override {
+      return "merge";
+    }
+
+    bool process_one(int64_t tick) override {
+      bool processed = false;
+      for (auto i : this->upstream_)
+        processed = i->process_one(tick);
+      return processed;
+    }
+
+    size_t queue_len() const override {
+      return event_consumer<K, void>::queue_len();
+    }
+
+    void commit(bool force) override {
+      for (auto i : this->upstream_)
+        i->commit(force);
+    }
+
+    int produce(std::shared_ptr<kevent < K, void>> r) {
+      this->send_to_sinks(r);
+      return 0;
+    }
+
+    int produce(const K &key) {
+      return produce(std::make_shared<kevent<K, void>>(std::make_shared<krecord<K, void>>(key)));
+    }
+  };
+
+  class topology {
+  public:
+    topology(std::shared_ptr<app_info> ai,
+             std::string topology_id,
+             std::string brokers,
+             std::chrono::milliseconds max_buffering);
+
+    virtual ~topology();
+
+    void set_storage_path(boost::filesystem::path root_path);
+
+
+    std::string app_id() const;
+
+    std::string group_id() const;
+
+    std::string topology_id() const;
+
+    std::string brokers() const;
+
+    std::string name() const;
+
+    std::chrono::milliseconds max_buffering_time() const;
+
+    void init_metrics();
+
+    void for_each_metrics(std::function<void(kspp::metric &)> f);
+
+    void init();
+
+    bool eof();
+
+    int process_one();
+
+    void close();
+
+    void start();
+
+    void start(int offset);
+
+    void commit(bool force);
+
+    void flush();
+
+    boost::filesystem::path get_storage_path();
+
+    // top level factory
+    template<class pp, typename... Args>
+    typename std::enable_if<std::is_base_of<kspp::partition_processor, pp>::value, std::vector<std::shared_ptr<pp>>>::type
+    create_processors(std::vector<int> partition_list, Args... args) {
+      std::vector<std::shared_ptr<pp>> result;
+      for (auto i : partition_list) {
+        auto p = std::make_shared<pp>(*this, i, args...);
+        _partition_processors.push_back(p);
+        result.push_back(p);
+      }
+      return result;
+    }
+
+    // should this be removed?? or renames to create_processor... right now only pipe support this (ie merge)
+
+    template<class pp, typename... Args>
+    typename std::enable_if<std::is_base_of<kspp::partition_processor, pp>::value, std::shared_ptr<pp>>::type
+    create_processor(Args... args) {
+      auto p = std::make_shared<pp>(*this, args...);
+      _partition_processors.push_back(p);
+      return p;
+    }
+
+    template<class ps, typename... Args>
+    std::shared_ptr<kspp::merge<typename ps::key_type, typename ps::value_type>>
+    merge(std::vector<std::shared_ptr<ps>> sources, Args... args) {
+      std::shared_ptr<kspp::merge<typename ps::key_type, typename ps::value_type>> result = std::make_shared<kspp::merge<typename ps::key_type, typename ps::value_type>>(*this, sources, args...);
+      _partition_processors.push_back(result);
+      return result;
+    }
+
+    // when you have a vector of partitions - lets create a new processor layer
+    template<class pp, class ps, typename... Args>
+    typename std::enable_if<std::is_base_of<kspp::partition_processor, pp>::value, std::vector<std::shared_ptr<pp>>>::type
+    create_processors(std::vector<std::shared_ptr<ps>> sources, Args... args) {
+      std::vector<std::shared_ptr<pp>> result;
+      for (auto i : sources) {
+        auto p = std::make_shared<pp>(*this, i, args...);
+        _partition_processors.push_back(p);
+        result.push_back(p);
+      }
+      return result;
+    }
+
+    /**
+      joins between two arrays
+      we could probably have stricter contrainst on the types of v1 and v2
+    */
+    template<class pp, class sourceT, class leftT, typename... Args>
+    typename std::enable_if<std::is_base_of<kspp::partition_processor, pp>::value, std::vector<std::shared_ptr<pp>>>::type
+    create_processors(
+        std::vector<std::shared_ptr<sourceT>> v1,
+        std::vector<std::shared_ptr<leftT>> v2,
+        Args... args) {
+      std::vector<std::shared_ptr<pp>> result;
+      auto i = v1.begin();
+      auto j = v2.begin();
+      auto end = v1.end();
+      for (; i != end; ++i, ++j) {
+        auto p = std::make_shared<pp>(*this, *i, *j, args...);
+        _partition_processors.push_back(std::static_pointer_cast<kspp::partition_processor>(p));
+        result.push_back(p);
+      }
+      return result;
+    }
+
+    // this seems to be only sinks???
+    template<class pp, typename... Args>
+    typename std::enable_if<std::is_base_of<kspp::generic_sink, pp>::value, std::shared_ptr<pp>>::type
+    create_sink(Args... args) {
+      auto p = std::make_shared<pp>(*this, args...);
+      _sinks.push_back(p);
+      return p;
+    }
+
+    // this seems to be only sinks???
+    /*
+     * template<class pp, class source, typename... Args>
+    typename std::enable_if<std::is_base_of<kspp::generic_sink, pp>::value, std::shared_ptr<pp>>::type
+    create_sink(std::shared_ptr<source> src, Args... args) {
+      auto p = std::make_shared<pp>(*this, args...);
+      _sinks.push_back(p);
+      src->add_sink(p);
+      return p;
+  };
+     */
+
+    // this seems to be only sinks??? create from vector of sources - return one (sounds like merge??? exept merge is also source)
+    template<class pp, class source, typename... Args>
+    typename std::enable_if<std::is_base_of<kspp::generic_sink, pp>::value, std::shared_ptr<pp>>::type
+    create_sink(std::vector<std::shared_ptr<source>> sources, Args... args) {
+      auto p = std::make_shared<pp>(*this, args...);
+      _sinks.push_back(p);
+      for (auto i : sources)
+        i->add_sink(p);
+      return p;
+    }
+
+  protected:
+    bool _is_init;
+    std::shared_ptr<app_info> _app_info;
+    std::string _topology_id;
+    std::string _brokers;
+    std::chrono::milliseconds _max_buffering_time;
+    boost::filesystem::path _root_path;
+    std::vector<std::shared_ptr<partition_processor>> _partition_processors;
+    std::vector<std::shared_ptr<generic_sink>> _sinks;
+    std::vector<std::shared_ptr<partition_processor>> _top_partition_processors;
+    int64_t _next_gc_ts;
+    //next sink queue check loop count;
+    //last sink queue size
   };
 } // namespace
