@@ -12,7 +12,7 @@ namespace kspp {
     typedef std::function<void(std::shared_ptr < kevent < K, SV >> record,
                                transform_value * self)> extractor; // maybe better to pass this and send() directrly
 
-    transform_value(topology_base &topology, std::shared_ptr <partition_source<K, SV>> source, extractor f)
+    transform_value(topology &unused, std::shared_ptr <partition_source<K, SV>> source, extractor f)
             : event_consumer<K, SV>()
               , partition_source<K, RV>(source.get(), source->partition())
               , _source(source),
@@ -84,7 +84,7 @@ namespace kspp {
     typedef std::function<void(std::shared_ptr < kevent < K, V >> record,
                                transform * self)> extractor; // maybe better to pass this and send() directrly
 
-    transform(topology_base &topology, std::shared_ptr <partition_source<K, V>> source, extractor f)
+    transform(topology &unused, std::shared_ptr <partition_source<K, V>> source, extractor f)
             : event_consumer<K, V>()
               , partition_source<K, V>(source.get(), source->partition())
               , _source(source)
