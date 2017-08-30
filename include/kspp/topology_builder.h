@@ -38,32 +38,6 @@ namespace kspp {
       return p;
     }
 
-    // vector of partitions to a partition (merge) rename to merge ?... right now only pipe support this (ie merge)
-    /*
-     * template<class pp, class ps, typename... Args>
-    typename std::enable_if<std::is_base_of<kspp::partition_processor, pp>::value, std::shared_ptr<pp>>::type
-    merge(std::vector<std::shared_ptr<ps>> sources, Args... args) {
-
-      std::shared_ptr<pp> result = std::make_shared<pp>(*this, sources, args...);
-      _partition_processors.push_back(result);
-      return result;
-    }*/
-
-
-    // vector of partitions to a partition (merge) rename to merge ?... right now only pipe support this (ie merge)
-    /*
-     * template<class ps, typename... Args>
-    std::shared_ptr<kspp::partition_source<typename ps::key_type, typename ps::value_type>> merge(std::vector<std::shared_ptr<ps>> sources, Args... args) {
-      std::vector<ps*> upstream;
-      for (auto i : sources)
-        upstream.push_back(i.get());
-      std::shared_ptr<kspp::partition_source<typename ps::key_type, typename ps::value_type>> result = std::make_shared<kspp::merge<typename ps::key_type, typename ps::value_type>>(*this, upstream, args...);
-      _partition_processors.push_back(result);
-      return result;
-    }
-     */
-
-
     template<class ps, typename... Args>
     std::shared_ptr<kspp::merge<typename ps::key_type, typename ps::value_type>>
     merge(std::vector<std::shared_ptr<ps>> sources, Args... args) {
