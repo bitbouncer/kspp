@@ -12,13 +12,16 @@
 #include <kspp/sinks/kafka_sink.h>
 #include <kspp/sinks/stream_sink.h>
 #include <kspp/impl/kafka_utils.h>
-#include <kspp/utils.h>
+#include <kspp/utils/utils.h>
 
 using namespace std::chrono_literals;
 
 int main(int argc, char **argv) {
+  auto config = std::make_shared<kspp::cluster_config>();
+  config->set_brokers(kspp::utils::default_kafka_broker_uri());
+
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example5-repartition");
-  auto builder = kspp::topology_builder(app_info, kspp::utils::default_kafka_broker_uri(), 100ms);
+  auto builder = kspp::topology_builder(app_info, config);
 
   {
     auto topology = builder.create_topology();
@@ -58,8 +61,8 @@ int main(int argc, char **argv) {
     sink->produce(2, "channel2");
   }
 
-  auto partitions1 = kspp::kafka::get_number_partitions(builder.brokers(), "kspp_example5_usernames");
-  auto partitions2 = kspp::kafka::get_number_partitions(builder.brokers(), "kspp_example5_user_channel");
+  auto partitions1 = kspp::kafka::get_number_partitions(config, "kspp_example5_usernames");
+  auto partitions2 = kspp::kafka::get_number_partitions(config, "kspp_example5_user_channel");
   assert(partitions1 == partitions2);
 
   {
@@ -93,7 +96,7 @@ int main(int argc, char **argv) {
 
 
   {
-    auto partitions = kspp::kafka::get_number_partitions(builder.brokers(), "kspp_example5_usernames.per-channel");
+    auto partitions = kspp::kafka::get_number_partitions(config, "kspp_example5_usernames.per-channel");
     auto partition_list = kspp::get_partition_list(partitions);
 
     auto topology = builder.create_topology();

@@ -11,7 +11,7 @@
 #include <kspp/sources/kafka_source.h>
 #include <kspp/state_stores/mem_store.h>
 #include <kspp/impl/kafka_utils.h>
-#include <kspp/utils.h>
+#include <kspp/utils/utils.h>
 
 using namespace std::chrono_literals;
 
@@ -31,12 +31,18 @@ T get_nullable_value(const avro::GenericRecord& record, std::string name, T defa
 }
 
 int main(int argc, char **argv) {
+  auto config = std::make_shared<kspp::cluster_config>();
+  config->set_brokers(kspp::utils::default_kafka_broker_uri());
+  config->set_schema_registry(kspp::utils::default_schema_registry_uri());
+  config->validate(); // optional
+
+
   auto schema_registry = std::make_shared<kspp::avro_schema_registry>(kspp::utils::default_schema_registry_uri());
   auto avro_serdes = std::make_shared<kspp::avro_serdes>(schema_registry);
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example12-generic-avro");
-  auto builder = kspp::topology_builder(app_info, kspp::utils::default_kafka_broker_uri(), 1000ms);
+  auto builder = kspp::topology_builder(app_info, config);
 
-  auto partitions = kspp::kafka::get_number_partitions(builder.brokers(), "postgres_mqtt_device_auth_view");
+  auto partitions = kspp::kafka::get_number_partitions(config, "postgres_mqtt_device_auth_view");
   auto partition_list = kspp::get_partition_list(partitions);
   auto topology = builder.create_topology();
   auto sources = topology->create_processors<kspp::kafka_source<void, kspp::GenericAvro, kspp::avro_serdes>>(

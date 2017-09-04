@@ -19,7 +19,7 @@
 #include <kspp/state_stores/mem_store.h>
 #include <kspp/state_stores/mem_windowed_store.h>
 #include <kspp/impl/kafka_utils.h>
-#include <kspp/utils.h>
+#include <kspp/utils/utils.h>
 
 using namespace std::chrono_literals;
 
@@ -27,8 +27,12 @@ using namespace std::chrono_literals;
 
 int main(int argc, char **argv) {
   try {
+    auto config = std::make_shared<kspp::cluster_config>();
+    config->set_brokers(kspp::utils::default_kafka_broker_uri());
+    config->set_storage_root(kspp::utils::default_statestore_directory());
+
     auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example9-ktable-rocksdb");
-    auto builder = kspp::topology_builder(app_info, kspp::utils::default_kafka_broker_uri(), 100ms);
+    auto builder = kspp::topology_builder(app_info, config);
 
     {
       auto topology = builder.create_topology();
@@ -41,30 +45,28 @@ int main(int argc, char **argv) {
     }
 
     {
-      auto partitions = kspp::kafka::get_number_partitions(builder.brokers(), TOPIC_NAME);
+      auto partitions = kspp::kafka::get_number_partitions(config, TOPIC_NAME);
       auto partition_list = kspp::get_partition_list(partitions);
 
       auto topology = builder.create_topology();
-      topology->set_storage_path(kspp::utils::default_statestore_directory());
       auto sources = topology->create_processors<kspp::kafka_source<void, std::string, kspp::text_serdes>>(
-              partition_list, TOPIC_NAME);
-
+          partition_list, TOPIC_NAME);
 
       std::regex rgx("\\s+");
       auto word_streams = topology->create_processors<kspp::flat_map<void, std::string, std::string, void>>(sources,
                                                                                                             [&rgx](const auto record,
                                                                                                                    auto flat_map) {
                                                                                                               std::sregex_token_iterator iter(
-                                                                                                                      record->value()->begin(),
-                                                                                                                      record->value()->end(),
-                                                                                                                      rgx,
-                                                                                                                      -1);
+                                                                                                                  record->value()->begin(),
+                                                                                                                  record->value()->end(),
+                                                                                                                  rgx,
+                                                                                                                  -1);
                                                                                                               std::sregex_token_iterator end;
                                                                                                               for (; iter !=
                                                                                                                      end; ++iter) {
                                                                                                                 flat_map->push_back(
-                                                                                                                        std::make_shared<kspp::krecord<std::string, void>>(
-                                                                                                                                *iter));
+                                                                                                                    std::make_shared<kspp::krecord<std::string, void>>(
+                                                                                                                        *iter));
                                                                                                               }
                                                                                                             });
 
@@ -76,10 +78,10 @@ int main(int argc, char **argv) {
 
       // this should be possible to do in memory
       auto word_counts = topology->create_processors<kspp::count_by_key<std::string, int64_t, kspp::rocksdb_counter_store, kspp::binary_serdes>>(
-              filtered_streams, 100ms);
+          filtered_streams, 100ms);
 
       auto ex1 = topology->create_processors<kspp::ktable<std::string, int64_t, kspp::rocksdb_store, kspp::binary_serdes>>(
-              word_counts);
+          word_counts);
       auto ex2 = topology->create_processors<kspp::ktable<std::string, int64_t, kspp::mem_store>>(word_counts);
       auto ex3 = topology->create_processors<kspp::ktable<std::string, int64_t, kspp::mem_windowed_store>>(word_counts,
                                                                                                            500ms, 10);

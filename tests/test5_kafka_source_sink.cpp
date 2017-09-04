@@ -17,10 +17,9 @@ struct record {
   std::string value;
 };
 
-#define TEST_SIZE 1
+#define TEST_SIZE 10
 
 int main(int argc, char **argv) {
-  kspp::kafka::wait_for_group("localhost", "dummy");
 
   std::vector<record> test_data;
   for (int i = 0; i != TEST_SIZE; ++i) {
@@ -30,33 +29,31 @@ int main(int argc, char **argv) {
     test_data.push_back(r);
   }
 
+  auto config = std::make_shared<kspp::cluster_config>();
+  config->set_brokers("localhost");
+  config->set_consumer_buffering_time(10ms);
+  config->set_producer_buffering_time(10ms);
+  config->validate();
+
+  kspp::kafka::wait_for_group(config, "dummy");
+
   auto app_info = std::make_shared<kspp::app_info>("kspp", "test5");
-  auto builder = kspp::topology_builder(app_info, "localhost", 10ms);
+  auto builder = kspp::topology_builder(app_info, config);
 
-  auto nr_of_partitions = kspp::kafka::get_number_partitions(builder.brokers(), "kspp_test5");
+  auto nr_of_partitions = kspp::kafka::get_number_partitions(config, "kspp_test5");
   auto partition_list = kspp::get_partition_list(nr_of_partitions);
-
-  /*
-  {
-    auto consumer_topology = builder.create_topology();
-    auto streams = consumer_topology->create_processors<kspp::kafka_source<std::string, std::string, kspp::binary_serdes>>(partition_list, "kspp_test5");
-    consumer_topology->start(-1); // end
-    consumer_topology->commit(true);
-    // now offset should be at end of stream
-  }
-  */
 
   auto t0 = kspp::milliseconds_since_epoch();
   {
     auto topology = builder.create_topology();
 
     auto streams = topology->create_processors<kspp::kafka_source<std::string, std::string, kspp::binary_serdes>>(
-            partition_list, "kspp_test5");
+        partition_list, "kspp_test5");
     auto ktables = topology->create_processors<kspp::ktable<std::string, std::string, kspp::mem_store>>(streams);
 
     auto pipe = topology->create_processor<kspp::pipe<std::string, std::string>>(-1);
     auto table_stream = topology->create_sink<kspp::kafka_sink<std::string, std::string, kspp::binary_serdes>>(
-            "kspp_test5");
+        "kspp_test5");
     pipe->add_sink(table_stream);
 
     topology->init(); // remove
@@ -78,6 +75,7 @@ int main(int argc, char **argv) {
     int64_t sz = 0;
     for (auto &&i : streams)
       sz += i->get_metric("in_count");
+    LOG(INFO) << "sz: " << sz << " expected : " <<  TEST_SIZE;
     assert(sz == TEST_SIZE);
 
     // verify timestamps on all elements in ktable
@@ -86,19 +84,15 @@ int main(int argc, char **argv) {
         auto ts = j->event_time();
         assert(ts == t0);
       }
-
-
   }
 
   // now pick up from last commit
   {
     auto topology = builder.create_topology();
-
     auto streams = topology->create_processors<kspp::kafka_source<std::string, std::string, kspp::binary_serdes>>(
-            partition_list, "kspp_test5");
+        partition_list, "kspp_test5");
     auto pipe = topology->create_processor<kspp::pipe<std::string, std::string>>(-1);
-    auto table_stream = topology->create_sink<kspp::kafka_sink<std::string, std::string, kspp::binary_serdes>>(
-            "kspp_test5");
+    auto table_stream = topology->create_sink<kspp::kafka_sink<std::string, std::string, kspp::binary_serdes>>("kspp_test5");
     pipe->add_sink(table_stream);
 
     topology->init(); // remove
@@ -115,11 +109,16 @@ int main(int argc, char **argv) {
     }
     topology->commit(true);
 
-    assert(table_stream->get_metric("in_count") == TEST_SIZE);
+    {
+      auto actual = table_stream->get_metric("in_count");
+      assert(actual == TEST_SIZE);
+    }
 
     int64_t sz = 0;
     for (auto &&i : streams)
       sz += i->get_metric("in_count");
+    LOG(INFO) << "sz: " << sz << " expected : " <<  TEST_SIZE;
+
     assert(sz == TEST_SIZE);
   }
 

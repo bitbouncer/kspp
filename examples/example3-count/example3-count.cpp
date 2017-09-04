@@ -12,7 +12,7 @@
 #include <kspp/sinks/kafka_sink.h>
 #include <kspp/sinks/stream_sink.h>
 #include <kspp/impl/kafka_utils.h>
-#include <kspp/utils.h>
+#include <kspp/utils/utils.h>
 
 using namespace std::chrono_literals;
 
@@ -20,7 +20,17 @@ using namespace std::chrono_literals;
 
 int main(int argc, char **argv) {
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example3-count");
-  auto builder = kspp::topology_builder(app_info, kspp::utils::default_kafka_broker_uri(), 100ms);
+
+  auto config = std::make_shared<kspp::cluster_config>();
+  config->set_brokers("SSL://localhost:9091");
+  config->set_ca_cert_path("/csi/openssl_client_keystore/ca-cert");
+  config->set_private_key_path("/csi/openssl_client_keystore/client_P51_client.pem",
+                               "/csi/openssl_client_keystore/client_P51_client.key",
+                               "abcdefgh");
+  config->validate();
+
+  //auto builder = kspp::topology_builder(app_info, kspp::utils::default_kafka_broker_uri(), 100ms);
+  auto builder = kspp::topology_builder(app_info, config);
 
   {
     auto topology = builder.create_topology();
@@ -28,7 +38,7 @@ int main(int argc, char **argv) {
     sink->produce("hello kafka streams");
   }
 
-  auto partitions = kspp::kafka::get_number_partitions(builder.brokers(), TOPIC_NAME);
+  auto partitions = kspp::kafka::get_number_partitions(config, TOPIC_NAME);
   auto partition_list = kspp::get_partition_list(partitions);
 
   {

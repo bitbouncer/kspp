@@ -20,7 +20,12 @@ static std::vector<record> test_data =
         };
 
 int main(int argc, char **argv) {
-  kspp::kafka_producer producer("localhost", "kspp_test4", 100ms);
+  auto config = std::make_shared<kspp::cluster_config>();
+  config->set_brokers("localhost");
+  config->set_producer_buffering_time(100ms);
+  config->set_consumer_buffering_time(100ms);
+
+  kspp::kafka_producer producer(config, "kspp_test4");
 
   // create a dummy consumer just to trigger kafka broker
   //{
@@ -31,7 +36,7 @@ int main(int argc, char **argv) {
   // test 1
   // start from end and produce 4 records - make sure we get same 4 records
   {
-    kspp::kafka_consumer consumer("localhost", "kspp_test4", 0, "kspp_test", 100ms);
+    kspp::kafka_consumer consumer(config, "kspp_test4", 0, "kspp_test");
     int64_t timestamp0 = 1234567890;
     assert(consumer.topic() == "kspp_test4");
     assert(consumer.partition() == 0);
@@ -89,7 +94,7 @@ int main(int argc, char **argv) {
     int64_t last_comitted_offset = -1;
     int64_t timestamp2 = 2234567890;
     { // test 2 phase A
-      kspp::kafka_consumer consumer("localhost", "kspp_test4", 0, "kspp_test", 100ms);
+      kspp::kafka_consumer consumer(config, "kspp_test4", 0, "kspp_test");
       assert(consumer.topic() == "kspp_test4");
       assert(consumer.partition() == 0);
       consumer.start(-1); // start from end
@@ -138,7 +143,7 @@ int main(int argc, char **argv) {
     } // 2 phase A
 
     { // 2 phase B we shouyld pick up 3 records since we comitted one
-      kspp::kafka_consumer consumer("localhost", "kspp_test4", 0, "kspp_test", 100ms);
+      kspp::kafka_consumer consumer(config, "kspp_test4", 0, "kspp_test");
       assert(consumer.topic() == "kspp_test4");
       assert(consumer.partition() == 0);
       consumer.start(); // start from after last committed offset
@@ -181,7 +186,7 @@ int main(int argc, char **argv) {
   {
     int64_t timestamp3 = 3234567890;
     int64_t last_comitted_offset = -1;
-    kspp::kafka_consumer consumer("localhost", "kspp_test4", 0, "kspp_test", 100ms);
+    kspp::kafka_consumer consumer(config, "kspp_test4", 0, "kspp_test");
     assert(consumer.topic() == "kspp_test4");
     assert(consumer.partition() == 0);
     consumer.start(-1); // start from end

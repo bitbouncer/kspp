@@ -4,7 +4,7 @@
 #include <kspp/impl/serdes/avro/avro_text.h>
 #include <kspp/beta/raw_kafka_sink.h>
 #include <kspp/beta/raw_kafka_producer.h>
-#include <kspp/utils.h>
+#include <kspp/utils/utils.h>
 
 using namespace std::chrono_literals;
 
@@ -16,6 +16,11 @@ static boost::uuids::uuid to_uuid(int64_t x) {
 }
 
 int main(int argc, char **argv) {
+  auto config = std::make_shared<kspp::cluster_config>();
+  config->set_brokers(kspp::utils::default_kafka_broker_uri());
+  config->set_schema_registry(kspp::utils::default_schema_registry_uri());
+  config->validate(); // optional
+
   // maybe we should add http:// here...
   auto schema_registry = std::make_shared<kspp::avro_schema_registry>(kspp::utils::default_schema_registry_uri());
   auto avro_serdes = std::make_shared<kspp::avro_serdes>(schema_registry);

@@ -91,18 +91,28 @@ namespace kspp {
     }
 
   protected:
-    kafka_sink_base(std::string brokers, std::string topic, std::chrono::milliseconds max_buffering_time, partitioner p,
+    kafka_sink_base(std::shared_ptr<cluster_config> cconfig,
+                    std::string topic,
+                    partitioner p,
                     std::shared_ptr<CODEC> codec)
-            : topic_sink<K, V>(), _codec(codec), _impl(brokers, topic, max_buffering_time), _partitioner(p),
-              _in_count("in_count"), _lag() {
+            : topic_sink<K, V>()
+        , _codec(codec)
+        , _impl(cconfig, topic)
+        , _partitioner(p)
+        , _in_count("in_count")
+        , _lag() {
       this->add_metric(&_in_count);
       this->add_metric(&_lag);
     }
 
-    kafka_sink_base(std::string brokers, std::string topic, std::chrono::milliseconds max_buffering_time,
+    kafka_sink_base(std::shared_ptr<cluster_config> cconfig,
+                    std::string topic,
                     std::shared_ptr<CODEC> codec)
-            : topic_sink<K, V>(), _codec(codec), _impl(brokers, topic, max_buffering_time), _in_count("in_count"),
-              _lag() {
+            : topic_sink<K, V>()
+        , _codec(codec)
+        , _impl(cconfig, topic)
+        , _in_count("in_count")
+        , _lag() {
       this->add_metric(&_in_count);
       this->add_metric(&_lag);
     }
@@ -129,12 +139,12 @@ namespace kspp {
 
     kafka_sink(topology &topology, std::string topic, partitioner p,
                      std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : kafka_sink_base<K, V, CODEC>(topology.brokers(), topic, topology.max_buffering_time(), p, codec) {
+            : kafka_sink_base<K, V, CODEC>(topology.get_cluster_config(), topic, p, codec) {
     }
 
     kafka_sink(topology &topology, std::string topic,
                      std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : kafka_sink_base<K, V, CODEC>(topology.brokers(), topic, topology.max_buffering_time(), codec) {
+            : kafka_sink_base<K, V, CODEC>(topology.get_cluster_config(), topic, codec) {
     }
 
     ~kafka_sink() override {
@@ -178,7 +188,7 @@ namespace kspp {
   public:
     kafka_sink(topology &topology, std::string topic,
                      std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : kafka_sink_base<void, V, CODEC>(topology.brokers(), topic, topology.max_buffering_time(), codec) {
+            : kafka_sink_base<void, V, CODEC>(topology.get_cluster_config(), topic, codec) {
     }
 
     ~kafka_sink() override {
@@ -214,12 +224,12 @@ namespace kspp {
 
     kafka_sink(topology &topology, std::string topic, partitioner p,
                      std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : kafka_sink_base<K, void, CODEC>(topology.brokers(), topic, topology.max_buffering_time(), p, codec) {
+            : kafka_sink_base<K, void, CODEC>(topology.get_cluster_config(), topic, p, codec) {
     }
 
     kafka_sink(topology &topology, std::string topic,
                      std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : kafka_sink_base<K, void, CODEC>(topology.brokers(), topic, topology.max_buffering_time(), codec) {
+            : kafka_sink_base<K, void, CODEC>(topology.get_cluster_config(), topic, codec) {
     }
 
     ~kafka_sink() override {

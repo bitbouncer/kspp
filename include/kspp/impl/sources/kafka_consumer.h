@@ -4,12 +4,13 @@
 #pragma once
 
 namespace kspp {
+  class cluster_config;
   class kafka_consumer
   {
   public:
-    //kafka_consumer(std::string brokers, std::string topic, int32_t partition, std::string consumer_group, std::chrono::milliseconds max_buffering_time = std::chrono::milliseconds(1000));
-    kafka_consumer(std::string brokers, std::string topic, int32_t partition, std::string consumer_group, std::chrono::milliseconds max_buffering_time);
+    kafka_consumer(std::shared_ptr<cluster_config> config, std::string topic, int32_t partition, std::string consumer_group);
     ~kafka_consumer();
+
     void close();
 
     std::unique_ptr<RdKafka::Message> consume();
@@ -43,7 +44,7 @@ namespace kspp {
     int update_eof();
 
   private:
-    const std::string                       _brokers;
+    std::shared_ptr<cluster_config>         _config;
     const std::string                       _topic;
     const int32_t                           _partition;
     const std::string                       _consumer_group;

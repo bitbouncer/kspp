@@ -16,6 +16,7 @@
 #include <kspp/kevent.h>
 #include <kspp/type_name.h>
 #include <kspp/app_info.h>
+#include <kspp/cluster_config.h>
 #include <kspp/impl/queue.h>
 #include <kspp/impl/hash/murmurhash2.h>
 #pragma once
@@ -777,14 +778,16 @@ namespace kspp {
   class topology {
   public:
     topology(std::shared_ptr<app_info> ai,
-             std::string topology_id,
-             std::string brokers,
-             std::chrono::milliseconds max_buffering);
+             std::shared_ptr<cluster_config> c_config,
+             std::string topology_id);
 
     virtual ~topology();
 
-    void set_storage_path(boost::filesystem::path root_path);
+    std::shared_ptr<cluster_config> get_cluster_config(){
+      return _cluster_config;
+    }
 
+    void set_storage_path(boost::filesystem::path root_path);
 
     std::string app_id() const;
 
@@ -921,9 +924,8 @@ namespace kspp {
   protected:
     bool _is_init;
     std::shared_ptr<app_info> _app_info;
+    std::shared_ptr<cluster_config> _cluster_config;
     std::string _topology_id;
-    std::string _brokers;
-    std::chrono::milliseconds _max_buffering_time;
     boost::filesystem::path _root_path;
     std::vector<std::shared_ptr<partition_processor>> _partition_processors;
     std::vector<std::shared_ptr<generic_sink>> _sinks;

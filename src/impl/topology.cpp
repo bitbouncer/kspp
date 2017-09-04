@@ -5,12 +5,14 @@ using namespace std::chrono_literals;
 
 namespace kspp {
   topology::topology(std::shared_ptr<app_info> ai,
-                               std::string topology_id,
-                               std::string brokers,
-                               std::chrono::milliseconds max_buffering
-                               )
-          : _app_info(ai), _is_init(false), _topology_id(topology_id), _brokers(brokers),
-            _max_buffering_time(max_buffering), _next_gc_ts(0) {
+                     std::shared_ptr<cluster_config> cc,
+                     std::string topology_id)
+      : _app_info(ai)
+      , _cluster_config(cc)
+      , _is_init(false)
+      , _topology_id(topology_id)
+      , _next_gc_ts(0) {
+
     LOG(INFO) << "topology created, name:" << name();
   }
 
@@ -32,14 +34,6 @@ namespace kspp {
 
   std::string topology::topology_id() const {
     return _topology_id;
-  }
-
-  std::string topology::brokers() const {
-    return _brokers;
-  }
-
-  std::chrono::milliseconds topology::max_buffering_time() const {
-    return _max_buffering_time;
   }
 
   std::string topology::name() const {
@@ -228,7 +222,8 @@ namespace kspp {
     }
   }
 
-  void topology::set_storage_path(boost::filesystem::path root_path) {
+  /*
+   * void topology::set_storage_path(boost::filesystem::path root_path) {
     _root_path = root_path;
     if (!boost::filesystem::exists(root_path)) {
       auto res = boost::filesystem::create_directories(_root_path);
@@ -237,14 +232,15 @@ namespace kspp {
         LOG(FATAL) << "topology " << _app_info->identity() << ": failed to create storage path at : " << root_path;
     }
   }
+   */
 
   boost::filesystem::path topology::get_storage_path() {
     // if no storage path has been set - let an eventual state store handle this problem
     // only disk based one need this and we pass storage path to all state stores (mem ones also)
-    if (_root_path.size()==0)
-      return _root_path;
+    if (_cluster_config->get_storage_root().size()==0)
+      return "";
 
-    boost::filesystem::path top_of_topology(_root_path);
+    boost::filesystem::path top_of_topology(_cluster_config->get_storage_root());
     top_of_topology /= sanitize_filename(_app_info->identity());
     top_of_topology /= sanitize_filename(_topology_id);
     DLOG(INFO) << "topology " << _app_info->identity() << ": creating local storage at " << top_of_topology;
@@ -253,7 +249,7 @@ namespace kspp {
     // so we check if the directory exists after instead...
     if (!boost::filesystem::exists(top_of_topology))
       LOG(FATAL) << "topology " << _app_info->identity() << ": failed to create local storage at "
-                               << top_of_topology;
+                 << top_of_topology;
     return top_of_topology;
   }
 }

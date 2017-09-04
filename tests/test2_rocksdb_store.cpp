@@ -1,7 +1,7 @@
 #include <cassert>
 #include <kspp/state_stores/rocksdb_store.h>
 #include <kspp/impl/serdes/binary_serdes.h>
-#include <kspp/utils.h>
+#include <kspp/utils/utils.h>
 
 using namespace std::chrono_literals;
 

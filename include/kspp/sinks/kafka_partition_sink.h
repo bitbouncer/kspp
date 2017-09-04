@@ -13,10 +13,15 @@ namespace kspp {
   template<class K, class V, class CODEC>
   class kafka_partition_sink_base : public partition_sink<K, V> {
   protected:
-    kafka_partition_sink_base(std::string brokers, std::string topic, int32_t partition,
-                              std::chrono::milliseconds max_buffering_time, std::shared_ptr<CODEC> codec)
-            : partition_sink<K, V>(partition), _codec(codec), _impl(brokers, topic, max_buffering_time),
-              _fixed_partition(partition), _in_count("in_count"), _lag() {
+    kafka_partition_sink_base(std::shared_ptr<cluster_config> cconfig,
+                              std::string topic,
+                              int32_t partition,
+                              std::shared_ptr<CODEC> codec)
+            : partition_sink<K, V>(partition), _codec(codec)
+        , _impl(cconfig, topic)
+        , _fixed_partition(partition)
+        , _in_count("in_count")
+        , _lag() {
       this->add_metric(&_in_count);
       this->add_metric(&_lag);
     }
@@ -88,10 +93,9 @@ namespace kspp {
   public:
     kafka_partition_sink(topology &t, int32_t partition, std::string topic,
                          std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : kafka_partition_sink_base<K, V, CODEC>(t.brokers(),
+            : kafka_partition_sink_base<K, V, CODEC>(t.get_cluster_config(),
                                                      topic,
                                                      partition,
-                                                     t.max_buffering_time(),
                                                      codec) {
     }
 
@@ -128,10 +132,9 @@ namespace kspp {
   public:
     kafka_partition_sink(topology &t, int32_t partition, std::string topic,
                          std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : kafka_partition_sink_base<void, V, CODEC>(t.brokers(),
+            : kafka_partition_sink_base<void, V, CODEC>(t.get_cluster_config(),
                                                         topic,
                                                         partition,
-                                                        t.max_buffering_time(),
                                                         codec) {
     }
 
@@ -164,10 +167,9 @@ namespace kspp {
   public:
     kafka_partition_sink(topology &t, int32_t partition, std::string topic,
                          std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : kafka_partition_sink_base<K, void, CODEC>(t.brokers(),
+            : kafka_partition_sink_base<K, void, CODEC>(t.get_cluster_config(),
                                                         topic,
                                                         partition,
-                                                        t.max_buffering_time(),
                                                         codec) {
     }
 
@@ -183,8 +185,14 @@ namespace kspp {
       ksize = this->_codec->encode(ev->record()->key(), ks);
       kp = malloc(ksize);  // must match the free in kafka_producer TBD change to new[] and a memory pool
       ks.read((char *) kp, ksize);
-      return this->_impl.produce((uint32_t) this->_fixed_partition, kafka_producer::FREE, kp, ksize, nullptr, 0,
-                                 ev->event_time(), ev->id());
+      return this->_impl.produce((uint32_t) this->_fixed_partition,
+                                 kafka_producer::FREE,
+                                 kp,
+                                 ksize,
+                                 nullptr,
+                                 0,
+                                 ev->event_time(),
+                                 ev->id());
     }
   };
 }

@@ -14,7 +14,7 @@
 #include <kspp/sinks/stream_sink.h>
 #include <kspp/state_stores/mem_counter_store.h>
 #include <kspp/impl/kafka_utils.h>
-#include <kspp/utils.h>
+#include <kspp/utils/utils.h>
 
 #define PARTITION 0
 
@@ -23,8 +23,11 @@
 using namespace std::chrono_literals;
 
 int main(int argc, char **argv) {
+  auto config = std::make_shared<kspp::cluster_config>();
+  config->set_brokers(kspp::utils::default_kafka_broker_uri());
+
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example7-token-bucket");
-  auto builder = kspp::topology_builder(app_info, kspp::utils::default_kafka_broker_uri(), 100ms);
+  auto builder = kspp::topology_builder(app_info, config);
   {
     auto topology = builder.create_topology();
     auto sink = topology->create_sink<kspp::kafka_sink<void, std::string, kspp::text_serdes>>(TOPIC_NAME);
@@ -36,7 +39,7 @@ int main(int argc, char **argv) {
   }
 
   {
-    auto partitions = kspp::kafka::get_number_partitions(builder.brokers(), TOPIC_NAME);
+    auto partitions = kspp::kafka::get_number_partitions(config, TOPIC_NAME);
     auto partition_list = kspp::get_partition_list(partitions);
 
 

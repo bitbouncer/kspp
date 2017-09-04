@@ -63,11 +63,14 @@ namespace kspp {
     }
 
   protected:
-    kafka_source_base(std::string brokers, std::string topic, int32_t partition, std::string consumer_group,
-                      std::chrono::milliseconds max_buffering_time, std::shared_ptr<CODEC> codec)
+    kafka_source_base(std::shared_ptr<cluster_config> config,
+                      std::string topic,
+                      int32_t partition,
+                      std::string consumer_group,
+                      std::shared_ptr<CODEC> codec)
             : partition_source<K, V>(nullptr, partition)
         , _codec(codec)
-        , _consumer(brokers, topic, partition, consumer_group, max_buffering_time)
+        , _consumer(config, topic, partition, consumer_group)
         , _commit_chain(topic, partition)
         , _in_count("in_count")
         , _commit_chain_size("commit_chain_size", [this]() { return _commit_chain.size(); })
@@ -94,9 +97,7 @@ namespace kspp {
                  int32_t partition,
                  std::string topic,
                  std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : kafka_source_base<K, V, CODEC>(t.brokers(), topic, partition, t.group_id()
-        , t.max_buffering_time()
-        , codec) {
+            : kafka_source_base<K, V, CODEC>(t.get_cluster_config(), topic, partition, t.group_id(), codec) {
     }
 
   protected:
@@ -147,11 +148,7 @@ namespace kspp {
                  int32_t partition,
                  std::string topic,
                  std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : kafka_source_base<void, V, CODEC>(t.brokers(),
-                                                topic, partition,
-                                                t.group_id(),
-                                                t.max_buffering_time(),
-                                                codec) {
+            : kafka_source_base<void, V, CODEC>(t.get_cluster_config(), topic, partition, t.group_id(), codec) {
     }
 
   protected:
@@ -188,12 +185,7 @@ namespace kspp {
                  int32_t partition,
                  std::string topic,
                  std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : kafka_source_base<K, void, CODEC>(t.brokers(),
-                                                topic,
-                                                partition,
-                                                t.group_id(),
-                                                t.max_buffering_time(),
-                                                codec) {
+            : kafka_source_base<K, void, CODEC>(t.get_cluster_config(), topic, partition, t.group_id(), codec) {
     }
 
   protected:

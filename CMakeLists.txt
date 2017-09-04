@@ -214,18 +214,12 @@ file(GLOB LIB_SRCS
         src/impl/sinks/*.cpp
         src/impl/serdes/*.cpp
         src/impl/hash/*.cpp
+        src/impl/utils/*.cpp
         src/beta/*.cpp
         )
 
 file(GLOB KSPP_INCLUDE_FILES
-        include/kspp/app_info.h
-        include/kspp/metrics.h
-        include/kspp/kspp.h
-        include/kspp/krecord.h
-        include/kspp/kevent.h
-        include/kspp/type_name.h-Wpedantic
-        include/kspp/topology_builder.h
-        include/kspp/schema_registry.h
+        include/kspp/*.h
         include/kspp/utils/*
         include/kspp/utils.h
         include/kspp/metrics/*.h

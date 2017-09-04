@@ -12,7 +12,7 @@
 #include <kspp/sources/kafka_source.h>
 #include <kspp/state_stores/mem_counter_store.h>
 #include <kspp/impl/kafka_utils.h>
-#include <kspp/utils.h>
+#include <kspp/utils/utils.h>
 
 using namespace std::chrono_literals;
 
@@ -26,12 +26,16 @@ static boost::uuids::uuid to_uuid(int64_t x) {
 int main(int argc, char **argv) {
   size_t join_count = 0;
 
-  // maybe we should add http:// here...
+  auto config = std::make_shared<kspp::cluster_config>();
+  config->set_brokers(kspp::utils::default_kafka_broker_uri());
+  config->set_schema_registry(kspp::utils::default_schema_registry_uri());
+  config->validate(); // optional
+
   auto schema_registry = std::make_shared<kspp::avro_schema_registry>(kspp::utils::default_schema_registry_uri());
   auto avro_serdes = std::make_shared<kspp::avro_serdes>(schema_registry);
 
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example10-avro");
-  auto builder = kspp::topology_builder(app_info, kspp::utils::default_kafka_broker_uri(), 1000ms);
+  auto builder = kspp::topology_builder(app_info, config);
   {
     auto topology = builder.create_topology();
     auto avro_stream = topology->create_sink<kspp::kafka_sink<boost::uuids::uuid, int64_t, kspp::avro_serdes>>(
@@ -53,7 +57,7 @@ int main(int argc, char **argv) {
   }
 
   {
-    auto partitions = kspp::kafka::get_number_partitions(builder.brokers(), "kspp_test10_avro");
+    auto partitions = kspp::kafka::get_number_partitions(config, "kspp_test10_avro");
     auto partition_list = kspp::get_partition_list(partitions);
     auto topology = builder.create_topology();
     auto sources = topology->create_processors<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::avro_serdes>>(
@@ -74,7 +78,7 @@ int main(int argc, char **argv) {
   }
 
   {
-    auto partitions = kspp::kafka::get_number_partitions(builder.brokers(), "kspp_test10_avro");
+    auto partitions = kspp::kafka::get_number_partitions(config, "kspp_test10_avro");
     auto partition_list = kspp::get_partition_list(partitions);
     auto topology = builder.create_topology();
     auto sources = topology->create_processors<kspp::kafka_source<kspp::GenericAvro, kspp::GenericAvro, kspp::avro_serdes>>(
@@ -95,7 +99,7 @@ int main(int argc, char **argv) {
   }
 
   {
-    auto partitions = kspp::kafka::get_number_partitions(builder.brokers(), "kspp_test10_avro");
+    auto partitions = kspp::kafka::get_number_partitions(config, "kspp_test10_avro");
     auto partition_list = kspp::get_partition_list(partitions);
     auto topology = builder.create_topology();
     auto sources = topology->create_processors<kspp::kafka_source<kspp::GenericAvro, kspp::GenericAvro, kspp::avro_serdes>>(
@@ -118,7 +122,7 @@ int main(int argc, char **argv) {
 
   // verify that we can read again...
   {
-    auto partitions = kspp::kafka::get_number_partitions(builder.brokers(), "kspp_test10_avro_B");
+    auto partitions = kspp::kafka::get_number_partitions(config, "kspp_test10_avro_B");
     auto partition_list = kspp::get_partition_list(partitions);
     auto topology = builder.create_topology();
     auto sources = topology->create_processors<kspp::kafka_source<kspp::GenericAvro, kspp::GenericAvro, kspp::avro_serdes>>(

@@ -5,7 +5,7 @@
 #include <kspp/impl/serdes/binary_serdes.h>
 #include <kspp/topology_builder.h>
 #include <kspp/sinks/kafka_sink.h>
-#include <kspp/utils.h>
+#include <kspp/utils/utils.h>
 
 using namespace std::chrono_literals;
 
@@ -17,8 +17,13 @@ static boost::uuids::uuid to_uuid(int64_t x) {
 }
 
 int main(int argc, char **argv) {
+  auto config = std::make_shared<kspp::cluster_config>();
+  config->set_brokers(kspp::utils::default_kafka_broker_uri());
+  config->set_schema_registry(kspp::utils::default_schema_registry_uri());
+  config->validate(); // optional
+
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "test_setup");
-  auto builder = kspp::topology_builder(app_info, kspp::utils::default_kafka_broker_uri(), 100ms);
+  auto builder = kspp::topology_builder(app_info, config);
   auto topology = builder.create_topology();
 
   auto table_stream = topology->create_sink<kspp::kafka_sink<boost::uuids::uuid, int64_t, kspp::binary_serdes>>(

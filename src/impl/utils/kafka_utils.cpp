@@ -2,32 +2,31 @@
 #include <thread>
 #include <glog/logging.h>
 #include <librdkafka/rdkafka.h>
+#include <kspp/impl/rd_kafka_utils.h>
 
 using namespace std::chrono_literals;
 
 namespace kspp {
   namespace kafka {
-    int32_t get_number_partitions(std::string brokers, std::string topic) {
+    int32_t get_number_partitions(std::shared_ptr<cluster_config> cluster_config, std::string topic) {
       std::string errstr;
       std::unique_ptr<RdKafka::Conf> conf(RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL));
       /*
       * Set configuration properties
       */
-      if (conf->set("metadata.broker.list", brokers, errstr) != RdKafka::Conf::CONF_OK) {
-        LOG(ERROR) << ", failed to set metadata.broker.list " << errstr;
-        exit(1);
+      try {
+        set_broker_config(conf.get(), cluster_config);
+        set_config(conf.get(), "api.version.request", "true");
       }
-
-      if (conf->set("api.version.request", "true", errstr) != RdKafka::Conf::CONF_OK) {
-        LOG(ERROR) << ", failed to set api.version.request " << errstr;
-        exit(1);
+      catch (std::invalid_argument& e) {
+        LOG(FATAL) << "get_number_partitions: " << topic << " bad config " << e.what();
       }
 
       auto producer = std::unique_ptr<RdKafka::Producer>(RdKafka::Producer::create(conf.get(), errstr));
       if (!producer) {
-        LOG(ERROR) << ", failed to create producer:" << errstr;
-        exit(1);
+        LOG(FATAL) << ", failed to create producer:" << errstr;
       }
+
 
       // really try to make sure the partition exist before we continue
       RdKafka::Metadata *md = NULL;
@@ -51,7 +50,7 @@ namespace kspp {
       return nr_of_partitions;
     }
 
-    int wait_for_partition(std::string brokers, std::string topic, int32_t partition) {
+    int wait_for_partition(std::shared_ptr<cluster_config> cluster_config, std::string topic, int32_t partition) {
       std::string errstr;
       std::unique_ptr<RdKafka::Conf> conf(RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL));
 
@@ -60,14 +59,13 @@ namespace kspp {
       /*
       * Set configuration properties
       */
-      if (conf->set("metadata.broker.list", brokers, errstr) != RdKafka::Conf::CONF_OK) {
-        LOG(ERROR) << ", failed to set metadata.broker.list " << errstr;
-        return -1;
-      }
+      try {
+        set_broker_config(conf.get(), cluster_config);
+        set_config(conf.get(), "api.version.request", "true");
 
-      if (conf->set("api.version.request", "true", errstr) != RdKafka::Conf::CONF_OK) {
-        LOG(ERROR) << ", failed to set api.version.request " << errstr;
-        return -1;
+        }
+      catch (std::invalid_argument& e) {
+        LOG(FATAL) << "get_number_partitions: " << topic << " bad config " << e.what();
       }
 
       auto producer = std::unique_ptr<RdKafka::Producer>(RdKafka::Producer::create(conf.get(), errstr));
@@ -165,21 +163,40 @@ namespace kspp {
       return 0;
     }
 
-    int wait_for_group(std::string brokers, std::string group_id) {
+    // STUFF THATS MISSING IN LIBRDKAFKA C++ API...
+    // WE DO THIS THE C WAY INSTEAD
+    // NEEDS TO BE REWRITTEN USING USING C++ API
+
+    // copy of c++ code
+    static void set_broker_config(rd_kafka_conf_t* rd_conf, std::shared_ptr<kspp::cluster_config> cluster_config) {
+      rd_kafka_conf_set(rd_conf, "bootstrap.servers", cluster_config->get_brokers().c_str(), nullptr, 0);
+
+      if (cluster_config->get_brokers().substr(0, 3) == "ssl") {
+        // SSL no auth - always
+        rd_kafka_conf_set(rd_conf, "security.protocol", "ssl", nullptr, 0);
+        rd_kafka_conf_set(rd_conf, "ssl.ca.location", cluster_config->get_ca_cert_path().c_str(), nullptr, 0);
+
+        //client cert
+        rd_kafka_conf_set(rd_conf, "ssl.certificate.location", cluster_config->get_client_cert_path().c_str(), nullptr, 0);
+        rd_kafka_conf_set(rd_conf, "ssl.key.location", cluster_config->get_private_key_path().c_str(), nullptr, 0);
+        // optional password
+        if (cluster_config->get_private_key_passphrase().size())
+          rd_kafka_conf_set(rd_conf, "ssl.key.password", cluster_config->get_private_key_passphrase().c_str(), nullptr, 0);
+      }
+    }
+
+    int wait_for_group(std::shared_ptr<cluster_config> cluster_config, std::string group_id) {
       char errstr[128];
       rd_kafka_t *rk;
-      /* Create Kafka C handle */
-      if (!(rk = rd_kafka_new(RD_KAFKA_PRODUCER, nullptr,
-                              errstr, sizeof(errstr)))) {
-        LOG(ERROR) << "Failed to create new producer: " << errstr;
-        rd_kafka_destroy(rk);
-        return -1;
-      }
 
-      /* Add brokers */
-      if (rd_kafka_brokers_add(rk, brokers.c_str()) == 0) {
-        LOG(ERROR) << "No valid brokers specified";
-        rd_kafka_destroy(rk);
+      rd_kafka_conf_t *rd_conf = rd_kafka_conf_new();
+      set_broker_config(rd_conf, cluster_config);
+
+
+      /* Create Kafka C handle */
+      if (!(rk = rd_kafka_new(RD_KAFKA_PRODUCER, rd_conf, errstr, sizeof(errstr)))) {
+        LOG(ERROR) << "Failed to create new producer: " << errstr;
+        rd_kafka_conf_destroy(rd_conf);
         return -1;
       }
 
@@ -209,30 +226,71 @@ namespace kspp {
       return 0;
     }
 
-    int group_exists(std::string brokers, std::string group_id) {
+    // NEEDS TO BE REWRITTEN USING USING C++ API
+
+//    int group_exists2(std::shared_ptr<cluster_config> config, std::string group_id) {
+//      char errstr[128];
+//      rd_kafka_t *rk;
+//      /* Create Kafka C handle */
+//      if (!(rk = rd_kafka_new(RD_KAFKA_PRODUCER, nullptr,
+//                              errstr, sizeof(errstr)))) {
+//        LOG(ERROR) << "Failed to create new producer: " << errstr;
+//        rd_kafka_destroy(rk);
+//        return -1;
+//      }
+//
+//      /* Add brokers */
+//      if (rd_kafka_brokers_add(rk, config->get_brokers().c_str()) == 0) {
+//        LOG(ERROR) << "No valid brokers specified";
+//        rd_kafka_destroy(rk);
+//        return -1;
+//      }
+//
+//      rd_kafka_resp_err_t err = RD_KAFKA_RESP_ERR_NO_ERROR;
+//      const struct rd_kafka_group_list *grplist;
+//      int retries = 50; // 5 sec
+//
+//      /* FIXME: Wait for broker to come up. This should really be abstracted by librdkafka. */
+//      do {
+//        if (err) {
+//          //LOGPREFIX_ERROR << "Retrying group list in 1s, ec: " << rd_kafka_err2str(err) << " " << brokers;
+//          std::this_thread::sleep_for(100ms);
+//        }
+//        err = rd_kafka_list_groups(rk, group_id.c_str(), &grplist, 5000);
+//      } while ((err == RD_KAFKA_RESP_ERR__TRANSPORT ||
+//                err == RD_KAFKA_RESP_ERR_GROUP_LOAD_IN_PROGRESS) &&
+//               retries-- > 0);
+//
+//      if (err) {
+//        LOG(ERROR) << "Failed to retrieve groups, ec: " << rd_kafka_err2str(err);
+//        rd_kafka_destroy(rk);
+//        return -1;
+//      }
+//
+//      bool found = (grplist->group_cnt > 0);
+//      rd_kafka_group_list_destroy(grplist);
+//      rd_kafka_destroy(rk);
+//      return found ? 0 : -1; // 0 if ok
+//    }
+
+    // NEEDS TO BE REWRITTEN USING USING C++ API
+    bool group_exists2(std::shared_ptr<cluster_config> cluster_config, std::string group_id) {
       char errstr[128];
       rd_kafka_t *rk;
-      /* Create Kafka C handle */
-      if (!(rk = rd_kafka_new(RD_KAFKA_PRODUCER, nullptr,
-                              errstr, sizeof(errstr)))) {
-        LOG(ERROR) << "Failed to create new producer: " << errstr;
-        rd_kafka_destroy(rk);
-        return -1;
-      }
+      rd_kafka_conf_t *rd_conf = rd_kafka_conf_new();
+      set_broker_config(rd_conf, cluster_config);
 
-      /* Add brokers */
-      if (rd_kafka_brokers_add(rk, brokers.c_str()) == 0) {
-        LOG(ERROR) << "No valid brokers specified";
-        rd_kafka_destroy(rk);
-        return -1;
+      /* Create Kafka C handle */
+      if (!(rk = rd_kafka_new(RD_KAFKA_PRODUCER, rd_conf, errstr, sizeof(errstr)))) {
+        LOG(FATAL) << "rd_kafka_new failed";
+        rd_kafka_conf_destroy(rd_conf);
       }
 
       rd_kafka_resp_err_t err = RD_KAFKA_RESP_ERR_NO_ERROR;
       const struct rd_kafka_group_list *grplist;
       int retries = 50; // 5 sec
 
-      /* FIXME: Wait for broker to come up. This should really be abstracted
-      *        by librdkafka. */
+      /* FIXME: Wait for broker to come up. This should really be abstracted by librdkafka. */
       do {
         if (err) {
           //LOGPREFIX_ERROR << "Retrying group list in 1s, ec: " << rd_kafka_err2str(err) << " " << brokers;
@@ -246,15 +304,14 @@ namespace kspp {
       if (err) {
         LOG(ERROR) << "Failed to retrieve groups, ec: " << rd_kafka_err2str(err);
         rd_kafka_destroy(rk);
-        return -1;
+        throw std::runtime_error(rd_kafka_err2str(err));
       }
 
       bool found = (grplist->group_cnt > 0);
       rd_kafka_group_list_destroy(grplist);
       rd_kafka_destroy(rk);
-      return found ? 0 : -1; // 0 if ok
+      return found;
     }
-
   }//namespace kafka
 } // kspp
 

@@ -18,11 +18,11 @@ namespace kspp
       return std::string("http://localhost:8081");
     }
 
-    inline boost::filesystem::path default_statestore_directory() {
+    inline std::string default_statestore_directory() {
       if (const char *env_p = std::getenv("KSPP_STATE_DIR")) {
-        return boost::filesystem::path(env_p);
+        return boost::filesystem::path(env_p).generic_string();
       }
-      return boost::filesystem::temp_directory_path();
+      return boost::filesystem::temp_directory_path().generic_string();
     }
   }
 }

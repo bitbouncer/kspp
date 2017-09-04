@@ -1,7 +1,7 @@
 #include <cassert>
 #include <kspp/state_stores/rocksdb_counter_store.h>
 #include <kspp/impl/serdes/binary_serdes.h>
-#include <kspp/utils.h>
+#include <kspp/utils/utils.h>
 
 int main(int argc, char **argv) {
   boost::filesystem::path path = kspp::utils::default_statestore_directory();
