@@ -806,8 +806,6 @@ namespace kspp {
 
     void close();
 
-    //void start();
-
     void start(start_offset_t offset);
 
     void commit(bool force);

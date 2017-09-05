@@ -2,6 +2,8 @@
 #include <chrono>
 #include <deque>
 #include <kspp/kspp.h>
+#include "../kspp.h"
+
 #pragma once
 
 namespace kspp {
@@ -30,12 +32,10 @@ namespace kspp {
       return "count_by_value";
     }
 
-    void start() override {
-      _stream->start();
-    }
 
     void start(int64_t offset) override {
-      _counter_store.clear(); // the completely erases the counters... only valid for -2...
+      if (offset != kspp::OFFSET_STORED)
+        _counter_store.clear(); // the completely erases the counters...
       _stream->start(offset);
     }
 

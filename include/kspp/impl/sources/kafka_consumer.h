@@ -27,19 +27,15 @@ namespace kspp {
       return _partition;
     }
 
-    /**
-    * start from stored offset
-    * if no stored offset exists, starts from beginning
-    */
-    //void start();
-
     void start(int64_t offset);
 
     void stop();
 
     int32_t commit(int64_t offset, bool flush = false);
 
-    inline int64_t commited() const { return _can_be_committed; }
+    inline int64_t commited() const {
+      return _can_be_committed;
+    }
 
     int update_eof();
 

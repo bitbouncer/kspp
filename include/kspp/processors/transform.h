@@ -31,10 +31,6 @@ namespace kspp {
       return "transform_value";
     }
 
-    void start() override {
-      _source->start();
-    }
-
     void start(int64_t offset) override {
       _source->start(offset);
     }
@@ -101,10 +97,6 @@ namespace kspp {
 
     std::string simple_name() const override {
       return "transform";
-    }
-
-    void start() override {
-      _source->start();
     }
 
     void start(int64_t offset) override {

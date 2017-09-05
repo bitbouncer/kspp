@@ -22,10 +22,6 @@ namespace kspp {
       return "delay";
     }
 
-    void start() override {
-      _source->start();
-    }
-
     void start(int64_t offset) override {
       _source->start(offset);
     }
