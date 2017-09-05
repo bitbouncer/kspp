@@ -24,32 +24,6 @@ sudo make install-shared
 cd ..
 ```
 
-optional build folly and zookeeper support
-```
-#folly dependencies
-sudo apt-get install g++ automake autoconf autoconf-archive libtool libboost-all-dev libevent-dev libdouble-conversion-dev libgoogle-glog-dev \
-    libgflags-dev liblz4-dev liblzma-dev libsnappy-dev make zlib1g-dev binutils-dev libjemalloc-dev libssl-dev pkg-config libiberty-dev
-#zookeeper deps
-sudo apt-get install -y libzookeeper-mt-dev
-
-git clone https://github.com/facebook/folly.git
-git clone https://github.com/skarlsson/zk.git
-
-(cd folly/test && \
- rm -rf gtest && \
- wget https://github.com/google/googletest/archive/release-1.8.0.tar.gz && \
- tar zxf release-1.8.0.tar.gz && \
- rm -f release-1.8.0.tar.gz && \
- mv googletest-release-1.8.0 gtest)
-
-cd folly
-mkdir build
-cd build
-cmake -DCMAKE_BUILD_TYPE=Release ..
-cd ..
-cd ..
-```
-
 Install a late RapidJson, avro and librdkafka
 ```
 wget -O rapidjson.tar.gz "https://github.com/miloyip/rapidjson/archive/v1.1.0.tar.gz" && \
