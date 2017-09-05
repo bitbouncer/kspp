@@ -23,3 +23,5 @@ endif ()
 
 
 add_subdirectory(example14-raw-sink)
+add_subdirectory(example15-ssl)
+add_subdirectory(example16-raw-sink-ssl)

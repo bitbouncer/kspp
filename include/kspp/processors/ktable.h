@@ -37,13 +37,13 @@ namespace kspp {
       return "ktable";
     }
 
-    void start() override {
-      _source->start(_state_store.offset());
-    }
-
     void start(int64_t offset) override {
-      _state_store.start(offset);
-      _source->start(offset);
+      if (offset==kspp::OFFSET_STORED) {
+        _source->start(_state_store.offset());
+      } else {
+        _state_store.start(offset);
+        _source->start(offset);
+      }
     }
 
     void commit(bool flush) override {

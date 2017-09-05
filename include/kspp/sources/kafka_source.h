@@ -24,10 +24,6 @@ namespace kspp {
       _consumer.start(offset);
     }
 
-    void start() override {
-      _consumer.start();
-    }
-
     void close() override {
       if (_commit_chain.last_good_offset() >= 0 && _consumer.commited() > _commit_chain.last_good_offset())
         _consumer.commit(_commit_chain.last_good_offset(), true);

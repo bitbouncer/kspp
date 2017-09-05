@@ -16,11 +16,15 @@ static boost::uuids::uuid to_uuid(int64_t x) {
 
 int main(int argc, char **argv) {
   auto config = std::make_shared<kspp::cluster_config>();
-  config->set_brokers(kspp::utils::default_kafka_broker_uri());
+  config->set_brokers("SSL://localhost:9091");
+  config->set_ca_cert_path("/csi/openssl_client_keystore/ca-cert");
+  config->set_private_key_path("/csi/openssl_client_keystore/client_P51_client.pem",
+                               "/csi/openssl_client_keystore/client_P51_client.key",
+                               "abcdefgh");
   config->set_schema_registry(kspp::utils::default_schema_registry_uri());
   config->validate(); // optional
 
-  // maybe we should add http:// here...
+  // todo - this is not ssl ready must take a cluster config to get keys
   auto schema_registry = std::make_shared<kspp::avro_schema_registry>(kspp::utils::default_schema_registry_uri());
   auto avro_serdes = std::make_shared<kspp::avro_serdes>(schema_registry);
   auto avro_stream = std::make_shared<kspp::raw_kafka_sink<boost::uuids::uuid, int64_t, kspp::avro_serdes>>(

@@ -12,7 +12,7 @@ class raw_kafka_producer
   public:
   enum memory_management_mode { FREE = 1, COPY = 2 };
 
-  raw_kafka_producer(std::string brokers, std::string topic, std::chrono::milliseconds max_buffering_time);
+  raw_kafka_producer(std::shared_ptr<cluster_config> config, std::string topic);
 
   ~raw_kafka_producer();
 
@@ -44,7 +44,7 @@ class raw_kafka_producer
   }
 
   inline int32_t flush(int timeout_ms) {
-    /* auto sz = */ _producer->outq_len();
+    _producer->outq_len();
     return _producer->flush(timeout_ms);
   }
 

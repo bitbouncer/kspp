@@ -4,6 +4,7 @@
 #include <glog/logging.h>
 #include <kspp/impl/kafka_utils.h>
 #include <kspp/impl/rd_kafka_utils.h>
+#include <kspp/kspp.h>
 
 using namespace std::chrono_literals;
 namespace kspp {
@@ -89,6 +90,25 @@ namespace kspp {
   }
 
   void kafka_consumer::start(int64_t offset) {
+    if (offset == kspp::OFFSET_STORED) {
+      //just make shure we're not in for any surprises since this is a runtime variable in rdkafka...
+      assert(kspp::OFFSET_STORED == RdKafka::Topic::OFFSET_STORED);
+
+      if (kspp::kafka::group_exists2(_config, _consumer_group)) {
+        DLOG(INFO) << "kafka_consumer::start topic:" << _topic << ":" << _partition  << " consumer group: " << _consumer_group << " starting from OFFSET_STORED";
+      } else {
+        //non existing consumer group means start from beginning
+        LOG(INFO) << "kafka_consumer::start topic:" << _topic << ":" << _partition  << " consumer group: " << _consumer_group << " missing, OFFSET_STORED failed -> starting from OFFSET_BEGINNING";
+        offset = kspp::OFFSET_BEGINNING;
+      }
+    } else if (offset == kspp::OFFSET_BEGINNING) {
+      DLOG(INFO) << "kafka_consumer::start topic:" << _topic << ":" << _partition  << " consumer group: " << _consumer_group << " starting from OFFSET_BEGINNING";
+    } else if (offset == kspp::OFFSET_END) {
+      DLOG(INFO) << "kafka_consumer::start topic:" << _topic << ":" << _partition  << " consumer group: " << _consumer_group << " starting from OFFSET_END";
+    } else {
+      DLOG(INFO) << "kafka_consumer::start topic:" << _topic << ":" << _partition  << " consumer group: " << _consumer_group << " starting from fixed offset: " << offset;
+    }
+
     /*
     * Subscribe to topics
     */
@@ -98,18 +118,10 @@ namespace kspp {
       LOG(FATAL) << "kafka_consumer topic:" << _topic << ":" << _partition << ", failed to subscribe, reason:" << RdKafka::err2str(err0);
     }
 
-    if (offset==RdKafka::Topic::OFFSET_STORED) {
-      DLOG(INFO) << "kafka_consumer topic:" << _topic << ":" << _partition << " starting at stored offset";
-    } else if (offset==RdKafka::Topic::OFFSET_BEGINNING) {
-      DLOG(INFO) << "kafka_consumer topic:" << _topic << ":" << _partition << " starting at beginning";
-    } else {
-      DLOG(INFO) << "kafka_consumer topic:" << _topic << ":" << _partition << " starting at " << offset;
-    }
     update_eof();
-
   }
 
-  void kafka_consumer::start() {
+  /*void kafka_consumer::start() {
     if (kspp::kafka::group_exists2(_config, _consumer_group)) {
       DLOG(INFO) << "kafka_consumer::start group_exists: " <<  _consumer_group;
       start(RdKafka::Topic::OFFSET_STORED);
@@ -118,6 +130,7 @@ namespace kspp {
       start(RdKafka::Topic::OFFSET_BEGINNING);
     }
   }
+   */
 
   void kafka_consumer::stop() {
     if (_consumer) {

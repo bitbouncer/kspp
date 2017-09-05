@@ -31,7 +31,7 @@ namespace kspp {
     * start from stored offset
     * if no stored offset exists, starts from beginning
     */
-    void start();
+    //void start();
 
     void start(int64_t offset);
 

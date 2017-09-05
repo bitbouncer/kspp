@@ -19,13 +19,15 @@ using namespace std::chrono_literals;
 #define TOPIC_NAME "kspp_TextInput"
 
 int main(int argc, char **argv) {
-  auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example3-count");
+  auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example15-ssl");
   auto config = std::make_shared<kspp::cluster_config>();
-  config->set_brokers(kspp::utils::default_kafka_broker_uri());
+  config->set_brokers("SSL://localhost:9091");
+  config->set_ca_cert_path("/csi/openssl_client_keystore/ca-cert");
+  config->set_private_key_path("/csi/openssl_client_keystore/client_P51_client.pem",
+                               "/csi/openssl_client_keystore/client_P51_client.key",
+                               "abcdefgh");
   config->validate();
-
   auto builder = kspp::topology_builder(app_info, config);
-
   {
     auto topology = builder.create_topology();
     auto sink = topology->create_sink<kspp::kafka_sink<void, std::string, kspp::text_serdes>>(TOPIC_NAME);

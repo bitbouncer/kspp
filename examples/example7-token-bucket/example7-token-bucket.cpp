@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
     auto word_counts = topology->create_processors<kspp::count_by_key<std::string, size_t, kspp::mem_counter_store>>(limited_streams, 2000s);
     auto thoughput_limited_streams = topology->create_processors<kspp::thoughput_limiter<std::string, size_t>>(word_counts, 10); // messages per sec
     auto sinks = topology->create_processors<kspp::stream_sink<std::string, size_t>>(thoughput_limited_streams, &std::cerr);
-    topology->start(-2);
+    topology->start(kspp::OFFSET_BEGINNING);
     topology->flush();
   }
 }

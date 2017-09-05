@@ -53,32 +53,22 @@ int main(int argc, char **argv) {
           partition_list, TOPIC_NAME);
 
       std::regex rgx("\\s+");
-      auto word_streams = topology->create_processors<kspp::flat_map<void, std::string, std::string, void>>(sources,
-                                                                                                            [&rgx](const auto record,
-                                                                                                                   auto flat_map) {
-                                                                                                              std::sregex_token_iterator iter(
-                                                                                                                  record->value()->begin(),
-                                                                                                                  record->value()->end(),
-                                                                                                                  rgx,
-                                                                                                                  -1);
-                                                                                                              std::sregex_token_iterator end;
-                                                                                                              for (; iter !=
-                                                                                                                     end; ++iter) {
-                                                                                                                flat_map->push_back(
-                                                                                                                    std::make_shared<kspp::krecord<std::string, void>>(
-                                                                                                                        *iter));
-                                                                                                              }
-                                                                                                            });
+      auto word_streams = topology->create_processors<kspp::flat_map<void, std::string, std::string, void>>(
+          sources, [&rgx](const auto record, auto flat_map) {
+            std::sregex_token_iterator iter(record->value()->begin(), record->value()->end(), rgx,-1);
+            std::sregex_token_iterator end;
+            for (; iter != end; ++iter) {
+              flat_map->push_back(std::make_shared<kspp::krecord<std::string, void>>(*iter));
+            }
+          });
 
-      auto filtered_streams = topology->create_processors<kspp::filter<std::string, void>>(word_streams,
-                                                                                           [](const auto record) -> bool {
-                                                                                             return (record->key() !=
-                                                                                                     "hello");
-                                                                                           });
+      auto filtered_streams = topology->create_processors<kspp::filter<std::string, void>>(
+          word_streams, [](const auto record) -> bool {
+            return (record->key() != "hello");
+          });
 
       // this should be possible to do in memory
-      auto word_counts = topology->create_processors<kspp::count_by_key<std::string, int64_t, kspp::rocksdb_counter_store, kspp::binary_serdes>>(
-          filtered_streams, 100ms);
+      auto word_counts = topology->create_processors<kspp::count_by_key<std::string, int64_t, kspp::rocksdb_counter_store, kspp::binary_serdes>>(filtered_streams, 100ms);
 
       auto ex1 = topology->create_processors<kspp::ktable<std::string, int64_t, kspp::rocksdb_store, kspp::binary_serdes>>(
           word_counts);
@@ -86,7 +76,7 @@ int main(int argc, char **argv) {
       auto ex3 = topology->create_processors<kspp::ktable<std::string, int64_t, kspp::mem_windowed_store>>(word_counts,
                                                                                                            500ms, 10);
 
-      topology->start();
+      topology->start(kspp::OFFSET_STORED);
       topology->flush();
 
       std::cerr << "using range iterators " << std::endl;

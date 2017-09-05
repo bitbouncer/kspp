@@ -36,12 +36,10 @@ namespace kspp {
       return "count_by_key";
     }
 
-    void start() override {
-      _stream->start();
-    }
-
     void start(int64_t offset) override {
-      _counter_store.clear(); // the completely erases the counters... only valid for -2...
+      if (offset != kspp::OFFSET_STORED) {
+        _counter_store.clear(); // the completely erases the counters... only correct for BEGIN
+      }
       _stream->start(offset);
     }
 

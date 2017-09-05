@@ -146,7 +146,7 @@ int main(int argc, char **argv) {
       kspp::kafka_consumer consumer(config, "kspp_test4", 0, "kspp_test");
       assert(consumer.topic() == "kspp_test4");
       assert(consumer.partition() == 0);
-      consumer.start(); // start from after last committed offset
+      consumer.start(kspp::OFFSET_STORED);
 
       int64_t first_offset = -1;
       {
@@ -236,7 +236,7 @@ int main(int argc, char **argv) {
 
     assert(consumer.topic() == "kspp_test4");
     assert(consumer.partition() == 0);
-    consumer.start(); // start from last committed offset
+    consumer.start(kspp::OFFSET_STORED);
 
     int64_t first_offset = -1;
     {

@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
     auto avro_stream = topology->create_sink<kspp::kafka_sink<boost::uuids::uuid, int64_t, kspp::avro_serdes>>(
             "kspp_test10_avro", avro_serdes);
 
-    topology->start(-2);
+    topology->start(kspp::OFFSET_BEGINNING);
 
     std::vector<boost::uuids::uuid> ids;
     for (int i = 0; i != 10; ++i)
@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
     auto sources = topology->create_processors<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::avro_serdes>>(
             partition_list, "kspp_test10_avro", avro_serdes);
     topology->init_metrics();
-    topology->start(-2);
+    topology->start(kspp::OFFSET_BEGINNING);
     auto t0 = std::chrono::high_resolution_clock::now();
     topology->flush();
     auto t1 = std::chrono::high_resolution_clock::now();
@@ -74,7 +74,6 @@ int main(int argc, char **argv) {
       sz += i->get_metric("in_count");
     std::cout << "typed avro consumes: " << sz << " t: " << d1.count() << "ms\n" << std::endl;
     std::cout << "typed avro per sec : " << 1000.0 * sz / (double) d1.count() << std::endl;
-
   }
 
   {
@@ -84,7 +83,7 @@ int main(int argc, char **argv) {
     auto sources = topology->create_processors<kspp::kafka_source<kspp::GenericAvro, kspp::GenericAvro, kspp::avro_serdes>>(
             partition_list, "kspp_test10_avro", avro_serdes);
     topology->init_metrics();
-    topology->start(-2);
+    topology->start(kspp::OFFSET_BEGINNING);
     auto t0 = std::chrono::high_resolution_clock::now();
     topology->flush();
     auto t1 = std::chrono::high_resolution_clock::now();
@@ -95,7 +94,6 @@ int main(int argc, char **argv) {
       sz += i->get_metric("in_count");
     std::cout << "generic avro consumes: " << sz << " t: " << d1.count() << "ms\n" << std::endl;
     std::cout << "generic avro per sec : " << 1000.0 * sz / (double) d1.count() << std::endl;
-
   }
 
   {
@@ -107,7 +105,7 @@ int main(int argc, char **argv) {
     auto sink = topology->create_sink<kspp::kafka_sink<kspp::GenericAvro, kspp::GenericAvro, kspp::avro_serdes>>(
             sources, "kspp_test10_avro_B", avro_serdes);
     topology->init_metrics();
-    topology->start(-2);
+    topology->start(kspp::OFFSET_BEGINNING);
     auto t0 = std::chrono::high_resolution_clock::now();
     topology->flush();
     auto t1 = std::chrono::high_resolution_clock::now();
@@ -129,7 +127,7 @@ int main(int argc, char **argv) {
             partition_list, "kspp_test10_avro_B", avro_serdes);
     //auto sink = topology->create_sink<kspp::kafka_topic_sink<kspp::GenericAvro, kspp::GenericAvro, kspp::avro_serdes>>(sources, "kspp_test10_avro_B", avro_serdes);
     topology->init_metrics();
-    topology->start(-2);
+    topology->start(kspp::OFFSET_BEGINNING);
     auto t0 = std::chrono::high_resolution_clock::now();
     topology->flush();
     auto t1 = std::chrono::high_resolution_clock::now();
@@ -141,7 +139,6 @@ int main(int argc, char **argv) {
     std::cout << "generic avro read : " << sz << " t: " << d1.count() << "ms\n" << std::endl;
     std::cout << "generic avro read per sec : " << 1000.0 * sz / (double) d1.count() << std::endl;
   }
-
 
   return 0;
 }

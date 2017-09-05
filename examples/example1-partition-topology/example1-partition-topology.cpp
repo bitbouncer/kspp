@@ -205,7 +205,7 @@ int main(int argc, char **argv) {
             PARTITION, "kspp_UserProfile");
     auto pw_sink = topology->create_processor<kspp::stream_sink<int64_t, page_view_data>>(pageviews, &std::cerr);
     auto up_sink = topology->create_processor<kspp::stream_sink<int64_t, user_profile_data>>(userprofiles, &std::cerr);
-    topology->start(-2);
+    topology->start(kspp::OFFSET_BEGINNING);
     topology->flush();
   }
 
@@ -233,7 +233,7 @@ int main(int argc, char **argv) {
     topology->init_metrics();
     join->add_sink(sink);
 
-    topology->start(-2);
+    topology->start(kspp::OFFSET_BEGINNING);
     topology->flush();
     topology->for_each_metrics([](kspp::metric &m) {
       std::cerr << "metrics: " << m.name() << " : " << m.value() << std::endl;
@@ -249,7 +249,7 @@ int main(int argc, char **argv) {
             table_source);
     auto table2 = topology->create_processor<kspp::ktable<int64_t, user_profile_data, kspp::mem_windowed_store>>(
             table_source, 1000ms, 10); // 500ms slots and 10 of them...
-    topology->start();
+    topology->start(kspp::OFFSET_STORED);
     topology->flush();
 
     std::cerr << "using iterators " << std::endl;

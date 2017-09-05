@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
             });
 
     topology->init_metrics();
-    topology->start(-2);
+    topology->start(kspp::OFFSET_BEGINNING);
 
     // first sync table
     std::cout << "before sync" << std::endl;

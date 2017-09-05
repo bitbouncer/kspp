@@ -35,13 +35,10 @@ namespace kspp {
       return "left_join";
     }
 
-    void start() override {
-      _table->start();
-      _stream->start();
-    }
-
     void start(int64_t offset) override {
-      _table->start();
+      // if we request begin - should we restart table here???
+      //it seems that we should retain whatever's in the cache in as many cases as possible
+      _table->start(kspp::OFFSET_STORED);
       _stream->start(offset);
     }
 

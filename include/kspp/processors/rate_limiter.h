@@ -34,13 +34,9 @@ namespace kspp {
       return "rate_limiter";
     }
 
-    void start() override {
-      _source->start();
-    }
-
     void start(int64_t offset) override {
       _source->start(offset);
-      if (offset == -2)
+      if (offset == kspp::OFFSET_BEGINNING)
         _token_bucket->clear();
     }
 

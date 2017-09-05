@@ -8,9 +8,11 @@
 #include <kspp/sources/pipe.h>
 #include <kspp/state_stores/mem_store.h>
 #include <kspp/sources/kafka_source.h>
-#include <kspp/processors/ktable.h>
+#include <kspp/sinks/null_sink.h>
+//#include <kspp/processors/ktable.h>
 
 using namespace std::chrono_literals;
+using namespace kspp;
 
 struct record {
   std::string key;
@@ -29,7 +31,7 @@ int main(int argc, char **argv) {
     test_data.push_back(r);
   }
 
-  auto config = std::make_shared<kspp::cluster_config>();
+  auto config = std::make_shared<cluster_config>();
   config->set_brokers("localhost");
   config->set_consumer_buffering_time(10ms);
   config->set_producer_buffering_time(10ms);
@@ -38,26 +40,26 @@ int main(int argc, char **argv) {
   kspp::kafka::wait_for_group(config, "dummy");
 
   auto app_info = std::make_shared<kspp::app_info>("kspp", "test5");
-  auto builder = kspp::topology_builder(app_info, config);
+  auto builder = topology_builder(app_info, config);
 
-  auto nr_of_partitions = kspp::kafka::get_number_partitions(config, "kspp_test5");
-  auto partition_list = kspp::get_partition_list(nr_of_partitions);
+  auto nr_of_partitions = kafka::get_number_partitions(config, "kspp_test5");
+  auto partition_list = get_partition_list(nr_of_partitions);
 
-  auto t0 = kspp::milliseconds_since_epoch();
+  auto t0 = milliseconds_since_epoch();
   {
     auto topology = builder.create_topology();
 
-    auto streams = topology->create_processors<kspp::kafka_source<std::string, std::string, kspp::binary_serdes>>(
+    // we need to consume the source to be able to commit - a null sink is perfect
+    auto streams = topology->create_processors<kafka_source<std::string, std::string, binary_serdes>>(
         partition_list, "kspp_test5");
-    auto ktables = topology->create_processors<kspp::ktable<std::string, std::string, kspp::mem_store>>(streams);
+    auto null_sinks = topology->create_processors<null_sink<std::string, std::string>>(streams);
 
+    // now create new data
     auto pipe = topology->create_processor<kspp::pipe<std::string, std::string>>(-1);
-    auto table_stream = topology->create_sink<kspp::kafka_sink<std::string, std::string, kspp::binary_serdes>>(
-        "kspp_test5");
+    auto table_stream = topology->create_sink<kafka_sink<std::string, std::string, binary_serdes>>("kspp_test5");
     pipe->add_sink(table_stream);
 
-    topology->init(); // remove
-    topology->start(-1);
+    topology->start(kspp::OFFSET_END);
 
     // insert testdata in pipe
     for (auto &i : test_data) {
@@ -69,7 +71,6 @@ int main(int argc, char **argv) {
       topology->flush();
     }
     topology->commit(true);
-
     assert(table_stream->get_metric("in_count") == TEST_SIZE);
 
     int64_t sz = 0;
@@ -77,13 +78,6 @@ int main(int argc, char **argv) {
       sz += i->get_metric("in_count");
     LOG(INFO) << "sz: " << sz << " expected : " <<  TEST_SIZE;
     assert(sz == TEST_SIZE);
-
-    // verify timestamps on all elements in ktable
-    for (auto &&i : ktables)
-      for (auto &&j : *i) {
-        auto ts = j->event_time();
-        assert(ts == t0);
-      }
   }
 
   // now pick up from last commit
@@ -94,29 +88,30 @@ int main(int argc, char **argv) {
     auto pipe = topology->create_processor<kspp::pipe<std::string, std::string>>(-1);
     auto table_stream = topology->create_sink<kspp::kafka_sink<std::string, std::string, kspp::binary_serdes>>("kspp_test5");
     pipe->add_sink(table_stream);
-
-    topology->init(); // remove
-    topology->start();
+    topology->start(kspp::OFFSET_STORED);
 
     // insert testdata in pipe
     for (auto &i : test_data) {
       pipe->produce(i.key, i.value);
     }
 
+
     std::chrono::time_point<std::chrono::system_clock> end = std::chrono::system_clock::now() + 2000ms;
     while (std::chrono::system_clock::now() < end) {
       topology->flush();
     }
     topology->commit(true);
-
     {
       auto actual = table_stream->get_metric("in_count");
       assert(actual == TEST_SIZE);
     }
 
     int64_t sz = 0;
-    for (auto &&i : streams)
+    for (auto &&i : streams) {
+      auto s = i->get_metric("in_count");
+      LOG(INFO) << i->simple_name() <<  ", count:" << s;
       sz += i->get_metric("in_count");
+    }
     LOG(INFO) << "sz: " << sz << " expected : " <<  TEST_SIZE;
 
     assert(sz == TEST_SIZE);

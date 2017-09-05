@@ -42,13 +42,8 @@ namespace kspp {
       return type_name<V>::get();
     }
 
-    void start() override {
-      _routing_table->start();
-      _source->start();
-    }
-
     void start(int64_t offset) override {
-      _routing_table->start();
+      _routing_table->start(kspp::OFFSET_STORED);
       _source->start(offset);
     }
 

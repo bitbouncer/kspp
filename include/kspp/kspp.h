@@ -32,6 +32,7 @@ namespace kspp {
 
   class topology;
 
+  enum start_offset_t { OFFSET_BEGINNING=-2, OFFSET_END=-1, OFFSET_STORED=-1000 };
 
   class processor {
   public:
@@ -164,11 +165,6 @@ namespace kspp {
         if (!process_one(kspp::milliseconds_since_epoch())) { ;
         }
       punctuate(milliseconds_since_epoch());
-    }
-
-    virtual void start() {
-      for(auto i : upstream_)
-        i->start();
     }
 
     virtual void start(int64_t offset) {
@@ -626,9 +622,6 @@ namespace kspp {
     }
   };
 
-
-
-
   template<class K, class V>
   class merge : public event_consumer<K, V>, public partition_source<K, V> {
   public:
@@ -813,9 +806,9 @@ namespace kspp {
 
     void close();
 
-    void start();
+    //void start();
 
-    void start(int offset);
+    void start(start_offset_t offset);
 
     void commit(bool force);
 

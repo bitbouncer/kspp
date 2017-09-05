@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
     auto ex1 = topology->create_processors<kspp::ktable<std::string, int64_t, kspp::mem_store>>(word_counts);
     auto ex2 = topology->create_processors<kspp::ktable<std::string, int64_t, kspp::mem_windowed_store>>(word_counts, 500ms, 10);
 
-    topology->start();
+    topology->start(kspp::OFFSET_BEGINNING);
     topology->flush();
 
     std::cerr << "using iterators " << std::endl;

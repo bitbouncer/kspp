@@ -71,7 +71,7 @@ int main(int argc, char **argv) {
     auto topology = builder.create_topology();
     auto sources = topology->create_processors<kspp::kafka_source<int, std::string, kspp::text_serdes>>(partition_list, "kspp_example5_usernames");
     topology->create_processors<kspp::stream_sink<int, std::string>>(sources, &std::cerr);
-    topology->start(-2);
+    topology->start(kspp::OFFSET_BEGINNING);
     topology->flush();
 
   }
@@ -87,7 +87,7 @@ int main(int argc, char **argv) {
     auto repartitions = topology->create_processors<kspp::repartition_by_foreign_key<int, std::string, int, kspp::text_serdes>>(sources, routing_tables, topic_sink);
 
     topology->init_metrics();
-    topology->start(-2);
+    topology->start(kspp::OFFSET_BEGINNING);
     topology->flush();
     topology->for_each_metrics([](kspp::metric& m) {
       std::cerr << "metrics: " << m.name() << " : " << m.value() << std::endl;
@@ -102,7 +102,7 @@ int main(int argc, char **argv) {
     auto topology = builder.create_topology();
     auto sources = topology->create_processors<kspp::kafka_source<int, std::string, kspp::text_serdes>>(partition_list, "kspp_example5_usernames.per-channel");
     topology->create_processors<kspp::stream_sink<int, std::string>>(sources, &std::cerr);
-    topology->start(-2);
+    topology->start(kspp::OFFSET_BEGINNING);
     topology->flush();
     topology->for_each_metrics([](kspp::metric& m) {
       std::cerr << "metrics: " << m.name() << " : " << m.value() << std::endl;

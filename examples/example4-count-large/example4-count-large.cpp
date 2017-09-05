@@ -42,7 +42,7 @@ int main(int argc, char **argv) {
     for (auto i : word_streams)
       i->add_sink(word_sink);
 
-    topology->start(-2);
+    topology->start(kspp::OFFSET_BEGINNING);
     topology->flush();
   }
 
@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
     auto word_counts = topology->create_processors<kspp::count_by_key<std::string, size_t, kspp::mem_counter_store>>(word_sources, 10s);
     
     topology->init_metrics();
-    topology->start(-2);
+    topology->start(kspp::OFFSET_BEGINNING);
     topology->flush();
 
     for (auto i : word_counts)

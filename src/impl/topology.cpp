@@ -161,7 +161,8 @@ namespace kspp {
       i->close();
   }
 
-  void topology::start() {
+  /*
+   * void topology::start() {
     if (!_is_init)
       init();
     for (auto &&i : _top_partition_processors)
@@ -169,8 +170,9 @@ namespace kspp {
     //for (auto i : _topic_processors) // those are only sinks??
     //  i->start();
   }
+   */
 
-  void topology::start(int offset) {
+  void topology::start(start_offset_t offset) {
     if (!_is_init)
       init();
     for (auto &&i : _top_partition_processors)

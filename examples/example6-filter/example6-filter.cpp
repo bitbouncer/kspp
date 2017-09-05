@@ -56,7 +56,7 @@ int main(int argc, char **argv) {
     auto sinks = topology->create_processors<stream_sink<std::string, void>>(mypipes, &std::cerr);
     for (auto i : mypipes)
       i->produce("extra message injected");
-    topology->start(-2);
+    topology->start(kspp::OFFSET_BEGINNING);
     topology->flush();
   }
 }
