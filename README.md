@@ -202,7 +202,7 @@ cd ../../..
 cd glog
 mkdir build
 cd build
-cmake -G "Visual Studio %VISUALSTUDIO_VERSION_MAJOR% Win64" ..
+cmake -G "Visual Studio %VISUALSTUDIO_VERSION_MAJOR% Win64" -DBUILD_SHARED_LIBS=1 ..
 msbuild ALL_BUILD.vcxproj /p:Configuration=Debug /p:Platform=x64 /maxcpucount:12
 msbuild ALL_BUILD.vcxproj /p:Configuration=Release /p:Platform=x64 /maxcpucount:12
 cd ..
