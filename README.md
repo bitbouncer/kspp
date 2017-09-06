@@ -118,9 +118,6 @@ git clone https://github.com/edenhill/librdkafka.git
 git clone https://github.com/curl/curl.git
 git clone https://github.com/apache/avro.git
 git clone https://github.com/miloyip/rapidjson.git
-git clone https://github.com/bitbouncer/csi-async.git
-git clone https://github.com/bitbouncer/csi-hcl-asio.git
-
 git clone https://github.com/bitbouncer/kspp.git
 
 set VISUALSTUDIO_VERSION_MAJOR=14
