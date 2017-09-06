@@ -118,6 +118,7 @@ git clone https://github.com/edenhill/librdkafka.git
 git clone https://github.com/curl/curl.git
 git clone https://github.com/apache/avro.git
 git clone https://github.com/miloyip/rapidjson.git
+git clone https://github.com/google/glog.git
 git clone https://github.com/bitbouncer/kspp.git
 
 set VISUALSTUDIO_VERSION_MAJOR=14
@@ -197,6 +198,15 @@ mkdir include\avro\buffer
 copy /y api\*.hh include\avro
 copy /y api\buffer\*.hh include\avro\buffer
 cd ../../..
+
+cd glog
+mkdir build
+cd build
+cmake -G "Visual Studio %VISUALSTUDIO_VERSION_MAJOR% Win64" ..
+msbuild ALL_BUILD.vcxproj /p:Configuration=Debug /p:Platform=x64 /maxcpucount:12
+msbuild ALL_BUILD.vcxproj /p:Configuration=Release /p:Platform=x64 /maxcpucount:12
+cd ..
+cd ..
 
 cd kspp
 call rebuild_windows_vs14-all-options.bat
