@@ -364,22 +364,29 @@ namespace kspp {
     }
 
     inline void produce(std::shared_ptr<krecord<K, V>> r) {
-      this->_queue.push_back(std::make_shared<kevent<K, V>>(r));
+      if (r)
+        this->_queue.push_back(std::make_shared<kevent<K, V>>(r));
     }
 
     inline void produce(std::shared_ptr<kevent<K, V>> ev) {
-      this->_queue.push_back(ev);
+      if (ev)
+        this->_queue.push_back(ev);
     }
 
     inline void produce(uint32_t partition_hash, std::shared_ptr<krecord<K, V>> r) {
-      auto ev = std::make_shared<kevent<K, V>>(r, nullptr, partition_hash);
-      this->_queue.push_back(ev);
+      if (r) {
+        auto ev = std::make_shared<kevent<K, V>>(r, nullptr, partition_hash);
+        this->_queue.push_back(ev);
+      }
     }
 
     inline void produce(uint32_t partition_hash, std::shared_ptr<kevent<K, V>> t) {
-      auto ev2 = std::make_shared<kevent<K, V>>(t->record(), t->id(),
-                                                partition_hash); // make new one since change the partition
-      this->_queue.push_back(ev2);
+      if (t) {
+        auto ev2 = std::make_shared<kevent<K, V>>(t->record(),
+                                                  t->id(),
+                                                  partition_hash); // make new one since change the partition
+        this->_queue.push_back(ev2);
+      }
     }
 
     inline void produce(const K &key, const V &value, int64_t ts = milliseconds_since_epoch()) {
@@ -416,23 +423,31 @@ namespace kspp {
     }
 
     inline void produce(std::shared_ptr<krecord<void, V>> r) {
-      this->_queue.push_back(std::make_shared<kevent<void, V>>(r));
+      if (r) {
+        this->_queue.push_back(std::make_shared<kevent<void, V>>(r));
+      }
     }
 
     inline void produce(std::shared_ptr<kevent<void, V>> ev) {
-      this->_queue.push_back(ev);
+      if (ev) {
+        this->_queue.push_back(ev);
+      }
     }
 
     inline void produce(uint32_t partition_hash, std::shared_ptr<krecord<void, V>> r) {
-      auto ev = std::make_shared<kevent<void, V>>(r);
-      ev->_partition_hash = partition_hash;
-      this->_queue.push_back(ev);
+      if (r) {
+        auto ev = std::make_shared<kevent<void, V>>(r);
+        ev->_partition_hash = partition_hash;
+        this->_queue.push_back(ev);
+      }
     }
 
     inline void produce(uint32_t partition_hash, std::shared_ptr<kevent<void, V>> ev) {
-      auto ev2 = std::make_shared<kevent<void, V>>(*ev); // make new one since change the partition
-      ev2->_partition_hash = partition_hash;
-      this->_queue.push_back(ev2);
+      if (ev) {
+        auto ev2 = std::make_shared<kevent<void, V>>(*ev); // make new one since change the partition
+        ev2->_partition_hash = partition_hash;
+        this->_queue.push_back(ev2);
+      }
     }
 
     inline void produce(const V &value, int64_t ts = milliseconds_since_epoch()) {
@@ -464,23 +479,29 @@ namespace kspp {
     }
 
     inline void produce(std::shared_ptr<krecord<K, void>> r) {
-      this->_queue.push_back(std::make_shared<kevent<K, void>>(r));
+      if (r)
+        this->_queue.push_back(std::make_shared<kevent<K, void>>(r));
     }
 
     inline void produce(std::shared_ptr<kevent<K, void>> ev) {
-      this->_queue.push_back(ev);
+      if (ev)
+        this->_queue.push_back(ev);
     }
 
     inline void produce(uint32_t partition_hash, std::shared_ptr<krecord<K, void>> r) {
-      auto ev = std::make_shared<kevent<K, void>>(r);
-      ev->_partition_hash = partition_hash;
-      this->_queue.push_back(ev);
+      if (r) {
+        auto ev = std::make_shared<kevent<K, void>>(r);
+        ev->_partition_hash = partition_hash;
+        this->_queue.push_back(ev);
+      }
     }
 
     inline void produce(uint32_t partition_hash, std::shared_ptr<kevent<K, void>> ev) {
-      auto ev2 = std::make_shared<kevent<K, void>>(*ev); // make new one since change the partition
-      ev2->_partition_hash = partition_hash;
-      this->_queue.push_back(ev2);
+      if (ev) {
+        auto ev2 = std::make_shared<kevent<K, void>>(*ev); // make new one since change the partition
+        ev2->_partition_hash = partition_hash;
+        this->_queue.push_back(ev2);
+      }
     }
 
     inline void produce(const K &key, int64_t ts = milliseconds_since_epoch()) {

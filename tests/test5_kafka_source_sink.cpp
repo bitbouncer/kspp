@@ -52,7 +52,7 @@ int main(int argc, char **argv) {
     // we need to consume the source to be able to commit - a null sink is perfect
     auto streams = topology->create_processors<kafka_source<std::string, std::string, binary_serdes>>(
         partition_list, "kspp_test5");
-    auto null_sinks = topology->create_processors<null_sink<std::string, std::string>>(streams);
+    auto sink = topology->create_sink<null_sink<std::string, std::string>>(streams);
 
     // now create new data
     auto pipe = topology->create_processor<kspp::pipe<std::string, std::string>>(-1);

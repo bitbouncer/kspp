@@ -1,4 +1,5 @@
 #include <kspp/utils/cluster_uri.h>
+#include <regex>
 #include <algorithm>
 
 cluster_uri::cluster_uri(std::string s)
@@ -43,4 +44,14 @@ cluster_uri::cluster_uri(std::string s, std::string default_scheme)
     }
   }
   std::transform(scheme_.begin(), scheme_.end(), scheme_.begin(), ::tolower);
+}
+
+std::vector<std::string> cluster_uri::split_authority() const{
+  std::vector<std::string> result;
+  std::regex rgx("[,\\s+]");
+  std::sregex_token_iterator iter(authority_.begin(), authority_.end(), rgx, -1);
+  std::sregex_token_iterator end;
+  for (; iter != end; ++iter)
+    result.push_back(*iter);
+  return result;
 }

@@ -25,7 +25,7 @@ int main(int argc, char **argv) {
   config->validate(); // optional
 
   // todo - this is not ssl ready must take a cluster config to get keys
-  auto schema_registry = std::make_shared<kspp::avro_schema_registry>(kspp::utils::default_schema_registry_uri());
+  auto schema_registry = std::make_shared<kspp::avro_schema_registry>(config);
   auto avro_serdes = std::make_shared<kspp::avro_serdes>(schema_registry);
   auto avro_stream = std::make_shared<kspp::raw_kafka_sink<boost::uuids::uuid, int64_t, kspp::avro_serdes>>(
       config,

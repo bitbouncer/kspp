@@ -16,6 +16,8 @@ int main(int argc, char **argv) {
 
   auto config = std::make_shared<kspp::cluster_config>();
   config->set_brokers(kspp::utils::default_kafka_broker_uri());
+  config->set_consumer_buffering_time(10ms);
+  config->set_producer_buffering_time(10ms);
 
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example2-join");
   auto builder = kspp::topology_builder(app_info, config);

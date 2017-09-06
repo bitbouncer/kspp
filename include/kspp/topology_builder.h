@@ -17,9 +17,10 @@ namespace kspp {
     }
 
     std::shared_ptr<topology> create_topology() {
-      std::string id = "topology-" + std::to_string(_next_topology_id);
-      _next_topology_id++;
-      return std::make_shared<topology>(_app_info, _cluster_config, id);
+      return std::make_shared<topology>(
+          _app_info,
+          _cluster_config,
+          std::to_string(_next_topology_id++));
     }
 
   private:

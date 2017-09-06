@@ -102,16 +102,30 @@ namespace kspp {
         return nullptr;
 
       int64_t timestamp = (ref->timestamp().timestamp >= 0) ? ref->timestamp().timestamp : milliseconds_since_epoch();
+
+      if (ref->key_len()==0) {
+        LOG_EVERY_N(WARNING, 100)
+          << KSPP_LOG_NAME
+          << ", skipping item with empty key ("
+          << google::COUNTER
+          << ")";
+        return nullptr;
+      }
+
       K tmp_key;
       {
 
         size_t consumed = this->_codec->decode((const char *) ref->key_pointer(), ref->key_len(), tmp_key);
         if (consumed == 0) {
-          LOG(ERROR) << KSPP_LOG_NAME << ", decode key failed, actual key sz:" << ref->key_len();
+          LOG_IF(ERROR, ref->key_len()!=0) << KSPP_LOG_NAME << ", decode key failed, actual key sz:" << ref->key_len();
           return nullptr;
         } else if (consumed != ref->key_len()) {
-          LOG(ERROR) << KSPP_LOG_NAME << ", decode key failed, consumed: " << consumed << ", actual: "
-                     << ref->key_len();
+          LOG(ERROR)
+              << KSPP_LOG_NAME
+              << ", decode key failed, consumed: "
+              << consumed
+              << ", actual: "
+              << ref->key_len();
           return nullptr;
         }
       }

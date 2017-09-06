@@ -30,10 +30,7 @@ namespace kspp {
     }
 
     inline size_t queue_len() const {
-      if (_closed)
-        return 0;
-      else
-        return _producer->outq_len();
+      return _closed ? 0 : _producer->outq_len();
     }
 
     inline void poll(int timeout) {
@@ -49,10 +46,7 @@ namespace kspp {
     }
 
     inline int32_t flush(int timeout_ms) {
-      if(_closed)
-        return 0;
-      /* auto sz = */ _producer->outq_len();
-      return _producer->flush(timeout_ms);
+      return (queue_len() == 0) ? 0 : _producer->flush(timeout_ms);
     }
 
   private:

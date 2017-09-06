@@ -84,7 +84,7 @@ namespace kspp {
     _closed = true;
     if (_consumer) {
       _consumer->close();
-      LOG(INFO) << "kafka_consumer topic:" << _topic << "" << _partition << ", closed - consumed " << _msg_cnt << " messages (" << _msg_bytes << " bytes)";
+      LOG(INFO) << "kafka_consumer topic:" << _topic << ":" << _partition << ", closed - consumed " << _msg_cnt << " messages (" << _msg_bytes << " bytes)";
     }
     _consumer = nullptr;
   }
@@ -136,7 +136,11 @@ namespace kspp {
     if (_consumer) {
       RdKafka::ErrorCode err = _consumer->unassign();
       if (err) {
-        LOG(FATAL) << "kafka_consumer::stop topic:" << _topic << ":" << _partition << ", failed to stop, reason:"
+        LOG(FATAL) << "kafka_consumer::stop topic:"
+                   << _topic
+                   << ":"
+                   << _partition
+                   << ", failed to stop, reason:"
                    << RdKafka::err2str(err);
       }
     }
@@ -153,7 +157,7 @@ namespace kspp {
 
     if (low == high) {
       _eof = true;
-      LOG(INFO) << "kafka_consumer topic:" << _topic << ":" << _partition << " low == high ";
+      LOG(INFO) << "kafka_consumer topic:" << _topic << ":" << _partition << " [empty], eof at:" << high;
     } else {
       auto ec = _consumer->position(_topic_partition);
       if (ec) {
@@ -162,7 +166,7 @@ namespace kspp {
       }
       auto cursor = _topic_partition[0]->offset();
       _eof = (cursor + 1 == high);
-      LOG(INFO) << "kafka_consumer topic:" << _topic << ":" << _partition << " cursor: " << cursor << " eof at:" << high;
+      LOG(INFO) << "kafka_consumer topic:" << _topic << ":" << _partition << " cursor: " << cursor << ", eof at:" << high;
     }
     return 0;
   }

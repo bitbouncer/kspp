@@ -215,6 +215,7 @@ file(GLOB LIB_SRCS
         src/impl/serdes/*.cpp
         src/impl/hash/*.cpp
         src/impl/utils/*.cpp
+        src/utils/*.cpp
         src/beta/*.cpp
         )
 

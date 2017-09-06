@@ -6,7 +6,9 @@
 namespace kspp {
   cluster_config::cluster_config()
       : producer_buffering_(std::chrono::milliseconds(1000))
-  , conumer_buffering_(std::chrono::milliseconds(1000)){
+      , consumer_buffering_(std::chrono::milliseconds(1000))
+      , schema_registry_timeout_(std::chrono::milliseconds(1000))
+  , _fail_fast(true){
   }
 
   void cluster_config::set_brokers(std::string brokers){
@@ -45,12 +47,21 @@ namespace kspp {
     schema_registry_uri_ = cu.str();
   }
 
+  void cluster_config::set_schema_registry_timeout(std::chrono::milliseconds timeout){
+    schema_registry_timeout_ = timeout;
+  }
+
   void cluster_config::set_consumer_buffering_time(std::chrono::milliseconds timeout){
-    conumer_buffering_ = timeout;
+    consumer_buffering_ = timeout;
   }
 
   void cluster_config::set_producer_buffering_time(std::chrono::milliseconds timeout){
     producer_buffering_ = timeout;
+  }
+
+  void cluster_config::set_fail_fast(bool state)
+  {
+    _fail_fast = state;
   }
 
   void cluster_config::validate() const
@@ -64,8 +75,8 @@ namespace kspp {
     }
     if (schema_registry_uri_.size()>0) {
       cluster_uri cu(schema_registry_uri_);
-      if (cu.scheme() == "ssl") {
-        LOG_IF(FATAL, ca_cert_path_.size() == 0) << "schema registry using ssl and no ca cert configured";
+      if (cu.scheme() == "https") {
+        LOG_IF(FATAL, ca_cert_path_.size() == 0) << "schema registry using https and no ca cert configured";
       }
     }
   }

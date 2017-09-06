@@ -1,4 +1,5 @@
 #include <string>
+#include <vector>
 
 #pragma once
 
@@ -24,6 +25,8 @@ public:
   std::string scheme() const { return scheme_; }
 
   std::string authority() const { return authority_; }
+
+  std::vector<std::string> split_authority() const;
 
   std::string path() const { return path_; }
 

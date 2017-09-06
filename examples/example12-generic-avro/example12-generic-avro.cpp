@@ -36,8 +36,7 @@ int main(int argc, char **argv) {
   config->set_schema_registry(kspp::utils::default_schema_registry_uri());
   config->validate(); // optional
 
-
-  auto schema_registry = std::make_shared<kspp::avro_schema_registry>(kspp::utils::default_schema_registry_uri());
+  auto schema_registry = std::make_shared<kspp::avro_schema_registry>(config);
   auto avro_serdes = std::make_shared<kspp::avro_serdes>(schema_registry);
   auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example12-generic-avro");
   auto builder = kspp::topology_builder(app_info, config);

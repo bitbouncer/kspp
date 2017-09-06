@@ -13,6 +13,8 @@ namespace kspp {
     void set_schema_registry(std::string);
     void set_consumer_buffering_time(std::chrono::milliseconds timeout);
     void set_producer_buffering_time(std::chrono::milliseconds timeout);
+    void set_schema_registry_timeout(std::chrono::milliseconds timeout);
+    void set_fail_fast(bool state);
 
 
     std::string get_brokers() const {
@@ -40,13 +42,24 @@ namespace kspp {
     }
 
     std::chrono::milliseconds get_consumer_buffering_time() const {
-      return conumer_buffering_;
+      return consumer_buffering_;
+    }
+
+    std::chrono::milliseconds get_schema_registry_timeout() const {
+      return schema_registry_timeout_;
     }
 
     std::string get_storage_root() const {
       return root_path_;
     }
 
+    std::string get_schema_registry() const {
+      return schema_registry_uri_;
+    }
+
+    bool get_fail_fast() const {
+      return _fail_fast;
+    }
 
     void validate() const;
 
@@ -57,8 +70,10 @@ namespace kspp {
     std::string private_key_path_;
     std::string private_key_passphrase_;
     std::chrono::milliseconds producer_buffering_;
-    std::chrono::milliseconds conumer_buffering_;
+    std::chrono::milliseconds consumer_buffering_;
+    std::chrono::milliseconds schema_registry_timeout_;
     std::string root_path_;
     std::string schema_registry_uri_;
+    bool _fail_fast;
   };
 }

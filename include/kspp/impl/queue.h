@@ -22,8 +22,10 @@ namespace kspp {
     }
 
     inline void push_back(std::shared_ptr<KEVENT> p) {
-      spinlock::scoped_lock xxx(_spinlock);
-      _queue.push_back(p);
+      if  (p!=nullptr && p.get()!=nullptr) {
+        spinlock::scoped_lock xxx(_spinlock);
+        _queue.push_back(p);
+      }
     }
 
     inline std::shared_ptr<KEVENT> front() {

@@ -17,7 +17,7 @@ namespace kspp {
                               std::string topic,
                               int32_t partition,
                               std::shared_ptr<CODEC> codec)
-            : partition_sink<K, V>(partition), _codec(codec)
+        : partition_sink<K, V>(partition), _codec(codec)
         , _impl(cconfig, topic)
         , _fixed_partition(partition)
         , _in_count("in_count")
@@ -91,12 +91,14 @@ namespace kspp {
   template<class K, class V, class CODEC>
   class kafka_partition_sink : public kafka_partition_sink_base<K, V, CODEC> {
   public:
-    kafka_partition_sink(topology &t, int32_t partition, std::string topic,
+    kafka_partition_sink(topology &t,
+                         int32_t partition,
+                         std::string topic,
                          std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : kafka_partition_sink_base<K, V, CODEC>(t.get_cluster_config(),
-                                                     topic,
-                                                     partition,
-                                                     codec) {
+        : kafka_partition_sink_base<K, V, CODEC>(t.get_cluster_config(),
+                                                 topic,
+                                                 partition,
+                                                 codec) {
     }
 
     ~kafka_partition_sink() override {
@@ -130,12 +132,14 @@ namespace kspp {
   template<class V, class CODEC>
   class kafka_partition_sink<void, V, CODEC> : public kafka_partition_sink_base<void, V, CODEC> {
   public:
-    kafka_partition_sink(topology &t, int32_t partition, std::string topic,
+    kafka_partition_sink(topology &t,
+                         int32_t partition,
+                         std::string topic,
                          std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : kafka_partition_sink_base<void, V, CODEC>(t.get_cluster_config(),
-                                                        topic,
-                                                        partition,
-                                                        codec) {
+        : kafka_partition_sink_base<void, V, CODEC>(t.get_cluster_config(),
+                                                    topic,
+                                                    partition,
+                                                    codec) {
     }
 
     ~kafka_partition_sink() override {
@@ -165,12 +169,14 @@ namespace kspp {
   template<class K, class CODEC>
   class kafka_partition_sink<K, void, CODEC> : public kafka_partition_sink_base<K, void, CODEC> {
   public:
-    kafka_partition_sink(topology &t, int32_t partition, std::string topic,
+    kafka_partition_sink(topology &t,
+                         int32_t partition,
+                         std::string topic,
                          std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : kafka_partition_sink_base<K, void, CODEC>(t.get_cluster_config(),
-                                                        topic,
-                                                        partition,
-                                                        codec) {
+        : kafka_partition_sink_base<K, void, CODEC>(t.get_cluster_config(),
+                                                    topic,
+                                                    partition,
+                                                    codec) {
     }
 
     ~kafka_partition_sink() override {

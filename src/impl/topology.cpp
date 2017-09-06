@@ -37,7 +37,7 @@ namespace kspp {
   }
 
   std::string topology::name() const {
-    return "[" + _app_info->identity() + "]" + _topology_id;
+    return "[" + _app_info->identity() + "]#" + _topology_id;
   }
 
 //the metrics should look like this...
