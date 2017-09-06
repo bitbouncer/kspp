@@ -124,7 +124,7 @@ set VISUALSTUDIO_VERSION_MAJOR=14
 "C:\Program Files (x86)\Microsoft Visual Studio %VISUALSTUDIO_VERSION_MAJOR%.0\VC\vcvarsall.bat" amd64
 
 cd openssl
-git checkout OpenSSL_1_1_0e
+git checkout OpenSSL_1_1_0f
 perl Configure VC-WIN64A
 nmake
 #you need to be Administrator for the next step)
@@ -132,7 +132,7 @@ nmake install
 cd ..
 
 cd rocksdb
-git checkout v5.3.4
+git checkout v5.6.1
 mkdir build & cd build
 cmake -G "Visual Studio 14 Win64" ..
 msbuild /maxcpucount:8 rocksdb.sln
@@ -154,7 +154,7 @@ call bootstrap.bat
 cd ..
 
 cd librdkafka
-git checkout v0.9.5
+git checkout v0.11.0
 cd ..
 
 mkdir include
@@ -163,7 +163,7 @@ xcopy /e /s librdkafka\src\*.h include\librdkafka
 xcopy /e /s librdkafka\src-cpp\*.h include\librdkafka
 
 cd curl
-git checkout curl-7_54_0
+git checkout curl-7_55_1
 rmdir /s /q builds
 rm  libs\x64\Debug\libcurl.lib
 rm  libs\x64\Release\libcurl.lib
