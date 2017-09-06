@@ -1,4 +1,4 @@
-#include <kspp/avro/schema_registry.h>
+#include <kspp/avro/avro_schema_registry.h>
 #include <future>
 
 namespace kspp {

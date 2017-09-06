@@ -3,8 +3,7 @@
 #include <istream>
 #include <sstream>
 #include <avro/Encoder.hh>
-#include <kspp/impl/serdes/text_serdes.h>
-#include <kspp/impl/serdes/avro/avro_generic.h>
+#include <kspp/avro/avro_generic.h>
 #include <glog/logging.h>
 #pragma once
 

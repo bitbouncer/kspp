@@ -208,6 +208,7 @@ endif () #WIN32
 #TARGETS
 
 file(GLOB LIB_SRCS
+        src/avro/*.cpp
         src/metrics/*.cpp
         src/impl/*.cpp
         src/impl/sources/*.cpp
@@ -221,6 +222,7 @@ file(GLOB LIB_SRCS
 
 file(GLOB KSPP_INCLUDE_FILES
         include/kspp/*.h
+        include/kspp/avro/*.h
         include/kspp/utils/*
         include/kspp/utils.h
         include/kspp/metrics/*.h

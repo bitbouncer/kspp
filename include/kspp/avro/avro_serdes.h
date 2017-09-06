@@ -11,9 +11,9 @@
 #include <avro/Compiler.hh>
 #include <avro/Generic.hh>
 #include <avro/Specific.hh>
-#include <kspp/impl/serdes/avro/avro_generic.h>
-#include <kspp/avro/schema_registry.h>
 #include <glog/logging.h>
+#include <kspp/avro/avro_generic.h>
+#include <kspp/avro/avro_schema_registry.h>
 #pragma once
 
 namespace kspp {

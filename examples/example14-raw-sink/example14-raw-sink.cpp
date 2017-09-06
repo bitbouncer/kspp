@@ -1,9 +1,8 @@
 #include <iostream>
 #include <chrono>
-#include <kspp/impl/serdes/avro/avro_serdes.h>
-#include <kspp/impl/serdes/avro/avro_text.h>
 #include <kspp/beta/raw_kafka_sink.h>
 #include <kspp/utils/utils.h>
+#include <kspp/avro/avro_serdes.h>
 
 using namespace std::chrono_literals;
 
