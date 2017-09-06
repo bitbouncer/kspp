@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 2.8.11)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
-option(ENABLE_AVRO "enable avro support" ON)
 option(ENABLE_ROCKSDB "enable rocksdb support" OFF)
 option(ENABLE_ZK "enable zk support" OFF)
 option(BUILD_SAMPLES "build examples" OFF)
@@ -33,30 +32,24 @@ if (WIN32)
             ${CMAKE_SOURCE_DIR}/../lz4/lib
             ${CMAKE_SOURCE_DIR}/../openssl/include
             ${CMAKE_SOURCE_DIR}/../boost
+            ${CMAKE_SOURCE_DIR}/../glog/src/windows
+			${CMAKE_SOURCE_DIR}/../glog/build
+            ${CMAKE_SOURCE_DIR}/../avro/lang/c++/include
+            ${CMAKE_SOURCE_DIR}/../curl/include
+            ${CMAKE_SOURCE_DIR}/../rapidjson/include
             )
     SET(CSI_LIBRARY_PATH
             ${CMAKE_SOURCE_DIR}/../openssl
             ${CMAKE_SOURCE_DIR}/../zlib/build
             ${CMAKE_SOURCE_DIR}/../boost/stage/lib/$(Platform)/lib
+			${CMAKE_SOURCE_DIR}/../glog/build/$(Platform)
+            ${CMAKE_SOURCE_DIR}/../curl/libs/$(Platform)
+            ${CMAKE_SOURCE_DIR}/../avro/lang/c++/build
             )
 
     if (ENABLE_ROCKSDB)
         SET(CSI_INCLUDE_PATH ${CSI_INCLUDE_PATH} ${CMAKE_SOURCE_DIR}/../rocksdb/include)
         SET(CSI_LIBRARY_PATH ${CSI_LIBRARY_PATH} ${CMAKE_SOURCE_DIR}/../rocksdb/build)
-    endif ()
-
-    if (ENABLE_AVRO)
-        SET(CSI_INCLUDE_PATH
-                ${CSI_INCLUDE_PATH}
-                ${CMAKE_SOURCE_DIR}/../avro/lang/c++/include
-                ${CMAKE_SOURCE_DIR}/../curl/include
-                ${CMAKE_SOURCE_DIR}/../rapidjson/include
-                )
-
-        SET(CSI_LIBRARY_PATH
-                ${CSI_LIBRARY_PATH}
-                ${CMAKE_SOURCE_DIR}/../curl/libs/$(Platform)
-                ${CMAKE_SOURCE_DIR}/../avro/lang/c++/build)
     endif ()
 
     SET(LIBRARY_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/lib/$(Platform))
@@ -83,19 +76,16 @@ if (WIN32)
     add_definitions(-DBOOST_ALL_STATIC_LINK)
     add_definitions(-DLIBRDKAFKA_STATICLIB)
     add_definitions(-DCURL_STATICLIB)
+	add_definitions(-DGLOG_NO_ABBREVIATED_SEVERITIES)
 
     if (ENABLE_ROCKSDB)
         SET(CSI_ROCKSDB_LIBS rocksdb rocksdblib Rpcrt4)
     endif ()
 
-    if (ENABLE_AVRO)
-        SET(CSI_AVRO_LIBS avrocpp_s libcurl)
-    endif ()
-
+    SET(CSI_AVRO_LIBS avrocpp_s libcurl)
     SET(ZLIB_LIBS debug zlibstaticd optimized zlibstatic)
     SET(LIBRDKAFKA_LIBS librdkafkacpp librdkafka lz4)
-
-    SET(CSI_LIBS kspp ${LIBRDKAFKA_LIBS} ${CSI_AVRO_LIBS} ${CSI_ROCKSDB_LIBS} ${CSI_BOOST_LIBS} libssl libcrypto ${ZLIB_LIBS} crypt32 Ws2_32 legacy_stdio_definitions)
+    SET(CSI_LIBS kspp ${LIBRDKAFKA_LIBS} ${CSI_AVRO_LIBS} ${CSI_ROCKSDB_LIBS} ${CSI_BOOST_LIBS} glog libssl libcrypto ${ZLIB_LIBS} crypt32 Ws2_32 legacy_stdio_definitions)
 
 elseif (APPLE)
     find_package(Boost COMPONENTS log_setup log thread program_options filesystem system REQUIRED)
@@ -239,23 +229,16 @@ file(GLOB KSPP_INCLUDE_FILES
         include/kspp/beta/*.h
         )
 
-if (ENABLE_AVRO)
-    file(GLOB KSPP_AVRO_SRCS src/impl/avro/*.cpp)
-    file(GLOB KSPP_AVRO_INCLUDE
-            include/kspp/avro/*.h
-            include/kspp/impl/serdes/avro/*.h)
-endif ()
+SET(KSPP_INCLUDE_FILES  ${KSPP_INCLUDE_FILES} )
 
-SET(KSPP_INCLUDE_FILES  ${KSPP_INCLUDE_FILES} ${KSPP_AVRO_INCLUDE} )
-
-add_library(kspp_s STATIC ${LIB_SRCS} ${KSPP_AVRO_SRCS} ${KSPP_INCLUDE_FILES})
+add_library(kspp_s STATIC ${LIB_SRCS} ${KSPP_INCLUDE_FILES})
 
 INSTALL(TARGETS kspp_s
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
         )
 
-add_library(kspp SHARED ${LIB_SRCS} ${KSPP_AVRO_SRCS} ${KSPP_INCLUDE_FILES})
+add_library(kspp SHARED ${LIB_SRCS} ${KSPP_INCLUDE_FILES})
 
 INSTALL(TARGETS kspp
         LIBRARY DESTINATION lib
@@ -265,9 +248,7 @@ INSTALL(TARGETS kspp
 INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/include/ DESTINATION include)
 
 
-if (ENABLE_AVRO)
-    add_subdirectory(tools)
-endif ()
+add_subdirectory(tools)
 
 if (BUILD_SAMPLES)
     add_subdirectory(examples)
