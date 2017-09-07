@@ -133,7 +133,7 @@ else () #LINUX
         SET(ROCKSDB_LIBS ${ROCKSDB_LIBRARIES} snappy bz2 z)
     endif ()
 
-    if (ENABLE_AVRO)
+   
         find_package(rapidjson REQUIRED)
         find_package(AvroCPP REQUIRED)
 
@@ -144,8 +144,7 @@ else () #LINUX
 
         #        SET(AVRO_LIBS avrocpp_s curl)
         SET(AVRO_LIBS ${AVRO_LIBRARIES} curl)
-    endif () #AVRO
-
+    
 
     if (ENABLE_ZK)
         SET(CSI_INCLUDE_PATH
