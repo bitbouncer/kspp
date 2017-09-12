@@ -7,20 +7,24 @@
 #include <kspp/processors/join.h>
 #include <kspp/state_stores/mem_store.h>
 #include <kspp/impl/kafka_utils.h>
-#include <kspp/utils/utils.h>
+#include <kspp/utils/env.h>
 
 using namespace std::chrono_literals;
 
 int main(int argc, char **argv) {
+  FLAGS_logtostderr = 1;
+  google::InitGoogleLogging(argv[0]);
+
   size_t join_count = 0;
 
   auto config = std::make_shared<kspp::cluster_config>();
-  config->set_brokers(kspp::utils::default_kafka_broker_uri());
+  config->load_config_from_env();
   config->set_consumer_buffering_time(10ms);
   config->set_producer_buffering_time(10ms);
+  config->validate();
+  config->log();
 
-  auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example2-join");
-  auto builder = kspp::topology_builder(app_info, config);
+  auto builder = kspp::topology_builder("kspp-examples", argv[0], config);
 
   auto partitions1 = kspp::kafka::get_number_partitions(config, "kspp_test0_eventstream");
   auto partitions2 = kspp::kafka::get_number_partitions(config, "kspp_test0_table");

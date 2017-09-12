@@ -8,6 +8,9 @@
 using namespace std::chrono_literals;
 
 int main(int argc, char **argv) {
+  FLAGS_logtostderr = 1;
+  google::InitGoogleLogging(argv[0]);
+
   return 0;
 }
 

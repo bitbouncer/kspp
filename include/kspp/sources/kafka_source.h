@@ -93,7 +93,7 @@ namespace kspp {
                  int32_t partition,
                  std::string topic,
                  std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : kafka_source_base<K, V, CODEC>(t.get_cluster_config(), topic, partition, t.group_id(), codec) {
+            : kafka_source_base<K, V, CODEC>(t.get_cluster_config(), topic, partition, t.consumer_group(), codec) {
     }
 
   protected:
@@ -158,7 +158,7 @@ namespace kspp {
                  int32_t partition,
                  std::string topic,
                  std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : kafka_source_base<void, V, CODEC>(t.get_cluster_config(), topic, partition, t.group_id(), codec) {
+            : kafka_source_base<void, V, CODEC>(t.get_cluster_config(), topic, partition, t.consumer_group(), codec) {
     }
 
   protected:
@@ -195,7 +195,7 @@ namespace kspp {
                  int32_t partition,
                  std::string topic,
                  std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : kafka_source_base<K, void, CODEC>(t.get_cluster_config(), topic, partition, t.group_id(), codec) {
+            : kafka_source_base<K, void, CODEC>(t.get_cluster_config(), topic, partition, t.consumer_group(), codec) {
     }
 
   protected:

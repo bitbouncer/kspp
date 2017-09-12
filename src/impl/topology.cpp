@@ -28,8 +28,8 @@ namespace kspp {
     return _app_info->identity();
   }
 
-  std::string topology::group_id() const {
-    return _app_info->group_id();
+  std::string topology::consumer_group() const {
+    return _app_info->consumer_group();
   }
 
   std::string topology::topology_id() const {

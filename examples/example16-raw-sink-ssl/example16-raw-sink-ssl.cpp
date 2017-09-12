@@ -2,7 +2,7 @@
 #include <chrono>
 #include <kspp/avro/avro_serdes.h>
 #include <kspp/beta/raw_kafka_sink.h>
-#include <kspp/utils/utils.h>
+#include <kspp/utils/env.h>
 
 using namespace std::chrono_literals;
 
@@ -14,13 +14,16 @@ static boost::uuids::uuid to_uuid(int64_t x) {
 }
 
 int main(int argc, char **argv) {
+  FLAGS_logtostderr = 1;
+  google::InitGoogleLogging(argv[0]);
+
   auto config = std::make_shared<kspp::cluster_config>();
   config->set_brokers("SSL://localhost:9091");
   config->set_ca_cert_path("/csi/openssl_client_keystore/ca-cert");
   config->set_private_key_path("/csi/openssl_client_keystore/client_P51_client.pem",
                                "/csi/openssl_client_keystore/client_P51_client.key",
                                "abcdefgh");
-  config->set_schema_registry(kspp::utils::default_schema_registry_uri());
+  config->set_schema_registry(kspp::default_schema_registry_uri());
   config->validate(); // optional
 
   // todo - this is not ssl ready must take a cluster config to get keys

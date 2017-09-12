@@ -2,18 +2,22 @@
 #include <cstdlib>
 #include <boost/filesystem.hpp>
 #include <glog/logging.h>
-#include <kspp/utils/utils.h>
 #include <kspp/cluster_config.h>
 #pragma once
 
 namespace kspp {
   class topology_builder {
   public:
-    topology_builder(std::shared_ptr<app_info> app_info, std::shared_ptr<cluster_config> cluster_config)
-        : _app_info(app_info)
+    topology_builder(std::string ns, std::string appname, std::shared_ptr<kspp::cluster_config> cluster_config)
+        : _app_info(std::make_shared<app_info>(ns, appname))
         , _cluster_config(cluster_config)
         , _next_topology_id(0) {
-      LOG(INFO) << "topology_builder created, " << to_string(*_app_info) << ", kafka_brokers:" << cluster_config->get_brokers();
+    }
+
+    topology_builder(std::string ns, std::string appname, std::string instance_name, std::shared_ptr<kspp::cluster_config> cluster_config)
+        : _app_info(std::make_shared<app_info>(ns, appname, instance_name))
+        , _cluster_config(cluster_config)
+        , _next_topology_id(0) {
     }
 
     std::shared_ptr<topology> create_topology() {

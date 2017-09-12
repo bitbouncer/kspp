@@ -5,6 +5,9 @@ using namespace std::chrono_literals;
 
 int main(int argc, char **argv) {
   {
+    FLAGS_logtostderr = 1;
+    google::InitGoogleLogging(argv[0]);
+
     // insert 3 check size
     kspp::mem_store<int32_t, std::string> store("");
     auto t0 = kspp::milliseconds_since_epoch();

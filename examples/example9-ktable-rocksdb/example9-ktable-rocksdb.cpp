@@ -19,21 +19,23 @@
 #include <kspp/state_stores/mem_store.h>
 #include <kspp/state_stores/mem_windowed_store.h>
 #include <kspp/impl/kafka_utils.h>
-#include <kspp/utils/utils.h>
+#include <kspp/utils/env.h>
 
 using namespace std::chrono_literals;
 
 #define TOPIC_NAME "kspp_TextInput"
 
 int main(int argc, char **argv) {
+  FLAGS_logtostderr = 1;
+  google::InitGoogleLogging(argv[0]);
+
   try {
     auto config = std::make_shared<kspp::cluster_config>();
-    config->set_brokers(kspp::utils::default_kafka_broker_uri());
-    config->set_storage_root(kspp::utils::default_statestore_directory());
+    config->load_config_from_env();
+    config->validate();// optional
+    config->log(); // optional
 
-    auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example9-ktable-rocksdb");
-    auto builder = kspp::topology_builder(app_info, config);
-
+    auto builder = kspp::topology_builder("kspp-examples", argv[0], config);
     {
       auto topology = builder.create_topology();
       auto sink = topology->create_sink<kspp::kafka_sink<void, std::string, kspp::text_serdes>>(TOPIC_NAME);

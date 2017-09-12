@@ -9,10 +9,11 @@ namespace kspp {
     */
     app_info(std::string _app_namespace,
              std::string _app_id,
-             std::string _app_instance_id,
-             std::string _app_instance_name)
-            : app_namespace(_app_namespace), app_id(_app_id), app_instance_id(_app_instance_id),
-              app_instance_name(_app_instance_name) {}
+             std::string _app_instance_id)
+            : app_namespace(_app_namespace)
+        , app_id(_app_id)
+        , app_instance_id(_app_instance_id){
+    }
 
     /**
     * single instance apps - state stores will not be prefixed with instance_id
@@ -30,7 +31,7 @@ namespace kspp {
         return app_namespace + "::" + app_id + "#" + app_instance_id;
     }
 
-    std::string group_id() const {
+    std::string consumer_group() const {
       if (app_instance_id.size() == 0)
         return app_namespace + "_" + app_id;
       else
@@ -40,7 +41,6 @@ namespace kspp {
     const std::string app_namespace;
     const std::string app_id;
     const std::string app_instance_id;
-    const std::string app_instance_name;
   };
 
   inline std::string to_string(const app_info &obj) {

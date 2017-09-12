@@ -12,16 +12,20 @@
 #include <kspp/sinks/kafka_sink.h>
 #include <kspp/sinks/stream_sink.h>
 #include <kspp/impl/kafka_utils.h>
-#include <kspp/utils/utils.h>
+#include <kspp/utils/env.h>
 
 using namespace std::chrono_literals;
 
 int main(int argc, char **argv) {
-  auto config = std::make_shared<kspp::cluster_config>();
-  config->set_brokers(kspp::utils::default_kafka_broker_uri());
+  FLAGS_logtostderr = 1;
+  google::InitGoogleLogging(argv[0]);
 
-  auto app_info = std::make_shared<kspp::app_info>("kspp-examples", "example5-repartition");
-  auto builder = kspp::topology_builder(app_info, config);
+  auto config = std::make_shared<kspp::cluster_config>();
+  config->load_config_from_env();
+  config->validate();
+  config->log();
+
+  auto builder = kspp::topology_builder("kspp-examples", argv[0], config);
 
   {
     auto topology = builder.create_topology();

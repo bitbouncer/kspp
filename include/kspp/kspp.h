@@ -805,7 +805,7 @@ namespace kspp {
 
     std::string app_id() const;
 
-    std::string group_id() const;
+    std::string consumer_group() const;
 
     std::string topology_id() const;
 

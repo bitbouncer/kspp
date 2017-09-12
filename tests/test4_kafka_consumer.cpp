@@ -20,6 +20,9 @@ static std::vector<record> test_data =
         };
 
 int main(int argc, char **argv) {
+  FLAGS_logtostderr = 1;
+  google::InitGoogleLogging(argv[0]);
+
   auto config = std::make_shared<kspp::cluster_config>();
   config->set_brokers("localhost");
   config->set_producer_buffering_time(100ms);

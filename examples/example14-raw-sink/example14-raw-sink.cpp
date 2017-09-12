@@ -1,7 +1,7 @@
 #include <iostream>
 #include <chrono>
 #include <kspp/beta/raw_kafka_sink.h>
-#include <kspp/utils/utils.h>
+#include <kspp/utils/env.h>
 #include <kspp/avro/avro_serdes.h>
 
 using namespace std::chrono_literals;
@@ -14,9 +14,11 @@ static boost::uuids::uuid to_uuid(int64_t x) {
 }
 
 int main(int argc, char **argv) {
+  FLAGS_logtostderr = 1;
+  google::InitGoogleLogging(argv[0]);
+
   auto config = std::make_shared<kspp::cluster_config>();
-  config->set_brokers(kspp::utils::default_kafka_broker_uri());
-  config->set_schema_registry(kspp::utils::default_schema_registry_uri());
+  config->load_config_from_env();
   config->validate(); // optional
 
   // maybe we should add http:// here...

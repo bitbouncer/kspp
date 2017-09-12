@@ -1,10 +1,13 @@
 #include <cassert>
 #include <kspp/state_stores/rocksdb_counter_store.h>
 #include <kspp/impl/serdes/binary_serdes.h>
-#include <kspp/utils/utils.h>
+#include <kspp/utils/env.h>
 
 int main(int argc, char **argv) {
-  boost::filesystem::path path = kspp::utils::default_statestore_directory();
+  FLAGS_logtostderr = 1;
+  google::InitGoogleLogging(argv[0]);
+
+  boost::filesystem::path path = kspp::default_statestore_directory();
   path /= "test2_rocksdb_counter_store";
 
   if (boost::filesystem::exists(path))

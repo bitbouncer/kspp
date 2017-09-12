@@ -22,6 +22,9 @@ struct record {
 #define TEST_SIZE 10
 
 int main(int argc, char **argv) {
+  FLAGS_logtostderr = 1;
+  google::InitGoogleLogging(argv[0]);
+
 
   std::vector<record> test_data;
   for (int i = 0; i != TEST_SIZE; ++i) {
@@ -35,12 +38,12 @@ int main(int argc, char **argv) {
   config->set_brokers("localhost");
   config->set_consumer_buffering_time(10ms);
   config->set_producer_buffering_time(10ms);
-  config->validate();
+  config->validate();// optional
+  config->log(); // optional
 
   kspp::kafka::wait_for_group(config, "dummy");
 
-  auto app_info = std::make_shared<kspp::app_info>("kspp", "test5");
-  auto builder = topology_builder(app_info, config);
+  auto builder = topology_builder("kspp", argv[0], config);
 
   auto nr_of_partitions = kafka::get_number_partitions(config, "kspp_test5");
   auto partition_list = get_partition_list(nr_of_partitions);
