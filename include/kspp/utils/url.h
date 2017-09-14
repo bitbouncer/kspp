@@ -4,30 +4,25 @@
 #pragma once
 
 /**
- * Class representing a cluster URI.
+
+ * Consider http://host1.domain.com:2110/23987462
  *
- * Consider zk://host1.domain.com:2110,host2.domain.com:2111,host3.domain.com:2112/foo/bar
- *
- * The URI is broken down into its parts: scheme ("zk"), authority (ie. host and port),
+ * The url is broker down in into its parts: scheme ("http"), authority (ie. host and port),
  * path ("/foo/bar"),
  * The scheme is lower-cased.
  */
-namespace kspp {
-  class cluster_uri {
-  public:
-    // requires a explicit scheme
-    explicit cluster_uri(std::string s);
 
-    //accepts a uri without a scheme
-    cluster_uri(std::string s, std::string default_scheme);
+namespace kspp {
+  class url {
+  public:
+    //accepts a url without a scheme if given a non empty default_scheme
+    url(std::string s, std::string default_scheme = "");
 
     bool good() const { return good_; }
 
     std::string scheme() const { return scheme_; }
 
     std::string authority() const { return authority_; }
-
-    std::vector<std::string> split_authority() const;
 
     std::string path() const { return path_; }
 

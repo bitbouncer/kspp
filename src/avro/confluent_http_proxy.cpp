@@ -4,7 +4,7 @@
 #include <rapidjson/prettywriter.h>
 #include <avro/Compiler.hh>
 #include <kspp/utils/async.h>
-#include <kspp/utils/cluster_uri.h>
+#include <kspp/utils/url_parser.h>
 
 using namespace std::chrono_literals;
 namespace kspp {
@@ -82,18 +82,16 @@ namespace kspp {
   confluent_http_proxy::confluent_http_proxy(boost::asio::io_service &ios, std::shared_ptr<kspp::cluster_config> config)
       : _http(ios)
   , _http_timeout(config->get_schema_registry_timeout()){
-    cluster_uri cu(config->get_schema_registry(), "http");
-    LOG_IF(FATAL, !cu.good()) << "confluent_http_proxy bad uri: " << config->get_schema_registry();
-    LOG_IF(FATAL, cu.authority().size() == 0) << "confluent_http_proxy bad uri: " << config->get_schema_registry();
-    _base_urls = cu.split_authority();
-  }
+    _base_urls = kspp::split_url_list(config->get_schema_registry(), "http");
+    LOG_IF(FATAL, _base_urls.size()==0) << "confluent_http_proxy bad url: " << config->get_schema_registry();
+   }
 
   void confluent_http_proxy::get_config(get_top_level_config_callback cb) {
     auto shared_result = std::make_shared<rpc_get_config_result>();
     auto work = std::make_shared<kspp::async::work<int>>(kspp::async::SEQUENTIAL,
                                                          kspp::async::FIRST_SUCCESS); // should we do random order??  can we send rpc result to work...
     for (auto &&i : _base_urls) {
-      std::string uri = i + "/config";
+      std::string uri = i.str() + "/config";
       work->push_back([this, uri, shared_result](kspp::async::work<int>::callback cb) {
         std::vector<std::string> headers = {"Accept: application/vnd.schemaregistry.v1+json"};
         auto request = std::make_shared<kspp::http::request>(kspp::http::GET, uri, headers, _http_timeout); // move to api
@@ -122,7 +120,7 @@ namespace kspp {
     //std::cerr << encoded_string << std::endl;
 
     for (auto &&i : _base_urls) {
-      std::string uri = i + "/subjects/" + schema_name + "/versions";
+      std::string uri = i.str() + "/subjects/" + schema_name + "/versions";
       work->push_back([this, uri, encoded_string, shared_result](kspp::async::work<int>::callback cb) {
         std::vector<std::string> headers = {"Content-Type: application/vnd.schemaregistry.v1+json"};
         auto request = std::make_shared<kspp::http::request>(kspp::http::POST, uri, headers, 100ms);
@@ -161,7 +159,7 @@ namespace kspp {
     auto work = std::make_shared<kspp::async::work<int>>(kspp::async::SEQUENTIAL,
                                                          kspp::async::FIRST_SUCCESS); // should we do random order??  can we send rpc result to work...
     for (auto &&i : _base_urls) {
-      std::string uri = i + "/schemas/ids/" + std::to_string(schema_id);
+      std::string uri = i.str() + "/schemas/ids/" + std::to_string(schema_id);
       work->push_back([this, uri, shared_result](kspp::async::work<int>::callback cb) {
         std::vector<std::string> headers = {"Accept: application/vnd.schemaregistry.v1+json"};
         auto request = std::make_shared<kspp::http::request>(kspp::http::GET, uri, headers, 100ms); // move to api

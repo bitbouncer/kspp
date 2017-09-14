@@ -4,6 +4,7 @@
 #include <avro/Schema.hh>
 #include <kspp/utils/http_client.h>
 #include <kspp/cluster_config.h>
+#include <kspp/utils/url.h>
 #pragma once
 
 namespace kspp {
@@ -87,7 +88,7 @@ namespace kspp {
     private:
       kspp::http::client _http;
       std::chrono::milliseconds _http_timeout;
-      std::vector<std::string> _base_urls;
+      std::vector<kspp::url> _base_urls;
       std::map<int32_t, boost::shared_ptr<const avro::ValidSchema>> _registry;
     };
 } // kspp

@@ -246,9 +246,6 @@ INSTALL(TARGETS kspp
 
 INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/include/ DESTINATION include)
 
-
-add_subdirectory(tools)
-
 if (BUILD_SAMPLES)
     add_subdirectory(examples)
 endif ()

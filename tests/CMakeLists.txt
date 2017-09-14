@@ -41,6 +41,14 @@ add_executable(test5_kafka_source_sink test5_kafka_source_sink.cpp)
 target_link_libraries(test5_kafka_source_sink ${CSI_LIBS})
 add_test(NAME test5_kafka_source_sink COMMAND $<TARGET_FILE:test5_kafka_source_sink>)
 
-add_executable(test6-repartition test6-repartition.cpp)
-target_link_libraries(test6-repartition ${CSI_LIBS})
-add_test(NAME test6-repartition COMMAND $<TARGET_FILE:test6-repartition>)
+add_executable(test6_repartition test6_repartition.cpp)
+target_link_libraries(test6_repartition ${CSI_LIBS})
+add_test(NAME test6_repartition COMMAND $<TARGET_FILE:test6_repartition>)
+
+add_executable(test7_cluster_uri test7_cluster_uri.cpp)
+target_link_libraries(test7_cluster_uri ${CSI_LIBS})
+add_test(NAME test7_cluster_uri COMMAND $<TARGET_FILE:test7_cluster_uri>)
+
+add_executable(test7_url_vector test7_url_vector.cpp)
+target_link_libraries(test7_url_vector ${CSI_LIBS})
+add_test(NAME test7_url_vector COMMAND $<TARGET_FILE:test7_url_vector>)
