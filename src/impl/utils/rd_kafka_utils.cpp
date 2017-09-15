@@ -1,4 +1,6 @@
 #include <kspp/impl/rd_kafka_utils.h>
+#include <glog/logging.h>
+#include <kspp/utils/url_parser.h>
 
 void set_config(RdKafka::Conf* conf, std::string key, std::string value) {
   std::string errstr;
@@ -30,20 +32,24 @@ void set_config(RdKafka::Conf* conf, std::string key, RdKafka::PartitionerCb* pa
 }
 
 void set_broker_config(RdKafka::Conf* rd_conf, std::shared_ptr<kspp::cluster_config> cluster_config) {
+  auto v = kspp::split_url_list(cluster_config->get_brokers());
+
   set_config(rd_conf, "bootstrap.servers", cluster_config->get_brokers());
 
-  // experimental code only
-  if (cluster_config->get_brokers().substr(0, 3) == "ssl") {
+  if ((v.size()>0) && v[0].scheme() == "ssl" )
+  {
     // SSL no auth - always
     set_config(rd_conf, "security.protocol", "ssl");
     set_config(rd_conf, "ssl.ca.location", cluster_config->get_ca_cert_path());
 
-    //client cert
-    set_config(rd_conf, "ssl.certificate.location", cluster_config->get_client_cert_path());
-    set_config(rd_conf, "ssl.key.location", cluster_config->get_private_key_path());
-    // optional password
-    if (cluster_config->get_private_key_passphrase().size())
-      set_config(rd_conf, "ssl.key.password", cluster_config->get_private_key_passphrase());
+    //do we have client certs
+    if (cluster_config->get_client_cert_path().size()>0 && cluster_config->get_private_key_path().size()>0) {
+      set_config(rd_conf, "ssl.certificate.location", cluster_config->get_client_cert_path());
+      set_config(rd_conf, "ssl.key.location", cluster_config->get_private_key_path());
+      // optional password
+      if (cluster_config->get_private_key_passphrase().size())
+        set_config(rd_conf, "ssl.key.password", cluster_config->get_private_key_passphrase());
+    }
   }
 }
 
