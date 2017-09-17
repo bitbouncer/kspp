@@ -157,6 +157,18 @@ namespace kspp {
               const std::chrono::milliseconds &timeout,
               bool verbose = false);
 
+      request(kspp::http::method_t method,
+              const std::string &uri,
+              std::string ca_cert,
+              std::string client_cert,
+              std::string client_key,
+              std::string client_key_passphrase,
+              const std::vector<std::string> &headers,
+              const std::chrono::milliseconds &timeout,
+              bool verbose = false);
+
+
+
       ~request();
 
     public:
@@ -229,13 +241,21 @@ namespace kspp {
     private:
       kspp::http::method_t _method;
       std::string _uri;
+
+
       std::vector<std::string> _tx_headers;
       std::vector<kspp::http::header_t> _rx_headers;
       std::chrono::steady_clock::time_point _start_ts;
       std::chrono::steady_clock::time_point _end_ts;
       std::chrono::milliseconds _timeoutX;
-      callback _callback;
 
+      //SSL stuff
+      std::string _ca_cert;
+      std::string _client_cert;
+      std::string _client_key;
+      std::string _client_key_passphrase;
+
+      callback _callback;
       //TX
       std::stringstream _tx_stream; // temporary for test...
       //RX
@@ -259,6 +279,16 @@ namespace kspp {
                         const std::chrono::milliseconds &timeout,
                         bool verbose = false);
 
+    std::shared_ptr<request>
+    create_http_request(kspp::http::method_t method,
+                        const std::string &uri,
+                        std::string ca_cert,
+                        std::string client_cert,
+                        std::string client_key,
+                        std::string client_key_passphrase,
+                        const std::vector<std::string> &headers,
+                        const std::chrono::milliseconds &timeout,
+                        bool verbose = false);
 
     class client {
     public:

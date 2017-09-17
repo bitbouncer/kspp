@@ -1,7 +1,8 @@
 #include <kspp/cluster_config.h>
 #include <boost/filesystem.hpp>
 #include <glog/logging.h>
-#include <kspp/utils/cluster_uri.h>
+//#include <kspp/utils/cluster_uri.h>
+#include <kspp/utils/url_parser.h>
 #include <kspp/utils/env.h>
 
 namespace kspp {
@@ -29,10 +30,10 @@ namespace kspp {
   }
 
   void cluster_config::set_brokers(std::string brokers) {
-    cluster_uri cu(brokers, "plaintext");
-    LOG_IF(FATAL, !cu.good()) << "cluster_config, bad broker config - bad uri: " << brokers;
-    LOG_IF(FATAL, cu.path() != "") << "cluster_config, bad broker config - cannot have a path here: " << brokers;
-    brokers_ = cu.str();
+    auto v = kspp::split_url_list(brokers, "plaintext");
+
+    LOG_IF(FATAL, v.size() == 0) << "cluster_config, bad broker config - bad uri: " << brokers;
+    brokers_ = brokers;
   }
 
   void cluster_config::set_storage_root(std::string root_path) {
@@ -65,12 +66,13 @@ namespace kspp {
                                             std::string passprase) {
     bool all_ok = true;
     if (!boost::filesystem::exists(private_key_path)) {
-      LOG(WARNING) << "cluster_config, private_key_path not found at: " << private_key_path;
+      LOG(WARNING) << "cluster_config, private_key_path not found at:" << private_key_path;
       all_ok = false;
     }
 
-    if (!boost::filesystem::exists(client_cert_path_)) {
-      LOG(WARNING) << "cluster_config, client_cert not found at: " << client_cert_path;
+    //boost::filesystem::path p(client_cert_path);
+    if (boost::filesystem::exists(client_cert_path) == false) {
+      LOG(WARNING) << "cluster_config, client_cert not found at:" << client_cert_path;
       all_ok = false;
     }
 
@@ -95,11 +97,10 @@ namespace kspp {
     return private_key_passphrase_;
   }
 
-
-  void cluster_config::set_schema_registry(std::string uri) {
-    cluster_uri cu(uri, "http");
-    LOG_IF(FATAL, !cu.good()) << "cluster_config, bad schema registry uri: " << uri;
-    schema_registry_uri_ = cu.str();
+  void cluster_config::set_schema_registry(std::string urls) {
+    auto v = kspp::split_url_list(urls, "http");
+    LOG_IF(FATAL, v.size() == 0) << "cluster_config, bad schema registry urls: " << urls;
+    schema_registry_uri_ = urls;
   }
 
   std::string cluster_config::get_schema_registry() const {
@@ -142,21 +143,22 @@ namespace kspp {
   void cluster_config::validate() const {
     LOG_IF(FATAL, brokers_.size() == 0) << "cluster_config, no brokers defined";
     {
-      cluster_uri cu(brokers_);
-      if (cu.scheme() == "ssl") {
-        LOG_IF(FATAL, ca_cert_path_.size() == 0) << "cluster_config, brokers using ssl and no ca cert configured";
+      auto v = kspp::split_url_list(brokers_, "plaintext");
+      for (auto url : v) {
+        if (url.scheme() == "ssl")
+          LOG_IF(FATAL, ca_cert_path_.size() == 0) << "cluster_config, brokers using ssl and no ca cert configured";
       }
     }
 
-    if (schema_registry_uri_.size() > 0) {
-      cluster_uri cu(schema_registry_uri_);
-      if (cu.scheme() == "https") {
-        LOG_IF(FATAL, ca_cert_path_.size() == 0) << "cluster_config, schema registry using https and no ca cert configured";
+    {
+      auto v = kspp::split_url_list(schema_registry_uri_, "http");
+      for (auto url : v) {
+        if (url.scheme() == "ssl")
+          LOG_IF(FATAL, ca_cert_path_.size() == 0)
+          << "cluster_config, schema registry using https and no ca cert configured";
       }
     }
   }
-
-
 
 
   void cluster_config::log() const {
@@ -172,7 +174,8 @@ namespace kspp {
 
 
     LOG_IF(INFO, get_schema_registry().size() > 0) << "cluster_config, schema_registry: " << get_schema_registry();
-    LOG_IF(INFO, get_schema_registry().size() > 0) << "cluster_config, schema_registry_timeout: " << get_schema_registry_timeout().count() << " ms";
+    LOG_IF(INFO, get_schema_registry().size() > 0)
+    << "cluster_config, schema_registry_timeout: " << get_schema_registry_timeout().count() << " ms";
 
 
   }

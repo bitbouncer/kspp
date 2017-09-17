@@ -81,10 +81,11 @@ namespace kspp {
 
   confluent_http_proxy::confluent_http_proxy(boost::asio::io_service &ios, std::shared_ptr<kspp::cluster_config> config)
       : _http(ios)
-  , _http_timeout(config->get_schema_registry_timeout()){
+      , _http_timeout(config->get_schema_registry_timeout())
+      , _config(config) {
     _base_urls = kspp::split_url_list(config->get_schema_registry(), "http");
     LOG_IF(FATAL, _base_urls.size()==0) << "confluent_http_proxy bad url: " << config->get_schema_registry();
-   }
+  }
 
   void confluent_http_proxy::get_config(get_top_level_config_callback cb) {
     auto shared_result = std::make_shared<rpc_get_config_result>();
@@ -94,7 +95,16 @@ namespace kspp {
       std::string uri = i.str() + "/config";
       work->push_back([this, uri, shared_result](kspp::async::work<int>::callback cb) {
         std::vector<std::string> headers = {"Accept: application/vnd.schemaregistry.v1+json"};
-        auto request = std::make_shared<kspp::http::request>(kspp::http::GET, uri, headers, _http_timeout); // move to api
+        auto request = std::make_shared<kspp::http::request>(
+            kspp::http::GET,
+            uri,
+            _config->get_ca_cert_path(),
+            _config->get_client_cert_path(),
+            _config->get_private_key_path(),
+            _config->get_private_key_passphrase(),
+            headers,
+            _http_timeout,
+            true);
         _http.perform_async(request, [cb, shared_result](std::shared_ptr<kspp::http::request> request) {
           if (request->http_result() >= 200 && request->http_result() < 300) {
             shared_result->config = request->rx_content();
@@ -123,7 +133,15 @@ namespace kspp {
       std::string uri = i.str() + "/subjects/" + schema_name + "/versions";
       work->push_back([this, uri, encoded_string, shared_result](kspp::async::work<int>::callback cb) {
         std::vector<std::string> headers = {"Content-Type: application/vnd.schemaregistry.v1+json"};
-        auto request = std::make_shared<kspp::http::request>(kspp::http::POST, uri, headers, 100ms);
+        auto request = std::make_shared<kspp::http::request>(
+            kspp::http::POST,
+            uri,
+            _config->get_ca_cert_path(),
+            _config->get_client_cert_path(),
+            _config->get_private_key_path(),
+            _config->get_private_key_passphrase(),
+            headers,
+            _http_timeout);
         request->append(encoded_string);
         _http.perform_async(request, [cb, shared_result](std::shared_ptr<kspp::http::request> request) {
           if (request->http_result() >= 200 && request->http_result() < 300) {
@@ -162,7 +180,15 @@ namespace kspp {
       std::string uri = i.str() + "/schemas/ids/" + std::to_string(schema_id);
       work->push_back([this, uri, shared_result](kspp::async::work<int>::callback cb) {
         std::vector<std::string> headers = {"Accept: application/vnd.schemaregistry.v1+json"};
-        auto request = std::make_shared<kspp::http::request>(kspp::http::GET, uri, headers, 100ms); // move to api
+        auto request = std::make_shared<kspp::http::request>(
+            kspp::http::GET,
+            uri,
+            _config->get_ca_cert_path(),
+            _config->get_client_cert_path(),
+            _config->get_private_key_path(),
+            _config->get_private_key_passphrase(),
+            headers,
+            _http_timeout);
         _http.perform_async(request, [cb, shared_result](std::shared_ptr<kspp::http::request> request) {
           if (request->http_result() >= 200 && request->http_result() < 300) {
             shared_result->schema = std::make_shared<avro::ValidSchema>();

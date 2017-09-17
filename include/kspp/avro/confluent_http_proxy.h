@@ -86,6 +86,7 @@ namespace kspp {
       }
 
     private:
+      std::shared_ptr<kspp::cluster_config> _config;
       kspp::http::client _http;
       std::chrono::milliseconds _http_timeout;
       std::vector<kspp::url> _base_urls;

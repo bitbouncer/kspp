@@ -88,12 +88,48 @@ namespace kspp {
                      const std::vector<std::string> &headers,
                      const std::chrono::milliseconds &timeout,
                      bool verbose)
-        : _transport_ok(true), _method(method), _uri(uri), _curl_verbose(verbose), _timeoutX(timeout),
-          _http_result(kspp::http::undefined), _tx_headers(headers),
-          _tx_stream(std::ios_base::ate | std::ios_base::in | std::ios_base::out), _curl_easy(NULL),
-          _curl_headerlist(NULL), _curl_done(false) {
+        : _transport_ok(true)
+        , _method(method)
+        , _uri(uri)
+        , _curl_verbose(verbose)
+        , _timeoutX(timeout)
+        , _http_result(kspp::http::undefined)
+        , _tx_headers(headers)
+        , _tx_stream(std::ios_base::ate | std::ios_base::in | std::ios_base::out)
+        , _curl_easy(NULL)
+        , _curl_headerlist(NULL)
+        , _curl_done(false) {
       _curl_easy = curl_easy_init();
     }
+
+    request::request(kspp::http::method_t method,
+                     const std::string &uri,
+                     std::string ca_cert,
+                     std::string client_cert,
+                     std::string client_key,
+                     std::string client_key_passphrase,
+                     const std::vector<std::string> &headers,
+                     const std::chrono::milliseconds &timeout,
+                     bool verbose)
+        : _transport_ok(true)
+        , _method(method)
+        , _uri(uri)
+        , _ca_cert(ca_cert)
+        , _client_cert(client_cert)
+        , _client_key(client_key)
+        ,_client_key_passphrase(client_key_passphrase)
+        , _curl_verbose(verbose)
+        , _timeoutX(timeout)
+        , _http_result(kspp::http::undefined)
+        , _tx_headers(headers)
+        , _tx_stream(std::ios_base::ate | std::ios_base::in | std::ios_base::out)
+        , _curl_easy(NULL)
+        , _curl_headerlist(NULL)
+        , _curl_done(false) {
+      _curl_easy = curl_easy_init();
+    }
+
+
 
     request::~request() {
       if (_curl_easy)
@@ -149,6 +185,16 @@ namespace kspp {
       return std::make_shared<request>(method, uri, headers, timeout, verbose);
     }
 
+    std::shared_ptr<request>
+    create_http_request(kspp::http::method_t method, const std::string &uri,
+                        std::string ca_cert,
+                        std::string client_cert,
+                        std::string client_key,
+                        std::string client_key_passphrase,
+                        const std::vector<std::string> &headers,
+                        const std::chrono::milliseconds &timeout, bool verbose) {
+      return std::make_shared<request>(method, uri, ca_cert, client_cert, client_key, client_key_passphrase, headers, timeout, verbose);
+    }
 
     client::client(boost::asio::io_service &io_service)
         : _io_service(io_service), _timer(_io_service), _closing(false), _user_agent_header("User-Agent:csi-http/0.1") {
@@ -216,16 +262,34 @@ namespace kspp {
       curl_easy_setopt(request->_curl_easy, CURLOPT_CLOSESOCKETFUNCTION, &client::_closesocket_cb);
       curl_easy_setopt(request->_curl_easy, CURLOPT_CLOSESOCKETDATA, this);
 
-      curl_easy_setopt(request->_curl_easy, CURLOPT_NOSIGNAL,
-                       1L); // try to avoid signals to timeout address resolution calls
+      curl_easy_setopt(request->_curl_easy, CURLOPT_NOSIGNAL, 1L); // try to avoid signals to timeout address resolution calls
+
+      curl_easy_setopt(request->_curl_easy, CURLOPT_URL, request->_uri.c_str());
+
+      // should we should skip the ssl stuff below if the url does not begin with ssl?
 
       //SSL OPTIONS
+      //curl_easy_setopt(request->_curl_easy, CURLOPT_SSL_VERIFYPEER, 1L); // default anyway
+      curl_easy_setopt(request->_curl_easy, CURLOPT_SSL_VERIFYPEER, 0L);   // unsafe
+      curl_easy_setopt(request->_curl_easy,  CURLOPT_SSL_VERIFYHOST, 2L);
+      //curl_easy_setopt(request->_curl_easy,  CURLOPT_SSL_VERIFYHOST, 0L);  // this is unsafe
+      curl_easy_setopt(request->_curl_easy, CURLOPT_CAPATH, request->_ca_cert.c_str());
+
+      CURLcode res;
+      res = curl_easy_setopt(request->_curl_easy, CURLOPT_SSLCERT, request->_client_cert.c_str());
+      res = curl_easy_setopt(request->_curl_easy, CURLOPT_SSLKEY, request->_client_key.c_str());
+      //res = curl_easy_setopt(request->_curl_easy, CURLOPT_KEYPASSWD, request->_client_key_passphrase);
+      res = curl_easy_setopt(request->_curl_easy, CURLOPT_SSLKEYPASSWD, request->_client_key_passphrase.c_str());
+      res = curl_easy_setopt(request->_curl_easy, CURLOPT_SSLKEYTYPE, "PEM");
+
       //set up curls cerfificate check
       //curl_easy_setopt(m_hcURL, CURLOPT_SSL_VERIFYPEER, 1));
       //curl_easy_setopt(m_hcURL, CURLOPT_CAINFO,"curl-ca-bundle.cer"));
 
       // for now skip ca check
-      //curl_easy_setopt(_curl, CURLOPT_SSL_VERIFYPEER, 0);
+      //curl_easy_setopt(request->_curl_easy, CURLOPT_SSL_VERIFYPEER, 0); // this is insecure...
+
+
       // retrieve cert info
       //curl_easy_setopt(_curl, CURLOPT_CERTINFO, 1);
 
@@ -253,8 +317,6 @@ namespace kspp {
         default:
           assert(false);
       };
-
-      curl_easy_setopt(request->_curl_easy, CURLOPT_URL, request->_uri.c_str());
 
       /* the request */
       curl_easy_setopt(request->_curl_easy, CURLOPT_READFUNCTION, read_callback_std_stream);
@@ -290,9 +352,12 @@ namespace kspp {
 
       //SSL OPTIONS
       // for now skip ca check
-      curl_easy_setopt(request->_curl_easy, CURLOPT_SSL_VERIFYPEER, 0);
+      //curl_easy_setopt(request->_curl_easy, CURLOPT_SSL_VERIFYPEER, 0);
       // retrieve cert info
-      curl_easy_setopt(request->_curl_easy, CURLOPT_CERTINFO, 1);
+      //curl_easy_setopt(request->_curl_easy, CURLOPT_CERTINFO, 1);
+
+
+
       request->_start_ts = std::chrono::steady_clock::now();
 
       /*
