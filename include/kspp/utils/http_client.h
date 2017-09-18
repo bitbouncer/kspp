@@ -154,31 +154,39 @@ namespace kspp {
       request(kspp::http::method_t method,
               const std::string &uri,
               const std::vector<std::string> &headers,
-              const std::chrono::milliseconds &timeout,
-              bool verbose = false);
-
-      request(kspp::http::method_t method,
-              const std::string &uri,
-              std::string ca_cert,
-              std::string client_cert,
-              std::string client_key,
-              std::string client_key_passphrase,
-              const std::vector<std::string> &headers,
-              const std::chrono::milliseconds &timeout,
-              bool verbose = false);
-
-
+              std::chrono::milliseconds timeout=std::chrono::seconds(2));
 
       ~request();
 
     public:
-      void curl_start(std::shared_ptr<request> self);
+      /*
+       * ca_cert_path path to pem encoded file
+       */
+      void set_ca_cert_path(std::string ca_cert_path);
 
-      void curl_stop();
+      /*
+       * client_cert_path path to pem encoded file
+       * client_key_path path to pem encoded file
+       * client_key_passphrase
+       */
+      void set_client_credentials(std::string client_cert_path, std::string client_key_path, std::string client_key_passphrase);
 
-      static std::shared_ptr<request> lookup(CURL *e);
+      /*
+       * user_define_id user defined string that is prepended in logs if defined
+       */
+      void set_request_id(std::string user_define_id);
 
-      //inline call_context::handle curl_handle() { return _this; }
+      /*
+       * turns on detailed logging
+       */
+      void set_verbose(bool state);
+
+
+      void set_tx_headers(const std::vector<std::string> &headers);
+
+
+      void set_timeout(const std::chrono::milliseconds &timeout);
+
 
       inline int64_t milliseconds() const {
         std::chrono::milliseconds duration = std::chrono::duration_cast<std::chrono::milliseconds>(_end_ts - _start_ts);
@@ -216,10 +224,6 @@ namespace kspp {
         return (int) (ms == 0 ? 0 : sz / ms);
       }
 
-      inline void set_verbose(bool state) {
-        _curl_verbose = state;
-      }
-
       inline const std::string &uri() const {
         return _uri;
       }
@@ -239,21 +243,30 @@ namespace kspp {
       std::string get_rx_header(const std::string &header) const;
 
     private:
+
+      void curl_start(std::shared_ptr<request> self);
+
+      void curl_stop();
+
+      static std::shared_ptr<request> lookup(CURL *e);
+
       kspp::http::method_t _method;
       std::string _uri;
-
-
       std::vector<std::string> _tx_headers;
       std::vector<kspp::http::header_t> _rx_headers;
       std::chrono::steady_clock::time_point _start_ts;
       std::chrono::steady_clock::time_point _end_ts;
-      std::chrono::milliseconds _timeoutX;
+      std::chrono::milliseconds _timeout;
 
       //SSL stuff
       std::string _ca_cert;
       std::string _client_cert;
       std::string _client_key;
       std::string _client_key_passphrase;
+
+      // logging stuff
+      std::string _request_id;
+      bool _curl_verbose;
 
       callback _callback;
       //TX
@@ -269,26 +282,7 @@ namespace kspp {
       curl_slist *_curl_headerlist;
       bool _curl_done;
       std::shared_ptr<request> _this; // used to keep object alive when only curl knows about the context
-      bool _curl_verbose;
     };
-
-    std::shared_ptr<request>
-    create_http_request(kspp::http::method_t method,
-                        const std::string &uri,
-                        const std::vector<std::string> &headers,
-                        const std::chrono::milliseconds &timeout,
-                        bool verbose = false);
-
-    std::shared_ptr<request>
-    create_http_request(kspp::http::method_t method,
-                        const std::string &uri,
-                        std::string ca_cert,
-                        std::string client_cert,
-                        std::string client_key,
-                        std::string client_key_passphrase,
-                        const std::vector<std::string> &headers,
-                        const std::chrono::milliseconds &timeout,
-                        bool verbose = false);
 
     class client {
     public:

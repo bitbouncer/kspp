@@ -25,6 +25,7 @@ int main(int argc, char **argv) {
   config->set_private_key_path("/home/saka/kspp-keystore/10.1.46.13/client.pem", "/home/saka/kspp-keystore/10.1.46.13/client.key", "abcdefgh");
   config->set_brokers("ssl://10.1.46.13:9093,ssl://10.1.46.14:9093,ssl://10.1.46.15:9093");
   config->set_schema_registry("https://f013-520-kafka:8085,https://f014-520-kafka:8085,https://f015-520-kafka:8085");
+  //config->set_schema_registry("http://f013-520-kafka:8088,http://f014-520-kafka:8081,http://f015-520-kafka:8081");
 
 
   config->validate();// optional

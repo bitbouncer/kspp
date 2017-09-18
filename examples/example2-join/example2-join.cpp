@@ -19,6 +19,7 @@ int main(int argc, char **argv) {
 
   auto config = std::make_shared<kspp::cluster_config>();
   config->load_config_from_env();
+
   config->set_consumer_buffering_time(10ms);
   config->set_producer_buffering_time(10ms);
   config->validate();

@@ -1,4 +1,7 @@
 #include <kspp/utils/http_client.h>
+#include <glog/logging.h>
+
+using namespace std::chrono_literals;
 
 namespace kspp {
   namespace http {
@@ -83,16 +86,71 @@ namespace kspp {
       return sz;
     }
 
+    static int my_trace(CURL*,
+                        curl_infotype type,
+                        char* data,
+                        size_t sz,
+                        void *userp)
+    {
+      std::string* request_id = (std::string*) userp; //
+      const char *text;
+      //(void)handle; /* prevent compiler warning */
+
+      switch(type) {
+        case CURLINFO_TEXT: {
+          std::string s(data);
+          if (request_id->size())
+            DLOG(INFO) << *request_id << ", " << s;
+          else
+            DLOG(INFO) << s;
+
+          return 0;
+        }
+          //LOG(INFO) << "curl: " << std::string(data);
+          //fprintf(stderr, "== Info: %s", data);
+          /* FALLTHROUGH */
+        default: /* in case a new one is introduced to shock us */
+          return 0;
+
+        /*
+           case CURLINFO_HEADER_OUT:
+            text = "=> Send header";
+            break;
+          case CURLINFO_DATA_OUT:
+            text = "=> Send data";
+            break;
+          case CURLINFO_SSL_DATA_OUT:
+            text = "=> Send SSL data";
+            break;
+          case CURLINFO_HEADER_IN:
+            text = "<= Recv header";
+            break;
+          case CURLINFO_DATA_IN:
+            text = "<= Recv data";
+            break;
+          case CURLINFO_SSL_DATA_IN:
+            text = "<= Recv SSL data";
+            break;
+          */
+      }
+
+      //DLOG(INFO) << text;
+      //dump(text, stderr, (unsigned char *)data, size, config->trace_ascii);
+      return 0;
+    }
+
+
+
     request::request(kspp::http::method_t method,
                      const std::string &uri,
                      const std::vector<std::string> &headers,
-                     const std::chrono::milliseconds &timeout,
-                     bool verbose)
+                     std::chrono::milliseconds timeout
+                     )
         : _transport_ok(true)
         , _method(method)
         , _uri(uri)
-        , _curl_verbose(verbose)
-        , _timeoutX(timeout)
+        , _curl_verbose(false)
+        , _timeout(timeout)
         , _http_result(kspp::http::undefined)
         , _tx_headers(headers)
         , _tx_stream(std::ios_base::ate | std::ios_base::in | std::ios_base::out)
@@ -101,35 +159,6 @@ namespace kspp {
         , _curl_done(false) {
       _curl_easy = curl_easy_init();
     }
-
-    request::request(kspp::http::method_t method,
-                     const std::string &uri,
-                     std::string ca_cert,
-                     std::string client_cert,
-                     std::string client_key,
-                     std::string client_key_passphrase,
-                     const std::vector<std::string> &headers,
-                     const std::chrono::milliseconds &timeout,
-                     bool verbose)
-        : _transport_ok(true)
-        , _method(method)
-        , _uri(uri)
-        , _ca_cert(ca_cert)
-        , _client_cert(client_cert)
-        , _client_key(client_key)
-        ,_client_key_passphrase(client_key_passphrase)
-        , _curl_verbose(verbose)
-        , _timeoutX(timeout)
-        , _http_result(kspp::http::undefined)
-        , _tx_headers(headers)
-        , _tx_stream(std::ios_base::ate | std::ios_base::in | std::ios_base::out)
-        , _curl_easy(NULL)
-        , _curl_headerlist(NULL)
-        , _curl_done(false) {
-      _curl_easy = curl_easy_init();
-    }
-
-
 
     request::~request() {
       if (_curl_easy)
@@ -138,6 +167,38 @@ namespace kspp {
       if (_curl_headerlist)
         curl_slist_free_all(_curl_headerlist);
     }
+
+    void request::set_request_id(std::string user_defined)
+    {
+      _request_id = user_defined;
+    }
+
+    void request::set_ca_cert_path(std::string path)
+    {
+      _ca_cert = path;
+    }
+
+    void request::set_client_credentials(std::string client_cert_path, std::string client_key_path, std::string client_key_passphrase)
+    {
+      _client_cert = client_cert_path;
+      _client_key = client_key_path;
+      _client_key_passphrase = client_key_passphrase;
+    }
+
+    void request::set_tx_headers(const std::vector<std::string> &headers)
+    {
+      _tx_headers = headers;
+    }
+
+    void  request::set_timeout(const std::chrono::milliseconds &timeout)
+    {
+      _timeout = timeout;
+    }
+
+    void request::set_verbose(bool state) {
+      _curl_verbose = state;
+    }
+
 
     void request::curl_start(std::shared_ptr<request> self) {
       // lets clear state if this is a restarted transfer...
@@ -176,24 +237,6 @@ namespace kspp {
           return i->value;
       }
       return "";
-    }
-
-
-    std::shared_ptr<request>
-    create_http_request(kspp::http::method_t method, const std::string &uri, const std::vector<std::string> &headers,
-                        const std::chrono::milliseconds &timeout, bool verbose) {
-      return std::make_shared<request>(method, uri, headers, timeout, verbose);
-    }
-
-    std::shared_ptr<request>
-    create_http_request(kspp::http::method_t method, const std::string &uri,
-                        std::string ca_cert,
-                        std::string client_cert,
-                        std::string client_key,
-                        std::string client_key_passphrase,
-                        const std::vector<std::string> &headers,
-                        const std::chrono::milliseconds &timeout, bool verbose) {
-      return std::make_shared<request>(method, uri, ca_cert, client_cert, client_key, client_key_passphrase, headers, timeout, verbose);
     }
 
     client::client(boost::asio::io_service &io_service)
@@ -256,6 +299,8 @@ namespace kspp {
     void client::_perform(std::shared_ptr<kspp::http::request> request) {
       request->curl_start(request); // increments usage count and keeps object around until curl thinks its done.
 
+      curl_easy_setopt(request->_curl_easy, CURLOPT_DEBUGFUNCTION, my_trace); // not active if not using CURLOPT_VERBOSE==1
+      curl_easy_setopt(request->_curl_easy, CURLOPT_DEBUGDATA, &request->_request_id);
       curl_easy_setopt(request->_curl_easy, CURLOPT_OPENSOCKETFUNCTION, &client::_opensocket_cb);
       curl_easy_setopt(request->_curl_easy, CURLOPT_OPENSOCKETDATA, this);
 
@@ -345,7 +390,7 @@ namespace kspp {
            i != request->_tx_headers.end(); ++i)
         request->_curl_headerlist = curl_slist_append(request->_curl_headerlist, i->c_str());
       curl_easy_setopt(request->_curl_easy, CURLOPT_HTTPHEADER, request->_curl_headerlist);
-      curl_easy_setopt(request->_curl_easy, CURLOPT_TIMEOUT_MS, request->_timeoutX.count());
+      curl_easy_setopt(request->_curl_easy, CURLOPT_TIMEOUT_MS, request->_timeout.count());
       curl_easy_setopt(request->_curl_easy, CURLOPT_HEADERDATA, &request->_rx_headers);
       curl_easy_setopt(request->_curl_easy, CURLOPT_HEADERFUNCTION, parse_headers);
       curl_easy_setopt(request->_curl_easy, CURLOPT_FOLLOWLOCATION, 1L);
@@ -634,21 +679,22 @@ namespace kspp {
           context->_curl_done = true;
           context->_transport_ok = (http_result > 0);
 
-          /////////
-          if (context->_method == http::GET) {
-            DLOG(INFO) << "http_client: " << to_string(context->_method)
-                       << ", uri: " << context->_uri
-                       << ", res: " << http_result
-                       << ", content_length: " << context->rx_content_length()
-                       << ", time: " << context->milliseconds() << " ms";
-          } else {
-            DLOG(INFO) << "http_client: " << to_string(context->_method)
-                       << ", uri: " << context->_uri
-                       << ", res: " << http_result
-                       << ", content_length: " << context->tx_content_length()
-                       << ", time: " << context->milliseconds() << " ms";
-          }
 
+         if (context->_request_id.size()>0) {
+           DLOG(INFO) << context->_request_id << ", " << to_string(context->_method)
+                      << ", uri: " << context->_uri
+                      << ", res: " << http_result
+                      << ", content_length: "
+                      << ((context->_method == http::GET) ? context->rx_content_length() : context->tx_content_length())
+                      << ", time: " << context->milliseconds() << " ms";
+         } else {
+           DLOG(INFO) << to_string(context->_method)
+                      << ", uri: " << context->_uri
+                      << ", res: " << http_result
+                      << ", content_length: "
+                      << ((context->_method == http::GET) ? context->rx_content_length() : context->tx_content_length())
+                      << ", time: " << context->milliseconds() << " ms";
+         }
           if (context->_transport_ok) {
             std::string content_length_str = context->get_rx_header("Content-Length");
             if (content_length_str.size()) {

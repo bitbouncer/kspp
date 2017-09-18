@@ -5,6 +5,7 @@
 #include <kspp/utils/http_client.h>
 #include <kspp/cluster_config.h>
 #include <kspp/utils/url.h>
+#include <kspp/utils/async.h>
 #pragma once
 
 namespace kspp {
@@ -87,6 +88,7 @@ namespace kspp {
 
     private:
       std::shared_ptr<kspp::cluster_config> _config;
+      kspp::async::scheduling_t _read_policy;
       kspp::http::client _http;
       std::chrono::milliseconds _http_timeout;
       std::vector<kspp::url> _base_urls;

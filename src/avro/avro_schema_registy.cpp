@@ -18,6 +18,7 @@ namespace kspp {
   }
 
   bool avro_schema_registry::validate() {
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
     auto future = _proxy->get_config();
     future.wait();
     auto rpc_result = future.get();
@@ -26,7 +27,8 @@ namespace kspp {
       LOG(WARNING) << "avro_schema_registry validate failed: ec" << rpc_result.ec;
       return false;
     }
-    LOG(INFO) << "avro_schema_registry validate OK";
+    std::chrono::steady_clock::time_point end= std::chrono::steady_clock::now();
+    LOG(INFO) << "avro_schema_registry validate OK " << std::chrono::duration_cast<std::chrono::milliseconds> (end - begin).count() << " ms";
     return true;
   }
 

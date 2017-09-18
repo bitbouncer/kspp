@@ -6,7 +6,6 @@
 #include <kspp/utils/http_client.h>
 #include <kspp/cluster_config.h>
 #include <kspp/avro/confluent_http_proxy.h>
-
 #pragma once
 
 namespace kspp {
