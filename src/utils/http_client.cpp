@@ -270,10 +270,11 @@ namespace kspp {
 
       //SSL OPTIONS
       //curl_easy_setopt(request->_curl_easy, CURLOPT_SSL_VERIFYPEER, 1L); // default anyway
-      curl_easy_setopt(request->_curl_easy, CURLOPT_SSL_VERIFYPEER, 0L);   // unsafe
+      curl_easy_setopt(request->_curl_easy, CURLOPT_SSL_VERIFYPEER, 1L);   // unsafe
       curl_easy_setopt(request->_curl_easy,  CURLOPT_SSL_VERIFYHOST, 2L);
       //curl_easy_setopt(request->_curl_easy,  CURLOPT_SSL_VERIFYHOST, 0L);  // this is unsafe
-      curl_easy_setopt(request->_curl_easy, CURLOPT_CAPATH, request->_ca_cert.c_str());
+      //curl_easy_setopt(request->_curl_easy, CURLOPT_CAPATH, request->_ca_cert.c_str());
+      curl_easy_setopt(request->_curl_easy, CURLOPT_CAINFO, request->_ca_cert.c_str());
 
       CURLcode res;
       res = curl_easy_setopt(request->_curl_easy, CURLOPT_SSLCERT, request->_client_cert.c_str());
