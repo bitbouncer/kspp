@@ -88,20 +88,18 @@ if (WIN32)
     SET(CSI_LIBS kspp ${LIBRDKAFKA_LIBS} ${CSI_AVRO_LIBS} ${CSI_ROCKSDB_LIBS} ${CSI_BOOST_LIBS} glog libssl libcrypto ${ZLIB_LIBS} crypt32 Ws2_32 legacy_stdio_definitions)
 
 elseif (APPLE)
-    find_package(Boost COMPONENTS log_setup log thread program_options filesystem system REQUIRED)
-    set(BOOST_LIBS
-            ${Boost_LOG_LIBRARY}
-            ${Boost_LOG_SETUP_LIBRARY}
-            ${Boost_PROGRAM_OPTIONS_LIBRARY}
-            ${Boost_FILESYSTEM_LIBRARY}
-            ${Boost_THREAD_LIBRARY}
-            ${Boost_SYSTEM_LIBRARY}
-            pthread
-            rt
-            c
-            )
-
-    add_definitions(-DBOOST_LOG_DYN_LINK)
+    set(BOOST_LIBS boost_date_time boost_timer boost_system boost_program_options boost_filesystem boost_regex boost_chrono boost_iostreams pthread c)
+ #   
+ #   find_package(Boost COMPONENTS program_options filesystem system REQUIRED)
+ #   set(BOOST_LIBS
+ #           boost
+ #           ${Boost_PROGRAM_OPTIONS_LIBRARY}
+ #           ${Boost_FILESYSTEM_LIBRARY}
+ #           ${Boost_SYSTEM_LIBRARY}
+ #           pthread
+ #           c
+ #           )
+    SET(AVRO_LIBS avrocpp curl)
 
     set(LIBRARY_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/lib)
     SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/bin)
@@ -109,7 +107,7 @@ elseif (APPLE)
         SET(CSI_ROCKSDB_LIBS rocksdb_lite snappy bz2 z)
     endif ()
     SET(LIBRDKAFKA_LIBS rdkafka++ rdkafka)
-    SET(CSI_LIBS kspp ${LIBRDKAFKA_LIBS} ${CSI_ROCKSDB_LIBS} ${BOOST_LIBS} crypto ssl)
+    SET(CSI_LIBS kspp ${LIBRDKAFKA_LIBS} ${CSI_ROCKSDB_LIBS} ${AVRO_LIBS} ${BOOST_LIBS} glog crypto ssl)
     #END APPLE
 
 
@@ -228,8 +226,6 @@ file(GLOB KSPP_INCLUDE_FILES
         include/kspp/beta/*.h
         )
 
-SET(KSPP_INCLUDE_FILES  ${KSPP_INCLUDE_FILES} )
-
 add_library(kspp_s STATIC ${LIB_SRCS} ${KSPP_INCLUDE_FILES})
 
 INSTALL(TARGETS kspp_s
@@ -243,6 +239,8 @@ INSTALL(TARGETS kspp
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
         )
+
+TARGET_LINK_LIBRARIES(kspp ${LIBRDKAFKA_LIBS} ${CSI_ROCKSDB_LIBS} ${AVRO_LIBS} ${BOOST_LIBS} glog crypto ssl)
 
 INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/include/ DESTINATION include)
 
