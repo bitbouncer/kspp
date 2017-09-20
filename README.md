@@ -107,16 +107,26 @@ brew install snappy
 brew install rocksdb
 brew install boost
 brew install boost-python
+brew install glog
+brew install gflags
+brew install rapidjson
+brew install avro-cpp
+brew install librdkafka
 ```
 
 Check out source code
 ```
 git clone https://github.com/bitbouncer/kspp.git
+cd kspp
 ```
 
 Run the build
 ```
+#minimal
 ./rebuild.sh
+#all options
+./rebuild-all-options.sh
+cd ..
 ```
 
 ## Windows x64:
