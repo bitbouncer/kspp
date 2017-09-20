@@ -85,7 +85,8 @@ if (WIN32)
     SET(CSI_AVRO_LIBS avrocpp_s libcurl)
     SET(ZLIB_LIBS debug zlibstaticd optimized zlibstatic)
     SET(LIBRDKAFKA_LIBS librdkafkacpp librdkafka lz4)
-    SET(CSI_LIBS kspp ${LIBRDKAFKA_LIBS} ${CSI_AVRO_LIBS} ${CSI_ROCKSDB_LIBS} ${CSI_BOOST_LIBS} glog libssl libcrypto ${ZLIB_LIBS} crypt32 Ws2_32 legacy_stdio_definitions)
+    SET(EXT_LIBS ${LIBRDKAFKA_LIBS} ${CSI_AVRO_LIBS} ${CSI_ROCKSDB_LIBS} ${CSI_BOOST_LIBS} glog libssl libcrypto ${ZLIB_LIBS} crypt32 Ws2_32 legacy_stdio_definitions)
+    SET(CSI_LIBS kspp ${EXT_LIBS})
 
 elseif (APPLE)
     set(BOOST_LIBS boost_date_time boost_timer boost_system boost_program_options boost_filesystem boost_regex boost_chrono boost_iostreams pthread c)
@@ -107,7 +108,8 @@ elseif (APPLE)
         SET(CSI_ROCKSDB_LIBS rocksdb_lite snappy bz2 z)
     endif ()
     SET(LIBRDKAFKA_LIBS rdkafka++ rdkafka)
-    SET(CSI_LIBS kspp ${LIBRDKAFKA_LIBS} ${CSI_ROCKSDB_LIBS} ${AVRO_LIBS} ${BOOST_LIBS} glog crypto ssl)
+    SET(EXT_LIBS ${LIBRDKAFKA_LIBS} ${CSI_ROCKSDB_LIBS} ${AVRO_LIBS} ${BOOST_LIBS} glog crypto ssl)
+    SET(CSI_LIBS kspp ${EXT_LIBS})
     #END APPLE
 
 
@@ -164,7 +166,8 @@ else () #LINUX
     add_definitions(-D_FILE_OFFSET_BITS=64 -D_REENTRANT -DEXTERNAL_LOCKS -DMULTITHREAD)
     add_definitions(-fPIC)
     add_definitions(-Wno-deprecated)
-    SET(CSI_LIBS kspp ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${BOOST_LIBS} glog crypto ssl)
+    SET(EXT_LIBS kspp ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${BOOST_LIBS} glog crypto ssl)
+    SET(CSI_LIBS kspp ${EXT_LIBS})
 endif () #LINUX
 
 include_directories(${CSI_INCLUDE_PATH} ${CMAKE_SOURCE_DIR}/include)
@@ -240,7 +243,7 @@ INSTALL(TARGETS kspp
         ARCHIVE DESTINATION lib
         )
 
-TARGET_LINK_LIBRARIES(kspp ${LIBRDKAFKA_LIBS} ${CSI_ROCKSDB_LIBS} ${AVRO_LIBS} ${BOOST_LIBS} glog crypto ssl)
+TARGET_LINK_LIBRARIES(kspp ${EXT_LIBS})
 
 INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/include/ DESTINATION include)
 

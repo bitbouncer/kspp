@@ -123,12 +123,12 @@ namespace kspp {
     }
 
 
-    typename kspp::materialized_source<K, V>::iterator begin(void) const {
+    typename kspp::materialized_source<K, V>::iterator begin(void) const override {
       return typename kspp::materialized_source<K, V>::iterator(
               std::make_shared<iterator_impl>(_store, iterator_impl::BEGIN));
     }
 
-    typename kspp::materialized_source<K, V>::iterator end() const {
+    typename kspp::materialized_source<K, V>::iterator end() const override {
       return typename kspp::materialized_source<K, V>::iterator(
               std::make_shared<iterator_impl>(_store, iterator_impl::END));
     }

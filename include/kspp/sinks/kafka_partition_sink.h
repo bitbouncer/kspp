@@ -26,7 +26,7 @@ namespace kspp {
       this->add_metric(&_lag);
     }
 
-    virtual std::string simple_name() const {
+    std::string simple_name() const override {
       return "kafka_partition_sink(" + _impl.topic() + ")";
     }
 

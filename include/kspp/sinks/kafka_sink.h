@@ -44,12 +44,6 @@ namespace kspp {
       return _impl.poll(timeout);
     }
 
-    /*
-     * void commit(bool flush) override {
-      // noop
-    }
-     */
-
     void flush() override {
       while (!eof()) {
         process_one(kspp::milliseconds_since_epoch());
