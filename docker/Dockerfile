@@ -1,0 +1,160 @@
+FROM alpine:3.6
+
+ARG LOCAL_REPO_URL
+ARG GLOG_VER="0.3.4"
+ARG LIBRDKAFKA_VER="0.11.0"
+ARG AVRO_VER="1.8.2"
+ARG ROCKSDB_VER="5.6.1"
+ARG RAPIDJSON_VER="1.1.0"
+
+MAINTAINER sk svante.karlsson@csi.se
+
+RUN echo "@testing http://nl.alpinelinux.org/alpine/edge/testing" >>/etc/apk/repositories
+
+RUN apk add --no-cache --virtual .fetch-deps \
+      ca-certificates \
+      openssl \
+      git \
+      wget \
+      tar && \
+\
+BUILD_DIR="$(mktemp -d)" && \
+\
+    wget -O "$BUILD_DIR/librdkafka.tar.gz" "https://github.com/edenhill/librdkafka/archive/v$LIBRDKAFKA_VER.tar.gz" && \
+    mkdir -p $BUILD_DIR/librdkafka && \
+    tar \
+      --extract \
+      --file "$BUILD_DIR/librdkafka.tar.gz" \
+      --directory "$BUILD_DIR/librdkafka" \
+      --strip-components 1 && \
+\
+    wget -O "$BUILD_DIR/google-glog.tar.gz" "https://github.com/google/glog/archive/v$GLOG_VER.tar.gz" && \
+    mkdir -p $BUILD_DIR/glog && \
+    tar \
+      --extract \
+      --file "$BUILD_DIR/google-glog.tar.gz" \
+      --directory "$BUILD_DIR/glog" \
+      --strip-components 1 && \
+\
+   wget -O "$BUILD_DIR/rapidjson.tar.gz" "https://github.com/miloyip/rapidjson/archive/v$RAPIDJSON_VER.tar.gz" && \
+   mkdir -p $BUILD_DIR/rapidjson && \
+   tar \
+      --extract \
+      --file "$BUILD_DIR/rapidjson.tar.gz" \
+      --directory "$BUILD_DIR/rapidjson" \
+      --strip-components 1 && \
+\
+    wget -O "$BUILD_DIR/avro.tar.gz" "https://github.com/apache/avro/archive/release-$AVRO_VER.tar.gz" && \
+    mkdir -p $BUILD_DIR/avro && \
+    tar \
+      --extract \
+      --file "$BUILD_DIR/avro.tar.gz" \
+      --directory "$BUILD_DIR/avro" \
+      --strip-components 1 && \
+\
+   wget -O "$BUILD_DIR/rocksdb.tar.gz" "https://github.com/facebook/rocksdb/archive/v$ROCKSDB_VER.tar.gz" && \
+   mkdir -p $BUILD_DIR/rocksdb && \
+   tar \
+      --extract \
+      --file "$BUILD_DIR/rocksdb.tar.gz" \
+      --directory "$BUILD_DIR/rocksdb" \
+      --strip-components 1 && \
+\
+   wget -O "$BUILD_DIR/master.tar.gz" "https://github.com/bitbouncer/kspp/archive/master.tar.gz" && \
+   mkdir -p $BUILD_DIR/kspp && \
+   tar \
+      --extract \
+      --file "$BUILD_DIR/master.tar.gz" \
+      --directory "$BUILD_DIR/kspp" \
+      --strip-components 1 && \
+\
+    apk add --no-cache  --virtual .build-deps \
+      bash \
+      g++ \
+      openssl-dev \
+      make \
+      cmake \
+      boost-dev \
+      musl-dev \
+      zlib-dev \
+      python \
+      curl-dev \
+      build-base \
+      linux-headers \
+      zlib zlib-dev \
+      bzip2 bzip2-dev \
+      snappy snappy-dev \
+      lz4 lz4-dev \
+      zstd@testing zstd-dev@testing \
+      c-ares c-ares-dev \
+      jemalloc && \
+\
+    cd "$BUILD_DIR/glog" && \
+    ./configure --prefix=/usr/local && \
+    make -j "$(getconf _NPROCESSORS_ONLN)" && \
+    make install && \
+\
+    cd "$BUILD_DIR/librdkafka" && \
+    ./configure --prefix=/usr/local && \
+    make -j "$(getconf _NPROCESSORS_ONLN)" && \
+    make install && \
+\
+   cd "$BUILD_DIR/avro" && \
+   cd lang/c++/ && \
+   mkdir build && \
+   cd build && \
+   cmake -DCMAKE_BUILD_TYPE=Release .. && \
+   make -j "$(getconf _NPROCESSORS_ONLN)" && \
+   make install && \
+   rm /usr/local/bin/avrogencpp && \
+\
+    cd $BUILD_DIR/rocksdb && \
+    make -j "$(getconf _NPROCESSORS_ONLN)" shared_lib && \
+    cp -r include/* /usr/include/ && \
+    cp librocksdb.so.5.6.1 /usr/local/lib && \
+    ln -fs /usr/local/lib/librocksdb.so.$ROCKSDB_VER /usr/local/lib/librocksdb.so && \
+    ln -fs /usr/local/lib/librocksdb.so.$ROCKSDB_VER /usr/local/lib/librocksdb.so.5 && \ 
+    ln -fs /usr/local/lib/librocksdb.so.$ROCKSDB_VER /usr/local/lib/librocksdb.so.5.6 && \ 
+\
+   cd "$BUILD_DIR/rapidjson" && \
+   mkdir build && \
+   cd build && \
+   cmake -DRAPIDJSON_BUILD_EXAMPLES=OFF -DRAPIDJSON_BUILD_DOC=OFF -DRAPIDJSON_BUILD_TESTS=OFF .. && \
+   make install && \
+\
+   cd "$BUILD_DIR/kspp" && \
+   mkdir build && \
+   cd build && \
+   cmake  -DCMAKE_BUILD_TYPE=Release -DENABLE_ROCKSDB=ON -DBUILD_SAMPLES=ON .. && \
+   make -j "$(getconf _NPROCESSORS_ONLN)" && \
+   make install && \
+   cd .. && \
+   cp -r bin/* /usr/local/bin/ && \ 
+\
+   rm -rf /usr/local/share/doc && \
+   rm -rf /usr/local/lib/*.a && \
+   rm -rf /usr/local/lib/*.a.* && \
+   rm -rf /usr/local/lib/librocksdb* && \
+   rm -rf /usr/local/include && \
+   rm -f /usr/local/bin/avrogen* && \
+   strip --strip-all /usr/local/lib/*.so* && \
+   strip --strip-unneeded /usr/local/bin/* && \
+\
+   runDeps="$( \
+      scanelf --needed --nobanner --recursive /usr/local \
+        | awk '{ gsub(/,/, "\nso:", $2); print "so:" $2 }' \
+        | sort -u \
+        | xargs -r apk info --installed \
+        | sort -u \
+      )" && \
+   cd / && \
+   apk del .fetch-deps .build-deps && \
+   rm -R $BUILD_DIR && \
+\
+   apk add --no-cache --virtual .rundeps \
+      bash \
+      wget \
+      $runDeps
+ 
+ 
+

@@ -18,12 +18,19 @@ sudo apt-get install -y automake autogen shtool libtool git wget cmake unzip bui
 ```
 optional build rocksdb 
 ```
-git clone https://github.com/facebook/rocksdb.git
-cd rocksdb
-git checkout v5.6.1
-make -j8 shared_lib
-sudo make install-shared
-cd ..
+   wget -O rocksdb.tar.gz "https://github.com/facebook/rocksdb/archive/v5.6.1.tar.gz" && \
+   mkdir -p rocksdb && \
+   tar \
+      --extract \
+      --file rocksdb.tar.gz \
+      --directory rocksdb \
+      --strip-components 1 && \
+  cd rocksdb && \
+  make -j "$(getconf _NPROCESSORS_ONLN)" shared_lib && \
+  sudo make install-shared && \
+  cd .. && \
+  rm rocksdb.tar.gz && \
+  rm -rf rocksdb
 ```
 
 Install a late RapidJson, avro and librdkafka
@@ -44,24 +51,37 @@ wget -O rapidjson.tar.gz "https://github.com/miloyip/rapidjson/archive/v1.1.0.ta
  rm rapidjson.tar.gz && \
  rm -rf rapidjson
 
-git clone https://github.com/apache/avro.git
-cd avro
-git checkout release-1.8.2
-cd lang/c++/
-mkdir build
-cd build
-cmake -DCMAKE_BUILD_TYPE=Release ..
-make -j8
-sudo make install
-cd ../../../..
+wget -O avro.tar.gz "https://github.com/apache/avro/archive/release-1.8.2.tar.gz" && \
+  mkdir -p avro && \
+  tar \
+    --extract \
+    --file avro.tar.gz \
+    --directory avro \
+    --strip-components 1 && \
+  cd avro/lang/c++/ && \
+  mkdir build && \
+  cd build && \
+  cmake -DCMAKE_BUILD_TYPE=Release .. && \
+  make -j "$(getconf _NPROCESSORS_ONLN)" && \
+  sudo make install && \
+  cd ../../../..
+  rm avro.tar.gz && \
+  rm -rf arvo
 
-git clone https://github.com/edenhill/librdkafka.git
-cd librdkafka
-git checkout v0.11.0
-./configure
-make -j8
-sudo make install
-cd ..
+wget -O librdkafka.tar.gz "https://github.com/edenhill/librdkafka/archive/v0.11.0.tar.gz" && \
+  mkdir -p librdkafka && \
+  tar \
+    --extract \
+    --file librdkafka.tar.gz \
+    --directory librdkafka \
+    --strip-components 1 && \
+  cd librdkafka && \
+    ./configure --prefix=/usr/local && \
+    make -j "$(getconf _NPROCESSORS_ONLN)" && \
+    sudo make install && \
+    cd .. && \
+    rm librdkafka.tar.gz && \
+    rm -rf librdkafka
 ```
 
 build kspp
