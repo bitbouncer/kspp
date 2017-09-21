@@ -7,8 +7,8 @@ option(ENABLE_ZK "enable zk support" OFF)
 option(BUILD_SAMPLES "build examples" OFF)
 option(BUILD_TESTS "build tests" OFF)
 
-set (KSPP_VERSION_MAJOR 1)
-set (KSPP_VERSION_MINOR 0)
+set(KSPP_VERSION_MAJOR 1)
+set(KSPP_VERSION_MINOR 0)
 
 set(CMAKE_CXX_STANDARD 14)
 
@@ -18,7 +18,7 @@ set(CMAKE_CXX_STANDARD 14)
 
 # configure a header file to pass some of the CMake settings
 # to the source code
-configure_file (
+configure_file(
         "${PROJECT_SOURCE_DIR}/kspp_config.h.in"
         "${PROJECT_BINARY_DIR}/kspp_config.h"
 )
@@ -33,7 +33,7 @@ if (WIN32)
             ${CMAKE_SOURCE_DIR}/../openssl/include
             ${CMAKE_SOURCE_DIR}/../boost
             ${CMAKE_SOURCE_DIR}/../glog/src/windows
-			${CMAKE_SOURCE_DIR}/../glog/build
+            ${CMAKE_SOURCE_DIR}/../glog/build
             ${CMAKE_SOURCE_DIR}/../avro/lang/c++/include
             ${CMAKE_SOURCE_DIR}/../curl/include
             ${CMAKE_SOURCE_DIR}/../rapidjson/include
@@ -42,7 +42,7 @@ if (WIN32)
             ${CMAKE_SOURCE_DIR}/../openssl
             ${CMAKE_SOURCE_DIR}/../zlib/build
             ${CMAKE_SOURCE_DIR}/../boost/stage/lib/$(Platform)/lib
-			${CMAKE_SOURCE_DIR}/../glog/build/$(Platform)
+            ${CMAKE_SOURCE_DIR}/../glog/build/$(Platform)
             ${CMAKE_SOURCE_DIR}/../curl/libs/$(Platform)
             ${CMAKE_SOURCE_DIR}/../avro/lang/c++/build
             )
@@ -76,7 +76,7 @@ if (WIN32)
     add_definitions(-DBOOST_ALL_STATIC_LINK)
     add_definitions(-DLIBRDKAFKA_STATICLIB)
     add_definitions(-DCURL_STATICLIB)
-	add_definitions(-DGLOG_NO_ABBREVIATED_SEVERITIES)
+    add_definitions(-DGLOG_NO_ABBREVIATED_SEVERITIES)
 
     if (ENABLE_ROCKSDB)
         SET(CSI_ROCKSDB_LIBS rocksdb rocksdblib Rpcrt4)
@@ -89,17 +89,14 @@ if (WIN32)
     SET(CSI_LIBS kspp ${EXT_LIBS})
 
 elseif (APPLE)
-    set(BOOST_LIBS boost_date_time boost_timer boost_system boost_program_options boost_filesystem boost_regex boost_chrono boost_iostreams pthread c)
- #   
- #   find_package(Boost COMPONENTS program_options filesystem system REQUIRED)
- #   set(BOOST_LIBS
- #           boost
- #           ${Boost_PROGRAM_OPTIONS_LIBRARY}
- #           ${Boost_FILESYSTEM_LIBRARY}
- #           ${Boost_SYSTEM_LIBRARY}
- #           pthread
- #           c
- #           )
+    find_package(Boost COMPONENTS program_options filesystem system REQUIRED)
+    set(BOOST_LIBS
+            ${Boost_PROGRAM_OPTIONS_LIBRARY}
+            ${Boost_FILESYSTEM_LIBRARY}
+            ${Boost_SYSTEM_LIBRARY}
+            pthread
+            c
+            )
     SET(AVRO_LIBS avrocpp curl)
 
     set(LIBRARY_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/lib)
@@ -129,22 +126,20 @@ else () #LINUX
     if (ENABLE_ROCKSDB)
         find_package(RocksDB REQUIRED)
         SET(CSI_INCLUDE_PATH ${CSI_INCLUDE_PATH} ${ROCKSDB_INCLUDE_DIRS})
-        #SET(CSI_LIBRARY_PATH ${CSI_LIBRARY_PATH} ${CMAKE_SOURCE_DIR}/../rocksdb)
         SET(ROCKSDB_LIBS ${ROCKSDB_LIBRARIES} snappy bz2 z)
     endif ()
 
-   
-        find_package(rapidjson REQUIRED)
-        find_package(AvroCPP REQUIRED)
+    find_package(rapidjson REQUIRED)
+    find_package(AvroCPP REQUIRED)
 
-        SET(CSI_INCLUDE_PATH
-                ${CSI_INCLUDE_PATH}
-                ${RAPIDJSON_INCLUDEDIR}
-                ${AVRO_INCLUDE_DIRS})
+    SET(CSI_INCLUDE_PATH
+            ${CSI_INCLUDE_PATH}
+            ${RAPIDJSON_INCLUDEDIR}
+            ${AVRO_INCLUDE_DIRS})
 
-        #        SET(AVRO_LIBS avrocpp_s curl)
-        SET(AVRO_LIBS ${AVRO_LIBRARIES} curl)
-    
+    #        SET(AVRO_LIBS avrocpp_s curl)
+    SET(AVRO_LIBS ${AVRO_LIBRARIES} curl)
+
 
     if (ENABLE_ZK)
         SET(CSI_INCLUDE_PATH
@@ -166,7 +161,7 @@ else () #LINUX
     add_definitions(-D_FILE_OFFSET_BITS=64 -D_REENTRANT -DEXTERNAL_LOCKS -DMULTITHREAD)
     add_definitions(-fPIC)
     add_definitions(-Wno-deprecated)
-    SET(EXT_LIBS kspp ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${BOOST_LIBS} glog crypto ssl)
+    SET(EXT_LIBS ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${BOOST_LIBS} glog crypto ssl)
     SET(CSI_LIBS kspp ${EXT_LIBS})
 endif () #LINUX
 
@@ -229,21 +224,18 @@ file(GLOB KSPP_INCLUDE_FILES
         include/kspp/beta/*.h
         )
 
-add_library(kspp_s STATIC ${LIB_SRCS} ${KSPP_INCLUDE_FILES})
-
+ADD_LIBRARY(kspp_s STATIC ${LIB_SRCS} ${KSPP_INCLUDE_FILES})
 INSTALL(TARGETS kspp_s
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
         )
 
-add_library(kspp SHARED ${LIB_SRCS} ${KSPP_INCLUDE_FILES})
-
+ADD_LIBRARY(kspp SHARED ${LIB_SRCS} ${KSPP_INCLUDE_FILES})
+TARGET_LINK_LIBRARIES(kspp ${EXT_LIBS})
 INSTALL(TARGETS kspp
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
         )
-
-TARGET_LINK_LIBRARIES(kspp ${EXT_LIBS})
 
 INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/include/ DESTINATION include)
 
