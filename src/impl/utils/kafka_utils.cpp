@@ -21,21 +21,24 @@ namespace kspp {
       catch (std::invalid_argument& e) {
         LOG(FATAL) << "get_number_partitions: " << topic << " bad config " << e.what();
       }
-
+      LOG(INFO) << "1";
       auto producer = std::unique_ptr<RdKafka::Producer>(RdKafka::Producer::create(conf.get(), errstr));
       if (!producer) {
         LOG(FATAL) << ", failed to create producer:" << errstr;
       }
-
+      LOG(INFO) << "2";
 
       // really try to make sure the partition exist before we continue
       RdKafka::Metadata *md = NULL;
       auto _rd_topic = std::unique_ptr<RdKafka::Topic>(RdKafka::Topic::create(producer.get(), topic, nullptr, errstr));
+      LOG(INFO) << "3";
       int32_t nr_of_partitions = 0;
       while (nr_of_partitions == 0) {
         auto ec = producer->metadata(false, _rd_topic.get(), &md, 5000);
+        LOG(INFO) << "4";
         if (ec == 0) {
           const RdKafka::Metadata::TopicMetadataVector *v = md->topics();
+          LOG(INFO) << "5";
           for (auto &&i : *v) {
             if (i->topic() == topic)
               nr_of_partitions = (int32_t) i->partitions()->size();
@@ -46,6 +49,7 @@ namespace kspp {
           std::this_thread::sleep_for(1s);
         }
       }
+      LOG(INFO) << "6";
       delete md;
       return nr_of_partitions;
     }
