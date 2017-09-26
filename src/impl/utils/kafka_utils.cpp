@@ -31,6 +31,10 @@ namespace kspp {
       // really try to make sure the partition exist before we continue
       RdKafka::Metadata *md = NULL;
       auto _rd_topic = std::unique_ptr<RdKafka::Topic>(RdKafka::Topic::create(producer.get(), topic, nullptr, errstr));
+      if (_rd_topic==nullptr){
+        LOG(FATAL) << ", failed to create RdKafka::Topic:" << errstr;
+      }
+
       LOG(INFO) << "3";
       int32_t nr_of_partitions = 0;
       while (nr_of_partitions == 0) {
