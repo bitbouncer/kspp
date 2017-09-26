@@ -39,6 +39,10 @@ namespace kspp {
       return event_consumer<K, V>::queue_len() + _impl.queue_len();
     }
 
+    size_t outbound_queue_len() const override {
+      return _impl.queue_len();
+    }
+
     void poll(int timeout) override {
       return _impl.poll(timeout);
     }

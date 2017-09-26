@@ -1,4 +1,5 @@
 #include <kspp/kspp.h>
+#include <kspp/utils/kspp_utils.h>
 #include <iostream>
 
 using namespace std::chrono_literals;
@@ -129,7 +130,7 @@ namespace kspp {
     // check every 1000 run?
     size_t sink_queue_len = 0;
     for (auto i : _sinks)
-      sink_queue_len += i->queue_len();
+      sink_queue_len += i->outbound_queue_len();
     if (sink_queue_len > 50000)
       return 0;
 
@@ -238,7 +239,7 @@ namespace kspp {
 
   boost::filesystem::path topology::get_storage_path() {
     // if no storage path has been set - let an eventual state store handle this problem
-    // only disk based one need this and we pass storage path to all state stores (mem ones also)
+    // only disk based one need th#include <vector>is and we pass storage path to all state stores (mem ones also)
     if (_cluster_config->get_storage_root().size()==0)
       return "";
 

@@ -19,17 +19,9 @@
 #include <kspp/cluster_config.h>
 #include <kspp/impl/queue.h>
 #include <kspp/impl/hash/murmurhash2.h>
+#include <kspp/utils/kspp_utils.h>
 #pragma once
 namespace kspp {
-
-// move to kspp_utils.h
-  std::string sanitize_filename(std::string s);
-
-  std::vector<int> parse_partition_list(std::string s);
-
-  std::vector<int> get_partition_list(int32_t nr_of_partitions);
-
-
   class topology;
 
   enum start_offset_t { OFFSET_BEGINNING=-2, OFFSET_END=-1, OFFSET_STORED=-1000 };
@@ -70,6 +62,13 @@ namespace kspp {
     * returns the inbound queue len
     */
     virtual size_t queue_len() const {
+      return 0;
+    }
+
+    /**
+    * returns the outbound queue len (only sinks has this??? TODO
+    */
+    virtual size_t outbound_queue_len() const {
       return 0;
     }
 
