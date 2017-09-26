@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);
 
   auto config = std::make_shared<kspp::cluster_config>();
-  config->set_brokers("SSL://localhost:9091");
+  config->set_brokers("SSL://localhost:9093");
   config->set_ca_cert_path("/csi/openssl_client_keystore/ca-cert");
   config->set_private_key_path("/csi/openssl_client_keystore/client_P51_client.pem",
                                "/csi/openssl_client_keystore/client_P51_client.key",
