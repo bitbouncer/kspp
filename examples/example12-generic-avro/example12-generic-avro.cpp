@@ -12,6 +12,7 @@
 #include <kspp/utils/env.h>
 #include <kspp/avro/avro_serdes.h>
 #include <kspp/avro/avro_text.h>
+#include <kspp/utils/kspp_utils.h>
 
 using namespace std::chrono_literals;
 

@@ -55,15 +55,15 @@ namespace kspp
 #else
 
   std::string default_ca_cert_path() {
-    return get_env_and_log("KSPP_CA_CERT","/etc/kspp/ca-cert");
+    return get_env_and_log("KSPP_CA_CERT","/etc/kspp/credentials/cacert.pem");
   }
 
   std::string default_client_cert_path() {
-    return get_env_and_log("KSPP_CLIENT_CERT", "/etc/kspp/client.pem");
+    return get_env_and_log("KSPP_CLIENT_CERT", "/etc/kspp/credentials/client.pem");
   }
 
   std::string default_client_key_path() {
-    return get_env_and_log("KSPP_CLIENT_KEY", "/etc/kspp/client.key");
+    return get_env_and_log("KSPP_CLIENT_KEY", "/etc/kspp/credentials/client.key");
   }
 
   std::string default_client_key_passphrase() {

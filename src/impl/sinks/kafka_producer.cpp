@@ -47,12 +47,14 @@ namespace kspp {
 
   void kafka_producer::MyDeliveryReportCb::dr_cb(RdKafka::Message& message) {
     producer_user_data* extra = (producer_user_data*) message.msg_opaque();
+    assert(extra);
 
-    if (message.err() != RdKafka::ErrorCode::ERR_NO_ERROR) {
+    if (message.err() == RdKafka::ErrorCode::ERR_NO_ERROR) {
+      extra->autocommit_marker->set_offset(message.offset());
+    } else {
       extra->autocommit_marker->fail(message.err());
       _status = message.err();
     }
-    assert(extra);
     delete extra;
   }
 

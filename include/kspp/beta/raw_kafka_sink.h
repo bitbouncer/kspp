@@ -2,7 +2,8 @@
 #include <memory>
 #include <functional>
 #include <sstream>
-#include <kspp/beta/raw_kafka_producer.h>
+//#include <kspp/beta/raw_kafka_producer.h>
+#include <kspp/impl/sinks/kafka_producer.h>
 
 #pragma once
 
@@ -127,7 +128,8 @@ namespace kspp {
 
     kspp::event_queue<kevent<K, V>> _queue;
     std::shared_ptr<CODEC> _codec;
-    raw_kafka_producer _impl;
+    //raw_kafka_producer _impl;
+    kafka_producer _impl;
     partitioner _partitioner;
     metric_counter _in_count;
     metric_lag _lag;
@@ -223,7 +225,9 @@ namespace kspp {
         vp = malloc(vsize);   // must match the free in kafka_producer TBD change to new[] and a memory pool
         vs.read((char *) vp, vsize);
       }
-      return this->_impl.produce(partition_hash, raw_kafka_producer::FREE, kp, ksize, vp, vsize, ev->event_time(), ev->id());
+      //return this->_impl.produce(partition_hash, raw_kafka_producer::FREE, kp, ksize, vp, vsize, ev->event_time(), ev->id());
+      return this->_impl.produce(partition_hash, kafka_producer::FREE, kp, ksize, vp, vsize, ev->event_time(), ev->id());
+
     }
   };
 
@@ -279,7 +283,7 @@ namespace kspp {
         assert(false);
         return 0; // no writing of null key and null values
       }
-      return this->_impl.produce(partition_hash, raw_kafka_producer::FREE, nullptr, 0, vp, vsize, ev->event_time(),
+      return this->_impl.produce(partition_hash, kafka_producer::FREE, nullptr, 0, vp, vsize, ev->event_time(),
                                  ev->id());
     }
   };
@@ -348,7 +352,7 @@ namespace kspp {
       kp = malloc(ksize);  // must match the free in kafka_producer TBD change to new[] and a memory pool
       ks.read((char *) kp, ksize);
 
-      return this->_impl.produce(partition_hash, raw_kafka_producer::FREE, kp, ksize, nullptr, 0, ev->event_time(),
+      return this->_impl.produce(partition_hash, kafka_producer::FREE, kp, ksize, nullptr, 0, ev->event_time(),
                                  ev->id());
     }
   };

@@ -28,7 +28,7 @@ class raw_kafka_producer
   }
 
   inline size_t queue_len() const {
-    return _producer->outq_len();
+    return _closed ? 0 : _producer->outq_len();
   }
 
   inline void poll(int timeout) {
@@ -44,8 +44,7 @@ class raw_kafka_producer
   }
 
   inline int32_t flush(int timeout_ms) {
-    _producer->outq_len();
-    return _producer->flush(timeout_ms);
+    return (queue_len() == 0) ? 0 : _producer->flush(timeout_ms);
   }
 
   private:

@@ -1,14 +1,15 @@
 #include <kspp/cluster_config.h>
 #include <boost/filesystem.hpp>
 #include <glog/logging.h>
-//#include <kspp/utils/cluster_uri.h>
 #include <kspp/utils/url_parser.h>
 #include <kspp/utils/env.h>
 
 namespace kspp {
   cluster_config::cluster_config()
-      : producer_buffering_(std::chrono::milliseconds(1000)), consumer_buffering_(std::chrono::milliseconds(1000)),
-        schema_registry_timeout_(std::chrono::milliseconds(1000)), _fail_fast(true) {
+      : producer_buffering_(std::chrono::milliseconds(1000))
+      , consumer_buffering_(std::chrono::milliseconds(1000))
+      , schema_registry_timeout_(std::chrono::milliseconds(1000))
+      , _fail_fast(true) {
   }
 
   void cluster_config::load_config_from_env() {
@@ -56,7 +57,7 @@ namespace kspp {
 
   void cluster_config::set_ca_cert_path(std::string path) {
     if (!boost::filesystem::exists(path)) {
-      LOG(WARNING) << "cluster_config, ca cert not found at: " << path << " ignoring ssl config";
+      LOG(WARNING) << "cluster_config, ca_cert not found at: " << path << " ignoring ssl config";
     } else {
       ca_cert_path_ = path;
     }
@@ -160,7 +161,6 @@ namespace kspp {
     }
   }
 
-
   void cluster_config::log() const {
     LOG(INFO) << "cluster_config, kafka broker(s): " << get_brokers();
     LOG_IF(INFO, get_ca_cert_path().size() > 0) << "cluster_config, ca cert: " << get_ca_cert_path();
@@ -176,7 +176,5 @@ namespace kspp {
     LOG_IF(INFO, get_schema_registry().size() > 0) << "cluster_config, schema_registry: " << get_schema_registry();
     LOG_IF(INFO, get_schema_registry().size() > 0)
     << "cluster_config, schema_registry_timeout: " << get_schema_registry_timeout().count() << " ms";
-
-
   }
 }
