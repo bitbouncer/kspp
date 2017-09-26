@@ -50,9 +50,11 @@ namespace kspp {
     assert(extra);
 
     if (message.err() == RdKafka::ErrorCode::ERR_NO_ERROR) {
-      extra->autocommit_marker->set_offset(message.offset());
+      if (extra->autocommit_marker)
+        extra->autocommit_marker->set_offset(message.offset());
     } else {
-      extra->autocommit_marker->fail(message.err());
+      if (extra->autocommit_marker)
+        extra->autocommit_marker->fail(message.err());
       _status = message.err();
     }
     delete extra;
