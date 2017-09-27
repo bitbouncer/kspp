@@ -10,7 +10,7 @@ namespace kspp {
   namespace kafka {
     int32_t get_number_partitions(std::shared_ptr<cluster_config> cluster_config, std::string topic) {
       LOG(INFO) << "get_number_partitions: " << topic;
-      
+
       std::string errstr;
       std::unique_ptr<RdKafka::Conf> conf(RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL));
       /*

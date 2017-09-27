@@ -19,7 +19,7 @@ namespace kspp
   static std::string get_env_and_log_hidden(const char* env, std::string default_value) {
     const char *env_p = std::getenv(env);
     if (env_p) {
-      LOG(INFO) << "env: " << env << " -> [hidden]" << env_p;
+      LOG(INFO) << "env: " << env << " -> [hidden]";
       return std::string(env_p);
     } else {
       LOG(INFO) << "env: " << env << " - not defined, using default: [hidden]";
@@ -28,11 +28,11 @@ namespace kspp
   }
 
   std::string default_kafka_broker_uri() {
-    return get_env_and_log("KSPP_KAFKA_BROKER_URI", "plaintext://localhost:9092");
+    return get_env_and_log("KSPP_KAFKA_BROKER_URL", "plaintext://localhost:9092");
   }
 
   std::string default_schema_registry_uri() {
-    return get_env_and_log("KSPP_SCHEMA_REGISTRY_URI", "http://localhost:8081");
+    return get_env_and_log("KSPP_SCHEMA_REGISTRY_URL", "http://localhost:8081");
   }
 
   std::string default_statestore_directory() {

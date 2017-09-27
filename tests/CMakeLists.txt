@@ -52,3 +52,4 @@ add_test(NAME test7_cluster_uri COMMAND $<TARGET_FILE:test7_cluster_uri>)
 add_executable(test7_url_vector test7_url_vector.cpp)
 target_link_libraries(test7_url_vector ${CSI_LIBS})
 add_test(NAME test7_url_vector COMMAND $<TARGET_FILE:test7_url_vector>)
+

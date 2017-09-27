@@ -7,7 +7,7 @@ void set_config(RdKafka::Conf* conf, std::string key, std::string value) {
   if (conf->set(key, value, errstr) != RdKafka::Conf::CONF_OK) {
     throw std::invalid_argument("\"" + key + "\" -> " + value + ", error: " + errstr);
   }
-  LOG(INFO) << "rd_kafka set_config: " << key << "->" << value;
+  DLOG(INFO) << "rd_kafka set_config: " << key << "->" << value;
 }
 
 void set_config(RdKafka::Conf* conf, std::string key, RdKafka::Conf* topic_conf) {

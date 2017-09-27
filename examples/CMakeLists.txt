@@ -23,3 +23,5 @@ add_subdirectory(example12-generic-avro)
 add_subdirectory(example14-raw-sink)
 add_subdirectory(example15-ssl)
 add_subdirectory(example16-raw-sink-ssl)
+
+add_subdirectory(example17-kafka-utils)
