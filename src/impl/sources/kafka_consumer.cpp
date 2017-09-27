@@ -65,8 +65,8 @@ namespace kspp {
     }
     LOG(INFO) << "kafka_consumer topic:" << _topic << ":" << _partition << ", created";
     // really try to make sure the partition & group exist before we continue
-    kspp::kafka::wait_for_partition(_consumer.get(), _topic, _partition);
-    //kspp::kafka::wait_for_group(brokers, consumer_group); something seems to wrong in rdkafka master....
+    wait_for_partition(_consumer.get(), _topic, _partition);
+    //kspp::kafka::wait_for_group(brokers, consumer_group); something seems to wrong in rdkafka master.... TODO
   }
 
   kafka_consumer::~kafka_consumer() {
@@ -94,7 +94,7 @@ namespace kspp {
       //just make shure we're not in for any surprises since this is a runtime variable in rdkafka...
       assert(kspp::OFFSET_STORED == RdKafka::Topic::OFFSET_STORED);
 
-      if (kspp::kafka::group_exists2(_config, _consumer_group)) {
+      if (kspp::kafka::group_exists(_config, _consumer_group)) {
         DLOG(INFO) << "kafka_consumer::start topic:" << _topic << ":" << _partition  << " consumer group: " << _consumer_group << " starting from OFFSET_STORED";
       } else {
         //non existing consumer group means start from beginning

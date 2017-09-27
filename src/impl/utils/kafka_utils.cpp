@@ -1,5 +1,6 @@
 #include <kspp/impl/kafka_utils.h>
 #include <thread>
+#include <chrono>
 #include <glog/logging.h>
 #include <librdkafka/rdkafka.h>
 #include <kspp/impl/rd_kafka_utils.h>
@@ -9,8 +10,6 @@ using namespace std::chrono_literals;
 namespace kspp {
   namespace kafka {
     int32_t get_number_partitions(std::shared_ptr<cluster_config> cluster_config, std::string topic) {
-      LOG(INFO) << "get_number_partitions: " << topic;
-
       std::string errstr;
       std::unique_ptr<RdKafka::Conf> conf(RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL));
       /*
@@ -23,39 +22,31 @@ namespace kspp {
       catch (std::invalid_argument& e) {
         LOG(FATAL) << "get_number_partitions: " << topic << " bad config " << e.what();
       }
-      LOG(INFO) << "1";
       auto producer = std::unique_ptr<RdKafka::Producer>(RdKafka::Producer::create(conf.get(), errstr));
       if (!producer) {
         LOG(FATAL) << ", failed to create producer:" << errstr;
       }
-      LOG(INFO) << "2";
-
       // really try to make sure the partition exist before we continue
       RdKafka::Metadata *md = NULL;
       auto _rd_topic = std::unique_ptr<RdKafka::Topic>(RdKafka::Topic::create(producer.get(), topic, nullptr, errstr));
       if (!_rd_topic){
-        LOG(FATAL) << ", failed to create RdKafka::Topic:" << errstr;
+        LOG(FATAL) << "failed to create RdKafka::Topic:" << errstr;
       }
-
-      LOG(INFO) << "3";
       int32_t nr_of_partitions = 0;
       while (nr_of_partitions == 0) {
         auto ec = producer->metadata(false, _rd_topic.get(), &md, 5000);
-        LOG(INFO) << "4";
         if (ec == 0) {
           const RdKafka::Metadata::TopicMetadataVector *v = md->topics();
-          LOG(INFO) << "5";
           for (auto &&i : *v) {
             if (i->topic() == topic)
               nr_of_partitions = (int32_t) i->partitions()->size();
           }
         }
         if (nr_of_partitions == 0) {
-          LOG(ERROR) << ", waiting for topic " << topic << " to be available";
+          LOG(ERROR) << "waiting for topic " << topic << " to be available";
           std::this_thread::sleep_for(1s);
         }
       }
-      LOG(INFO) << "6";
       delete md;
       return nr_of_partitions;
     }
@@ -80,13 +71,16 @@ namespace kspp {
 
       auto producer = std::unique_ptr<RdKafka::Producer>(RdKafka::Producer::create(conf.get(), errstr));
       if (!producer) {
-        LOG(ERROR) << ", failed to create producer:" << errstr;
+        LOG(ERROR) << "failed to create producer:" << errstr;
         return -1;
       }
 
       // make sure the partition exist before we continue
       RdKafka::Metadata *md = NULL;
       auto _rd_topic = std::unique_ptr<RdKafka::Topic>(RdKafka::Topic::create(producer.get(), topic, nullptr, errstr));
+      if (!_rd_topic){
+        LOG(FATAL) << "failed to create RdKafka::Topic:" << errstr;
+      }
       bool is_available = false;
       while (!is_available) {
         auto ec = producer->metadata(false, _rd_topic.get(), &md, 5000);
@@ -103,7 +97,7 @@ namespace kspp {
           }
         }
         if (!is_available) {
-          LOG(ERROR) << ", waiting for partitions leader to be available, " << topic << ":" << partition;
+          LOG(ERROR) << "waiting for partitions leader to be available, " << topic << ":" << partition;
           std::this_thread::sleep_for(1s);
         }
       }
@@ -111,67 +105,7 @@ namespace kspp {
       return 0;
     }
 
-    int wait_for_partition(RdKafka::Handle *handle, std::string topic, int32_t partition) {
-      LOG_IF(FATAL, partition<0);
 
-      std::string errstr;
-      // make sure the partition exist before we continue
-      RdKafka::Metadata *md = NULL;
-      auto _rd_topic = std::unique_ptr<RdKafka::Topic>(RdKafka::Topic::create(handle, topic, nullptr, errstr));
-      bool is_available = false;
-      while (!is_available) {
-        auto ec = handle->metadata(false, _rd_topic.get(), &md, 5000);
-        if (ec == 0) {
-          const RdKafka::Metadata::TopicMetadataVector *v = md->topics();
-          for (auto &&i : *v) {
-            auto partitions = i->partitions();
-            for (auto &&j : *partitions) {
-              if ((j->err() == 0) && (j->id() == partition) && (j->leader() >= 0)) {
-                is_available = true;
-                break;
-              }
-            }
-          }
-        }
-        if (!is_available) {
-          LOG(ERROR) << ", waiting for partitions leader to be available, " << topic << ":" << partition;
-          std::this_thread::sleep_for(1s);
-        }
-      }
-      delete md;
-      return 0;
-    }
-
-    int wait_for_topic(RdKafka::Handle *handle, std::string topic) {
-      std::string errstr;
-      // really try to make sure the partition exist before we continue
-      RdKafka::Metadata *md = NULL;
-      auto _rd_topic = std::unique_ptr<RdKafka::Topic>(RdKafka::Topic::create(handle, topic, nullptr, errstr));
-      int64_t nr_available = 0;
-      int64_t nr_of_partitions = 0;
-      while (nr_of_partitions == 0 || nr_available != nr_of_partitions) {
-        auto ec = handle->metadata(false, _rd_topic.get(), &md, 5000);
-        if (ec == 0) {
-          const RdKafka::Metadata::TopicMetadataVector *v = md->topics();
-          for (auto &&i : *v) {
-            auto partitions = i->partitions();
-            nr_of_partitions = partitions->size();
-            nr_available = 0;
-            for (auto &&j : *partitions) {
-              if ((j->err() == 0) && (j->leader() >= 0)) {
-                ++nr_available;
-              }
-            }
-          }
-        }
-        if (nr_of_partitions == 0 || nr_available != nr_of_partitions) {
-          LOG(ERROR) << ", waiting for partitions leader to be available, " << topic;
-          std::this_thread::sleep_for(1s);
-        }
-      }
-      delete md;
-      return 0;
-    }
 
     // STUFF THATS MISSING IN LIBRDKAFKA C++ API...
     // WE DO THIS THE C WAY INSTEAD
@@ -284,7 +218,7 @@ namespace kspp {
 //    }
 
     // NEEDS TO BE REWRITTEN USING USING C++ API
-    bool group_exists2(std::shared_ptr<cluster_config> cluster_config, std::string group_id) {
+    bool group_exists(std::shared_ptr<cluster_config> cluster_config, std::string group_id) {
       char errstr[128];
       rd_kafka_t *rk;
       rd_kafka_conf_t *rd_conf = rd_kafka_conf_new();
