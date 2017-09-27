@@ -23,7 +23,10 @@ int main(int argc, char **argv) {
   config->validate(); // optional
   config->log(); // optional
 
-  auto partitions1 = kspp::kafka::get_number_partitions(config, "kspp_test0_eventstream"); // just a random partition
+
+  std::string topicname = argc>2 ? argv[1] : "kspp_test0_eventstream";  // just a random topic
+
+  auto partitions1 = kspp::kafka::get_number_partitions(config, topicname);
   std::cout << partitions1 << std::endl;
 
   return 0;
