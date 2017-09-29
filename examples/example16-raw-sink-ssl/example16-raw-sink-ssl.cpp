@@ -1,7 +1,7 @@
 #include <iostream>
 #include <chrono>
 #include <kspp/avro/avro_serdes.h>
-#include <kspp/beta/raw_kafka_sink.h>
+#include <kspp/sinks/raw_kafka_sink.h>
 #include <kspp/utils/env.h>
 
 using namespace std::chrono_literals;

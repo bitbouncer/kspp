@@ -2,7 +2,6 @@
 #include <memory>
 #include <functional>
 #include <sstream>
-//#include <kspp/beta/raw_kafka_producer.h>
 #include <kspp/impl/sinks/kafka_producer.h>
 
 #pragma once
@@ -124,11 +123,9 @@ namespace kspp {
       _metrics.push_back(p);
     }
 
-    std::vector<metric *> _metrics;
-
+    std::vector<metric*> _metrics;
     kspp::event_queue<kevent<K, V>> _queue;
     std::shared_ptr<CODEC> _codec;
-    //raw_kafka_producer _impl;
     kafka_producer _impl;
     partitioner _partitioner;
     metric_counter _in_count;
@@ -181,14 +178,6 @@ namespace kspp {
       this->_queue.push_back(std::make_shared<kevent<K, V>>(r, am, partition_hash));
     }
 
-    /*
-    inline void produce(uint32_t partition_hash, std::shared_ptr<kevent<K, V>> t) {
-      auto ev2 = std::make_shared<kevent<K, V>>(t->record(), t->id(),
-                                                partition_hash); // make new one since change the partition
-      this->_queue.push_back(ev2);
-    }
-     */
-
     inline void produce(const K &key, const V &value, int64_t ts, std::function<void(int64_t offset, int32_t ec)> callback) {
       produce(std::make_shared<const krecord<K, V>>(key, value, ts), callback);
     }
@@ -197,7 +186,6 @@ namespace kspp {
     produce(uint32_t partition_hash, const K &key, const V &value, int64_t ts, std::function<void(int64_t offset, int32_t ec)> callback) {
       produce(partition_hash, std::make_shared<const krecord<K, V>>(key, value, ts), callback);
     }
-
 
   protected:
     int handle_event(std::shared_ptr<kevent<K, V>> ev) override {
@@ -227,7 +215,6 @@ namespace kspp {
       }
       //return this->_impl.produce(partition_hash, raw_kafka_producer::FREE, kp, ksize, vp, vsize, ev->event_time(), ev->id());
       return this->_impl.produce(partition_hash, kafka_producer::FREE, kp, ksize, vp, vsize, ev->event_time(), ev->id());
-
     }
   };
 
@@ -283,8 +270,7 @@ namespace kspp {
         assert(false);
         return 0; // no writing of null key and null values
       }
-      return this->_impl.produce(partition_hash, kafka_producer::FREE, nullptr, 0, vp, vsize, ev->event_time(),
-                                 ev->id());
+      return this->_impl.produce(partition_hash, kafka_producer::FREE, nullptr, 0, vp, vsize, ev->event_time(), ev->id());
     }
   };
 

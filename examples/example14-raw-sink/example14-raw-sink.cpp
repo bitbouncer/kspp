@@ -1,6 +1,6 @@
 #include <iostream>
 #include <chrono>
-#include <kspp/beta/raw_kafka_sink.h>
+#include <kspp/sinks/raw_kafka_sink.h>
 #include <kspp/utils/env.h>
 #include <kspp/avro/avro_serdes.h>
 
