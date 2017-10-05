@@ -139,7 +139,7 @@ namespace kspp {
                           std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
             : _offset_storage_path(storage_path), _codec(codec), _current_offset(-1), _last_comitted_offset(-1),
               _last_flushed_offset(-1) {
-      LOG_IF(FATAL, storage_path.size()==0);
+      LOG_IF(FATAL, storage_path.generic_string().size()==0);
       boost::filesystem::create_directories(boost::filesystem::path(storage_path));
       _offset_storage_path /= "kspp_offset.bin";
       rocksdb::Options options;
