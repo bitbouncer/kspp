@@ -1,3 +1,6 @@
-/lib
-/bin
-/build
+cmake-build-*
+bin
+build
+lib
+.idea
+*~
