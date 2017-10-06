@@ -82,6 +82,7 @@ namespace kspp {
       set_config(conf.get(), "api.version.request", "true");
       set_config(conf.get(), "queue.buffering.max.ms", std::to_string(cconfig->get_producer_buffering_time().count()));
       set_config(conf.get(), "socket.blocking.max.ms", std::to_string(cconfig->get_producer_buffering_time().count()));
+      set_config(conf.get(), "message.timeout.ms", std::to_string(cconfig->get_producer_message_timeout().count()));
       set_config(conf.get(), "socket.nagle.disable", "true");
       set_config(conf.get(), "socket.max.fails", "1000000");
       set_config(conf.get(), "message.send.max.retries", "1000000");

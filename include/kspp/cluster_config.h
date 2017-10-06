@@ -18,6 +18,9 @@ namespace kspp {
     void set_producer_buffering_time(std::chrono::milliseconds timeout);
     std::chrono::milliseconds get_producer_buffering_time() const;
 
+    void set_producer_message_timeout(std::chrono::milliseconds timeout);
+    std::chrono::milliseconds get_producer_message_timeout() const;
+
     void set_ca_cert_path(std::string path);
     std::string get_ca_cert_path() const;
 
@@ -49,6 +52,7 @@ namespace kspp {
     std::string private_key_path_;
     std::string private_key_passphrase_;
     std::chrono::milliseconds producer_buffering_;
+    std::chrono::milliseconds producer_message_timeout_;
     std::chrono::milliseconds consumer_buffering_;
     std::chrono::milliseconds schema_registry_timeout_;
     std::string root_path_;

@@ -7,6 +7,7 @@
 namespace kspp {
   cluster_config::cluster_config()
       : producer_buffering_(std::chrono::milliseconds(1000))
+      , producer_message_timeout_(std::chrono::milliseconds(0))
       , consumer_buffering_(std::chrono::milliseconds(1000))
       , schema_registry_timeout_(std::chrono::milliseconds(1000))
       , _fail_fast(true) {
@@ -132,6 +133,13 @@ namespace kspp {
     return producer_buffering_;
   }
 
+  void cluster_config::set_producer_message_timeout(std::chrono::milliseconds timeout) {
+    producer_message_timeout_ = timeout;
+  }
+
+  std::chrono::milliseconds cluster_config::get_producer_message_timeout() const {
+    return producer_message_timeout_;
+  }
 
   void cluster_config::set_fail_fast(bool state) {
     _fail_fast = state;
@@ -172,6 +180,10 @@ namespace kspp {
     LOG(INFO) << "cluster_config, kafka consumer_buffering_time: " << get_consumer_buffering_time().count() << " ms";
     LOG(INFO) << "cluster_config, kafka producer_buffering_time: " << get_producer_buffering_time().count() << " ms";
 
+    if (get_producer_message_timeout().count()==0)
+      LOG(INFO) << "cluster_config, kafka producer_message_timeout: disabled";
+    else
+      LOG(INFO) << "cluster_config, kafka producer_message_timeout: " << get_producer_message_timeout().count() << " ms";
 
     LOG_IF(INFO, get_schema_registry().size() > 0) << "cluster_config, schema_registry: " << get_schema_registry();
     LOG_IF(INFO, get_schema_registry().size() > 0)
