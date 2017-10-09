@@ -89,6 +89,7 @@ namespace kspp {
       set_config(conf.get(), "log.connection.close", "false");
       set_config(tconf.get(), "partitioner_cb", &_default_partitioner);
       set_config(conf.get(), "default_topic_conf", tconf.get());
+      //rd_kafka_conf_set_log_cb(conf.get(), logger); missing in c++ TODO
     }
     catch (std::invalid_argument& e) {
       LOG(FATAL) << "topic:" << _topic << ", bad config " << e.what();
