@@ -8,6 +8,29 @@
 
 using namespace std::chrono_literals;
 namespace kspp {
+  void kafka_consumer::MyEventCb::event_cb (RdKafka::Event &event) {
+    switch (event.type())
+    {
+      case RdKafka::Event::EVENT_ERROR:
+        LOG(ERROR) << RdKafka::err2str(event.err()) << " " << event.str();
+        //if (event.err() == RdKafka::ERR__ALL_BROKERS_DOWN) TODO
+        //  run = false;
+        break;
+
+      case RdKafka::Event::EVENT_STATS:
+        LOG(INFO) << "STATS: " << event.str();
+        break;
+
+      case RdKafka::Event::EVENT_LOG:
+        LOG(INFO) << event.fac() << ", " << event.str();
+        break;
+
+      default:
+        LOG(INFO) << "EVENT " << event.type() << " (" << RdKafka::err2str(event.err()) << "): " << event.str();
+        break;
+    }
+  }
+
   kafka_consumer::kafka_consumer(std::shared_ptr<cluster_config> config, std::string topic, int32_t partition, std::string consumer_group)
       : _config(config)
       , _topic(topic)
@@ -43,6 +66,7 @@ namespace kspp {
       set_config(conf.get(), "group.id", _consumer_group);
       set_config(conf.get(), "enable.partition.eof", "true");
       set_config(conf.get(), "log.connection.close", "false");
+      set_config(conf.get(), "event_cb", &_event_cb);
       //set_config(conf.get(), "socket.max.fails", "1000000");
       //set_config(conf.get(), "message.send.max.retries", "1000000");// probably not needed
 

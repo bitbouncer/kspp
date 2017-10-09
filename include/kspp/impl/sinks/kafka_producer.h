@@ -69,6 +69,13 @@ namespace kspp {
       RdKafka::ErrorCode _status;
     };
 
+
+    class MyEventCb : public RdKafka::EventCb {
+    public:
+      void event_cb (RdKafka::Event &event);
+    };
+
+
     const std::string                  _topic;
     std::unique_ptr<RdKafka::Topic>    _rd_topic;
     std::unique_ptr<RdKafka::Producer> _producer;
@@ -78,6 +85,7 @@ namespace kspp {
     uint64_t                           _msg_bytes;
     MyHashPartitionerCb                _default_partitioner;
     MyDeliveryReportCb                 _delivery_report_cb;
+    MyEventCb                          _event_cb;
   };
 } // namespace
 

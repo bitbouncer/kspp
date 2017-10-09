@@ -40,6 +40,11 @@ namespace kspp {
     int update_eof();
 
   private:
+    class MyEventCb : public RdKafka::EventCb {
+    public:
+      void event_cb (RdKafka::Event &event);
+    };
+
     std::shared_ptr<cluster_config>         _config;
     const std::string                       _topic;
     const int32_t                           _partition;
@@ -53,6 +58,7 @@ namespace kspp {
     uint64_t                                _msg_bytes;
     bool                                    _eof;
     bool                                    _closed;
+    MyEventCb                               _event_cb;
   };
 }
 

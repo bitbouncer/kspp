@@ -35,6 +35,13 @@ void set_config(RdKafka::Conf* conf, std::string key, RdKafka::PartitionerCb* pa
   }
 }
 
+void set_config(RdKafka::Conf* conf, std::string key, RdKafka::EventCb* event_cb) {
+  std::string errstr;
+  if (conf->set(key, event_cb, errstr) != RdKafka::Conf::CONF_OK) {
+    throw std::invalid_argument("\"" + key + "\", error: " + errstr);
+  }
+}
+
 void set_broker_config(RdKafka::Conf* rd_conf, std::shared_ptr<kspp::cluster_config> cluster_config) {
   auto v = kspp::split_url_list(cluster_config->get_brokers());
 

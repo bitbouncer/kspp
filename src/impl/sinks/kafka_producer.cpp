@@ -60,6 +60,29 @@ namespace kspp {
     delete extra;
   }
 
+  void kafka_producer::MyEventCb::event_cb (RdKafka::Event &event) {
+      switch (event.type())
+      {
+        case RdKafka::Event::EVENT_ERROR:
+          LOG(ERROR) << RdKafka::err2str(event.err()) << " " << event.str();
+          //if (event.err() == RdKafka::ERR__ALL_BROKERS_DOWN) TODO
+          //  run = false;
+          break;
+
+        case RdKafka::Event::EVENT_STATS:
+          LOG(INFO) << "STATS: " << event.str();
+          break;
+
+        case RdKafka::Event::EVENT_LOG:
+          LOG(INFO) << event.fac() << ", " << event.str();
+          break;
+
+        default:
+          LOG(INFO) << "EVENT " << event.type() << " (" << RdKafka::err2str(event.err()) << "): " << event.str();
+          break;
+      }
+    }
+
   kafka_producer::kafka_producer(std::shared_ptr<cluster_config> cconfig, std::string topic)
       : _topic(topic)
       , _msg_cnt(0)
@@ -87,9 +110,9 @@ namespace kspp {
       set_config(conf.get(), "socket.max.fails", "1000000");
       set_config(conf.get(), "message.send.max.retries", "1000000");
       set_config(conf.get(), "log.connection.close", "false");
+      set_config(conf.get(), "event_cb", &_event_cb);
       set_config(tconf.get(), "partitioner_cb", &_default_partitioner);
       set_config(conf.get(), "default_topic_conf", tconf.get());
-      //rd_kafka_conf_set_log_cb(conf.get(), logger); missing in c++ TODO
     }
     catch (std::invalid_argument& e) {
       LOG(FATAL) << "topic:" << _topic << ", bad config " << e.what();
