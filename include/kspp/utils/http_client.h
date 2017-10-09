@@ -286,7 +286,7 @@ namespace kspp {
 
     class client {
     public:
-      client(boost::asio::io_service &io_service);
+      client(boost::asio::io_service &io_service, size_t max_connection_cache=10);
       ~client();
 
       void set_user_agent(std::string s);

@@ -239,13 +239,14 @@ namespace kspp {
       return "";
     }
 
-    client::client(boost::asio::io_service &io_service)
+    client::client(boost::asio::io_service &io_service, size_t max_connection_cache)
         : _io_service(io_service), _timer(_io_service), _closing(false), _user_agent_header("User-Agent:csi-http/0.1") {
       _multi = curl_multi_init();
       curl_multi_setopt(_multi, CURLMOPT_SOCKETFUNCTION, _sock_cb);
       curl_multi_setopt(_multi, CURLMOPT_SOCKETDATA, this);
       curl_multi_setopt(_multi, CURLMOPT_TIMERFUNCTION, _multi_timer_cb);
       curl_multi_setopt(_multi, CURLMOPT_TIMERDATA, this);
+      curl_multi_setopt(_multi, CURLMOPT_MAXCONNECTS, (long) max_connection_cache);
     }
 
     client::~client() {
