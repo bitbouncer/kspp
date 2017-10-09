@@ -20,7 +20,7 @@ namespace kspp {
       return "kafka_source(" + _consumer.topic() + ")";
     }
 
-   void start(int64_t offset) override {
+    void start(int64_t offset) override {
       _consumer.start(offset);
     }
 
@@ -30,7 +30,7 @@ namespace kspp {
       _consumer.close();
     }
 
-     bool eof() const override {
+    bool eof() const override {
       return _consumer.eof();
     }
 
@@ -48,6 +48,16 @@ namespace kspp {
       auto p = _consumer.consume();
       if (!p)
         return false;
+
+      if (_wallclock_filter_ms>0)
+      {
+        auto max_ts = tick - _wallclock_filter_ms;
+        while(p->timestamp().timestamp < max_ts) {
+          ++_in_wallclock_skipped;
+          if ((p = _consumer.consume())==nullptr)
+            return false;
+        }
+      }
       ++_in_count;
       _lag.add_event_time(tick, p->timestamp().timestamp);
       this->send_to_sinks(parse(p));
@@ -63,14 +73,18 @@ namespace kspp {
                       std::string topic,
                       int32_t partition,
                       std::string consumer_group,
+                      int64_t wallclock_filter_ms,
                       std::shared_ptr<CODEC> codec)
-            : partition_source<K, V>(nullptr, partition)
-        , _codec(codec)
+        : partition_source<K, V>(nullptr, partition)
         , _consumer(config, topic, partition, consumer_group)
+        , _codec(codec)
         , _commit_chain(topic, partition)
+        , _wallclock_filter_ms(wallclock_filter_ms)
+        , _in_wallclock_skipped("in_skipped_count")
         , _in_count("in_count")
         , _commit_chain_size("commit_chain_size", [this]() { return _commit_chain.size(); })
         , _lag() {
+      this->add_metric(&_in_wallclock_skipped);
       this->add_metric(&_in_count);
       this->add_metric(&_commit_chain_size);
       this->add_metric(&_lag);
@@ -81,6 +95,8 @@ namespace kspp {
     kafka_consumer _consumer;
     std::shared_ptr<CODEC> _codec;
     commit_chain _commit_chain;
+    int64_t _wallclock_filter_ms;
+    metric_counter _in_wallclock_skipped;
     metric_counter _in_count;
     metric_evaluator _commit_chain_size;
     metric_lag _lag;
@@ -93,7 +109,25 @@ namespace kspp {
                  int32_t partition,
                  std::string topic,
                  std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : kafka_source_base<K, V, CODEC>(t.get_cluster_config(), topic, partition, t.consumer_group(), codec) {
+        : kafka_source_base<K, V, CODEC>(
+        t.get_cluster_config(),
+        topic, partition,
+        t.consumer_group(),
+        0,
+        codec) {
+    }
+
+    kafka_source(topology &t,
+                 int32_t partition,
+                 std::string topic,
+                 std::chrono::seconds max_age,
+                 std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
+        : kafka_source_base<K, V, CODEC>(
+        t.get_cluster_config(),
+        topic, partition,
+        t.consumer_group(),
+        max_age.count() * 1000,
+        codec) {
     }
 
   protected:
@@ -158,7 +192,20 @@ namespace kspp {
                  int32_t partition,
                  std::string topic,
                  std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : kafka_source_base<void, V, CODEC>(t.get_cluster_config(), topic, partition, t.consumer_group(), codec) {
+        : kafka_source_base<void, V, CODEC>(t.get_cluster_config(), topic, partition, t.consumer_group(), 0, codec) {
+    }
+
+    kafka_source(topology &t,
+                 int32_t partition,
+                 std::string topic,
+                 std::chrono::seconds max_age,
+                 std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
+        : kafka_source_base<void, V, CODEC>(
+        t.get_cluster_config(),
+        topic, partition,
+        t.consumer_group(),
+        max_age.count() * 1000,
+        codec) {
     }
 
   protected:
@@ -195,7 +242,20 @@ namespace kspp {
                  int32_t partition,
                  std::string topic,
                  std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : kafka_source_base<K, void, CODEC>(t.get_cluster_config(), topic, partition, t.consumer_group(), codec) {
+        : kafka_source_base<K, void, CODEC>(t.get_cluster_config(), topic, partition, t.consumer_group(), 0, codec) {
+    }
+
+    kafka_source(topology &t,
+                 int32_t partition,
+                 std::string topic,
+                 std::chrono::seconds max_age,
+                 std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
+        : kafka_source_base<K, void, CODEC>(
+        t.get_cluster_config(),
+        topic, partition,
+        t.consumer_group(),
+        max_age * 1000,
+        codec) {
     }
 
   protected:
