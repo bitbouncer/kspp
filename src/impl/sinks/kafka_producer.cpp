@@ -86,6 +86,7 @@ namespace kspp {
       set_config(conf.get(), "socket.nagle.disable", "true");
       set_config(conf.get(), "socket.max.fails", "1000000");
       set_config(conf.get(), "message.send.max.retries", "1000000");
+      set_config(conf.get(), "log.connection.close", "false");
       set_config(tconf.get(), "partitioner_cb", &_default_partitioner);
       set_config(conf.get(), "default_topic_conf", tconf.get());
     }

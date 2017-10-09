@@ -42,6 +42,7 @@ namespace kspp {
       set_config(conf.get(), "enable.auto.offset.store", "false");
       set_config(conf.get(), "group.id", _consumer_group);
       set_config(conf.get(), "enable.partition.eof", "true");
+      set_config(conf.get(), "log.connection.close", "false");
       //set_config(conf.get(), "socket.max.fails", "1000000");
       //set_config(conf.get(), "message.send.max.retries", "1000000");// probably not needed
 
