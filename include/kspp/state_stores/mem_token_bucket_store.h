@@ -3,7 +3,6 @@
 #include <cstdint>
 #include <kspp/kspp.h>
 #include "state_store.h"
-
 #pragma once
 
 namespace kspp {

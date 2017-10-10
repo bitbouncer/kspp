@@ -1,5 +1,3 @@
-#pragma once
-
 #include <memory>
 #include <strstream>
 #include <fstream>
@@ -15,6 +13,7 @@
 #endif
 
 #include <rocksdb/db.h>
+#pragma once
 
 namespace kspp {
   template<class K, class V, class CODEC>

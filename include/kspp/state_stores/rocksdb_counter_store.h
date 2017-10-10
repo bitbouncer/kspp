@@ -1,5 +1,3 @@
-#pragma once
-
 #include <memory>
 #include <strstream>
 #include <fstream>
@@ -9,6 +7,7 @@
 #include <rocksdb/merge_operator.h>
 #include <kspp/kspp.h>
 #include "state_store.h"
+#pragma once
 
 namespace kspp {
   class Int64AddOperator : public rocksdb::AssociativeMergeOperator {

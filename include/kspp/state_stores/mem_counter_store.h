@@ -1,5 +1,6 @@
 #include "state_store.h"
 #include <map>
+#pragma once
 
 namespace kspp {
   template<class K, class V, class CODEC=void>

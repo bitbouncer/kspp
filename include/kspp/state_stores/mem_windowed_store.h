@@ -1,6 +1,7 @@
 #include "state_store.h"
 #include <map>
 #include <chrono>
+#pragma once
 
 namespace kspp {
   template<class K, class V, class CODEC = void>

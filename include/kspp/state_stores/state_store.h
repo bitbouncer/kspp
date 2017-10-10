@@ -1,12 +1,9 @@
-#pragma once
-
 #include <kspp/krecord.h>
 #include <kspp/kevent.h>
 #include <kspp/kspp.h>
 #include <string>
 #include <cstdint>
 #include <memory>
-
 #pragma once
 
 // this should inherit from a state-store base class...
