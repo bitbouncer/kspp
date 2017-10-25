@@ -30,14 +30,14 @@ namespace kspp {
       undefined = 0,
 
       //1xx informational
-              continue_with_request = 100,
+          continue_with_request = 100,
       switching_protocols = 101,
       processing = 102,
       checkpoint = 103,
       uri_to_long = 122,
 
       //2xx success
-              ok = 200,
+          ok = 200,
       created = 201,
       accepted = 202,
       processed_non_authorative = 203,
@@ -49,7 +49,7 @@ namespace kspp {
       im_used = 226,
 
       //3xx redirection
-              multiple_choices = 300,
+          multiple_choices = 300,
       moved_permanently = 301,
       moved_temporarily = 302,
       see_other = 303, // ??? bad name....
@@ -60,14 +60,14 @@ namespace kspp {
       resume_incomplete = 308,
 
       //4xx client error
-              bad_request = 400,
+          bad_request = 400,
       unauthorized = 401,
       forbidden = 403,
       not_found = 404,
       precondition_failed = 412,
 
       //5xx server error
-              internal_server_error = 500,
+          internal_server_error = 500,
       not_implemented = 501,
       bad_gateway = 502,
       service_unavailable = 503
@@ -81,11 +81,11 @@ namespace kspp {
       POST = 3,
       PUT = 4,
       /* pathological */
-              CONNECT = 5,
+          CONNECT = 5,
       OPTIONS = 6,
       TRACE = 7,
       /* webdav */
-              COPY = 8,
+          COPY = 8,
       LOCK = 9,
       MKCOL = 10,
       MOVE = 11,
@@ -94,17 +94,17 @@ namespace kspp {
       SEARCH = 14,
       UNLOCK = 15,
       /* subversion */
-              REPORT = 16,
+          REPORT = 16,
       MKACTIVITY = 17,
       CHECKOUT = 18,
       MERGE = 19,
       /* upnp */
-              MSEARCH = 20,
+          MSEARCH = 20,
       NOTIFY = 21,
       SUBSCRIBE = 22,
       UNSUBSCRIBE = 23,
       /* RFC-5789 */
-              PATCH = 24,
+          PATCH = 24,
       PURGE = 25
     };
 

@@ -4,6 +4,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
 option(ENABLE_ROCKSDB "enable rocksdb support" OFF)
 option(ENABLE_ZK "enable zk support" OFF)
+option(BUILD_TOOLS "build tools" OFF)
 option(BUILD_SAMPLES "build examples" OFF)
 option(BUILD_TESTS "build tests" OFF)
 
@@ -252,4 +253,8 @@ if (BUILD_TESTS)
     add_subdirectory(tests)
 endif ()
 
+
+if (BUILD_TOOLS)
+    #add_subdirectory(tools)
+endif ()
 

@@ -687,9 +687,9 @@ namespace kspp {
       return 0;
     }
 
-    int produce(const K &key, const V &value, int64_t ts = kspp::milliseconds_since_epoch()) {
-      return produce(std::make_shared<kevent<K, V>>(std::make_shared<krecord<K, V>>(key, value, ts)));
-    }
+    //int produce(const K &key, const V &value, int64_t ts = kspp::milliseconds_since_epoch()) {
+    //  return produce(std::make_shared<kevent<K, V>>(std::make_shared<krecord<K, V>>(key, value, ts)));
+    //}
   };
 
 //<null, VALUE>

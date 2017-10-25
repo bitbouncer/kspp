@@ -87,8 +87,8 @@ namespace kspp {
       auto upper_bound = _buckets.lower_bound(_oldest_kept_slot);
 
       if (this->_sink) {
-        std::vector<std::shared_ptr<krecord<K, V>>> tombstones;
-        for (auto i = _buckets.begin(); i != upper_bound; ++i) {
+        //std::vector<std::shared_ptr<krecord<K, V>>> tombstones;
+        for (auto &&i = _buckets.begin(); i != upper_bound; ++i) {
           for (auto &&j : *i->second)
             this->_sink(std::make_shared<kevent<K, V>>(std::make_shared<krecord<K, V>>(j.first, nullptr, tick)));
         }

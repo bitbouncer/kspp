@@ -38,4 +38,11 @@ namespace kspp {
       res.push_back(i);
     return res;
   }
+
+  std::string partition_list_to_string(std::vector<int> v) {
+    std::string s = "[";
+    for (auto i = v.begin(); i != v.end(); ++i)
+      s += std::to_string(*i) + ((i != v.end() - 1) ? ", " : "]");
+    return s;
+  }
 }

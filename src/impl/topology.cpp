@@ -53,8 +53,8 @@ namespace kspp {
   }
 
   void topology::init_metrics() {
-    for (auto i : _partition_processors) {
-      for (auto j : i->get_metrics()) {
+    for (auto &&i : _partition_processors) {
+      for (auto &&j : i->get_metrics()) {
         std::string metrics_tags = "depth=" + std::to_string(i->depth())
                                    + ",key_type=" + escape_influx(i->key_type_name())
                                    + ",partition=" + std::to_string(i->partition())
@@ -66,8 +66,8 @@ namespace kspp {
       }
     }
 
-    for (auto i : _sinks) {
-      for (auto j : i->get_metrics()) {
+    for (auto &&i : _sinks) {
+      for (auto &&j : i->get_metrics()) {
         std::string metrics_tags = "key_type=" + escape_influx(i->key_type_name())
                                    + ",processor_type=" + escape_influx(i->simple_name())
                                    + ",record_type=" + escape_influx(i->record_type_name())
@@ -79,21 +79,21 @@ namespace kspp {
   }
 
   void topology::for_each_metrics(std::function<void(kspp::metric &)> f) {
-    for (auto i : _partition_processors)
-      for (auto j : i->get_metrics())
+    for (auto &&i : _partition_processors)
+      for (auto &&j : i->get_metrics())
         f(*j);
 
-    for (auto i : _sinks)
-      for (auto j : i->get_metrics())
+    for (auto &&i : _sinks)
+      for (auto &&j : i->get_metrics())
         f(*j);
   }
 
   void topology::init() {
     _top_partition_processors.clear();
 
-    for (auto i : _partition_processors) {
+    for (auto &&i : _partition_processors) {
       bool upstream_of_something = false;
-      for (auto j : _partition_processors) {
+      for (auto &&j : _partition_processors) {
         if (j->is_upstream(i.get()))
           upstream_of_something = true;
       }
@@ -117,11 +117,11 @@ namespace kspp {
 
   int topology::process_one() {
     // this needs to be done to to trigger callbacks
-    for (auto i : _sinks)
+    for (auto &&i : _sinks)
       i->poll(0);
 
     // some of those might be kafka_partition_sinks....
-    for (auto i : _partition_processors)
+    for (auto &&i : _partition_processors)
       i->poll(0);
 
     // tbd partiotns sinks???
@@ -129,7 +129,7 @@ namespace kspp {
     // we should not check every loop
     // check every 1000 run?
     size_t sink_queue_len = 0;
-    for (auto i : _sinks)
+    for (auto &&i : _sinks)
       sink_queue_len += i->outbound_queue_len();
     if (sink_queue_len > 50000)
       return 0;
@@ -141,13 +141,13 @@ namespace kspp {
       res += i->process_one(tick);
     }
 
-    for (auto i : _sinks)
+    for (auto &&i : _sinks)
       res += i->process_one(tick);
 
     if (tick > _next_gc_ts) {
-      for (auto i : _partition_processors)
+      for (auto &&i : _partition_processors)
         i->garbage_collect(tick);
-      for (auto i : _sinks)
+      for (auto &&i : _sinks)
         i->garbage_collect(tick);
       _next_gc_ts = tick + 10000; // 10 sec
     }
@@ -156,22 +156,11 @@ namespace kspp {
   }
 
   void topology::close() {
-    for (auto i : _partition_processors)
+    for (auto &&i : _partition_processors)
       i->close();
-    for (auto i : _sinks)
+    for (auto &&i : _sinks)
       i->close();
   }
-
-  /*
-   * void topology::start() {
-    if (!_is_init)
-      init();
-    for (auto &&i : _top_partition_processors)
-      i->start();
-    //for (auto i : _topic_processors) // those are only sinks??
-    //  i->start();
-  }
-   */
 
   void topology::start(start_offset_t offset) {
     if (!_is_init)
@@ -196,7 +185,7 @@ namespace kspp {
 // for now we start with a flush of the sinks but that is not enough
   void topology::flush() {
     while (true) {
-      for (auto i : _sinks)
+      for (auto &&i : _sinks)
         i->flush();
 
       auto sz = process_one();
@@ -208,11 +197,11 @@ namespace kspp {
         break;
     }
 
-    for (auto i : _top_partition_processors)
+    for (auto &&i : _top_partition_processors)
       i->flush();
 
     while (true) {
-      for (auto i : _sinks)
+      for (auto &&i : _sinks)
         i->flush();
 
       auto sz = process_one();
@@ -224,18 +213,6 @@ namespace kspp {
         break;
     }
   }
-
-  /*
-   * void topology::set_storage_path(boost::filesystem::path root_path) {
-    _root_path = root_path;
-    if (!boost::filesystem::exists(root_path)) {
-      auto res = boost::filesystem::create_directories(_root_path);
-      // seems to be a bug in boost - always return false...
-      if (!boost::filesystem::exists(root_path))
-        LOG(FATAL) << "topology " << _app_info->identity() << ": failed to create storage path at : " << root_path;
-    }
-  }
-   */
 
   boost::filesystem::path topology::get_storage_path() {
     // if no storage path has been set - let an eventual state store handle this problem

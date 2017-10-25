@@ -52,4 +52,10 @@ namespace kspp {
     std::shared_ptr<commit_chain::autocommit_marker> _autocommit_marker;
     const int64_t _partition_hash;
   };
+
+  template<class K, class V>
+  std::shared_ptr<kevent<K, V>> make_event(const K &key, const V &value, int64_t ts = kspp::milliseconds_since_epoch(), std::shared_ptr<commit_chain::autocommit_marker> autocommit_marker = nullptr){
+    auto record = std::make_shared<krecord<K, V>>(key, value, ts);
+    return std::make_shared<kevent<K, V>>(record, autocommit_marker);
+  };
 }
