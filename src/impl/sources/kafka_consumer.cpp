@@ -236,13 +236,16 @@ namespace kspp {
     if (offset < 0) // not valid
       return 0;
 
-    if (_closed || _consumer == nullptr) {
-      LOG(ERROR) << "kafka_consumer topic:" << _topic << ":" << _partition << ", commit on closed consumer";
-      return -1; // already closed
-    }
-
     // you should actually write offset + 1, since a new consumer will start at offset.
     offset = offset + 1;
+
+    if (_closed || _consumer == nullptr) {
+      if (offset == _last_committed) // already done
+        LOG(WARNING) << "kafka_consumer topic:" << _topic << ":" << _partition << ", consumer group: " << _consumer_group << ", commit on closed consumer (already up-to-date)";
+      else
+        LOG(ERROR) << "kafka_consumer topic:" << _topic << ":" << _partition << ", consumer group: " << _consumer_group << ", commit on closed consumer";
+      return -1; // already closed
+    }
 
     if (offset == _last_committed) // already done
       return 0;
@@ -250,22 +253,22 @@ namespace kspp {
     _can_be_committed = offset;
     RdKafka::ErrorCode ec = RdKafka::ERR_NO_ERROR;
     if (flush) {
-      LOG(INFO) << "kafka_consumer topic:" << _topic << ":" << _partition << ", commiting(flush)" << ", offset:" << _can_be_committed;
+      LOG(INFO) << "kafka_consumer topic:" << _topic << ":" << _partition << ", consumer group: " << _consumer_group << ", commiting(flush) offset:" << _can_be_committed;
       _topic_partition[0]->set_offset(_can_be_committed);
       ec = _consumer->commitSync(_topic_partition);
       if (ec == RdKafka::ERR_NO_ERROR) {
         _last_committed = _can_be_committed;
       } else {
-        LOG(ERROR) << "kafka_consumer topic:" << _topic << ":" << _partition << ", failed to commit, reason:" << RdKafka::err2str(ec);
+        LOG(ERROR) << "kafka_consumer topic:" << _topic << ":" << _partition << ", consumer group: " << _consumer_group <<  ", failed to commit, reason:" << RdKafka::err2str(ec);
       }
     } else if ((_last_committed + _max_pending_commits) < _can_be_committed) {
-      DLOG(INFO) << "kafka_consumer topic:" << _topic << ":" << _partition << ", lazy commit:" << ", offset:" << _can_be_committed;
+      DLOG(INFO) << "kafka_consumer topic:" << _topic << ":" << _partition << ", consumer group: " << _consumer_group << ", lazy commit: offset:" << _can_be_committed;
       _topic_partition[0]->set_offset(_can_be_committed);
       ec = _consumer->commitAsync(_topic_partition);
       if (ec == RdKafka::ERR_NO_ERROR) {
         _last_committed = _can_be_committed;
       } else {
-        LOG(ERROR) << "kafka_consumer topic:" << _topic << ":" << _partition << ", failed to commit, reason:" << RdKafka::err2str(ec);
+        LOG(ERROR) << "kafka_consumer topic:" << _topic << ":" << _partition << ", consumer group: " << _consumer_group << ", failed to commit, reason:" << RdKafka::err2str(ec);
       }
     }
     // TBD add time based autocommit

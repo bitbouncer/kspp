@@ -225,7 +225,7 @@ namespace kspp {
       set_broker_config(rd_conf, cluster_config);
 
       /* Create Kafka C handle */
-      if (!(rk = rd_kafka_new(RD_KAFKA_PRODUCER, rd_conf, errstr, sizeof(errstr)))) {
+      if (!(rk = rd_kafka_new(RD_KAFKA_CONSUMER, rd_conf, errstr, sizeof(errstr)))) {
         LOG(FATAL) << "rd_kafka_new failed";
         rd_kafka_conf_destroy(rd_conf);
       }
@@ -237,7 +237,7 @@ namespace kspp {
       /* FIXME: Wait for broker to come up. This should really be abstracted by librdkafka. */
       do {
         if (err) {
-          //LOGPREFIX_ERROR << "Retrying group list in 1s, ec: " << rd_kafka_err2str(err) << " " << brokers;
+          DLOG(ERROR) << "Retrying group list in 100ms, ec: " << rd_kafka_err2str(err);
           std::this_thread::sleep_for(100ms);
         }
         err = rd_kafka_list_groups(rk, group_id.c_str(), &grplist, 5000);
