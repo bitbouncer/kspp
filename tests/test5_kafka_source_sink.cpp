@@ -35,9 +35,10 @@ int main(int argc, char **argv) {
   }
 
   auto config = std::make_shared<cluster_config>();
-  config->set_brokers("localhost");
-  config->set_consumer_buffering_time(10ms);
+  //broker defaults to env KSPP_KAFKA_BROKER_URL if defined of localhost if not
+  config->load_config_from_env();
   config->set_producer_buffering_time(10ms);
+  config->set_consumer_buffering_time(10ms);
   config->validate();// optional
   config->log(); // optional
 

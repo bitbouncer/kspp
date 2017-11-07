@@ -24,9 +24,12 @@ int main(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);
 
   auto config = std::make_shared<kspp::cluster_config>();
-  config->set_brokers("localhost");
+  //broker defaults to env KSPP_KAFKA_BROKER_URL if defined of localhost if not
+  config->load_config_from_env();
   config->set_producer_buffering_time(100ms);
   config->set_consumer_buffering_time(100ms);
+  config->validate();// optional
+  config->log(); // optional
 
   kspp::kafka_producer producer(config, "kspp_test4");
 
@@ -56,9 +59,7 @@ int main(int argc, char **argv) {
       for (auto i : test_data) {
         int ec = producer.produce(0, kspp::kafka_producer::COPY, (void *) i.key.data(), i.key.size(),
                                   (void *) i.value.data(), i.value.size(), timestamp0, nullptr);
-        if (ec) {
-          std::cerr << ", failed to produce, reason:" << RdKafka::err2str((RdKafka::ErrorCode) ec) << std::endl;
-        }
+        LOG_IF(FATAL, ec) << ", failed to produce, reason:" << RdKafka::err2str((RdKafka::ErrorCode) ec);
       }
       assert(producer.flush(1000) == 0);
     }
@@ -140,7 +141,7 @@ int main(int argc, char **argv) {
           assert(res[i].value == test_data[i].value);
         }
       }
-      std::cout << "comitting " << last_comitted_offset << std::endl;
+      LOG(INFO) << "commiting " << last_comitted_offset;
       assert(consumer.commit(last_comitted_offset, true) == 0);
       consumer.stop();
     } // 2 phase A
@@ -169,7 +170,7 @@ int main(int argc, char **argv) {
           if (res.size() == 3)
             break;
         }
-        std::cout << "reading first offset " << first_offset << std::endl;
+        LOG(INFO) << "reading first offset " << first_offset;
         assert(first_offset == last_comitted_offset + 1);
         assert(res.size() == 3);
         for (int i = 0; i != 3; ++i) {
@@ -232,7 +233,7 @@ int main(int argc, char **argv) {
         assert(res[i].value == test_data[i].value);
       }
     }
-    std::cout << "committing " << last_comitted_offset << std::endl;
+    LOG(INFO) << "commiting " << last_comitted_offset;
     assert(consumer.commit(last_comitted_offset, true) == 0);
     //std::this_thread::sleep_for(6000ms); // 5 s commit flush intervall (how can this be fixed????)
     consumer.stop();
@@ -259,7 +260,7 @@ int main(int argc, char **argv) {
         if (res.size() == 4)
           break;
       }
-      std::cout << "reading first offset " << first_offset << std::endl;
+      LOG(INFO) << "reading first offset " << first_offset;
       assert(first_offset == last_comitted_offset + 1);
       assert(res.size() == 3);
       for (int i = 0; i != 3; ++i) {

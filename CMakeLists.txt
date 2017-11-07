@@ -13,8 +13,7 @@ set(KSPP_VERSION_MINOR 0)
 
 set(CMAKE_CXX_STANDARD 14)
 
-#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wpedantic -g -O0")
-#set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wpedantic -O2")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wpedantic -O2")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0")
 
 # configure a header file to pass some of the CMake settings
@@ -88,7 +87,6 @@ if (WIN32)
     SET(LIBRDKAFKA_LIBS librdkafkacpp librdkafka lz4)
     SET(EXT_LIBS ${LIBRDKAFKA_LIBS} ${CSI_AVRO_LIBS} ${CSI_ROCKSDB_LIBS} ${CSI_BOOST_LIBS} glog libssl libcrypto ${ZLIB_LIBS} crypt32 Ws2_32 legacy_stdio_definitions)
     SET(CSI_LIBS kspp ${EXT_LIBS})
-
 elseif (APPLE)
     find_package(Boost COMPONENTS program_options filesystem system REQUIRED)
     set(BOOST_LIBS
@@ -141,7 +139,6 @@ else () #LINUX
     #        SET(AVRO_LIBS avrocpp_s curl)
     SET(AVRO_LIBS ${AVRO_LIBRARIES} curl)
 
-
     if (ENABLE_ZK)
         SET(CSI_INCLUDE_PATH
                 ${CSI_INCLUDE_PATH}
@@ -163,7 +160,10 @@ else () #LINUX
     add_definitions(-fPIC)
     add_definitions(-Wno-deprecated)
     SET(EXT_LIBS ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${BOOST_LIBS} glog crypto ssl)
+    SET(EXT_LIBS_STATIC ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${BOOST_LIBS} glog crypto ssl)
+
     SET(CSI_LIBS kspp ${EXT_LIBS})
+    SET(CSI_LIBS_STATIC kspp_s ${EXT_LIBS_STATIC})
 endif () #LINUX
 
 include_directories(${CSI_INCLUDE_PATH} ${CMAKE_SOURCE_DIR}/include)
