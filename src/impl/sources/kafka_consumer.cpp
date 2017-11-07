@@ -119,7 +119,7 @@ namespace kspp {
       //just make shure we're not in for any surprises since this is a runtime variable in rdkafka...
       assert(kspp::OFFSET_STORED == RdKafka::Topic::OFFSET_STORED);
 
-      if (kspp::kafka::group_exists(_config, _consumer_group)) {
+      if (_config->get_metadata_provider()->consumer_group_exists(_consumer_group, 5s)) {
         DLOG(INFO) << "kafka_consumer::start topic:" << _topic << ":" << _partition  << " consumer group: " << _consumer_group << " starting from OFFSET_STORED";
       } else {
         //non existing consumer group means start from beginning

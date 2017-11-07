@@ -64,6 +64,7 @@ void set_broker_config(RdKafka::Conf* rd_conf, std::shared_ptr<kspp::cluster_con
   }
 }
 
+/*
 int wait_for_topic(RdKafka::Handle *handle, std::string topic) {
   std::string errstr;
   // really try to make sure the partition exist before we continue
@@ -94,6 +95,7 @@ int wait_for_topic(RdKafka::Handle *handle, std::string topic) {
   delete md;
   return 0;
 }
+ */
 
 int wait_for_partition(RdKafka::Handle *handle, std::string topic, int32_t partition) {
   LOG_IF(FATAL, partition<0);

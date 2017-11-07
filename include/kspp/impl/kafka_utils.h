@@ -13,7 +13,7 @@ namespace kspp {
 
     int wait_for_group(std::shared_ptr<cluster_config>, std::string group_id);
 
-    bool group_exists(std::shared_ptr<cluster_config>, std::string group_id);
+    //bool group_exists(std::shared_ptr<cluster_config>, std::string group_id);
   }
 }
 

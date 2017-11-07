@@ -1,8 +1,28 @@
 #include <string>
 #include <chrono>
+#include <mutex>
+#include <memory>
+#include <librdkafka/rdkafka.h>
 #pragma once
 
 namespace kspp {
+
+  class cluster_config;
+
+  class metadata_provider
+  {
+  public:
+    metadata_provider(const cluster_config*);
+    ~metadata_provider();
+    void validate();
+    bool consumer_group_exists(std::string consumer_group, std::chrono::seconds timeout) const;
+    //bool topic_partition_available(std::string topic, int32_t partition, std::chrono::seconds timeout) const;
+    //bool wait_for_topic_partition(std::string topic, int32_t partition) const;
+  private:
+    mutable std::mutex mutex_;
+    rd_kafka_t* rk_;
+  };
+
   class cluster_config {
   public:
     cluster_config();
@@ -24,7 +44,7 @@ namespace kspp {
     void set_ca_cert_path(std::string path);
     std::string get_ca_cert_path() const;
 
-    void set_private_key_path(std::string cert_path, std::string key_path, std::string passprase="");
+    void set_private_key_path(std::string cert_path, std::string key_path, std::string passphrase="");
     std::string get_client_cert_path() const;
     std::string get_private_key_path() const;
     std::string get_private_key_passphrase() const;
@@ -40,6 +60,8 @@ namespace kspp {
 
     void set_fail_fast(bool state);
     bool get_fail_fast() const;
+
+    std::shared_ptr<metadata_provider> get_metadata_provider() const;
 
     void validate() const;
 
@@ -58,5 +80,6 @@ namespace kspp {
     std::string root_path_;
     std::string schema_registry_uri_;
     bool _fail_fast;
+    mutable std::shared_ptr<metadata_provider> meta_data_;
   };
 }
