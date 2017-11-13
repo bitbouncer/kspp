@@ -3,6 +3,7 @@
 #include <glog/logging.h>
 #include <kspp/topology_builder.h>
 #include <kspp/impl/rd_kafka_utils.h>
+#include <kspp/cluster_metadata.h>
 
 using namespace std::chrono_literals;
 
@@ -89,6 +90,9 @@ namespace kspp {
       , _msg_bytes(0)
       , _closed(false)
       , _nr_of_partitions(0) {
+    LOG_IF(FATAL, cconfig->get_cluster_metadata()->wait_for_topic_leaders(topic, cconfig->get_cluster_state_timeout())==false)
+    <<  "failed to wait for topic leaders, topic:" << topic;
+
     /*
     * Create configuration objects
     */
@@ -99,7 +103,7 @@ namespace kspp {
     * Set configuration properties
     */
     try {
-      set_broker_config(conf.get(), cconfig);
+      set_broker_config(conf.get(), cconfig.get());
 
       set_config(conf.get(), "dr_cb", &_delivery_report_cb);
       set_config(conf.get(), "api.version.request", "true");
@@ -138,30 +142,30 @@ namespace kspp {
     }
 
     // really try to make sure the partition exist and all partitions has leaders before we continue
-    RdKafka::Metadata* md = NULL;
-    auto  _rd_topic = std::unique_ptr<RdKafka::Topic>(RdKafka::Topic::create(_producer.get(), _topic, nullptr, errstr));
-    int64_t nr_available = 0;
-    while (_nr_of_partitions == 0 || nr_available != _nr_of_partitions) {
-      auto ec = _producer->metadata(false, _rd_topic.get(), &md, 5000);
-      if (ec == 0) {
-        const RdKafka::Metadata::TopicMetadataVector* v = md->topics();
-        for (auto&& i : *v) {
-          auto partitions = i->partitions();
-          _nr_of_partitions = partitions->size();
-          nr_available = 0;
-          for (auto&& j : *partitions) {
-            if ((j->err() == 0) && (j->leader() >= 0)) {
-              ++nr_available;
-            }
-          }
-        }
-      }
-      if (_nr_of_partitions == 0 || nr_available != _nr_of_partitions) {
-        LOG(WARNING) << "topic:" << _topic << ", waiting for partitions leader to be available";
-        std::this_thread::sleep_for(1s);
-      }
-    }
-    delete md;
+//    RdKafka::Metadata* md = NULL;
+//    auto  _rd_topic = std::unique_ptr<RdKafka::Topic>(RdKafka::Topic::create(_producer.get(), _topic, nullptr, errstr));
+//    int64_t nr_available = 0;
+//    while (_nr_of_partitions == 0 || nr_available != _nr_of_partitions) {
+//      auto ec = _producer->metadata(false, _rd_topic.get(), &md, 5000);
+//      if (ec == 0) {
+//        const RdKafka::Metadata::TopicMetadataVector* v = md->topics();
+//        for (auto&& i : *v) {
+//          auto partitions = i->partitions();
+//          _nr_of_partitions = partitions->size();
+//          nr_available = 0;
+//          for (auto&& j : *partitions) {
+//            if ((j->err() == 0) && (j->leader() >= 0)) {
+//              ++nr_available;
+//            }
+//          }
+//        }
+//      }
+//      if (_nr_of_partitions == 0 || nr_available != _nr_of_partitions) {
+//        LOG(WARNING) << "topic:" << _topic << ", waiting for partitions leader to be available";
+//        std::this_thread::sleep_for(1s);
+//      }
+//    }
+//    delete md;
 
     LOG(INFO) << "topic:" << _topic << ", kafka producer created";
   }

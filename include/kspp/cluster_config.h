@@ -2,26 +2,11 @@
 #include <chrono>
 #include <mutex>
 #include <memory>
-#include <librdkafka/rdkafka.h>
 #pragma once
 
 namespace kspp {
 
-  class cluster_config;
-
-  class metadata_provider
-  {
-  public:
-    metadata_provider(const cluster_config*);
-    ~metadata_provider();
-    void validate();
-    bool consumer_group_exists(std::string consumer_group, std::chrono::seconds timeout) const;
-    //bool topic_partition_available(std::string topic, int32_t partition, std::chrono::seconds timeout) const;
-    //bool wait_for_topic_partition(std::string topic, int32_t partition) const;
-  private:
-    mutable std::mutex mutex_;
-    rd_kafka_t* rk_;
-  };
+  class cluster_metadata;
 
   class cluster_config {
   public:
@@ -61,7 +46,10 @@ namespace kspp {
     void set_fail_fast(bool state);
     bool get_fail_fast() const;
 
-    std::shared_ptr<metadata_provider> get_metadata_provider() const;
+    std::shared_ptr<cluster_metadata> get_cluster_metadata() const;
+
+    void set_cluster_state_timeout(std::chrono::seconds);
+    std::chrono::seconds get_cluster_state_timeout() const ;
 
     void validate() const;
 
@@ -77,9 +65,10 @@ namespace kspp {
     std::chrono::milliseconds producer_message_timeout_;
     std::chrono::milliseconds consumer_buffering_;
     std::chrono::milliseconds schema_registry_timeout_;
+    std::chrono::seconds cluster_state_timeout_;
     std::string root_path_;
     std::string schema_registry_uri_;
-    bool _fail_fast;
-    mutable std::shared_ptr<metadata_provider> meta_data_;
+    bool fail_fast_;
+    mutable std::shared_ptr<cluster_metadata> meta_data_;
   };
 }

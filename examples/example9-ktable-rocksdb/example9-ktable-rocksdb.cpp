@@ -18,7 +18,7 @@
 #include <kspp/state_stores/rocksdb_store.h>
 #include <kspp/state_stores/mem_store.h>
 #include <kspp/state_stores/mem_windowed_store.h>
-#include <kspp/impl/kafka_utils.h>
+#include <kspp/utils/kafka_utils.h>
 #include <kspp/utils/env.h>
 
 using namespace std::chrono_literals;

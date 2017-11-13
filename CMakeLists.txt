@@ -194,6 +194,7 @@ endif () #WIN32
 #TARGETS
 
 file(GLOB LIB_SRCS
+        src/*.cpp
         src/avro/*.cpp
         src/metrics/*.cpp
         src/impl/*.cpp

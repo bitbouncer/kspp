@@ -2,8 +2,7 @@
 #include <chrono>
 #include <kspp/utils/env.h>
 #include <glog/logging.h>
-//#include <kspp/utils/kspp_utils.h>
-#include <kspp/impl/kafka_utils.h>
+#include <kspp/utils/kafka_utils.h>
 #include <kspp/cluster_config.h>
 
 using namespace std::chrono_literals;

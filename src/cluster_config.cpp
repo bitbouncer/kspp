@@ -4,114 +4,18 @@
 #include <glog/logging.h>
 #include <kspp/utils/url_parser.h>
 #include <kspp/utils/env.h>
+#include <kspp/cluster_metadata.h>
 
 using namespace std::chrono_literals;
 
 namespace kspp {
-
-  // STUFF THATS MISSING IN LIBRDKAFKA C++ API...
-  // WE DO THIS THE C WAY INSTEAD
-  // NEEDS TO BE REWRITTEN USING USING C++ API
-
-  // copy of c++ code
-  static void set_config(rd_kafka_conf_t* rd_conf, std::string key, std::string value) {
-    char errstr[128];
-    if (rd_kafka_conf_set(rd_conf, key.c_str(), value.c_str(), errstr, sizeof(errstr)) !=  RD_KAFKA_CONF_OK) {
-      throw std::invalid_argument("\"" + key + "\" -> " + value + ", error: " + errstr);
-    }
-    DLOG(INFO) << "rd_kafka set_config: " << key << "->" << value;
-  }
-
-  // copy of c++ code
-  static void set_broker_config(rd_kafka_conf_t *rd_conf, const cluster_config* config) {
-    set_config(rd_conf, "bootstrap.servers", config->get_brokers());
-
-    if (config->get_brokers().substr(0, 3) == "ssl") {
-      // SSL no auth - always
-      set_config(rd_conf, "security.protocol", "ssl");
-      set_config(rd_conf, "ssl.ca.location", config->get_ca_cert_path());
-
-      //client cert
-      set_config(rd_conf, "ssl.certificate.location", config->get_client_cert_path());
-      set_config(rd_conf, "ssl.key.location", config->get_private_key_path());
-      // optional password
-      if (config->get_private_key_passphrase().size())
-        set_config(rd_conf, "ssl.key.password", config->get_private_key_passphrase());
-    }
-  }
-
-  metadata_provider::metadata_provider(const cluster_config* config)
-    : rk_(nullptr) {
-    auto rd_conf = rd_kafka_conf_new();
-    try {
-      set_broker_config(rd_conf, config);
-      set_config(rd_conf, "api.version.request", "true");
-    } catch (std::exception& e) {
-      LOG(FATAL) << "could not set rd kafka config : " << e.what();
-    }
-
-    char errstr[128];
-    rk_ = rd_kafka_new(RD_KAFKA_PRODUCER, rd_conf, errstr, sizeof(errstr));
-    LOG_IF(FATAL, rk_ == nullptr) << "rd_kafka_new failed err: " <<  errstr;
-  }
-
-  metadata_provider::~metadata_provider(){
-    if (rk_)
-      rd_kafka_destroy(rk_);
-  }
-
-  void metadata_provider::validate()
-  {
-    // TODO - make a call to kafka - maybe __consumer_offsets
-  }
-
-  bool metadata_provider::consumer_group_exists(std::string consumer_group, std::chrono::seconds timeout) const {
-
-    char errstr[128];
-    rd_kafka_resp_err_t err = RD_KAFKA_RESP_ERR_NO_ERROR;
-    const struct rd_kafka_group_list *grplist = nullptr;
-    int retries = timeout.count();
-    /* FIXME: Wait for broker to come up. This should really be abstracted by librdkafka. */
-    do {
-
-      if (err) {
-        DLOG(ERROR) << "retrying group list in 1s, ec: " << rd_kafka_err2str(err);
-        std::this_thread::sleep_for(1s);
-      } else if (grplist) {
-        // the previous call must have succeded bu returned an empty list -
-        // bug in rdkafka when using ssl - we cannot separate this from a non existent group - we must retry...
-        LOG_IF(FATAL, grplist->group_cnt != 0) << "group list should be empty";
-        rd_kafka_group_list_destroy(grplist);
-        LOG(INFO) << "got empty group list - retrying in 1s";
-        std::this_thread::sleep_for(1s);
-      }
-      {
-        std::lock_guard<std::mutex> guard(mutex_);
-        err = rd_kafka_list_groups(rk_, consumer_group.c_str(), &grplist, 5000);
-      }
-
-      DLOG_IF(INFO, err!=0) << "rd_kafka_list_groups: " << consumer_group.c_str() << ", res: " << err;
-      DLOG_IF(INFO, err==0) << "rd_kafka_list_groups: " << consumer_group.c_str() << ", res: OK" << " grplist->group_cnt: "
-                            << grplist->group_cnt;
-    } while ((err == RD_KAFKA_RESP_ERR__TRANSPORT ||
-              err == RD_KAFKA_RESP_ERR_GROUP_LOAD_IN_PROGRESS) || (err == 0 && grplist && grplist->group_cnt == 0) &&
-                                                                  retries-- > 0);
-
-    if (err) {
-      LOG(ERROR) << "failed to retrieve groups, ec: " << rd_kafka_err2str(err);
-      return false;
-      //throw std::runtime_error(rd_kafka_err2str(err));
-    }
-    bool found = (grplist->group_cnt > 0);
-    rd_kafka_group_list_destroy(grplist);
-    return found;
-  }
-
-
   cluster_config::cluster_config()
-      : producer_buffering_(std::chrono::milliseconds(1000)), producer_message_timeout_(std::chrono::milliseconds(0)),
-        consumer_buffering_(std::chrono::milliseconds(1000)), schema_registry_timeout_(std::chrono::milliseconds(1000)),
-        _fail_fast(true) {
+      : producer_buffering_(std::chrono::milliseconds(1000))
+      , producer_message_timeout_(std::chrono::milliseconds(0))
+      , consumer_buffering_(std::chrono::milliseconds(1000))
+      , schema_registry_timeout_(std::chrono::milliseconds(1000))
+      , cluster_state_timeout_(std::chrono::seconds(60))
+      , fail_fast_(true) {
   }
 
   void cluster_config::load_config_from_env() {
@@ -243,17 +147,24 @@ namespace kspp {
   }
 
   void cluster_config::set_fail_fast(bool state) {
-    _fail_fast = state;
+    fail_fast_ = state;
   }
 
   bool cluster_config::get_fail_fast() const {
-    return _fail_fast;
+    return fail_fast_;
   }
 
-  std::shared_ptr<metadata_provider> cluster_config::get_metadata_provider() const {
+  std::shared_ptr<cluster_metadata> cluster_config::get_cluster_metadata() const {
     if (meta_data_==nullptr)
-      meta_data_ = std::make_shared<metadata_provider>(this);
+      meta_data_ = std::make_shared<cluster_metadata>(this);
     return meta_data_;
+  }
+
+  void cluster_config::set_cluster_state_timeout(std::chrono::seconds timeout){
+    cluster_state_timeout_ = timeout;
+  }
+  std::chrono::seconds cluster_config::get_cluster_state_timeout() const {
+    return cluster_state_timeout_;
   }
 
   void cluster_config::validate() const {
@@ -276,7 +187,7 @@ namespace kspp {
     }
 
     // creates and validates...
-    get_metadata_provider()->validate();
+    get_cluster_metadata()->validate();
 
   }
 
@@ -300,5 +211,6 @@ namespace kspp {
     LOG_IF(INFO, get_schema_registry().size() > 0) << "cluster_config, schema_registry: " << get_schema_registry();
     LOG_IF(INFO, get_schema_registry().size() > 0)
     << "cluster_config, schema_registry_timeout: " << get_schema_registry_timeout().count() << " ms";
+    LOG(INFO) << "kafka cluster_state_timeout: " << get_cluster_state_timeout().count() << " s";
   }
 }

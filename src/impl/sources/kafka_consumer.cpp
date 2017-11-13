@@ -2,9 +2,10 @@
 #include <thread>
 #include <chrono>
 #include <glog/logging.h>
-#include <kspp/impl/kafka_utils.h>
+#include <kspp/utils/kafka_utils.h>
 #include <kspp/impl/rd_kafka_utils.h>
 #include <kspp/kspp.h>
+#include <kspp/cluster_metadata.h>
 
 using namespace std::chrono_literals;
 namespace kspp {
@@ -43,17 +44,24 @@ namespace kspp {
       , _msg_cnt(0)
       , _msg_bytes(0)
       , _closed(false) {
+    // really try to make sure the partition & group exist before we continue
+
+    LOG_IF(FATAL, config->get_cluster_metadata()->wait_for_topic_partition(topic, _partition, config->get_cluster_state_timeout())==false)
+    <<  "failed to wait for topic leaders, topic:" << topic << ":" << _partition;
+    //wait_for_partition(_consumer.get(), _topic, _partition);
+    //kspp::kafka::wait_for_group(brokers, consumer_group); something seems to wrong in rdkafka master.... TODO
+
     _topic_partition.push_back(RdKafka::TopicPartition::create(_topic, _partition));
 
     /*
-* Create configuration objects
-*/
+     * Create configuration objects
+    */
     std::unique_ptr<RdKafka::Conf> conf(RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL));
     /*
     * Set configuration properties
     */
     try {
-      set_broker_config(conf.get(), _config);
+      set_broker_config(conf.get(), _config.get());
 
       set_config(conf.get(), "api.version.request", "true");
       set_config(conf.get(), "socket.nagle.disable", "true");
@@ -89,9 +97,6 @@ namespace kspp {
       LOG(FATAL) << "kafka_consumer topic:" << _topic << ":" << _partition << ", failed to create consumer, reason: " << errstr;
     }
     LOG(INFO) << "kafka_consumer topic:" << _topic << ":" << _partition << ", created";
-    // really try to make sure the partition & group exist before we continue
-    wait_for_partition(_consumer.get(), _topic, _partition);
-    //kspp::kafka::wait_for_group(brokers, consumer_group); something seems to wrong in rdkafka master.... TODO
   }
 
   kafka_consumer::~kafka_consumer() {
@@ -119,7 +124,7 @@ namespace kspp {
       //just make shure we're not in for any surprises since this is a runtime variable in rdkafka...
       assert(kspp::OFFSET_STORED == RdKafka::Topic::OFFSET_STORED);
 
-      if (_config->get_metadata_provider()->consumer_group_exists(_consumer_group, 5s)) {
+      if (_config->get_cluster_metadata()->consumer_group_exists(_consumer_group, 5s)) {
         DLOG(INFO) << "kafka_consumer::start topic:" << _topic << ":" << _partition  << " consumer group: " << _consumer_group << " starting from OFFSET_STORED";
       } else {
         //non existing consumer group means start from beginning

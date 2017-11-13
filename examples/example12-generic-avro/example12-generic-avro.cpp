@@ -8,7 +8,7 @@
 #include <kspp/processors/flat_map.h>
 #include <kspp/sources/kafka_source.h>
 #include <kspp/state_stores/mem_store.h>
-#include <kspp/impl/kafka_utils.h>
+#include <kspp/utils/kafka_utils.h>
 #include <kspp/utils/env.h>
 #include <kspp/avro/avro_serdes.h>
 #include <kspp/avro/avro_text.h>

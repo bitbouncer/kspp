@@ -10,7 +10,7 @@
 #include <kspp/sources/pipe.h>
 #include <kspp/sinks/stream_sink.h>
 #include <kspp/sinks/kafka_sink.h>
-#include <kspp/impl/kafka_utils.h>
+#include <kspp/utils/kafka_utils.h>
 #include <kspp/utils/env.h>
 
 using namespace kspp;
