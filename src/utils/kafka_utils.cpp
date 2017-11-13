@@ -21,7 +21,7 @@ namespace kspp {
 
     void require_topic_leaders(std::shared_ptr<cluster_config> config, std::string topic, std::chrono::seconds timeout)
     {
-      if (config->get_cluster_metadata()->wait_for_topic_leaders(topic, timeout))
+      if (config->get_cluster_metadata()->wait_for_topic_leaders(topic, timeout)==false)
         LOG(FATAL) << "require_topic_leaders failed, topic:" << topic;
     }
 

@@ -41,22 +41,23 @@ int main(int argc, char **argv) {
   config->set_consumer_buffering_time(10ms);
   config->validate();// optional
   config->log(); // optional
+  kspp:kafka::require_topic_leaders(config, "kspp_test5");
 
-  kafka::wait_for_consumer_group(config, "dummy", 60s);
 
-  auto builder = topology_builder("kspp", argv[0], config);
+  auto builder = topology_builder("kspp", "test5", config);
 
   auto nr_of_partitions = kafka::get_number_partitions(config, "kspp_test5");
   auto partition_list = get_partition_list(nr_of_partitions);
+  kafka::wait_for_consumer_group(config, "kspp_test5", 2s);
 
   auto t0 = milliseconds_since_epoch();
   {
     auto topology = builder.create_topology();
 
     // we need to consume the source to be able to commit - a null sink is perfect
-    auto streams = topology->create_processors<kafka_source<std::string, std::string, binary_serdes>>(
+    auto kafka_sources = topology->create_processors<kafka_source<std::string, std::string, binary_serdes>>(
         partition_list, "kspp_test5");
-    auto sink = topology->create_sink<null_sink<std::string, std::string>>(streams);
+    auto sink = topology->create_sink<null_sink<std::string, std::string>>(kafka_sources);
 
     // now create new data
     auto pipe = topology->create_processor<kspp::pipe<std::string, std::string>>(-1);
@@ -70,7 +71,7 @@ int main(int argc, char **argv) {
       pipe->produce(i.key, i.value, t0);
     }
 
-    std::chrono::time_point<std::chrono::system_clock> end = std::chrono::system_clock::now() + 2000ms;
+    std::chrono::time_point<std::chrono::system_clock> end = std::chrono::system_clock::now() + 20s;
     while (std::chrono::system_clock::now() < end) {
       topology->flush();
     }
@@ -78,7 +79,7 @@ int main(int argc, char **argv) {
     assert(table_stream->get_metric("in_count") == TEST_SIZE);
 
     int64_t sz = 0;
-    for (auto &&i : streams)
+    for (auto &&i : kafka_sources)
       sz += i->get_metric("in_count");
     LOG(INFO) << "sz: " << sz << " expected : " <<  TEST_SIZE;
     assert(sz == TEST_SIZE);
