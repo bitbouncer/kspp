@@ -19,7 +19,7 @@ struct record {
   std::string value;
 };
 
-#define TEST_SIZE 10
+#define TEST_SIZE 1000
 
 int main(int argc, char **argv) {
   FLAGS_logtostderr = 1;
@@ -48,11 +48,11 @@ int main(int argc, char **argv) {
 
   auto nr_of_partitions = kafka::get_number_partitions(config, "kspp_test5");
   auto partition_list = get_partition_list(nr_of_partitions);
-  kafka::wait_for_consumer_group(config, "kspp_test5", 2s);
 
   auto t0 = milliseconds_since_epoch();
   {
     auto topology = builder.create_topology();
+    kafka::wait_for_consumer_group(config, topology->consumer_group(), 10s);
 
     // we need to consume the source to be able to commit - a null sink is perfect
     auto kafka_sources = topology->create_processors<kafka_source<std::string, std::string, binary_serdes>>(
@@ -88,6 +88,8 @@ int main(int argc, char **argv) {
   // now pick up from last commit
   {
     auto topology = builder.create_topology();
+    kafka::wait_for_consumer_group(config, topology->consumer_group(), 10s);
+
     auto streams = topology->create_processors<kspp::kafka_source<std::string, std::string, kspp::binary_serdes>>(
         partition_list, "kspp_test5");
     auto pipe = topology->create_processor<kspp::pipe<std::string, std::string>>(-1);
