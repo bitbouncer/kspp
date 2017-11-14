@@ -1,6 +1,6 @@
+#include <kspp/topology.h>
 #include <kspp/kspp.h>
-#include <kspp/utils/kspp_utils.h>
-#include <iostream>
+#include <kspp/utils/kafka_utils.h>
 
 using namespace std::chrono_literals;
 
@@ -10,7 +10,7 @@ namespace kspp {
                      std::string topology_id)
       : _app_info(ai)
       , _cluster_config(cc)
-      , _is_init(false)
+      , _is_started(false)
       , _topology_id(topology_id)
       , _next_gc_ts(0) {
 
@@ -88,7 +88,7 @@ namespace kspp {
         f(*j);
   }
 
-  void topology::init() {
+  void topology::init_processing_graph() {
     _top_partition_processors.clear();
 
     for (auto &&i : _partition_processors) {
@@ -104,8 +104,48 @@ namespace kspp {
         DLOG(INFO) << "topology << " << name() << ": skipping poll of " << i->simple_name();
       }
     }
-    _is_init = true;
   }
+
+  void topology::start(start_offset_t offset) {
+    LOG_IF(FATAL, _is_started) << "usage error - started twice";
+
+    if (offset == kspp::OFFSET_STORED)
+      _precondition_consumer_group = consumer_group();
+
+    for (auto &&i : _partition_processors){
+      auto topic = i->topic();
+      if (topic.size())
+        _precondition_topics.insert(topic);
+    }
+
+    for (auto &&i : _sinks){
+      // get used kafka topics - TODO
+    }
+
+    validate_preconditions();
+
+    init_processing_graph();
+
+    for (auto &&i : _top_partition_processors)
+      i->start(offset);
+
+    _is_started = true;
+  }
+
+
+  void topology::validate_preconditions() {
+    LOG(INFO) << "validating preconditions:  STARTING";
+    if (_precondition_consumer_group.size())
+    {
+      kspp::kafka::wait_for_consumer_group(_cluster_config, _precondition_consumer_group, _cluster_config->get_cluster_state_timeout());
+    }
+
+    for (auto &&i : _precondition_topics){
+      kspp:kafka::require_topic_leaders(_cluster_config, i);
+    }
+    LOG(INFO) << "validating preconditions:  DONE";
+  }
+
 
   bool topology::eof() {
     for (auto &&i : _top_partition_processors) {
@@ -162,18 +202,8 @@ namespace kspp {
       i->close();
   }
 
-  void topology::start(start_offset_t offset) {
-    if (!_is_init)
-      init();
-    for (auto &&i : _top_partition_processors)
-      i->start(offset);
-    //for (auto i : _topic_processors) // those are only sinks??
-    //  i->start(offset);
-  }
-
   void topology::commit(bool force) {
-    if (!_is_init)
-      init();
+    LOG_IF(FATAL, !_is_started) << "usage error - commit without start()";
     for (auto &&i : _top_partition_processors)
       i->commit(force);
   }
@@ -184,6 +214,8 @@ namespace kspp {
 // TBD how to capture this??
 // for now we start with a flush of the sinks but that is not enough
   void topology::flush() {
+    LOG_IF(FATAL, !_is_started) << "usage error - flush without start()";
+
     while (true) {
       for (auto &&i : _sinks)
         i->flush();

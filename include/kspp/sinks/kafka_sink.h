@@ -3,7 +3,9 @@
 #include <functional>
 #include <sstream>
 #include <kspp/kspp.h>
+#include <kspp/topology.h>
 #include <kspp/impl/sinks/kafka_producer.h>
+
 
 #pragma once
 
@@ -29,6 +31,10 @@ namespace kspp {
 
     std::string simple_name() const override {
       return "kafka_sink(" + _impl.topic() + ")";
+    }
+
+    std::string topic() const override {
+      return _impl.topic();
     }
 
     void close() override {

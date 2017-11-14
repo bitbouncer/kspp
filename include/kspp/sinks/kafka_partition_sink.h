@@ -30,6 +30,11 @@ namespace kspp {
       return "kafka_partition_sink(" + _impl.topic() + ")";
     }
 
+    std::string topic() const override {
+      return _impl.topic();
+    }
+
+
     void close() override {
       flush();
       return _impl.close();

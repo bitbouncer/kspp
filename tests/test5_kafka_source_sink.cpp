@@ -41,7 +41,6 @@ int main(int argc, char **argv) {
   config->set_consumer_buffering_time(10ms);
   config->log(); // optional
   config->validate();// optional
-  kspp:kafka::require_topic_leaders(config, "kspp_test5");
 
   auto builder = topology_builder("kspp", "test5", config);
 
@@ -51,7 +50,6 @@ int main(int argc, char **argv) {
   auto t0 = milliseconds_since_epoch();
   {
     auto topology = builder.create_topology();
-    kafka::wait_for_consumer_group(config, topology->consumer_group(), 10s);
 
     // now create new data
     //auto pipe = topology->create_processor<kspp::pipe<std::string, std::string>>(-1);
@@ -102,8 +100,6 @@ int main(int argc, char **argv) {
   // now pick up from last commit
   {
     auto topology = builder.create_topology();
-    kafka::wait_for_consumer_group(config, topology->consumer_group(), 10s);
-
     auto streams = topology->create_processors<kspp::kafka_source<std::string, std::string, kspp::binary_serdes>>(
         partition_list, "kspp_test5");
     auto pipe = topology->create_processor<kspp::pipe<std::string, std::string>>(-1);
@@ -115,7 +111,6 @@ int main(int argc, char **argv) {
     for (auto &i : test_data) {
       pipe->produce(i.key, i.value);
     }
-
 
     std::chrono::time_point<std::chrono::system_clock> end = std::chrono::system_clock::now() + 2000ms;
     while (std::chrono::system_clock::now() < end) {

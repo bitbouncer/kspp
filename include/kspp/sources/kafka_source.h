@@ -17,26 +17,26 @@ namespace kspp {
     }
 
     std::string simple_name() const override {
-      return "kafka_source(" + _consumer.topic() + ")";
+      return "kafka_source(" + _impl.topic() + ")";
     }
 
     void start(int64_t offset) override {
-      _consumer.start(offset);
+      _impl.start(offset);
     }
 
     void close() override {
-      if (_commit_chain.last_good_offset() >= 0 && _consumer.commited() > _commit_chain.last_good_offset())
-        _consumer.commit(_commit_chain.last_good_offset(), true);
-      _consumer.close();
+      if (_commit_chain.last_good_offset() >= 0 && _impl.commited() > _commit_chain.last_good_offset())
+        _impl.commit(_commit_chain.last_good_offset(), true);
+      _impl.close();
     }
 
     bool eof() const override {
-      return _consumer.eof();
+      return _impl.eof();
     }
 
     void commit(bool flush) override {
       if (_commit_chain.last_good_offset() > 0)
-        _consumer.commit(_commit_chain.last_good_offset(), flush);
+        _impl.commit(_commit_chain.last_good_offset(), flush);
     }
 
     // TBD if we store last offset and end of stream offset we can use this...
@@ -45,7 +45,7 @@ namespace kspp {
     }
 
     bool process_one(int64_t tick) override {
-      auto p = _consumer.consume();
+      auto p = _impl.consume();
       if (!p)
         return false;
 
@@ -54,7 +54,7 @@ namespace kspp {
         auto max_ts = tick - _wallclock_filter_ms;
         while(p->timestamp().timestamp < max_ts) {
           ++_in_wallclock_skipped;
-          if ((p = _consumer.consume())==nullptr)
+          if ((p = _impl.consume())==nullptr)
             return false;
         }
       }
@@ -64,8 +64,8 @@ namespace kspp {
       return true;
     }
 
-    std::string topic() const {
-      return _consumer.topic();
+    std::string topic() const override {
+      return _impl.topic();
     }
 
   protected:
@@ -76,7 +76,7 @@ namespace kspp {
                       int64_t wallclock_filter_ms,
                       std::shared_ptr<CODEC> codec)
         : partition_source<K, V>(nullptr, partition)
-        , _consumer(config, topic, partition, consumer_group)
+        , _impl(config, topic, partition, consumer_group)
         , _codec(codec)
         , _commit_chain(topic, partition)
         , _wallclock_filter_ms(wallclock_filter_ms)
@@ -92,7 +92,7 @@ namespace kspp {
 
     virtual std::shared_ptr<kevent<K, V>> parse(const std::unique_ptr<RdKafka::Message> &ref) = 0;
 
-    kafka_consumer _consumer;
+    kafka_consumer _impl;
     std::shared_ptr<CODEC> _codec;
     commit_chain _commit_chain;
     int64_t _wallclock_filter_ms;
