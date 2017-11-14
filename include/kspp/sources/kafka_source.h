@@ -26,7 +26,7 @@ namespace kspp {
     }
 
     void close() override {
-      if (_commit_chain.last_good_offset() >= 0 && _impl.commited() > _commit_chain.last_good_offset())
+      if (_commit_chain.last_good_offset() >= 0 && _impl.commited() < _commit_chain.last_good_offset())
         _impl.commit(_commit_chain.last_good_offset(), true);
       _impl.close();
     }
@@ -36,7 +36,7 @@ namespace kspp {
     }
 
     void commit(bool flush) override {
-      if (_commit_chain.last_good_offset() > 0)
+      if (_commit_chain.last_good_offset() >= 0)
         _impl.commit(_commit_chain.last_good_offset(), flush);
     }
 
