@@ -196,10 +196,12 @@ namespace kspp {
   }
 
   void topology::close() {
-    for (auto &&i : _partition_processors)
+    for (auto &&i : _partition_processors) {
       i->close();
-    for (auto &&i : _sinks)
+    }
+    for (auto &&i : _sinks) {
       i->close();
+    }
   }
 
   void topology::commit(bool force) {

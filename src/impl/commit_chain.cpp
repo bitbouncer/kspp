@@ -45,7 +45,7 @@ void commit_chain::set_handler(std::function <void(int64_t offset, int32_t ec)> 
     return res;
   }
 
-// tbd we might want to have several error handlig algoritms
+// tbd we might want to have several error handling algoritms
 // fatal as below or just a warning and skip?
   void commit_chain::handle_result(int64_t offset, int32_t ec) {
     if (offset >= 0) { // the "next" object with -1 is invalid

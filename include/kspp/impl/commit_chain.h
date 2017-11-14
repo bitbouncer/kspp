@@ -15,23 +15,12 @@ namespace kspp {
               : _offset(-1), _ec(0), _cb(callback) {
       }
 
-      /*
-      public:
-      inline static std::shared_ptr<autocommit_marker> initialize(std::function <void(int64_t offset, int32_t ec)> callback) {
-        return std::make_shared<autocommit_marker>(callback);
-      }
-      */
-
       ~autocommit_marker() {
         _cb(_offset, _ec);
       }
 
       inline int64_t offset() const {
         return _offset;
-      }
-
-      inline void set_offset(int64_t offs) {
-        _offset = offs;
       }
 
       inline int32_t ec() const {
@@ -58,7 +47,6 @@ namespace kspp {
   public:
     commit_chain(std::string topic, int32_t partition);
 
-    //void set_handler(std::function <void(int64_t offset, int32_t ec)> callback);
     std::shared_ptr<commit_chain::autocommit_marker> create(int64_t offset);
 
     // nr of outstanding requests

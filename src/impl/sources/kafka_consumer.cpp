@@ -237,6 +237,7 @@ namespace kspp {
     return nullptr;
   }
 
+  // TBD add time based autocommit
   int32_t kafka_consumer::commit(int64_t offset, bool flush) {
     if (offset < 0) // not valid
       return 0;
@@ -244,16 +245,15 @@ namespace kspp {
     // you should actually write offset + 1, since a new consumer will start at offset.
     offset = offset + 1;
 
-    if (_closed || _consumer == nullptr) {
-      if (offset == _last_committed) // already done
-        LOG(WARNING) << "kafka_consumer topic:" << _topic << ":" << _partition << ", consumer group: " << _consumer_group << ", commit on closed consumer (already up-to-date)";
-      else
-        LOG(ERROR) << "kafka_consumer topic:" << _topic << ":" << _partition << ", consumer group: " << _consumer_group << ", commit on closed consumer";
-      return -1; // already closed
+    if (offset < _last_committed) // already done
+    {
+      return 0;
     }
 
-    if (offset == _last_committed) // already done
-      return 0;
+    if (_closed || _consumer == nullptr) {
+      LOG(ERROR) << "kafka_consumer topic:" << _topic << ":" << _partition << ", consumer group: " << _consumer_group << ", commit on closed consumer, lost " << offset - _last_committed << " messsages";
+      return -1; // already closed
+    }
 
     _can_be_committed = offset;
     RdKafka::ErrorCode ec = RdKafka::ERR_NO_ERROR;
@@ -271,12 +271,11 @@ namespace kspp {
       _topic_partition[0]->set_offset(_can_be_committed);
       ec = _consumer->commitAsync(_topic_partition);
       if (ec == RdKafka::ERR_NO_ERROR) {
-        _last_committed = _can_be_committed;
+        _last_committed = _can_be_committed; // not done yet but promised to be written on close...
       } else {
         LOG(ERROR) << "kafka_consumer topic:" << _topic << ":" << _partition << ", consumer group: " << _consumer_group << ", failed to commit, reason:" << RdKafka::err2str(ec);
       }
     }
-    // TBD add time based autocommit
     return ec;
   }
 } // namespace

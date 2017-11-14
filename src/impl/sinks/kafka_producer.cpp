@@ -50,15 +50,13 @@ namespace kspp {
     producer_user_data* extra = (producer_user_data*) message.msg_opaque();
     assert(extra);
 
-    if (message.err() == RdKafka::ErrorCode::ERR_NO_ERROR) {
-      if (extra->autocommit_marker)
-        extra->autocommit_marker->set_offset(message.offset());
-    } else {
+    // if error fail this commit
+    if (message.err() != RdKafka::ErrorCode::ERR_NO_ERROR) {
       if (extra->autocommit_marker)
         extra->autocommit_marker->fail(message.err());
       _status = message.err();
     }
-    delete extra;
+    delete extra; // kill the marker here...
   }
 
   void kafka_producer::MyEventCb::event_cb (RdKafka::Event &event) {
