@@ -245,7 +245,7 @@ namespace kspp {
     // you should actually write offset + 1, since a new consumer will start at offset.
     offset = offset + 1;
 
-    if (offset < _last_committed) // already done
+    if (offset <= _last_committed) // already done
     {
       return 0;
     }

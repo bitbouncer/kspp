@@ -36,7 +36,6 @@ namespace kspp {
     }
 
     void commit(bool flush) override {
-      if (flush)
       if (_commit_chain.last_good_offset() >= 0)
         _impl.commit(_commit_chain.last_good_offset(), flush);
     }
