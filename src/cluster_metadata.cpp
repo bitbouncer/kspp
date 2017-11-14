@@ -28,7 +28,7 @@ namespace kspp{
 
   // copy of c++ code
   static void set_broker_config(rd_kafka_conf_t *rd_conf, const cluster_config* config) {
-    set_config(rd_conf, "bootstrap.servers", config->get_brokers());
+    set_config(rd_conf, "metadata.broker.list", config->get_brokers());
 
     if (config->get_brokers().substr(0, 3) == "ssl") {
       // SSL no auth - always
@@ -62,14 +62,13 @@ namespace kspp{
       LOG_IF(FATAL, rk_c_handle_ == nullptr) << "rd_kafka_new failed err: " << errstr;
     }
 
-
     {
       std::string errstr;
       std::unique_ptr<RdKafka::Conf> conf(RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL));
 
-      /*
-      * Set configuration properties
-      */
+      //
+      // Set configuration properties
+      //
       try {
         ::set_broker_config(conf.get(), config);
         ::set_config(conf.get(), "api.version.request", "true");
@@ -409,7 +408,8 @@ namespace kspp{
 
 
   int32_t cluster_metadata::get_number_partitions(std::string topic) {
-    //auto x = get_number_partitions2(_debug_cc, topic);
+    //return get_number_partitions2(_debug_cc, topic);
+
     std::lock_guard<std::mutex> guard(mutex_);
 
     auto item = _topic_data.find(topic);

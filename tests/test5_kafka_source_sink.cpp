@@ -39,10 +39,9 @@ int main(int argc, char **argv) {
   config->load_config_from_env();
   config->set_producer_buffering_time(10ms);
   config->set_consumer_buffering_time(10ms);
-  config->validate();// optional
   config->log(); // optional
+  config->validate();// optional
   kspp:kafka::require_topic_leaders(config, "kspp_test5");
-
 
   auto builder = topology_builder("kspp", "test5", config);
 
@@ -54,35 +53,50 @@ int main(int argc, char **argv) {
     auto topology = builder.create_topology();
     kafka::wait_for_consumer_group(config, topology->consumer_group(), 10s);
 
+    // now create new data
+    //auto pipe = topology->create_processor<kspp::pipe<std::string, std::string>>(-1);
+    auto kafka_sink0 = topology->create_sink<kafka_sink<std::string, std::string, binary_serdes>>("kspp_test5");
+    //pipe->add_sink(table_stream);
+
     // we need to consume the source to be able to commit - a null sink is perfect
     auto kafka_sources = topology->create_processors<kafka_source<std::string, std::string, binary_serdes>>(
         partition_list, "kspp_test5");
-    auto sink = topology->create_sink<null_sink<std::string, std::string>>(kafka_sources);
-
-    // now create new data
-    auto pipe = topology->create_processor<kspp::pipe<std::string, std::string>>(-1);
-    auto table_stream = topology->create_sink<kafka_sink<std::string, std::string, binary_serdes>>("kspp_test5");
-    pipe->add_sink(table_stream);
+    auto dummy_sink = topology->create_sink<null_sink<std::string, std::string>>(kafka_sources);
 
     topology->start(kspp::OFFSET_END);
 
+    // start running stuff - overtwise it's a race between cosumers starting at end and producers starting writing..
+    std::chrono::time_point<std::chrono::system_clock> end0 = std::chrono::system_clock::now() + 2s;
+    while (std::chrono::system_clock::now() < end0) {
+      topology->process_one();
+    }
+
     // insert testdata in pipe
     for (auto &i : test_data) {
-      pipe->produce(i.key, i.value, t0);
+      kafka_sink0->produce(i.key, i.value, t0);
+    }
+    kafka_sink0->flush();
+
+    std::chrono::time_point<std::chrono::system_clock> end1 = std::chrono::system_clock::now() + 2s;
+    while (std::chrono::system_clock::now() < end1) {
+      topology->process_one();
     }
 
-    std::chrono::time_point<std::chrono::system_clock> end = std::chrono::system_clock::now() + 20s;
-    while (std::chrono::system_clock::now() < end) {
+    std::chrono::time_point<std::chrono::system_clock> end2 = std::chrono::system_clock::now() + 2s;
+    while (std::chrono::system_clock::now() < end2) {
       topology->flush();
     }
-    topology->commit(true);
-    assert(table_stream->get_metric("in_count") == TEST_SIZE);
 
-    int64_t sz = 0;
+    topology->commit(true);
+    auto written_sz = kafka_sink0->get_metric("in_count");
+    assert(written_sz == TEST_SIZE);
+    LOG(INFO) << "produced sz:" << written_sz;
+
+    int64_t consumed_sz = 0;
     for (auto &&i : kafka_sources)
-      sz += i->get_metric("in_count");
-    LOG(INFO) << "sz: " << sz << " expected : " <<  TEST_SIZE;
-    assert(sz == TEST_SIZE);
+      consumed_sz += i->get_metric("in_count");
+    LOG(INFO) << "consumed_sz: " << consumed_sz << " expected : " <<  TEST_SIZE;
+    assert(consumed_sz == TEST_SIZE);
   }
 
   // now pick up from last commit

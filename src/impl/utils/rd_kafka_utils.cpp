@@ -45,7 +45,7 @@ void set_config(RdKafka::Conf* conf, std::string key, RdKafka::EventCb* event_cb
 void set_broker_config(RdKafka::Conf* rd_conf, const kspp::cluster_config* config) {
   auto v = kspp::split_url_list(config->get_brokers());
 
-  set_config(rd_conf, "bootstrap.servers", config->get_brokers());
+  set_config(rd_conf, "metadata.broker.list", config->get_brokers());
 
   if ((v.size()>0) && v[0].scheme() == "ssl" )
   {
