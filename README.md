@@ -112,6 +112,7 @@ brew install gflags
 brew install rapidjson
 brew install avro-cpp
 brew install librdkafka
+brew install curl --with-openssl # && brew link curl --force
 ```
 
 Check out source code

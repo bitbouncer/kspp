@@ -96,7 +96,8 @@ elseif (APPLE)
             pthread
             c
             )
-    SET(AVRO_LIBS avrocpp curl)
+    # special libcurl built with openssl needed
+    SET(AVRO_LIBS avrocpp /usr/local/opt/curl/lib/libcurl.dylib)
 
     set(LIBRARY_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/lib)
     SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/bin)
@@ -105,6 +106,7 @@ elseif (APPLE)
     endif ()
     SET(LIBRDKAFKA_LIBS rdkafka++ rdkafka)
     SET(EXT_LIBS ${LIBRDKAFKA_LIBS} ${CSI_ROCKSDB_LIBS} ${AVRO_LIBS} ${BOOST_LIBS} glog crypto ssl)
+    SET(EXT_LIBS_STATIC ${LIBRDKAFKA_LIBS} ${CSI_ROCKSDB_LIBS} ${AVRO_LIBS} ${BOOST_LIBS} glog crypto ssl)
     SET(CSI_LIBS kspp ${EXT_LIBS})
     #END APPLE
 
