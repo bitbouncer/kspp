@@ -3,6 +3,7 @@
 #include <boost/filesystem.hpp>
 #include <glog/logging.h>
 #include <kspp/kspp.h>
+#include <kspp/topology.h>
 #include <kspp/impl/sources/kafka_consumer.h>
 
 #pragma once

@@ -3,6 +3,7 @@
 #include <functional>
 #include <sstream>
 #include <kspp/kspp.h>
+#include <kspp/topology.h>
 #include <kspp/impl/sinks/kafka_producer.h>
 
 #pragma once
