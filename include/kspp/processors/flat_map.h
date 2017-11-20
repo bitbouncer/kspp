@@ -1,6 +1,7 @@
 #include <functional>
 #include <deque>
 #include <kspp/kspp.h>
+
 #pragma once
 
 namespace kspp {
@@ -9,7 +10,7 @@ namespace kspp {
   public:
     typedef std::function<void(std::shared_ptr<const krecord <SK, SV>> record, flat_map *self)> extractor;
 
-    flat_map(topology &t, std::shared_ptr<partition_source < SK, SV>> source, extractor f)
+    flat_map(topology &t, std::shared_ptr<partition_source < SK, SV>> source,  extractor f)
     : event_consumer<SK, SV>()
     , partition_source<RK, RV>(source.get(), source->partition())
     , _source(source)
@@ -68,12 +69,19 @@ namespace kspp {
     /**
     * use from from extractor callback
     */
-    inline void push_back(std::shared_ptr<krecord < RK, RV>> record) {
+    inline void push_back(std::shared_ptr<krecord < RK, RV>>record) {
       this->send_to_sinks(std::make_shared<kevent < RK, RV>>(record, _currrent_id));
     }
 
+    /**
+    * use from from extractor callback to force a custom partition hash
+    */
+    inline void push_back(std::shared_ptr<krecord < RK, RV>> record, uint32_t partition_hash) {
+      this->send_to_sinks(std::make_shared<kevent < RK, RV>>(record, _currrent_id, partition_hash));
+    }
+
   private:
-    std::shared_ptr<partition_source < SK, SV>>        _source;
+    std::shared_ptr<partition_source < SK, SV>> _source;
     extractor _extractor;
     std::shared_ptr<commit_chain::autocommit_marker> _currrent_id; // used to briefly hold the commit open during process one
     metric_counter _in_count;
