@@ -13,19 +13,6 @@ namespace kspp {
    * this is a http client to the confluent schema registry
    */
     class confluent_http_proxy {
-
-      // ?? change to schema registry rpc_result and result -> schema_id if we always have that type...
-      // maybee add name to result as well...
-      /*
-      template <class result_type>
-      struct rpc_result
-      {
-        rpc_result() : ec(-1), result(-1) {}
-        int         ec;
-        result_type result;
-      };
-      */
-
       struct rpc_put_schema_result {
         rpc_put_schema_result() : ec(-1), schema_id(-1) {}
 

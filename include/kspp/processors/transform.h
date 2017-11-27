@@ -13,10 +13,10 @@ namespace kspp {
                                transform_value * self)> extractor; // maybe better to pass this and send() directrly
 
     transform_value(topology &unused, std::shared_ptr <partition_source<K, SV>> source, extractor f)
-            : event_consumer<K, SV>()
-              , partition_source<K, RV>(source.get(), source->partition())
-              , _source(source),
-              _extractor(f) {
+        : event_consumer<K, SV>()
+        , partition_source<K, RV>(source.get(), source->partition())
+        , _source(source),
+          _extractor(f) {
       _source->add_sink([this](auto r) {
         this->_queue.push_back(r);
       });
@@ -81,10 +81,10 @@ namespace kspp {
                                transform * self)> extractor; // maybe better to pass this and send() directrly
 
     transform(topology &unused, std::shared_ptr <partition_source<K, V>> source, extractor f)
-            : event_consumer<K, V>()
-              , partition_source<K, V>(source.get(), source->partition())
-              , _source(source)
-              , _extractor(f) {
+        : event_consumer<K, V>()
+        , partition_source<K, V>(source.get(), source->partition())
+        , _source(source)
+        , _extractor(f) {
       _source->add_sink([this](auto r) {
         this->_queue.push_back(r);
       });

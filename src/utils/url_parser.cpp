@@ -22,7 +22,3 @@ namespace kspp {
     return result;
   }
 }
-
-
-// remove internal whitespaces in authority_
-//authority_.erase(remove_if(authority_.begin(), authority_.end(), isspace), authority_.end());

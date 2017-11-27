@@ -28,51 +28,6 @@ namespace kspp {
 
     static std::string name() { return "kspp::avro"; }
 
-    ///**
-    //* Format Avro datum as JSON according to schema.
-    //*/
-    //static int avro2json(std::shared_ptr<avro::ValidSchema> avro_schema, std::shared_ptr<avro::GenericDatum> datum, std::string &str, std::string &errstr) {
-    //  /* JSON encoder */
-    //  avro::EncoderPtr json_encoder = avro::jsonEncoder(*avro_schema);
-
-    //  /* JSON output stream */
-    //  std::ostringstream oss;
-    //  std::auto_ptr<avro::OutputStream> json_os = avro::ostreamOutputStream(oss);
-
-    //  try {
-    //    /* Encode Avro datum to JSON */
-    //    json_encoder->init(*json_os.get());
-    //    avro::encode(*json_encoder, *datum);
-    //    json_encoder->flush();
-
-    //  }
-    //  catch (const avro::Exception &e) {
-    //    errstr = std::string("Binary to JSON transformation failed: ") + e.what();
-    //    return -1;
-    //  }
-
-    //  str = oss.str();
-    //  return 0;
-    //}
-
-    /*
-    template<class T>
-    size_t encode(const T& src, std::ostream& dst) {
-      static_assert(fake_dependency<T>::value, "you must use specialization to provide a encode for T");
-    }
-
-    template<class T>
-    size_t decode(std::istream& src, T& dst) {
-      static_assert(fake_dependency<T>::value, "you must use specialization to provide a decode for T");
-    }
-
-    template<class T>
-    size_t decode(const int8_t* payload, size_t size, T& dst) {
-    static_assert(fake_dependency<T>::value, "you must use specialization to provide a decode for T");
-    }
-    */
-
-
     /*
     * confluent avro encoded data
     * write avro format

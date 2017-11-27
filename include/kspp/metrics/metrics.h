@@ -86,12 +86,6 @@ namespace kspp {
   };
 
   struct metric_lag : public metric {
-    // TBD is this fast enough???
-    /*static inline int64_t milliseconds_since_epoch() {
-      return std::chrono::duration_cast<std::chrono::milliseconds>
-        (std::chrono::system_clock::now().time_since_epoch()).count();
-    }*/
-
     metric_lag()
             : metric("lag"), _lag(-1) {}
 
