@@ -13,7 +13,7 @@ namespace kspp {
       : producer_buffering_(std::chrono::milliseconds(1000))
       , producer_message_timeout_(std::chrono::milliseconds(0))
       , consumer_buffering_(std::chrono::milliseconds(1000))
-      , schema_registry_timeout_(std::chrono::milliseconds(1000))
+      , schema_registry_timeout_(std::chrono::milliseconds(10000))
       , cluster_state_timeout_(std::chrono::seconds(60))
       , fail_fast_(true) {
   }
