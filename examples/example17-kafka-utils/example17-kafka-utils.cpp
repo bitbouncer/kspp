@@ -13,15 +13,9 @@ int main(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);
 
   auto config = std::make_shared<kspp::cluster_config>();
-  config->set_brokers(kspp::default_kafka_broker_uri());
-  config->set_ca_cert_path(kspp::default_ca_cert_path());
-  config->set_private_key_path(kspp::default_client_cert_path(),
-                               kspp::default_client_key_path(),
-                               kspp::default_client_key_passphrase());
-  config->set_schema_registry(kspp::default_schema_registry_uri());
+  config->load_config_from_env();
   config->validate(); // optional
   config->log(); // optional
-
 
   std::string topicname = argc>1 ? argv[1] : "kspp_test0_eventstream";  // just a random topic
 

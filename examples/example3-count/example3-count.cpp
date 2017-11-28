@@ -23,16 +23,9 @@ int main(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);
 
   auto config = std::make_shared<kspp::cluster_config>();
-
-  //config->load_config_from_env();
-
-  config->set_ca_cert_path("/home/saka/kspp-keystore/10.1.46.13/ca-cert.pem");
-  config->set_private_key_path("/home/saka/kspp-keystore/10.1.46.13/client.pem", "/home/saka/kspp-keystore/10.1.46.13/client.key", "abcdefgh");
-  config->set_brokers("ssl://10.1.46.13:9093,ssl://10.1.46.14:9093,ssl://10.1.46.15:9093");
-
-
-  config->validate();// optional
-  config->log(); // optional
+  config->load_config_from_env();
+  config->validate();
+  config->log();
 
   auto builder = kspp::topology_builder("kspp-examples", argv[0], config);
   {

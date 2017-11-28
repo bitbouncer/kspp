@@ -37,15 +37,6 @@ int main(int argc, char **argv) {
   config->validate();// optional
   config->log(); // optional
 
-  /*config->set_brokers("SSL://localhost:9091");
-  config->set_ca_cert_path("/csi/openssl_client_keystore/ca-cert");
-  config->set_private_key_path("/csi/openssl_client_keystore/client_P51_client.pem",
-                               "/csi/openssl_client_keystore/client_P51_client.key",
-                               "abcdefgh");
-  config->set_schema_registry(kspp::utils::default_schema_registry_uri());
-  config->validate(); // optional
-   */
-
   auto schema_registry = std::make_shared<kspp::avro_schema_registry>(config);
   auto avro_serdes = std::make_shared<kspp::avro_serdes>(schema_registry);
 
