@@ -6,7 +6,7 @@ ARG LIBRDKAFKA_VER="0.11.1"
 ARG AVRO_VER="1.8.2"
 ARG ROCKSDB_VER="5.6.1"
 ARG RAPIDJSON_VER="1.1.0"
-ARG KSPP_VER="0.7.5"
+ARG KSPP_VER="0.7.6"
 
 MAINTAINER sk svante.karlsson@csi.se
 RUN apt-get update
