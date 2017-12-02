@@ -19,7 +19,7 @@ struct record {
   std::string value;
 };
 
-#define TEST_SIZE 1000
+#define TEST_SIZE 1000000
 
 int main(int argc, char **argv) {
   FLAGS_logtostderr = 1;
@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
 
     topology->start(kspp::OFFSET_END);
 
-    // start running stuff - overtwise it's a race between cosumers starting at end and producers starting writing..
+    // start running stuff - overtwise it's a race between consumers starting at end and producers starting writing..
     std::chrono::time_point<std::chrono::system_clock> end0 = std::chrono::system_clock::now() + 2s;
     while (std::chrono::system_clock::now() < end0) {
       topology->process_one();
@@ -132,6 +132,45 @@ int main(int argc, char **argv) {
 
     assert(sz == TEST_SIZE);
   }
+
+
+  // now pick up from first commit but skip messages older than now()
+  {
+    auto topology = builder.create_topology();
+    auto streams = topology->create_processors<kspp::kafka_source<std::string, std::string, kspp::binary_serdes>>(
+        partition_list, "kspp_test5", std::chrono::system_clock::now());
+    auto pipe = topology->create_processor<kspp::pipe<std::string, std::string>>(-1);
+    auto table_stream = topology->create_sink<kspp::kafka_sink<std::string, std::string, kspp::binary_serdes>>("kspp_test5");
+    pipe->add_sink(table_stream);
+    topology->start(kspp::OFFSET_BEGINNING);
+
+    // insert testdata in pipe
+    for (auto &i : test_data) {
+      pipe->produce(i.key, i.value);
+    }
+
+    std::chrono::time_point<std::chrono::system_clock> end = std::chrono::system_clock::now() + 2000ms;
+    while (std::chrono::system_clock::now() < end) {
+      topology->flush();
+    }
+    topology->commit(true);
+    {
+      auto actual = table_stream->get_metric("in_count");
+      assert(actual == TEST_SIZE);
+    }
+
+    int64_t sz = 0;
+    for (auto &&i : streams) {
+      auto s = i->get_metric("in_count");
+      LOG(INFO) << i->simple_name() <<  ", count:" << s;
+      sz += i->get_metric("in_count");
+    }
+    LOG(INFO) << "sz: " << sz << " expected : " <<  TEST_SIZE;
+
+    assert(sz == TEST_SIZE);
+  }
+
+
 
   return 0;
 }
