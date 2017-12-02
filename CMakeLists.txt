@@ -4,7 +4,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
 option(ENABLE_ROCKSDB "enable rocksdb support" OFF)
 option(ENABLE_ZK "enable zk support" OFF)
-option(BUILD_TOOLS "build tools" OFF)
+option(BUILD_TOOLS "build tools" ON)
 option(BUILD_SAMPLES "build examples" OFF)
 option(BUILD_TESTS "build tests" OFF)
 
@@ -245,6 +245,10 @@ INSTALL(TARGETS kspp
 
 INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/include/ DESTINATION include)
 
+if (BUILD_TOOLS)
+    add_subdirectory(tools)
+endif ()
+
 if (BUILD_SAMPLES)
     add_subdirectory(examples)
 endif ()
@@ -257,7 +261,4 @@ if (BUILD_TESTS)
 endif ()
 
 
-if (BUILD_TOOLS)
-    #add_subdirectory(tools)
-endif ()
 

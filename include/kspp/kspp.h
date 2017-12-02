@@ -17,7 +17,7 @@
 #include <kspp/type_name.h>
 #include <kspp/app_info.h>
 #include <kspp/cluster_config.h>
-#include <kspp/impl/queue.h>
+#include <kspp/impl/event_queue.h>
 #include <kspp/impl/hash/murmurhash2.h>
 #include <kspp/utils/kspp_utils.h>
 #pragma once

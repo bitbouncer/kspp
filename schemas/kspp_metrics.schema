@@ -1,0 +1,39 @@
+{
+  "type" : "record",
+  "name" : "kspp_metrics_t",
+  "fields" : [
+    { "name": "measurement", "type": "string" },
+    {
+      "name":"tags",
+      "type":
+       {
+         "type":"array",
+         "items":
+         {
+           "type":"record",
+           "name":"kspp_metrics_tags_t",
+           "fields":[
+           { "name": "name", "type": "string" },
+           { "name": "value", "type": "string" }
+           ]
+         }
+       }
+    }
+    {
+      "name":"fields",
+      "type":
+       {
+         "type":"array",
+         "items":
+         {
+           "type":"record",
+           "name":"kspp_metrics_fields_t",
+           "fields":[
+           { "name": "name", "type": "string" },
+           { "name": "value", "type": "string" }
+           ]
+         }
+       }
+    }
+    ]
+}

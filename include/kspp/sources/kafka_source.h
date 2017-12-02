@@ -1,8 +1,8 @@
+#include <kspp/kspp.h>
 #include <memory>
 #include <strstream>
-#include <boost/filesystem.hpp>
+#include <thread>
 #include <glog/logging.h>
-#include <kspp/kspp.h>
 #include <kspp/topology.h>
 #include <kspp/impl/sources/kafka_consumer.h>
 
@@ -23,16 +23,22 @@ namespace kspp {
 
     void start(int64_t offset) override {
       _impl.start(offset);
+      _started = true;
     }
 
     void close() override {
+      if (!_exit) {
+        _exit = true;
+        _thread.join();
+      }
+
       if (_commit_chain.last_good_offset() >= 0 && _impl.commited() < _commit_chain.last_good_offset())
         _impl.commit(_commit_chain.last_good_offset(), true);
       _impl.close();
     }
 
     bool eof() const override {
-      return _impl.eof();
+      return _incomming_msg.size()==0 && _impl.eof();
     }
 
     void commit(bool flush) override {
@@ -42,26 +48,17 @@ namespace kspp {
 
     // TBD if we store last offset and end of stream offset we can use this...
     size_t queue_len() const override {
-      return 0;
+      return _incomming_msg.size();
     }
 
     bool process_one(int64_t tick) override {
-      auto p = _impl.consume();
-      if (!p)
+      if (_incomming_msg.size() == 0)
         return false;
-
-      if (_wallclock_filter_ms>0)
-      {
-        auto max_ts = tick - _wallclock_filter_ms;
-        while(p->timestamp().timestamp < max_ts) {
-          ++_in_wallclock_skipped;
-          if ((p = _impl.consume())==nullptr)
-            return false;
-        }
-      }
+      auto p = _incomming_msg.front();
+      _incomming_msg.pop_front();
       ++_in_count;
-      _lag.add_event_time(tick, p->timestamp().timestamp);
-      this->send_to_sinks(parse(p));
+      _lag.add_event_time(tick, p->event_time());
+      this->send_to_sinks(p);
       return true;
     }
 
@@ -74,18 +71,20 @@ namespace kspp {
                       std::string topic,
                       int32_t partition,
                       std::string consumer_group,
-                      int64_t wallclock_filter_ms,
+                      std::chrono::system_clock::time_point start_point,
                       std::shared_ptr<CODEC> codec)
         : partition_source<K, V>(nullptr, partition)
+        , _started(false)
+        , _exit(false)
+        , _thread(&kafka_source_base::thread_f, this)
         , _impl(config, topic, partition, consumer_group)
         , _codec(codec)
         , _commit_chain(topic, partition)
-        , _wallclock_filter_ms(wallclock_filter_ms)
-        , _in_wallclock_skipped("in_skipped_count")
+        , _start_point_ms(std::chrono::time_point_cast<std::chrono::milliseconds>(start_point).time_since_epoch().count())
+        , _parse_errors("parse_errors")
         , _in_count("in_count")
         , _commit_chain_size("commit_chain_size", [this]() { return _commit_chain.size(); })
         , _lag() {
-      this->add_metric(&_in_wallclock_skipped);
       this->add_metric(&_in_count);
       this->add_metric(&_commit_chain_size);
       this->add_metric(&_lag);
@@ -93,11 +92,64 @@ namespace kspp {
 
     virtual std::shared_ptr<kevent<K, V>> parse(const std::unique_ptr<RdKafka::Message> &ref) = 0;
 
+
+    void thread_f()
+    {
+      while(!_started)
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      DLOG(INFO) << "starting thread";
+
+      if (_start_point_ms>0) {
+        DLOG(INFO) << "spooling phase";
+        bool done_skipping =false;
+        while (!_exit && !done_skipping) {
+          while (auto p = _impl.consume()) {
+            if (p->timestamp().timestamp < _start_point_ms) {
+            } else {
+              done_skipping = true;
+              // we need to sent the first message to the queue
+              auto decoded_msg = parse(p);
+              if (decoded_msg) {
+                _incomming_msg.push_back(decoded_msg);
+              } else {
+                ++_parse_errors;
+              }
+            }
+          }
+          std::this_thread::sleep_for(std::chrono::milliseconds(10)); // wait for more messages
+        }
+      }
+
+      DLOG(INFO) << "consumption phase";
+
+      while(!_exit) {
+        auto tick = kspp::milliseconds_since_epoch();
+        while (auto p = _impl.consume()) {
+          auto decoded_msg = parse(p);
+          if (decoded_msg) {
+            _incomming_msg.push_back(decoded_msg);
+          } else {
+            ++_parse_errors;
+          }
+
+          // to much work in queue - back off and let the conumers work
+          while(_incomming_msg.size()>1000 && !_exit)
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      }
+      DLOG(INFO) << "exiting thread";
+    }
+
+    bool _started;
+    bool _exit;
+    std::thread _thread;
+    event_queue<kevent<K, V>> _incomming_msg;
     kafka_consumer _impl;
     std::shared_ptr<CODEC> _codec;
     commit_chain _commit_chain;
-    int64_t _wallclock_filter_ms;
-    metric_counter _in_wallclock_skipped;
+    int64_t _start_point_ms;
+    metric_counter _parse_errors;
     metric_counter _in_count;
     metric_evaluator _commit_chain_size;
     metric_lag _lag;
@@ -114,20 +166,20 @@ namespace kspp {
         t.get_cluster_config(),
         topic, partition,
         t.consumer_group(),
-        0,
+        std::chrono::system_clock::from_time_t(0),
         codec) {
     }
 
     kafka_source(topology &t,
                  int32_t partition,
                  std::string topic,
-                 std::chrono::seconds max_age,
+                 std::chrono::system_clock::time_point start_point,
                  std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
         : kafka_source_base<K, V, CODEC>(
         t.get_cluster_config(),
         topic, partition,
         t.consumer_group(),
-        max_age.count() * 1000,
+        start_point,
         codec) {
     }
 
@@ -193,19 +245,25 @@ namespace kspp {
                  int32_t partition,
                  std::string topic,
                  std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-        : kafka_source_base<void, V, CODEC>(t.get_cluster_config(), topic, partition, t.consumer_group(), 0, codec) {
+        : kafka_source_base<void, V, CODEC>(
+        t.get_cluster_config(),
+        topic,
+        partition,
+        t.consumer_group(),
+        std::chrono::system_clock::from_time_t(0),
+        codec) {
     }
 
     kafka_source(topology &t,
                  int32_t partition,
                  std::string topic,
-                 std::chrono::seconds max_age,
+                 std::chrono::system_clock::time_point start_point,
                  std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
         : kafka_source_base<void, V, CODEC>(
         t.get_cluster_config(),
         topic, partition,
         t.consumer_group(),
-        max_age.count() * 1000,
+        start_point,
         codec) {
     }
 
@@ -243,19 +301,24 @@ namespace kspp {
                  int32_t partition,
                  std::string topic,
                  std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-        : kafka_source_base<K, void, CODEC>(t.get_cluster_config(), topic, partition, t.consumer_group(), 0, codec) {
+        : kafka_source_base<K, void, CODEC>(
+        t.get_cluster_config(),
+        topic, partition,
+        t.consumer_group(),
+        std::chrono::system_clock::from_time_t(0),
+        codec) {
     }
 
     kafka_source(topology &t,
                  int32_t partition,
                  std::string topic,
-                 std::chrono::seconds max_age,
+                 std::chrono::system_clock::time_point start_point,
                  std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
         : kafka_source_base<K, void, CODEC>(
         t.get_cluster_config(),
         topic, partition,
         t.consumer_group(),
-        max_age * 1000,
+        start_point,
         codec) {
     }
 
