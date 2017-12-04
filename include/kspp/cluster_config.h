@@ -5,8 +5,9 @@
 #pragma once
 
 namespace kspp {
-
   class cluster_metadata;
+  class avro_serdes;
+  class avro_schema_registry;
 
   class cluster_config {
   public:
@@ -51,6 +52,8 @@ namespace kspp {
     void set_cluster_state_timeout(std::chrono::seconds);
     std::chrono::seconds get_cluster_state_timeout() const ;
 
+    std::shared_ptr<kspp::avro_serdes> get_avro_serdes();
+
     void validate() const;
 
     void log() const;
@@ -70,5 +73,7 @@ namespace kspp {
     std::string schema_registry_uri_;
     bool fail_fast_;
     mutable std::shared_ptr<cluster_metadata> meta_data_;
+    mutable std::shared_ptr<kspp::avro_schema_registry> avro_schema_registry_;
+    mutable std::shared_ptr<kspp::avro_serdes> avro_serdes_;
   };
 }

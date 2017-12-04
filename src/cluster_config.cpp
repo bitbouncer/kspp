@@ -5,6 +5,7 @@
 #include <kspp/utils/url_parser.h>
 #include <kspp/utils/env.h>
 #include <kspp/cluster_metadata.h>
+#include <kspp/avro/avro_serdes.h>
 
 using namespace std::chrono_literals;
 
@@ -165,6 +166,17 @@ namespace kspp {
   }
   std::chrono::seconds cluster_config::get_cluster_state_timeout() const {
     return cluster_state_timeout_;
+  }
+
+  std::shared_ptr<kspp::avro_serdes> cluster_config::get_avro_serdes()
+  {
+    //TODO some error handling would be fine...
+    if (!avro_serdes_)
+    {
+      //avro_schema_registry_ =  std::make_shared<kspp::avro_schema_registry>(*this);
+      //avro_serdes_ = std::make_shared<kspp::avro_serdes>(avro_schema_registry_);
+    }
+    return avro_serdes_;
   }
 
   void cluster_config::validate() const {

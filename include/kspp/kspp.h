@@ -225,7 +225,7 @@ namespace kspp {
     }
 
   protected:
-    kspp::event_queue<kevent<K, V>> _queue;
+    kspp::event_queue<K, V> _queue;
   };
 
   template<class K, class V>
@@ -466,7 +466,7 @@ namespace kspp {
     }
 
   protected:
-    kspp::event_queue<kevent<void, V>> _queue;
+    kspp::event_queue<void, V> _queue;
   };
 
 // spec for void value
@@ -520,7 +520,7 @@ namespace kspp {
     }
 
   protected:
-    kspp::event_queue<kevent<K, void>> _queue;
+    kspp::event_queue<K, void> _queue;
   };
 
   template<class K, class V>

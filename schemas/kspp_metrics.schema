@@ -1,6 +1,7 @@
-{
+{ "namespace": "kspp.avro",
   "type" : "record",
   "name" : "kspp_metrics_t",
+  "doc"  : "this is my doc",
   "fields" : [
     { "name": "measurement", "type": "string" },
     {
@@ -18,7 +19,7 @@
            ]
          }
        }
-    }
+    },
     {
       "name":"fields",
       "type":
