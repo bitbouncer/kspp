@@ -124,7 +124,7 @@ namespace kspp {
     }
 
     std::vector<metric*> _metrics;
-    kspp::event_queue<kevent<K, V>> _queue;
+    kspp::event_queue<K, V> _queue;
     std::shared_ptr<CODEC> _codec;
     kafka_producer _impl;
     partitioner _partitioner;

@@ -144,7 +144,7 @@ namespace kspp {
     bool _started;
     bool _exit;
     std::thread _thread;
-    event_queue<kevent<K, V>> _incomming_msg;
+    event_queue<K, V> _incomming_msg;
     kafka_consumer _impl;
     std::shared_ptr<CODEC> _codec;
     commit_chain _commit_chain;
