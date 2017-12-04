@@ -28,16 +28,10 @@
 #include <fstream>
 #include <map>
 #include <set>
-
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/program_options.hpp>
-
-#include <boost/random/mersenne_twister.hpp>
-#include <boost/random/uniform_int.hpp>
-#include <boost/random/variate_generator.hpp>
 #include <boost/filesystem.hpp>
-
 #include <avro/Compiler.hh>
 #include <avro/ValidSchema.hh>
 #include <avro/NodeImpl.hh>
@@ -63,9 +57,15 @@ struct PendingSetterGetter {
   string name;
   size_t idx;
 
-  PendingSetterGetter(const string &sn, const string &t,
-                      const string &n, size_t i) :
-          structName(sn), type(t), name(n), idx(i) {}
+  PendingSetterGetter(const string &sn,
+                      const string &t,
+                      const string &n,
+                      size_t i)
+      : structName(sn)
+      , type(t)
+      , name(n)
+      , idx(i) {
+  }
 };
 
 struct PendingConstructor {
@@ -73,8 +73,13 @@ struct PendingConstructor {
   string memberName;
   bool initMember;
 
-  PendingConstructor(const string &sn, const string &n, bool im) :
-          structName(sn), memberName(n), initMember(im) {}
+  PendingConstructor(const string &sn,
+                     const string &n,
+                     bool im)
+      : structName(sn)
+      , memberName(n)
+      , initMember(im) {
+  }
 };
 
 std::string to_string(const avro::ValidSchema &vs) {
@@ -89,29 +94,59 @@ std::string to_string(const avro::ValidSchema &vs) {
   return s;
 }
 
+
+static set<string> s_protected_words = {"explicit", "public"};
+
+static string decorate_reserved_words(const string &name) {
+  if (s_protected_words.find(name) != s_protected_words.end())
+    return "_rsvd_" + name;
+  return name;
+}
+
+static string namespace_cpp(const avro::Name &name){
+  auto ns = name.ns();
+  boost::replace_all(ns, ".", "::");
+  return ns;
+}
+
+static std::vector<std::string> split_namespaces(const avro::Name &name){
+  std::vector<std::string> words;
+  std::string s = name.ns();
+  if (s.size()>0){
+    boost::split(words, s, boost::is_any_of("."), boost::token_compress_on);
+  }
+  return words;
+}
+
+static string fullname_cpp(const avro::Name &name) {
+  auto ns = namespace_cpp(name);
+  if (ns.size() > 0)
+    return ns + "::" + name.simpleName();
+  else
+    return name;
+}
+
+static string simplename_cpp(const avro::Name &name) {
+  return name.simpleName(); // guard about reserved words???
+}
+
 class CodeGen {
-  size_t unionNumber_;
-  std::ostream &os_;
-  bool inNamespace_;
-  const std::string ns_;
-  const std::string schemaFile_;
-  const std::string headerFile_;
-  const std::string includePrefix_;
-  const bool noUnion_;
-  const std::string guardString_;
-  boost::mt19937 random_;
-  std::string escaped_schema_string_;
-  std::string root_name_;
+public:
+  CodeGen(std::ostream &os,
+          const std::string &schemaFile,
+          const std::string &headerFile,
+          const std::string &includePrefix,
+          bool noUnion)
+      : unionNumber_(0)
+      , os_(os)
+      , schemaFile_(schemaFile)
+      , headerFile_(headerFile)
+      , includePrefix_(includePrefix)
+      , noUnion_(noUnion) {
+  }
 
-  vector<PendingSetterGetter> pendingGettersAndSetters;
-  vector<PendingConstructor> pendingConstructors;
+  void generate(const ValidSchema &schema);
 
-  map<NodePtr, string> done;
-  set<NodePtr> doing;
-
-  std::string guard();
-
-  std::string fullname(const string &name) const;
 
   std::string generateEnumType(const NodePtr &n);
 
@@ -139,44 +174,33 @@ class CodeGen {
 
   void generateExtensions(const ValidSchema &schema);
 
-  void emitCopyright();
+  void generateNsDecraration(const NodePtr &n);
+  void generateNsEnd(const NodePtr &n);
 
-public:
-  CodeGen(std::ostream &os, const std::string &ns,
-          const std::string &schemaFile, const std::string &headerFile,
-          const std::string &guardString,
-          const std::string &includePrefix, bool noUnion) :
-          unionNumber_(0), os_(os), inNamespace_(false), ns_(ns),
-          schemaFile_(schemaFile), headerFile_(headerFile),
-          includePrefix_(includePrefix), noUnion_(noUnion),
-          guardString_(guardString),
-          random_(static_cast<uint32_t>(::time(0))) {}
 
-  void generate(const ValidSchema &schema);
+private:
+  size_t unionNumber_;
+  std::ostream &os_;
+  const std::string schemaFile_;
+  const std::string headerFile_;
+  const std::string includePrefix_;
+  const bool noUnion_;
+  std::string escaped_schema_string_;
+  std::string root_name_;
+
+  vector<PendingSetterGetter> pendingGettersAndSetters;
+  vector<PendingConstructor> pendingConstructors;
+
+  map<NodePtr, string> done;
+  set<NodePtr> doing;
 };
 
-static set<string> s_protected_words = {"explicit", "public"};
-
-static string decorate_reserved_words(const string &name) {
-  if (s_protected_words.find(name) != s_protected_words.end())
-    return "_rsvd_" + name;
-  return name;
-}
-
-static string decorate(const avro::Name &name) {
-  return name.simpleName();
-}
-
-string CodeGen::fullname(const string &name) const {
-  return ns_.empty() ? name : (ns_ + "::" + name);
-}
-
 string CodeGen::generateEnumType(const NodePtr &n) {
-  string s = decorate(n->name());
+  string s = simplename_cpp(n->name());
   os_ << "enum " << s << " {\n";
   size_t c = n->names();
   for (size_t i = 0; i < c; ++i) {
-    os_ << "    " << decorate_reserved_words(n->nameAt(i)) << ",\n";
+    os_ << "  " << decorate_reserved_words(n->nameAt(i)) << ",\n";
   }
   os_ << "};\n\n";
   return s;
@@ -200,8 +224,7 @@ string CodeGen::cppTypeOf(const NodePtr &n) {
       return "bool";
     case avro::AVRO_RECORD:
     case avro::AVRO_ENUM: {
-      string nm = decorate(n->name());
-      return inNamespace_ ? nm : fullname(nm);
+      return fullname_cpp(n->name());
     }
     case avro::AVRO_ARRAY:
       return "std::vector<" + cppTypeOf(n->leafAt(0)) + " >";
@@ -213,7 +236,7 @@ string CodeGen::cppTypeOf(const NodePtr &n) {
     case avro::AVRO_SYMBOLIC:
       return cppTypeOf(resolveSymbol(n));
     case avro::AVRO_UNION:
-      return fullname(done[n]);
+      return fullname_cpp(done[n]);
     default:
       return "$Undefined$";
   }
@@ -240,7 +263,7 @@ static string cppNameOf(const NodePtr &n) {
     case avro::AVRO_RECORD:
     case avro::AVRO_ENUM:
     case avro::AVRO_FIXED:
-      return decorate(n->name());
+      return simplename_cpp(n->name());
     case avro::AVRO_ARRAY:
       return "array";
     case avro::AVRO_MAP:
@@ -249,6 +272,20 @@ static string cppNameOf(const NodePtr &n) {
       return cppNameOf(resolveSymbol(n));
     default:
       return "$Undefined$";
+  }
+}
+
+void CodeGen::generateNsDecraration(const NodePtr &n) {
+  auto v = split_namespaces(n->name());
+  for (auto ns : v) {
+    os_ << "namespace " << ns << " {\n";
+  }
+}
+
+void CodeGen::generateNsEnd(const NodePtr &n){
+  auto v = split_namespaces(n->name());
+  for (auto ns : v) {
+    os_ << "} // namespace " << ns << "\n";
   }
 }
 
@@ -264,7 +301,7 @@ string CodeGen::generateRecordType(const NodePtr &n) {
     return it->second;
   }
 
-  string decoratedName = decorate(n->name());
+  string decoratedName = simplename_cpp(n->name());
   os_ << "struct " << decoratedName << " {\n";
   if (!noUnion_) {
     for (size_t i = 0; i < c; ++i) {
@@ -302,7 +339,7 @@ string CodeGen::generateRecordType(const NodePtr &n) {
       os_ << "{\n";
     }
   }
-  os_ << "  }\n";
+  os_ << "  }\n\n";
 
   //extensions
   //should only be here for root level
@@ -311,20 +348,21 @@ string CodeGen::generateRecordType(const NodePtr &n) {
     os_ << "  //returns the string representation of the schema of self (avro extension for kspp avro serdes)\n";
     os_ << "  static inline const char* schema_as_string() {\n";
     os_ << "    return \"" << escaped_schema_string_ << "\";\n";
-    os_ << "  } \n";
+    os_ << "  } \n\n";
     os_ << "  //returns a valid schema of self (avro extension for kspp avro serdes)\n";
-    os_ << "  static std::shared_ptr<const avro::ValidSchema> valid_schema() {\n";
-    os_ << "    static const std::shared_ptr<const avro::ValidSchema> _validSchema(std::make_shared<const avro::ValidSchema>(avro::compileJsonSchemaFromString(schema_as_string())));\n";
+    os_ << "  static std::shared_ptr<const ::avro::ValidSchema> valid_schema() {\n";
+    os_ << "    static const std::shared_ptr<const ::avro::ValidSchema> _validSchema(std::make_shared<const ::avro::ValidSchema>(::avro::compileJsonSchemaFromString(schema_as_string())));\n";
     os_ << "    return _validSchema;\n";
-    os_ << "  }\n";
+    os_ << "  }\n\n";
     os_ << "  //returns the (type)name of self (avro extension for kspp avro serdes)\n";
     os_ << "  static std::string name(){\n";
-    os_ << "    return \"" << (inNamespace_ ? ns_ + "::" + n->name().fullname() : n->name().fullname()) << "\";\n";
+    os_ << "    return \"" << n->name().fullname() << "\";\n";
     os_ << "  }\n";
   }
 
   os_ << "};\n\n";
-  return decorate(n->name());
+
+  return simplename_cpp(n->name());
 }
 
 void makeCanonical(string &s, bool foldCase) {
@@ -351,7 +389,9 @@ string CodeGen::unionName() {
 }
 
 static void generateGetterAndSetter(ostream &os,
-                                    const string &structName, const string &type, const string &name,
+                                    const string &structName,
+                                    const string &type,
+                                    const string &name,
                                     size_t idx) {
   string sn = " " + structName + "::";
 
@@ -374,7 +414,8 @@ static void generateGetterAndSetter(ostream &os,
 }
 
 static void generateConstructor(ostream &os,
-                                const string &structName, bool initMember,
+                                const string &structName,
+                                bool initMember,
                                 const string &type) {
   os << "inline " << structName << "::" << structName << "() : idx_(0)";
   if (initMember) {
@@ -527,23 +568,11 @@ string CodeGen::generateDeclaration(const NodePtr &n) {
 }
 
 void CodeGen::generateEnumTraits(const NodePtr &n) {
-  string dname = decorate(n->name());
-  string fn = fullname(dname);
+  //string dname = decorate(n->name());
+  string fn = fullname_cpp(n->name());
   size_t c = n->names();
-  string first;
-  string last;
-  if (!ns_.empty()) {
-    first = ns_;
-    first += "::";
-    first += n->nameAt(0);
-
-    last = ns_;
-    last += "::";
-    last += n->nameAt(c - 1);
-  } else {
-    first = n->nameAt(0);
-    last = n->nameAt(c - 1);
-  }
+  string first = fullname_cpp(n->nameAt(0));
+  string last = fullname_cpp(n->nameAt(c - 1));
   os_ << "template<> struct codec_traits<" << fn << "> {\n"
       << "  static void encode(Encoder& e, " << fn << " v) {\n"
       << "  if (v < " << first << " || v > " << last << ")\n"
@@ -573,7 +602,7 @@ void CodeGen::generateRecordTraits(const NodePtr &n) {
     generateTraits(n->leafAt(i));
   }
 
-  string fn = fullname(decorate(n->name()));
+  string fn = fullname_cpp(n->name());
   os_ << "template<> struct codec_traits<" << fn << "> {\n"
       << "  static void encode(Encoder& e, const " << fn << "& v) {\n";
 
@@ -617,7 +646,7 @@ void CodeGen::generateUnionTraits(const NodePtr &n) {
   }
 
   string name = done[n];
-  string fn = fullname(name);
+  string fn = fullname_cpp(name);
 
   os_ << "template<> struct codec_traits<" << fn << "> {\n"
       << "  static void encode(Encoder& e, " << fn << " v) {\n"
@@ -743,60 +772,21 @@ void CodeGen::generateExtensions(const ValidSchema &schema) {
   root_name_ = root->name().fullname(); // to only emit has etc once... might exist a better way of doing this...
 }
 
-void CodeGen::emitCopyright() {
-  os_ <<
-      "/**\n"
-              " * Licensed to the Apache Software Foundation (ASF) under one\n"
-              " * or more contributor license agreements.  See the NOTICE file\n"
-              " * distributed with this work for additional information\n"
-              " * regarding copyright ownership.  The ASF licenses this file\n"
-              " * to you under the Apache License, Version 2.0 (the\n"
-              " * \"License\"); you may not use this file except in compliance\n"
-              " * with the License.  You may obtain a copy of the License at\n"
-              " *\n"
-              " *     http://www.apache.org/licenses/LICENSE-2.0\n"
-              " *\n"
-              " * Unless required by applicable law or agreed to in writing, "
-              "software\n"
-              " * distributed under the License is distributed on an "
-              "\"AS IS\" BASIS,\n"
-              " * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express "
-              "or implied.\n"
-              " * See the License for the specific language governing "
-              "permissions and\n"
-              " * limitations under the License.\n"
-              " */\n\n\n";
-}
-
-string CodeGen::guard() {
-  string h = headerFile_;
-  makeCanonical(h, true);
-  return h + "_" + lexical_cast<string>(random_()) + "__H_";
-}
-
 void CodeGen::generate(const ValidSchema &schema) {
   generateExtensions(schema);
-  //emitCopyright();
-
-  string h = guardString_.empty() ? guard() : guardString_;
-
-  os_ << "#ifndef " << h << "\n";
-  os_ << "#define " << h << "\n\n\n";
-
   os_ << "#include <sstream>\n"
       << "#include \"boost/any.hpp\"\n"
       << "#include \"" << includePrefix_ << "Specific.hh\"\n"
       << "#include \"" << includePrefix_ << "Encoder.hh\"\n"
       << "#include \"" << includePrefix_ << "Decoder.hh\"\n"
       << "#include \"" << includePrefix_ << "Compiler.hh\"\n"
+      << "#pragma once\n"
       << "\n";
 
-  if (!ns_.empty()) {
-    os_ << "namespace " << ns_ << " {\n";
-    inNamespace_ = true;
-  }
-
   const NodePtr &root = schema.root();
+
+  generateNsDecraration(root);
+
   generateType(root);
 
   for (vector<PendingSetterGetter>::const_iterator it =
@@ -813,11 +803,9 @@ void CodeGen::generate(const ValidSchema &schema) {
                         it->initMember, it->memberName);
   }
 
-  if (!ns_.empty()) {
-    inNamespace_ = false;
-    os_ << "}\n";
-  }
+  generateNsEnd(root);
 
+  os_ << "\n";
   os_ << "namespace avro {\n";
 
   unionNumber_ = 0;
@@ -825,15 +813,12 @@ void CodeGen::generate(const ValidSchema &schema) {
   generateTraits(root);
 
   os_ << "}\n";
-
-  os_ << "#endif\n";
   os_.flush();
-
 }
 
 namespace po = boost::program_options;
 
-static const string NS("namespace");
+//static const string NS("namespace");
 static const string OUT("output");
 static const string IN("input");
 static const string INCLUDE_PREFIX("include-prefix");
@@ -867,7 +852,6 @@ int main(int argc, char **argv) {
           ("include-prefix,p", po::value<string>()->default_value("avro"),
            "prefix for include headers, - for none, default: avro")
           ("no-union-typedef,U", "do not generate typedefs for unions in records")
-          ("namespace,n", po::value<string>(), "set namespace for generated code")
           ("input,i", po::value<string>(), "input file")
           ("output,o", po::value<string>(), "output file to generate");
 
@@ -876,12 +860,10 @@ int main(int argc, char **argv) {
   po::notify(vm);
 
 
-  if (vm.count("help") || vm.count(IN) == 0 || vm.count(OUT) == 0) {
+  if (vm.count("help") || vm.count(IN) == 0) {
     std::cout << desc << std::endl;
     return 1;
   }
-
-  string ns = vm.count(NS) > 0 ? vm[NS].as<string>() : string();
   string outf = vm.count(OUT) > 0 ? vm[OUT].as<string>() : string();
   string inf = vm.count(IN) > 0 ? vm[IN].as<string>() : string();
   string incPrefix = vm[INCLUDE_PREFIX].as<string>();
@@ -892,16 +874,6 @@ int main(int argc, char **argv) {
     incPrefix += "/";
   }
 
-  //create out file directory
-  boost::filesystem::path p(outf);
-  boost::filesystem::path dir = p.parent_path();
-  if (dir.size()) {
-    boost::filesystem::create_directories(dir);
-    if (!boost::filesystem::is_directory(dir)) {
-      std::cerr << ""
-          "Failed to create directories: " << dir << std::endl;
-    }
-  }
 
   try {
     ValidSchema schema;
@@ -914,17 +886,24 @@ int main(int argc, char **argv) {
     }
 
     if (!outf.empty()) {
-      string g = readGuard(outf);
+      //create out file directory
+      boost::filesystem::path p(outf);
+      boost::filesystem::path dir = p.parent_path();
+      if (dir.size()) {
+        boost::filesystem::create_directories(dir);
+        if (!boost::filesystem::is_directory(dir)) {
+          std::cerr << ""
+              "Failed to create directories: " << dir << std::endl;
+        }
+      }
       ofstream out(outf.c_str());
-      CodeGen(out, ns, inf, outf, g, incPrefix, noUnion).generate(schema);
+      CodeGen(out, inf, outf, incPrefix, noUnion).generate(schema);
     } else {
-      CodeGen(std::cout, ns, inf, outf, "", incPrefix, noUnion).
-              generate(schema);
+      CodeGen(std::cout, inf, outf,  incPrefix, noUnion).generate(schema);
     }
     return 0;
   } catch (std::exception &e) {
-    std::cerr << "Failed to parse or compile schema: "
-              << e.what() << std::endl;
+    std::cerr << "Failed to parse or compile schema: " << e.what() << std::endl;
     return 1;
   }
 
