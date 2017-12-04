@@ -37,14 +37,11 @@ int main(int argc, char **argv) {
   config->validate();// optional
   config->log(); // optional
 
-  auto schema_registry = std::make_shared<kspp::avro_schema_registry>(config);
-  auto avro_serdes = std::make_shared<kspp::avro_serdes>(schema_registry);
-
   auto builder = kspp::topology_builder("kspp-examples", argv[0], config);
   {
     auto topology = builder.create_topology();
     auto avro_stream = topology->create_sink<kspp::kafka_sink<boost::uuids::uuid, int64_t, kspp::avro_serdes>>(
-            "kspp_test10_avro", avro_serdes);
+            "kspp_test10_avro", config->avro_serdes());
 
     topology->start(kspp::OFFSET_BEGINNING);
 
@@ -65,7 +62,7 @@ int main(int argc, char **argv) {
     auto partition_list = kspp::get_partition_list(partitions);
     auto topology = builder.create_topology();
     auto sources = topology->create_processors<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::avro_serdes>>(
-            partition_list, "kspp_test10_avro", avro_serdes);
+            partition_list, "kspp_test10_avro", config->avro_serdes());
     topology->init_metrics();
     topology->start(kspp::OFFSET_BEGINNING);
     auto t0 = std::chrono::high_resolution_clock::now();
@@ -85,7 +82,7 @@ int main(int argc, char **argv) {
     auto partition_list = kspp::get_partition_list(partitions);
     auto topology = builder.create_topology();
     auto sources = topology->create_processors<kspp::kafka_source<kspp::GenericAvro, kspp::GenericAvro, kspp::avro_serdes>>(
-            partition_list, "kspp_test10_avro", avro_serdes);
+            partition_list, "kspp_test10_avro", config->avro_serdes());
     topology->init_metrics();
     topology->start(kspp::OFFSET_BEGINNING);
     auto t0 = std::chrono::high_resolution_clock::now();
@@ -105,9 +102,9 @@ int main(int argc, char **argv) {
     auto partition_list = kspp::get_partition_list(partitions);
     auto topology = builder.create_topology();
     auto sources = topology->create_processors<kspp::kafka_source<kspp::GenericAvro, kspp::GenericAvro, kspp::avro_serdes>>(
-            partition_list, "kspp_test10_avro", avro_serdes);
+            partition_list, "kspp_test10_avro", config->avro_serdes());
     auto sink = topology->create_sink<kspp::kafka_sink<kspp::GenericAvro, kspp::GenericAvro, kspp::avro_serdes>>(
-            sources, "kspp_test10_avro_B", avro_serdes);
+            sources, "kspp_test10_avro_B", config->avro_serdes());
     topology->init_metrics();
     topology->start(kspp::OFFSET_BEGINNING);
     auto t0 = std::chrono::high_resolution_clock::now();
@@ -129,7 +126,7 @@ int main(int argc, char **argv) {
     auto partition_list = kspp::get_partition_list(partitions);
     auto topology = builder.create_topology();
     auto sources = topology->create_processors<kspp::kafka_source<kspp::GenericAvro, kspp::GenericAvro, kspp::avro_serdes>>(
-            partition_list, "kspp_test10_avro_B", avro_serdes);
+            partition_list, "kspp_test10_avro_B", config->avro_serdes());
     auto sink = topology->create_sink<kspp::null_sink<kspp::GenericAvro, kspp::GenericAvro>>(sources);
     topology->init_metrics();
     topology->start(kspp::OFFSET_BEGINNING);

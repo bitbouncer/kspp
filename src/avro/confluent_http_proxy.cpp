@@ -4,11 +4,10 @@
 #include <rapidjson/prettywriter.h>
 #include <avro/Compiler.hh>
 #include <kspp/utils/url_parser.h>
-
 #include <boost/uuid/uuid.hpp>            // uuid class
 #include <boost/uuid/uuid_generators.hpp> // generators
 #include <boost/uuid/uuid_io.hpp>
-
+#include <kspp/cluster_config.h>
 
 using namespace std::chrono_literals;
 namespace kspp {
@@ -83,13 +82,16 @@ namespace kspp {
     return true;
   }
 
-  confluent_http_proxy::confluent_http_proxy(boost::asio::io_service &ios, std::shared_ptr<kspp::cluster_config> config)
+  confluent_http_proxy::confluent_http_proxy(boost::asio::io_service &ios, const kspp::cluster_config& config)
       : _http(ios)
       , _read_policy(kspp::async::PARALLEL) // move to config
-      , _http_timeout(config->get_schema_registry_timeout())
-      , _config(config) {
-    _base_urls = kspp::split_url_list(config->get_schema_registry(), "http");
-    LOG_IF(FATAL, _base_urls.size()==0) << "confluent_http_proxy bad url: " << config->get_schema_registry();
+      , _http_timeout(config.get_schema_registry_timeout())
+      , _ca_cert_path(config.get_ca_cert_path())
+      , _client_cert_path(config.get_client_cert_path())
+      , _private_key_path(config.get_private_key_path())
+      , _private_key_passphrase(config.get_private_key_passphrase()) {
+    _base_urls = kspp::split_url_list(config.get_schema_registry(), "http");
+    LOG_IF(FATAL, _base_urls.size()==0) << "confluent_http_proxy bad url: " << config.get_schema_registry();
   }
 
   void confluent_http_proxy::get_config(get_top_level_config_callback cb) {
@@ -106,10 +108,10 @@ namespace kspp {
             headers,
             _http_timeout);
         request->set_timeout(_http_timeout);
-        request->set_ca_cert_path(_config->get_ca_cert_path());
-        request->set_client_credentials(_config->get_client_cert_path(),
-                                         _config->get_private_key_path(),
-                                         _config->get_private_key_passphrase());
+        request->set_ca_cert_path(_ca_cert_path);
+        request->set_client_credentials(_client_cert_path,
+                                        _private_key_path,
+                                        _private_key_passphrase);
 
 #ifndef NDEBUG
         request->set_verbose(true);
@@ -150,10 +152,10 @@ namespace kspp {
             uri,
             headers,
             _http_timeout);
-        request->set_ca_cert_path(_config->get_ca_cert_path());
-        request->set_client_credentials(_config->get_client_cert_path(),
-                                        _config->get_private_key_path(),
-                                        _config->get_private_key_passphrase());
+        request->set_ca_cert_path(_ca_cert_path);
+        request->set_client_credentials(_client_cert_path,
+                                        _private_key_path,
+                                        _private_key_passphrase);
         request->append(encoded_string);
         _http.perform_async(request, [cb, shared_result](std::shared_ptr<kspp::http::request> request) {
           if (request->http_result() >= 200 && request->http_result() < 300) {
@@ -197,10 +199,10 @@ namespace kspp {
             uri,
             headers,
             _http_timeout);
-        request->set_ca_cert_path(_config->get_ca_cert_path());
-        request->set_client_credentials(_config->get_client_cert_path(),
-                                        _config->get_private_key_path(),
-                                        _config->get_private_key_passphrase());
+        request->set_ca_cert_path(_ca_cert_path);
+        request->set_client_credentials(_client_cert_path,
+                                        _private_key_path,
+                                        _private_key_passphrase);
 
         _http.perform_async(request, [cb, shared_result](std::shared_ptr<kspp::http::request> request) {
           if (request->http_result() >= 200 && request->http_result() < 300) {

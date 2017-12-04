@@ -1,9 +1,10 @@
 #include <kspp/avro/avro_schema_registry.h>
+#include <kspp/cluster_config.h>
 #include <future>
 
 namespace kspp {
-  avro_schema_registry::avro_schema_registry(std::shared_ptr<kspp::cluster_config> config)
-      : _fail_fast(config->get_fail_fast())
+  avro_schema_registry::avro_schema_registry(const kspp::cluster_config& config)
+      : _fail_fast(config.get_fail_fast())
       , _work(new boost::asio::io_service::work(_ios))
       , _thread([this] { _ios.run(); })
       , _proxy(std::make_shared<confluent_http_proxy>(_ios, config)) {

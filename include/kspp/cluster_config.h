@@ -2,11 +2,11 @@
 #include <chrono>
 #include <mutex>
 #include <memory>
+#include <kspp/avro/avro_serdes.h>
 #pragma once
 
 namespace kspp {
   class cluster_metadata;
-  class avro_serdes;
   class avro_schema_registry;
 
   class cluster_config {
@@ -52,7 +52,7 @@ namespace kspp {
     void set_cluster_state_timeout(std::chrono::seconds);
     std::chrono::seconds get_cluster_state_timeout() const ;
 
-    std::shared_ptr<kspp::avro_serdes> get_avro_serdes();
+    std::shared_ptr<kspp::avro_serdes> avro_serdes();
 
     void validate() const;
 

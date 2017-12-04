@@ -10,7 +10,7 @@
 #include <kspp/state_stores/mem_store.h>
 #include <kspp/utils/kafka_utils.h>
 #include <kspp/utils/env.h>
-#include <kspp/avro/avro_serdes.h>
+//#include <kspp/avro/avro_serdes.h>
 #include <kspp/avro/avro_text.h>
 #include <kspp/utils/kspp_utils.h>
 
@@ -27,15 +27,15 @@ int main(int argc, char **argv) {
   config->validate();
   config->log();
 
-  auto schema_registry = std::make_shared<kspp::avro_schema_registry>(config);
-  auto avro_serdes = std::make_shared<kspp::avro_serdes>(schema_registry);
+  //auto schema_registry = std::make_shared<kspp::avro_schema_registry>(config);
+  //auto avro_serdes = std::make_shared<kspp::avro_serdes>(schema_registry);
   auto builder = kspp::topology_builder("kspp-examples", argv[0], config);
 
   auto partitions = kspp::kafka::get_number_partitions(config, "postgres_mqtt_device_auth_view");
   auto partition_list = kspp::get_partition_list(partitions);
   auto topology = builder.create_topology();
   auto sources = topology->create_processors<kspp::kafka_source<void, kspp::GenericAvro, kspp::avro_serdes>>(
-          partition_list, "postgres_mqtt_device_auth_view", avro_serdes);
+          partition_list, "postgres_mqtt_device_auth_view", config->avro_serdes());
   auto parsed = topology->create_processors<kspp::flat_map<void, kspp::GenericAvro, int, std::string>>(sources, [](std::shared_ptr<const kspp::krecord<void, kspp::GenericAvro>> in, auto flat_map) {
       try {
         auto record = in->value()->record();

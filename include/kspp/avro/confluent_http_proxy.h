@@ -3,12 +3,12 @@
 #include <memory>
 #include <avro/Schema.hh>
 #include <kspp/utils/http_client.h>
-#include <kspp/cluster_config.h>
 #include <kspp/utils/url.h>
 #include <kspp/utils/async.h>
 #pragma once
 
 namespace kspp {
+  class cluster_config;
   /**
    * this is a http client to the confluent schema registry
    */
@@ -40,7 +40,7 @@ namespace kspp {
       typedef std::function<void(rpc_get_result)> get_callback;
       typedef std::function<void(rpc_get_config_result)> get_top_level_config_callback;
 
-      confluent_http_proxy(boost::asio::io_service &ios, std::shared_ptr<kspp::cluster_config> config); // how to give a vector??
+      confluent_http_proxy(boost::asio::io_service &ios, const kspp::cluster_config& config);
 
       void get_config(get_top_level_config_callback cb);
 
@@ -74,11 +74,14 @@ namespace kspp {
       }
 
     private:
-      std::shared_ptr<kspp::cluster_config> _config;
       kspp::async::scheduling_t _read_policy;
       kspp::http::client _http;
       std::chrono::milliseconds _http_timeout;
       std::vector<kspp::url> _base_urls;
+      const std::string _ca_cert_path;
+      const std::string _client_cert_path;
+      const std::string _private_key_path;
+      const std::string _private_key_passphrase;
       std::map<int32_t, boost::shared_ptr<const avro::ValidSchema>> _registry;
     };
 } // kspp

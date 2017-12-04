@@ -4,14 +4,14 @@
 #include <memory>
 #include <avro/Schema.hh>
 #include <kspp/utils/http_client.h>
-#include <kspp/cluster_config.h>
 #include <kspp/avro/confluent_http_proxy.h>
 #pragma once
 
 namespace kspp {
+  class cluster_config;
   class avro_schema_registry {
   public:
-    avro_schema_registry(std::shared_ptr<kspp::cluster_config> config);
+    avro_schema_registry(const kspp::cluster_config& config);
     ~avro_schema_registry();
     bool validate();
     int32_t put_schema(std::string name, std::shared_ptr<const avro::ValidSchema> schema);
