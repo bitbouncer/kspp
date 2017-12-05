@@ -86,8 +86,8 @@ mkdir build && \
 cd build && \
 cmake  -DCMAKE_BUILD_TYPE=Release -DENABLE_ROCKSDB=ON -DBUILD_SAMPLES=ON .. && \
 make -j "$(getconf _NPROCESSORS_ONLN)" && \
-make install \
-cd ../.. \
+make install && \
+cd ../.. && \
 rm kspp.tar.gz
 
 
