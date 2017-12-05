@@ -68,7 +68,7 @@ cd ../../../..
 rm avro.tar.gz && \
 rm -rf arvo
 
-wget -O librdkafka.tar.gz "https://github.com/edenhill/librdkafka/archive/v0.11.1.tar.gz" && \
+wget -O librdkafka.tar.gz "https://github.com/edenhill/librdkafka/archive/v0.11.3.tar.gz" && \
 mkdir -p librdkafka && \
 tar \
   --extract \
@@ -191,7 +191,7 @@ call bootstrap.bat
 cd ..
 
 cd librdkafka
-git checkout v0.11.1
+git checkout v0.11.3
 cd ..
 
 mkdir include

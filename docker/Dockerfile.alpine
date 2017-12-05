@@ -2,10 +2,11 @@ FROM alpine:3.6
 
 ARG LOCAL_REPO_URL
 ARG GLOG_VER="0.3.4"
-ARG LIBRDKAFKA_VER="0.11.1"
+ARG LIBRDKAFKA_VER="0.11.3"
 ARG AVRO_VER="1.8.2"
 ARG ROCKSDB_VER="5.6.1"
 ARG RAPIDJSON_VER="1.1.0"
+ARG KSPP_TAG="master"
 
 MAINTAINER sk svante.karlsson@csi.se
 
@@ -60,7 +61,7 @@ BUILD_DIR="$(mktemp -d)" && \
       --directory "$BUILD_DIR/rocksdb" \
       --strip-components 1 && \
 \
-   wget -O "$BUILD_DIR/master.tar.gz" "https://github.com/bitbouncer/kspp/archive/master.tar.gz" && \
+   wget -O "$BUILD_DIR/master.tar.gz" "https://github.com/bitbouncer/kspp/archive/$KSPP_TAG.tar.gz" && \
    mkdir -p $BUILD_DIR/kspp && \
    tar \
       --extract \
