@@ -11,14 +11,17 @@
 namespace kspp {
   // SINGLE PARTITION PRODUCER
   // this is just to only override the necessary key value specifications
-  template<class K, class V, class CODEC>
+  template<class K, class V, class KEY_CODEC, class VAL_CODEC>
   class kafka_partition_sink_base : public partition_sink<K, V> {
   protected:
     kafka_partition_sink_base(std::shared_ptr<cluster_config> cconfig,
                               std::string topic,
                               int32_t partition,
-                              std::shared_ptr<CODEC> codec)
-        : partition_sink<K, V>(partition), _codec(codec)
+                              std::shared_ptr<KEY_CODEC> key_codec,
+                              std::shared_ptr<VAL_CODEC> val_codec)
+        : partition_sink<K, V>(partition),
+          _key_codec(key_codec),
+          _val_codec(val_codec)
         , _impl(cconfig, topic)
         , _fixed_partition(partition)
         , _in_count("in_count")
@@ -92,23 +95,26 @@ namespace kspp {
     virtual int handle_event(std::shared_ptr<kevent < K, V>>) = 0;
 
     kafka_producer _impl;
-    std::shared_ptr<CODEC> _codec;
+    std::shared_ptr<KEY_CODEC> _key_codec;
+    std::shared_ptr<VAL_CODEC> _val_codec;
     size_t _fixed_partition;
     metric_counter _in_count;
     metric_lag _lag;
   };
 
-  template<class K, class V, class CODEC>
-  class kafka_partition_sink : public kafka_partition_sink_base<K, V, CODEC> {
+  template<class K, class V, class KEY_CODEC, class VAL_CODEC>
+  class kafka_partition_sink : public kafka_partition_sink_base<K, V, KEY_CODEC, VAL_CODEC> {
   public:
     kafka_partition_sink(topology &t,
                          int32_t partition,
                          std::string topic,
-                         std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-        : kafka_partition_sink_base<K, V, CODEC>(t.get_cluster_config(),
+                         std::shared_ptr<KEY_CODEC> key_codec = std::make_shared<KEY_CODEC>(),
+                         std::shared_ptr<VAL_CODEC> val_codec = std::make_shared<VAL_CODEC>())
+        : kafka_partition_sink_base<K, V, KEY_CODEC, VAL_CODEC>(t.get_cluster_config(),
                                                  topic,
                                                  partition,
-                                                 codec) {
+                                                 key_codec,
+                                                 val_codec) {
     }
 
     ~kafka_partition_sink() override {
@@ -123,13 +129,13 @@ namespace kspp {
       size_t vsize = 0;
 
       std::stringstream ks;
-      ksize = this->_codec->encode(ev->record()->key(), ks);
+      ksize = this->_key_codec->encode(ev->record()->key(), ks);
       kp = malloc(ksize);  // must match the free in kafka_producer TBD change to new[] and a memory pool
       ks.read((char *) kp, ksize);
 
       if (ev->record()->value()) {
         std::stringstream vs;
-        vsize = this->_codec->encode(*ev->record()->value(), vs);
+        vsize = this->_val_codec->encode(*ev->record()->value(), vs);
         vp = malloc(vsize);   // must match the free in kafka_producer TBD change to new[] and a memory pool
         vs.read((char *) vp, vsize);
       }
@@ -139,17 +145,18 @@ namespace kspp {
   };
 
 // value only topic
-  template<class V, class CODEC>
-  class kafka_partition_sink<void, V, CODEC> : public kafka_partition_sink_base<void, V, CODEC> {
+  template<class V, class VAL_CODEC>
+  class kafka_partition_sink<void, V, void, VAL_CODEC> : public kafka_partition_sink_base<void, V, void, VAL_CODEC> {
   public:
     kafka_partition_sink(topology &t,
                          int32_t partition,
                          std::string topic,
-                         std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-        : kafka_partition_sink_base<void, V, CODEC>(t.get_cluster_config(),
+                         std::shared_ptr<VAL_CODEC> val_codec = std::make_shared<VAL_CODEC>())
+        : kafka_partition_sink_base<void, V, void, VAL_CODEC>(t.get_cluster_config(),
                                                     topic,
                                                     partition,
-                                                    codec) {
+                                                    nullptr,
+                                                    val_codec) {
     }
 
     ~kafka_partition_sink() override {
@@ -163,7 +170,7 @@ namespace kspp {
 
       if (ev->record()->value()) {
         std::stringstream vs;
-        vsize = this->_codec->encode(*ev->record()->value(), vs);
+        vsize = this->_val_codec->encode(*ev->record()->value(), vs);
         vp = malloc(vsize);   // must match the free in kafka_producer TBD change to new[] and a memory pool
         vs.read((char *) vp, vsize);
       } else {
@@ -176,17 +183,18 @@ namespace kspp {
   };
 
 // key only topic
-  template<class K, class CODEC>
-  class kafka_partition_sink<K, void, CODEC> : public kafka_partition_sink_base<K, void, CODEC> {
+  template<class K, class KEY_CODEC>
+  class kafka_partition_sink<K, void, KEY_CODEC, void> : public kafka_partition_sink_base<K, void, KEY_CODEC, void> {
   public:
     kafka_partition_sink(topology &t,
                          int32_t partition,
                          std::string topic,
-                         std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-        : kafka_partition_sink_base<K, void, CODEC>(t.get_cluster_config(),
+                         std::shared_ptr<KEY_CODEC> key_codec = std::make_shared<KEY_CODEC>())
+        : kafka_partition_sink_base<K, void, KEY_CODEC, void>(t.get_cluster_config(),
                                                     topic,
                                                     partition,
-                                                    codec) {
+                                                    key_codec,
+                                                    nullptr) {
     }
 
     ~kafka_partition_sink() override {

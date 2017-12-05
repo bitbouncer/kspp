@@ -30,7 +30,7 @@ int main(int argc, char **argv) {
   auto builder = kspp::topology_builder("kspp-examples", argv[0], config);
   {
     auto topology = builder.create_topology();
-    auto sink = topology->create_sink<kspp::kafka_sink<void, std::string, kspp::text_serdes>>(TOPIC_NAME);
+    auto sink = topology->create_sink<kspp::kafka_sink<void, std::string, void, kspp::text_serdes>>(TOPIC_NAME);
     sink->produce("hello kafka streams");
   }
 
@@ -39,7 +39,7 @@ int main(int argc, char **argv) {
 
   {
     auto topology = builder.create_topology();
-    auto source = topology->create_processors<kspp::kafka_source<void, std::string, kspp::text_serdes>>(partition_list,
+    auto source = topology->create_processors<kspp::kafka_source<void, std::string, void, kspp::text_serdes>>(partition_list,
                                                                                                         TOPIC_NAME);
     std::regex rgx("\\s+");
     auto word_stream = topology->create_processors<kspp::flat_map<void, std::string, std::string, void>>(

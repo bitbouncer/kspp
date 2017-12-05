@@ -34,7 +34,7 @@ int main(int argc, char **argv) {
   auto partitions = kspp::kafka::get_number_partitions(config, "postgres_mqtt_device_auth_view");
   auto partition_list = kspp::get_partition_list(partitions);
   auto topology = builder.create_topology();
-  auto sources = topology->create_processors<kspp::kafka_source<void, kspp::GenericAvro, kspp::avro_serdes>>(
+  auto sources = topology->create_processors<kspp::kafka_source<void, kspp::GenericAvro, void, kspp::avro_serdes>>(
           partition_list, "postgres_mqtt_device_auth_view", config->avro_serdes());
   auto parsed = topology->create_processors<kspp::flat_map<void, kspp::GenericAvro, int, std::string>>(sources, [](std::shared_ptr<const kspp::krecord<void, kspp::GenericAvro>> in, auto flat_map) {
       try {

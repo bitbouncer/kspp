@@ -19,7 +19,7 @@ namespace kspp {
     using partitioner = typename std::function<uint32_t(void)>;
   };
 
-  template<class K, class V, class CODEC>
+  template<class K, class V, class KEY_CODEC, class VAL_CODEC>
   class raw_kafka_sink_base {
   public:
     virtual ~raw_kafka_sink_base() {}
@@ -92,32 +92,37 @@ namespace kspp {
     raw_kafka_sink_base(std::shared_ptr<cluster_config> config,
                         std::string topic,
                         partitioner p,
-                        std::shared_ptr<CODEC> codec)
-    :  _codec(codec)
-    , _impl(config, topic)
-    , _partitioner(p)
-    , _in_count("in_count")
-    , _lag() {
+                        std::shared_ptr<KEY_CODEC> key_codec,
+                        std::shared_ptr<VAL_CODEC> val_codec)
+        :  _key_codec(key_codec)
+        ,  _val_codec(val_codec)
+        , _impl(config, topic)
+        , _partitioner(p)
+        , _in_count("in_count")
+        , _lag() {
       this->add_metric(&_in_count);
       this->add_metric(&_lag);
     }
 
     raw_kafka_sink_base(std::shared_ptr<cluster_config> config,
                         std::string topic,
-                        std::shared_ptr<CODEC> codec)
-            : _codec(codec)
-              , _impl(config, topic)
-              , _in_count("in_count")
-              , _lag() {
+                        std::shared_ptr<KEY_CODEC> key_codec,
+                        std::shared_ptr<VAL_CODEC> val_codec)
+        : _key_codec(key_codec)
+        , _val_codec(val_codec)
+        , _impl(config, topic)
+        , _in_count("in_count")
+        , _lag() {
       this->add_metric(&_in_count);
       this->add_metric(&_lag);
     }
 
     virtual int handle_event(std::shared_ptr<kevent<K, V>>) = 0;
 
-    inline std::shared_ptr<CODEC> codec() {
+    /*inline std::shared_ptr<CODEC> codec() {
       return _codec;
     }
+     */
 
     void add_metric(metric *p) {
       _metrics.push_back(p);
@@ -125,15 +130,16 @@ namespace kspp {
 
     std::vector<metric*> _metrics;
     kspp::event_queue<K, V> _queue;
-    std::shared_ptr<CODEC> _codec;
+    std::shared_ptr<KEY_CODEC> _key_codec;
+    std::shared_ptr<VAL_CODEC> _val_codec;
     kafka_producer _impl;
     partitioner _partitioner;
     metric_counter _in_count;
     metric_lag _lag;
   };
 
-  template<class K, class V, class CODEC>
-  class raw_kafka_sink : public raw_kafka_sink_base<K, V, CODEC> {
+  template<class K, class V, class KEY_CODEC, class VAL_CODEC>
+  class raw_kafka_sink : public raw_kafka_sink_base<K, V, KEY_CODEC, VAL_CODEC> {
   public:
     enum { MAX_KEY_SIZE = 1000 };
 
@@ -142,26 +148,28 @@ namespace kspp {
     raw_kafka_sink(std::shared_ptr<cluster_config> config,
                    std::string topic,
                    partitioner p,
-                   std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : raw_kafka_sink_base<K, V, CODEC>(config, topic, p, codec) {
+                   std::shared_ptr<KEY_CODEC> key_codec = std::make_shared<KEY_CODEC>(),
+                   std::shared_ptr<VAL_CODEC> val_codec = std::make_shared<VAL_CODEC>())
+        : raw_kafka_sink_base<K, V, KEY_CODEC, VAL_CODEC>(config, topic, p, key_codec, val_codec) {
       std::stringstream dummy;
       K k;
-      LOG_IF(FATAL, this->_codec->encode(k, dummy)<=0) << "Failed to register schema - aborting";
+      LOG_IF(FATAL, this->_key_codec->encode(k, dummy)<=0) << "Failed to register schema - aborting";
 
       V v;
-      LOG_IF(FATAL, this->_codec->encode(v, dummy)<=0) << "Failed to register schema - aborting";
+      LOG_IF(FATAL, this->_val_codec->encode(v, dummy)<=0) << "Failed to register schema - aborting";
     }
 
     raw_kafka_sink(std::shared_ptr<cluster_config> config,
                    std::string topic,
-                   std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : raw_kafka_sink_base<K, V, CODEC>(config, topic, codec) {
+                   std::shared_ptr<KEY_CODEC> key_codec = std::make_shared<KEY_CODEC>(),
+                   std::shared_ptr<VAL_CODEC> val_codec = std::make_shared<VAL_CODEC>())
+        : raw_kafka_sink_base<K, V, KEY_CODEC, VAL_CODEC>(config, topic, key_codec, val_codec) {
       std::stringstream dummy;
       K k;
-      LOG_IF(FATAL, this->_codec->encode(k, dummy)<=0) << "Failed to register schema - aborting";
+      LOG_IF(FATAL, this->_key_codec->encode(k, dummy)<=0) << "Failed to register schema - aborting";
 
       V v;
-      LOG_IF(FATAL, this->_codec->encode(v, dummy)<=0) << "Failed to register schema - aborting";
+      LOG_IF(FATAL, this->_val_codec->encode(v, dummy)<=0) << "Failed to register schema - aborting";
     }
 
     ~raw_kafka_sink() override {
@@ -195,7 +203,7 @@ namespace kspp {
         partition_hash = ev->partition_hash();
       else
         partition_hash = (this->_partitioner) ? this->_partitioner(ev->record()->key()) : kspp::get_partition_hash(
-                ev->record()->key(), this->codec());
+            ev->record()->key(), this->_key_codec);
 
       void *kp = nullptr;
       void *vp = nullptr;
@@ -203,13 +211,13 @@ namespace kspp {
       size_t vsize = 0;
 
       std::stringstream ks;
-      ksize = this->_codec->encode(ev->record()->key(), ks);
+      ksize = this->_key_codec->encode(ev->record()->key(), ks);
       kp = malloc(ksize);  // must match the free in kafka_producer TBD change to new[] and a memory pool
       ks.read((char *) kp, ksize);
 
       if (ev->record()->value()) {
         std::stringstream vs;
-        vsize = this->_codec->encode(*ev->record()->value(), vs);
+        vsize = this->_val_codec->encode(*ev->record()->value(), vs);
         vp = malloc(vsize);   // must match the free in kafka_producer TBD change to new[] and a memory pool
         vs.read((char *) vp, vsize);
       }
@@ -219,16 +227,16 @@ namespace kspp {
   };
 
 //<null, VALUE>
-  template<class V, class CODEC>
-  class raw_kafka_sink<void, V, CODEC> : public raw_kafka_sink_base<void, V, CODEC> {
+  template<class V, class VAL_CODEC>
+  class raw_kafka_sink<void, V, void, VAL_CODEC> : public raw_kafka_sink_base<void, V, void, VAL_CODEC> {
   public:
     raw_kafka_sink(std::shared_ptr<cluster_config> config,
                    std::string topic,
-                   std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : raw_kafka_sink_base<void, V, CODEC>(config, topic, codec) {
+                   std::shared_ptr<VAL_CODEC> val_codec = std::make_shared<VAL_CODEC>())
+        : raw_kafka_sink_base<void, V, void, VAL_CODEC>(config, topic, val_codec) {
       std::stringstream dummy;
       V v;
-      LOG_IF(FATAL, this->_codec->encode(v, dummy)<=0) << "Failed to register schema - aborting";
+      LOG_IF(FATAL, this->_val_codec->encode(v, dummy)<=0) << "Failed to register schema - aborting";
     }
 
     ~raw_kafka_sink() override {
@@ -263,7 +271,7 @@ namespace kspp {
 
       if (ev->record()->value()) {
         std::stringstream vs;
-        vsize = this->_codec->encode(*ev->record()->value(), vs);
+        vsize = this->_val_codec->encode(*ev->record()->value(), vs);
         vp = malloc(vsize);   // must match the free in kafka_producer TBD change to new[] and a memory pool
         vs.read((char *) vp, vsize);
       } else {
@@ -275,27 +283,27 @@ namespace kspp {
   };
 
   // <key, nullptr>
-  template<class K, class CODEC>
-  class raw_kafka_sink<K, void, CODEC> : public raw_kafka_sink_base<K, void, CODEC> {
+  template<class K, class KEY_CODEC>
+  class raw_kafka_sink<K, void, KEY_CODEC, void> : public raw_kafka_sink_base<K, void, KEY_CODEC, void> {
   public:
     using partitioner = typename kafka_partitioner_base<K>::partitioner;
 
     raw_kafka_sink(std::shared_ptr<cluster_config> config,
                    std::string topic, partitioner p,
-                   std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : raw_kafka_sink_base<K, void, CODEC>(config, topic, p, codec) {
+                   std::shared_ptr<KEY_CODEC> key_codec = std::make_shared<KEY_CODEC>())
+        : raw_kafka_sink_base<K, void, KEY_CODEC, void>(config, topic, p, key_codec, nullptr) {
       std::stringstream dummy;
       K k;
-      LOG_IF(FATAL, this->_codec->encode(k, dummy)<=0) << "Failed to register schema - aborting";
+      LOG_IF(FATAL, this->_key_codec->encode(k, dummy)<=0) << "Failed to register schema - aborting";
     }
 
     raw_kafka_sink(std::shared_ptr<cluster_config> config,
                    std::string topic,
-                   std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : raw_kafka_sink_base<K, void, CODEC>(config, topic, codec) {
+                   std::shared_ptr<KEY_CODEC> codec = std::make_shared<KEY_CODEC>())
+        : raw_kafka_sink_base<K, void, KEY_CODEC, void>(config, topic, codec, nullptr) {
       std::stringstream dummy;
       K k;
-      LOG_IF(FATAL, this->_codec->encode(k, dummy)<=0) << "Failed to register schema - aborting";
+      LOG_IF(FATAL, this->_key_codec->encode(k, dummy)<=0) << "Failed to register schema - aborting";
     }
 
     ~raw_kafka_sink() override {
@@ -328,13 +336,13 @@ namespace kspp {
         partition_hash = ev->partition_hash();
       else
         partition_hash = (this->_partitioner) ? this->_partitioner(ev->record()->key()) : kspp::get_partition_hash(
-                ev->record()->key(), this->codec());
+            ev->record()->key(), this->_key_codec);
 
       void *kp = nullptr;
       size_t ksize = 0;
 
       std::stringstream ks;
-      ksize = this->_codec->encode(ev->record()->key(), ks);
+      ksize = this->_key_codec->encode(ev->record()->key(), ks);
       kp = malloc(ksize);  // must match the free in kafka_producer TBD change to new[] and a memory pool
       ks.read((char *) kp, ksize);
 

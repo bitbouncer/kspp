@@ -28,9 +28,9 @@ int main(int argc, char **argv) {
   auto builder = kspp::topology_builder("kspp-examples", argv[0], config);
   auto topology = builder.create_topology();
 
-  auto table_stream = topology->create_sink<kspp::kafka_sink<boost::uuids::uuid, int64_t, kspp::binary_serdes>>(
+  auto table_stream = topology->create_sink<kspp::kafka_sink<boost::uuids::uuid, int64_t, kspp::binary_serdes, kspp::binary_serdes>>(
           "kspp_test0_table");
-  auto event_stream = topology->create_sink<kspp::kafka_sink<boost::uuids::uuid, int64_t, kspp::binary_serdes>>(
+  auto event_stream = topology->create_sink<kspp::kafka_sink<boost::uuids::uuid, int64_t, kspp::binary_serdes, kspp::binary_serdes>>(
           "kspp_test0_eventstream");
 
   topology->init_metrics();

@@ -29,7 +29,7 @@ int main(int argc, char **argv) {
 
   {
     auto topology = builder.create_topology();
-    auto sink = topology->create_sink<kspp::kafka_sink<int, std::string, kspp::text_serdes>>("kspp_example5_usernames");
+    auto sink = topology->create_sink<kspp::kafka_sink<int, std::string, kspp::text_serdes, kspp::text_serdes>>("kspp_example5_usernames");
     sink->produce(1, "user_1");
     sink->produce(1, "user_1");
     sink->produce(2, "user_2");
@@ -45,7 +45,7 @@ int main(int argc, char **argv) {
 
   {
     auto topology = builder.create_topology();
-    auto sink = topology->create_sink<kspp::kafka_sink<int, int, kspp::text_serdes>>("kspp_example5_user_channel"); // <user_id, channel_id>
+    auto sink = topology->create_sink<kspp::kafka_sink<int, int, kspp::text_serdes, kspp::text_serdes>>("kspp_example5_user_channel"); // <user_id, channel_id>
     sink->produce(1, 1);
     sink->produce(2, 1);
     sink->produce(3, 1);
@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
 
   {
     auto topology = builder.create_topology();
-    auto sink = topology->create_sink<kspp::kafka_sink<int, std::string, kspp::text_serdes>>("kspp_example5_channel_names");
+    auto sink = topology->create_sink<kspp::kafka_sink<int, std::string, kspp::text_serdes, kspp::text_serdes>>("kspp_example5_channel_names");
     sink->produce(1, "channel1");
     sink->produce(2, "channel2");
   }
@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
     auto partition_list = kspp::get_partition_list(partitions1);
 
     auto topology = builder.create_topology();
-    auto sources = topology->create_processors<kspp::kafka_source<int, std::string, kspp::text_serdes>>(partition_list, "kspp_example5_usernames");
+    auto sources = topology->create_processors<kspp::kafka_source<int, std::string, kspp::text_serdes, kspp::text_serdes>>(partition_list, "kspp_example5_usernames");
     topology->create_processors<kspp::stream_sink<int, std::string>>(sources, &std::cerr);
     topology->start(kspp::OFFSET_BEGINNING);
     topology->flush();
@@ -84,9 +84,9 @@ int main(int argc, char **argv) {
     auto partition_list = kspp::get_partition_list(partitions1);
 
     auto topology = builder.create_topology();
-    auto topic_sink = topology->create_sink<kspp::kafka_sink<int, std::string, kspp::text_serdes>>("kspp_example5_usernames.per-channel");
-    auto sources = topology->create_processors<kspp::kafka_source<int, std::string, kspp::text_serdes>>(partition_list, "kspp_example5_usernames");
-    auto routing_sources = topology->create_processors<kspp::kafka_source<int, int, kspp::text_serdes>>(partition_list, "kspp_example5_user_channel");
+    auto topic_sink = topology->create_sink<kspp::kafka_sink<int, std::string, kspp::text_serdes, kspp::text_serdes>>("kspp_example5_usernames.per-channel");
+    auto sources = topology->create_processors<kspp::kafka_source<int, std::string, kspp::text_serdes, kspp::text_serdes>>(partition_list, "kspp_example5_usernames");
+    auto routing_sources = topology->create_processors<kspp::kafka_source<int, int, kspp::text_serdes, kspp::text_serdes>>(partition_list, "kspp_example5_user_channel");
     auto routing_tables = topology->create_processors<kspp::ktable<int, int, kspp::mem_store>>(routing_sources);
     auto repartitions = topology->create_processors<kspp::repartition_by_foreign_key<int, std::string, int, kspp::text_serdes>>(sources, routing_tables, topic_sink);
 
@@ -104,7 +104,7 @@ int main(int argc, char **argv) {
     auto partition_list = kspp::get_partition_list(partitions);
 
     auto topology = builder.create_topology();
-    auto sources = topology->create_processors<kspp::kafka_source<int, std::string, kspp::text_serdes>>(partition_list, "kspp_example5_usernames.per-channel");
+    auto sources = topology->create_processors<kspp::kafka_source<int, std::string, kspp::text_serdes, kspp::text_serdes>>(partition_list, "kspp_example5_usernames.per-channel");
     topology->create_processors<kspp::stream_sink<int, std::string>>(sources, &std::cerr);
     topology->init_metrics();
     topology->start(kspp::OFFSET_BEGINNING);

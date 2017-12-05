@@ -7,10 +7,11 @@
 #include <kspp/impl/sources/kafka_consumer.h>
 
 #pragma once
-#define KSPP_LOG_NAME this->simple_name() << "-" << CODEC::name()
+//#define KSPP_LOG_NAME this->simple_name() << "-" << CODEC::name()
+#define KSPP_LOG_NAME this->simple_name()
 
 namespace kspp {
-  template<class K, class V, class CODEC>
+  template<class K, class V, class KEY_CODEC, class VAL_CODEC>
   class kafka_source_base : public partition_source<K, V> {
   public:
     virtual ~kafka_source_base() {
@@ -72,13 +73,15 @@ namespace kspp {
                       int32_t partition,
                       std::string consumer_group,
                       std::chrono::system_clock::time_point start_point,
-                      std::shared_ptr<CODEC> codec)
+                      std::shared_ptr<KEY_CODEC> key_codec,
+                      std::shared_ptr<VAL_CODEC> val_codec)
         : partition_source<K, V>(nullptr, partition)
         , _started(false)
         , _exit(false)
         , _thread(&kafka_source_base::thread_f, this)
         , _impl(config, topic, partition, consumer_group)
-        , _codec(codec)
+        , _key_codec(key_codec)
+        , _val_codec(val_codec)
         , _commit_chain(topic, partition)
         , _start_point_ms(std::chrono::time_point_cast<std::chrono::milliseconds>(start_point).time_since_epoch().count())
         , _parse_errors("parse_errors")
@@ -146,7 +149,8 @@ namespace kspp {
     std::thread _thread;
     event_queue<K, V> _incomming_msg;
     kafka_consumer _impl;
-    std::shared_ptr<CODEC> _codec;
+    std::shared_ptr<KEY_CODEC> _key_codec;
+    std::shared_ptr<VAL_CODEC> _val_codec;
     commit_chain _commit_chain;
     int64_t _start_point_ms;
     metric_counter _parse_errors;
@@ -155,32 +159,36 @@ namespace kspp {
     metric_lag _lag;
   };
 
-  template<class K, class V, class CODEC>
-  class kafka_source : public kafka_source_base<K, V, CODEC> {
+  template<class K, class V,  class KEY_CODEC, class VAL_CODEC>
+  class kafka_source : public kafka_source_base<K, V, KEY_CODEC, VAL_CODEC> {
   public:
     kafka_source(topology &t,
                  int32_t partition,
                  std::string topic,
-                 std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-        : kafka_source_base<K, V, CODEC>(
+                 std::shared_ptr<KEY_CODEC> key_codec = std::make_shared<KEY_CODEC>(),
+                 std::shared_ptr<VAL_CODEC> val_codec = std::make_shared<VAL_CODEC>())
+        : kafka_source_base<K, V, KEY_CODEC, VAL_CODEC>(
         t.get_cluster_config(),
         topic, partition,
         t.consumer_group(),
         std::chrono::system_clock::from_time_t(0),
-        codec) {
+        key_codec,
+        val_codec) {
     }
 
     kafka_source(topology &t,
                  int32_t partition,
                  std::string topic,
                  std::chrono::system_clock::time_point start_point,
-                 std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-        : kafka_source_base<K, V, CODEC>(
+                 std::shared_ptr<KEY_CODEC> key_codec = std::make_shared<KEY_CODEC>(),
+                 std::shared_ptr<VAL_CODEC> val_codec = std::make_shared<VAL_CODEC>())
+        : kafka_source_base<K, V, KEY_CODEC, VAL_CODEC>(
         t.get_cluster_config(),
         topic, partition,
         t.consumer_group(),
         start_point,
-        codec) {
+        key_codec,
+        val_codec) {
     }
 
   protected:
@@ -202,7 +210,7 @@ namespace kspp {
       K tmp_key;
       {
 
-        size_t consumed = this->_codec->decode((const char *) ref->key_pointer(), ref->key_len(), tmp_key);
+        size_t consumed = this->_key_codec->decode((const char *) ref->key_pointer(), ref->key_len(), tmp_key);
         if (consumed == 0) {
           LOG_IF(ERROR, ref->key_len()!=0) << KSPP_LOG_NAME << ", decode key failed, actual key sz:" << ref->key_len();
           return nullptr;
@@ -222,7 +230,7 @@ namespace kspp {
       size_t sz = ref->len();
       if (sz) {
         tmp_value = std::make_shared<V>();
-        size_t consumed = this->_codec->decode((const char *) ref->payload(), sz, *tmp_value);
+        size_t consumed = this->_val_codec->decode((const char *) ref->payload(), sz, *tmp_value);
         if (consumed == 0) {
           LOG(ERROR) << KSPP_LOG_NAME << ", decode value failed, size:" << sz;
           return nullptr;
@@ -238,33 +246,35 @@ namespace kspp {
   };
 
   // <void, VALUE>
-  template<class V, class CODEC>
-  class kafka_source<void, V, CODEC> : public kafka_source_base<void, V, CODEC> {
+  template<class V, class VAL_CODEC>
+  class kafka_source<void, V, void, VAL_CODEC> : public kafka_source_base<void, V, void, VAL_CODEC> {
   public:
     kafka_source(topology &t,
                  int32_t partition,
                  std::string topic,
-                 std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-        : kafka_source_base<void, V, CODEC>(
+                 std::shared_ptr<VAL_CODEC> val_codec = std::make_shared<VAL_CODEC>())
+        : kafka_source_base<void, V, void, VAL_CODEC>(
         t.get_cluster_config(),
         topic,
         partition,
         t.consumer_group(),
         std::chrono::system_clock::from_time_t(0),
-        codec) {
+        nullptr,
+        val_codec) {
     }
 
     kafka_source(topology &t,
                  int32_t partition,
                  std::string topic,
                  std::chrono::system_clock::time_point start_point,
-                 std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-        : kafka_source_base<void, V, CODEC>(
+                 std::shared_ptr<VAL_CODEC> val_codec = std::make_shared<VAL_CODEC>())
+        : kafka_source_base<void, V, void, VAL_CODEC>(
         t.get_cluster_config(),
         topic, partition,
         t.consumer_group(),
         start_point,
-        codec) {
+        nullptr,
+        val_codec) {
     }
 
   protected:
@@ -275,7 +285,7 @@ namespace kspp {
       if (sz) {
         int64_t timestamp = (ref->timestamp().timestamp >= 0) ? ref->timestamp().timestamp : milliseconds_since_epoch();
         std::shared_ptr<V> tmp_value = std::make_shared<V>();
-        size_t consumed = this->_codec->decode((const char *) ref->payload(), sz, *tmp_value);
+        size_t consumed = this->_val_codec->decode((const char *) ref->payload(), sz, *tmp_value);
         if (consumed == sz) {
           auto record = std::make_shared<krecord<void, V>>(tmp_value, timestamp);
           return std::make_shared<kevent<void, V>>(record, this->_commit_chain.create(ref->offset()));
@@ -294,32 +304,34 @@ namespace kspp {
   };
 
   //<KEY, nullptr>
-  template<class K, class CODEC>
-  class kafka_source<K, void, CODEC> : public kafka_source_base<K, void, CODEC> {
+  template<class K, class KEY_CODEC>
+  class kafka_source<K, void, KEY_CODEC, void> : public kafka_source_base<K, void, KEY_CODEC, void> {
   public:
     kafka_source(topology &t,
                  int32_t partition,
                  std::string topic,
-                 std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-        : kafka_source_base<K, void, CODEC>(
+                 std::shared_ptr<KEY_CODEC> key_codec = std::make_shared<KEY_CODEC>())
+        : kafka_source_base<K, void, KEY_CODEC, void>(
         t.get_cluster_config(),
         topic, partition,
         t.consumer_group(),
         std::chrono::system_clock::from_time_t(0),
-        codec) {
+        key_codec,
+        nullptr) {
     }
 
     kafka_source(topology &t,
                  int32_t partition,
                  std::string topic,
                  std::chrono::system_clock::time_point start_point,
-                 std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-        : kafka_source_base<K, void, CODEC>(
+                 std::shared_ptr<KEY_CODEC> key_codec = std::make_shared<KEY_CODEC>())
+        : kafka_source_base<K, void, KEY_CODEC, void>(
         t.get_cluster_config(),
         topic, partition,
         t.consumer_group(),
         start_point,
-        codec) {
+        key_codec,
+        nullptr) {
     }
 
   protected:
@@ -329,7 +341,7 @@ namespace kspp {
 
       int64_t timestamp = (ref->timestamp().timestamp >= 0) ? ref->timestamp().timestamp : milliseconds_since_epoch();
       K tmp_key;
-      size_t consumed = this->_codec->decode((const char *) ref->key_pointer(), ref->key_len(), tmp_key);
+      size_t consumed = this->_key_codec->decode((const char *) ref->key_pointer(), ref->key_len(), tmp_key);
       if (consumed == 0) {
         LOG(ERROR) << KSPP_LOG_NAME << ", decode key failed, actual key sz:" << ref->key_len();
         return nullptr;

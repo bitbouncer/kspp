@@ -36,9 +36,9 @@ int main(int argc, char **argv) {
 
   {
     auto topology = builder.create_topology();
-    auto streams = topology->create_processors<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_serdes>>(
+    auto streams = topology->create_processors<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_serdes, kspp::binary_serdes>>(
             partition_list, "kspp_test0_eventstream");
-    auto table_sources = topology->create_processors<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_serdes>>(
+    auto table_sources = topology->create_processors<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_serdes, kspp::binary_serdes>>(
             partition_list, "kspp_test0_table");
     auto tables = topology->create_processors<kspp::ktable<boost::uuids::uuid, int64_t, kspp::mem_store>>(
             table_sources);

@@ -21,7 +21,7 @@ namespace kspp {
     const std::string _topic;
     std::vector<std::shared_ptr<topology>> _reported_t_topologys;
     std::shared_ptr<topology> _metrics_topology;
-    std::shared_ptr<kspp::kafka_sink<std::string, std::string, kspp::text_serdes>> _sink;
+    std::shared_ptr<kspp::kafka_sink<std::string, std::string, kspp::text_serdes, kspp::text_serdes>> _sink;
     const std::string _prefix;
     const std::string _tags;
     const std::string _hostname;

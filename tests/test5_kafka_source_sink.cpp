@@ -53,11 +53,11 @@ int main(int argc, char **argv) {
 
     // now create new data
     //auto pipe = topology->create_processor<kspp::pipe<std::string, std::string>>(-1);
-    auto kafka_sink0 = topology->create_sink<kafka_sink<std::string, std::string, binary_serdes>>("kspp_test5");
+    auto kafka_sink0 = topology->create_sink<kafka_sink<std::string, std::string, binary_serdes, binary_serdes>>("kspp_test5");
     //pipe->add_sink(table_stream);
 
     // we need to consume the source to be able to commit - a null sink is perfect
-    auto kafka_sources = topology->create_processors<kafka_source<std::string, std::string, binary_serdes>>(
+    auto kafka_sources = topology->create_processors<kafka_source<std::string, std::string, binary_serdes, binary_serdes>>(
         partition_list, "kspp_test5");
     auto dummy_sink = topology->create_sink<null_sink<std::string, std::string>>(kafka_sources);
 
@@ -100,10 +100,10 @@ int main(int argc, char **argv) {
   // now pick up from last commit
   {
     auto topology = builder.create_topology();
-    auto streams = topology->create_processors<kspp::kafka_source<std::string, std::string, kspp::binary_serdes>>(
+    auto streams = topology->create_processors<kspp::kafka_source<std::string, std::string, kspp::binary_serdes, kspp::binary_serdes>>(
         partition_list, "kspp_test5");
     auto pipe = topology->create_processor<kspp::pipe<std::string, std::string>>(-1);
-    auto table_stream = topology->create_sink<kspp::kafka_sink<std::string, std::string, kspp::binary_serdes>>("kspp_test5");
+    auto table_stream = topology->create_sink<kspp::kafka_sink<std::string, std::string, kspp::binary_serdes, kspp::binary_serdes>>("kspp_test5");
     pipe->add_sink(table_stream);
     topology->start(kspp::OFFSET_STORED);
 
@@ -137,10 +137,10 @@ int main(int argc, char **argv) {
   // now pick up from first commit but skip messages older than now()
   {
     auto topology = builder.create_topology();
-    auto streams = topology->create_processors<kspp::kafka_source<std::string, std::string, kspp::binary_serdes>>(
+    auto streams = topology->create_processors<kspp::kafka_source<std::string, std::string, kspp::binary_serdes, kspp::binary_serdes>>(
         partition_list, "kspp_test5", std::chrono::system_clock::now());
     auto pipe = topology->create_processor<kspp::pipe<std::string, std::string>>(-1);
-    auto table_stream = topology->create_sink<kspp::kafka_sink<std::string, std::string, kspp::binary_serdes>>("kspp_test5");
+    auto table_stream = topology->create_sink<kspp::kafka_sink<std::string, std::string, kspp::binary_serdes, kspp::binary_serdes>>("kspp_test5");
     pipe->add_sink(table_stream);
     topology->start(kspp::OFFSET_BEGINNING);
 
