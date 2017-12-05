@@ -1,11 +1,11 @@
 FROM alpine:3.6
 
-ARG LOCAL_REPO_URL
+ARG ROCKSDB_VER="5.7.5"
+ARG ROCKSDB_VER_MINOR="5.7"
 ARG GLOG_VER="0.3.4"
-ARG LIBRDKAFKA_VER="0.11.3"
 ARG AVRO_VER="1.8.2"
-ARG ROCKSDB_TAG="v5.8.7"
 ARG RAPIDJSON_VER="1.1.0"
+ARG LIBRDKAFKA_TAG="v0.11.3"
 ARG KSPP_TAG="master"
 
 MAINTAINER sk svante.karlsson@csi.se
@@ -21,7 +21,7 @@ RUN apk add --no-cache --virtual .fetch-deps \
 \
 BUILD_DIR="$(mktemp -d)" && \
 \
-    wget -O "$BUILD_DIR/librdkafka.tar.gz" "https://github.com/edenhill/librdkafka/archive/v$LIBRDKAFKA_VER.tar.gz" && \
+    wget -O "$BUILD_DIR/librdkafka.tar.gz" "https://github.com/edenhill/librdkafka/archive/$LIBRDKAFKA_TAG.tar.gz" && \
     mkdir -p $BUILD_DIR/librdkafka && \
     tar \
       --extract \
@@ -53,7 +53,7 @@ BUILD_DIR="$(mktemp -d)" && \
       --directory "$BUILD_DIR/avro" \
       --strip-components 1 && \
 \
-   wget -O "$BUILD_DIR/rocksdb.tar.gz" "https://github.com/facebook/rocksdb/archive/$ROCKSDB_TAG.tar.gz" && \
+   wget -O "$BUILD_DIR/rocksdb.tar.gz" "https://github.com/facebook/rocksdb/archive/v$ROCKSDB_VER.tar.gz" && \
    mkdir -p $BUILD_DIR/rocksdb && \
    tar \
       --extract \
@@ -112,10 +112,10 @@ BUILD_DIR="$(mktemp -d)" && \
     cd $BUILD_DIR/rocksdb && \
     make -j "$(getconf _NPROCESSORS_ONLN)" shared_lib && \
     cp -r include/* /usr/include/ && \
-    cp librocksdb.so.5.6.1 /usr/local/lib && \
+    cp librocksdb.so.$ROCKSDB_VER /usr/local/lib && \
     ln -fs /usr/local/lib/librocksdb.so.$ROCKSDB_VER /usr/local/lib/librocksdb.so && \
     ln -fs /usr/local/lib/librocksdb.so.$ROCKSDB_VER /usr/local/lib/librocksdb.so.5 && \ 
-    ln -fs /usr/local/lib/librocksdb.so.$ROCKSDB_VER /usr/local/lib/librocksdb.so.5.6 && \ 
+    ln -fs /usr/local/lib/librocksdb.so.$ROCKSDB_VER /usr/local/lib/librocksdb.so.$ROCKSDB_VER_MINOR && \
 \
    cd "$BUILD_DIR/rapidjson" && \
    mkdir build && \

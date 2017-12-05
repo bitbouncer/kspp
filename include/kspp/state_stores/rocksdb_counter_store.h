@@ -4,68 +4,12 @@
 #include <boost/filesystem.hpp>
 #include <glog/logging.h>
 #include <rocksdb/db.h>
-#include <rocksdb/merge_operator.h>
 #include <kspp/kspp.h>
 #include "state_store.h"
+#include <kspp/impl/rocksdb/rocksdb_operators.h>
 #pragma once
 
 namespace kspp {
-  class Int64AddOperator : public rocksdb::AssociativeMergeOperator {
-
-  public:
-    static bool Deserialize(const rocksdb::Slice &slice, int64_t *value) {
-      if (slice.size() != sizeof(int64_t))
-        return false;
-      memcpy((void *) value, slice.data(), sizeof(int64_t));
-      return true;
-    }
-
-    static void Serialize(int64_t val, std::string *dst) {
-      dst->resize(sizeof(int64_t));
-      memcpy((void *) dst->data(), &val, sizeof(int64_t));
-    }
-
-    static bool Deserialize(const std::string &src, int64_t *value) {
-      if (src.size() != sizeof(int64_t))
-        return false;
-      memcpy((void *) value, src.data(), sizeof(int64_t));
-      return true;
-    }
-
-  public:
-    bool Merge(
-            const rocksdb::Slice &key,
-            const rocksdb::Slice *existing_value,
-            const rocksdb::Slice &value,
-            std::string *new_value,
-            rocksdb::Logger *logger) const override {
-
-      // assuming 0 if no existing value
-      int64_t existing = 0;
-      if (existing_value) {
-        if (!Deserialize(*existing_value, &existing)) {
-          // if existing_value is corrupted, treat it as 0
-          LOG(ERROR) << "Int64AddOperator::Merge existing_value value corruption";
-          existing = 0;
-        }
-      }
-
-      int64_t oper;
-      if (!Deserialize(value, &oper)) {
-        // if operand is corrupted, treat it as 0
-        LOG(ERROR) << "Int64AddOperator::Merge, Deserialize operand value corruption";
-        oper = 0;
-      }
-
-      Serialize(existing + oper, new_value);
-      return true;        // always return true for this, since we treat all errors as "zero".
-    }
-
-    const char *Name() const override {
-      return "Int64AddOperator";
-    }
-  };
-
   template<class K, class V, class CODEC>
   class rocksdb_counter_store : public state_store<K, V> {
   public:

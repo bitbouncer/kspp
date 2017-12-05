@@ -225,18 +225,25 @@ file(GLOB KSPP_INCLUDE_FILES
         include/kspp/impl/sinks/*.h
         include/kspp/impl/serdes/*.h
         include/kspp/impl/hash/*.h
+        include/kspp/impl/rocksdb/*.h
         include/kspp/beta/*.h
         )
 
-ADD_LIBRARY(kspp_s STATIC ${LIB_SRCS} ${KSPP_INCLUDE_FILES})
+
+IF(ENABLE_ROCKSDB)
+    file(GLOB ROCKDB_LIB_SRCS
+            src/impl/rocksdb/*.cpp)
+ENDIF()
+
+ADD_LIBRARY(kspp_s STATIC ${LIB_SRCS} ${ROCKDB_LIB_SRCS} ${KSPP_INCLUDE_FILES})
 INSTALL(TARGETS kspp_s
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
         )
 
-ADD_LIBRARY(kspp SHARED ${LIB_SRCS} ${KSPP_INCLUDE_FILES})
+ADD_LIBRARY(kspp SHARED ${LIB_SRCS} ${ROCKDB_LIB_SRCS} ${KSPP_INCLUDE_FILES})
 IF(APPLE)
-	TARGET_LINK_LIBRARIES(kspp ${EXT_LIBS})
+    TARGET_LINK_LIBRARIES(kspp ${EXT_LIBS})
 ENDIF()
 INSTALL(TARGETS kspp
         LIBRARY DESTINATION lib
@@ -245,20 +252,20 @@ INSTALL(TARGETS kspp
 
 INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/include/ DESTINATION include)
 
-if (BUILD_TOOLS)
+IF (BUILD_TOOLS)
     add_subdirectory(tools)
-endif ()
+ENDIF ()
 
-if (BUILD_SAMPLES)
+IF (BUILD_SAMPLES)
     add_subdirectory(examples)
-endif ()
+ENDIF ()
 
-if (BUILD_TESTS)
+IF (BUILD_TESTS)
     SET(EXECUTABLE_OUTPUT_PATH bin)
     include(CTest)
     enable_testing()
     add_subdirectory(tests)
-endif ()
+ENDIF ()
 
 
 
