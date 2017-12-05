@@ -74,7 +74,7 @@ cd .. && \
 rm librdkafka.tar.gz && \
 rm -rf librdkafka
 
-RUN wget -O kspp.tar.gz "https://github.com/bitbouncer/kspp/archive/KSPP_TAG.tar.gz" && \
+RUN wget -O kspp.tar.gz "https://github.com/bitbouncer/kspp/archive/$KSPP_TAG.tar.gz" && \
 mkdir -p kspp && \
 tar \
   --extract \

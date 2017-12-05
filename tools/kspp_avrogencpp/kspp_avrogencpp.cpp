@@ -874,7 +874,6 @@ int main(int argc, char **argv) {
     incPrefix += "/";
   }
 
-
   try {
     ValidSchema schema;
 
@@ -889,11 +888,10 @@ int main(int argc, char **argv) {
       //create out file directory
       boost::filesystem::path p(outf);
       boost::filesystem::path dir = p.parent_path();
-      if (dir.size()) {
+      if (!dir.empty()) {
         boost::filesystem::create_directories(dir);
         if (!boost::filesystem::is_directory(dir)) {
-          std::cerr << ""
-              "Failed to create directories: " << dir << std::endl;
+          std::cerr << "Failed to create directories: " << dir << std::endl;
         }
       }
       ofstream out(outf.c_str());
