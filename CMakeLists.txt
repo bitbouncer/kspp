@@ -87,6 +87,7 @@ if (WIN32)
     SET(LIBRDKAFKA_LIBS librdkafkacpp librdkafka lz4)
     SET(EXT_LIBS ${LIBRDKAFKA_LIBS} ${CSI_AVRO_LIBS} ${CSI_ROCKSDB_LIBS} ${CSI_BOOST_LIBS} glog libssl libcrypto ${ZLIB_LIBS} crypt32 Ws2_32 legacy_stdio_definitions)
     SET(CSI_LIBS kspp ${EXT_LIBS})
+    SET(CSI_LIBS_STATIC kspp_s ${EXT_LIBS})
 elseif (APPLE)
     find_package(Boost COMPONENTS program_options filesystem system REQUIRED)
     set(BOOST_LIBS
@@ -108,9 +109,8 @@ elseif (APPLE)
     SET(EXT_LIBS ${LIBRDKAFKA_LIBS} ${CSI_ROCKSDB_LIBS} ${AVRO_LIBS} ${BOOST_LIBS} glog crypto ssl)
     SET(EXT_LIBS_STATIC ${LIBRDKAFKA_LIBS} ${CSI_ROCKSDB_LIBS} ${AVRO_LIBS} ${BOOST_LIBS} glog crypto ssl)
     SET(CSI_LIBS kspp ${EXT_LIBS})
+    SET(CSI_LIBS_STATIC kspp_s ${EXT_LIBS_STATIC})
     #END APPLE
-
-
 else () #LINUX
     find_package(Boost COMPONENTS program_options filesystem system REQUIRED)
     set(BOOST_LIBS
