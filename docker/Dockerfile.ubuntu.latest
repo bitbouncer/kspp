@@ -4,7 +4,7 @@ ARG LOCAL_REPO_URL
 ARG GLOG_VER="0.3.4"
 ARG LIBRDKAFKA_VER="0.11.3"
 ARG AVRO_VER="1.8.2"
-ARG ROCKSDB_VER="5.6.1"
+ARG ROCKSDB_TAG="v5.8.7"
 ARG RAPIDJSON_VER="1.1.0"
 ARG KSPP_TAG="master"
 
@@ -12,7 +12,7 @@ MAINTAINER sk svante.karlsson@csi.se
 RUN apt-get update
 RUN apt-get install -y automake autogen shtool libtool git wget cmake unzip build-essential libboost-all-dev g++ python-dev autotools-dev libicu-dev zlib1g-dev openssl libssl-dev libbz2-dev libsnappy-dev libgoogle-glog-dev libgflags-dev libjansson-dev libcurl4-openssl-dev liblzma-dev pkg-config
 
-RUN wget -O rocksdb.tar.gz "https://github.com/facebook/rocksdb/archive/v$ROCKSDB_VER.tar.gz" && \
+RUN wget -O rocksdb.tar.gz "https://github.com/facebook/rocksdb/archive/$ROCKSDB_TAG.tar.gz" && \
   mkdir -p rocksdb && \
   tar \
       --extract \

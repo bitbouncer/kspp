@@ -18,7 +18,7 @@ sudo apt-get install -y automake autogen shtool libtool git wget cmake unzip bui
 ```
 optional build rocksdb 
 ```
-  wget -O rocksdb.tar.gz "https://github.com/facebook/rocksdb/archive/v5.6.1.tar.gz" && \
+  wget -O rocksdb.tar.gz "https://github.com/facebook/rocksdb/archive/v5.8.7.tar.gz" && \
   mkdir -p rocksdb && \
   tar \
       --extract \
@@ -169,7 +169,7 @@ nmake install
 cd ..
 
 cd rocksdb
-git checkout v5.6.1
+git checkout v5.8.7
 mkdir build & cd build
 cmake -G "Visual Studio 14 Win64" ..
 msbuild /maxcpucount:8 rocksdb.sln
