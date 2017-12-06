@@ -16,10 +16,13 @@ namespace kspp {
     }
 
     bool wait_for_consumer_group(std::shared_ptr<cluster_config> config, std::string group_id, std::chrono::seconds timeout) {
-        if (config->get_cluster_metadata()->wait_for_consumer_group(group_id, timeout))
+        if (config->get_cluster_metadata()->wait_for_consumer_group(group_id, timeout)){ 
           LOG(INFO) << "wait_for_consumer_group: \"" << group_id << "\" - OK";
-        else
+          return true;
+        } else {
           LOG(ERROR) << "wait_for_consumer_group: \"" << group_id << "\" - FAILED";
+          return false;
+        }
     }
 
     void require_topic_leaders(std::shared_ptr<cluster_config> config, std::string topic, std::chrono::seconds timeout)
