@@ -1,11 +1,9 @@
 #include <kspp/utils/env.h>
-#include <cstdlib>
 #include <boost/filesystem.hpp>
 #include <glog/logging.h>
 
-namespace kspp
-{
-  static std::string get_env_and_log(const char* env, std::string default_value) {
+namespace kspp {
+  static std::string get_env_and_log(const char *env, std::string default_value) {
     const char *env_p = std::getenv(env);
     if (env_p) {
       LOG(INFO) << "env: " << env << " -> " << env_p;
@@ -16,7 +14,7 @@ namespace kspp
     }
   }
 
-  static std::string get_env_and_log_hidden(const char* env, std::string default_value) {
+  static std::string get_env_and_log_hidden(const char *env, std::string default_value) {
     const char *env_p = std::getenv(env);
     if (env_p) {
       LOG(INFO) << "env: " << env << " -> [hidden]";
@@ -51,11 +49,14 @@ namespace kspp
   std::string default_client_key_path() {
     return get_env_and_log("KSPP_CLIENT_KEY", "");
   }
-}
+
+  std::string default_client_key_passphrase() {
+    return get_env_and_log_hidden("KSPP_CLIENT_KEY_PASSPHRASE", "");
+  }
 #else
 
   std::string default_ca_cert_path() {
-    return get_env_and_log("KSPP_CA_CERT","/etc/kspp/credentials/cacert.pem");
+    return get_env_and_log("KSPP_CA_CERT", "/etc/kspp/credentials/cacert.pem");
   }
 
   std::string default_client_cert_path() {
@@ -70,6 +71,8 @@ namespace kspp
     return get_env_and_log_hidden("KSPP_CLIENT_KEY_PASSPHRASE", "");
   }
 
+#endif
+
   std::string default_hostname() {
 #ifdef _WIN32
     if (const char* env_p = std::getenv("COMPUTERNAME"))
@@ -83,10 +86,5 @@ namespace kspp
     return std::string(s);
 #endif
   }
-
-
-#endif
-
-
 }
 
