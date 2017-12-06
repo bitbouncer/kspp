@@ -20,6 +20,7 @@ namespace kspp {
           LOG(INFO) << "wait_for_consumer_group: \"" << group_id << "\" - OK";
         else
           LOG(ERROR) << "wait_for_consumer_group: \"" << group_id << "\" - FAILED";
+        return true;
     }
 
     void require_topic_leaders(std::shared_ptr<cluster_config> config, std::string topic, std::chrono::seconds timeout)

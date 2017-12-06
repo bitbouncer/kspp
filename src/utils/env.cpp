@@ -50,10 +50,8 @@ namespace kspp
 
   std::string default_client_key_path() {
     return get_env_and_log("KSPP_CLIENT_KEY", "");
-  }
-}
+  }  
 #else
-
   std::string default_ca_cert_path() {
     return get_env_and_log("KSPP_CA_CERT","/etc/kspp/credentials/cacert.pem");
   }
@@ -68,7 +66,8 @@ namespace kspp
 
   std::string default_client_key_passphrase() {
     return get_env_and_log_hidden("KSPP_CLIENT_KEY_PASSPHRASE", "");
-  }
+  }  
+#endif
 
   std::string default_hostname() {
 #ifdef _WIN32
@@ -83,10 +82,6 @@ namespace kspp
     return std::string(s);
 #endif
   }
-
-
-#endif
-
 
 }
 
