@@ -141,7 +141,7 @@ namespace kspp {
     }
 
     for (auto &&i : _precondition_topics){
-      kspp:kafka::require_topic_leaders(_cluster_config, i);
+      kspp::kafka::require_topic_leaders(_cluster_config, i);
     }
     LOG(INFO) << "validating preconditions:  DONE";
   }
