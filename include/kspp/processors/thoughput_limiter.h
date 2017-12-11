@@ -67,11 +67,11 @@ namespace kspp {
     }
 
     size_t queue_len() const override {
-      return event_consumer < K, V > ::queue_len();
+      return event_consumer<K, V>::queue_len();
     }
 
   private:
-    std::shared_ptr<partition_source < K, V>>              _source;
+    std::shared_ptr<partition_source < K, V>> _source;
     std::shared_ptr<mem_token_bucket_store < int, size_t>> _token_bucket;
     metric_lag _lag;
   };
