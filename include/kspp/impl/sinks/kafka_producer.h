@@ -29,7 +29,7 @@ namespace kspp {
       return _topic;
     }
 
-    inline size_t queue_len() const {
+    inline size_t queue_size() const {
       return _closed ? 0 : _producer->outq_len();
     }
 
@@ -46,7 +46,7 @@ namespace kspp {
     }
 
     inline int32_t flush(int timeout_ms) {
-      return (queue_len() == 0) ? 0 : _producer->flush(timeout_ms);
+      return (queue_size() == 0) ? 0 : _producer->flush(timeout_ms);
     }
 
   private:

@@ -43,8 +43,8 @@ namespace kspp {
       return processed;
     }
 
-    size_t queue_len() const override {
-      return event_consumer<K, V>::queue_len();
+    size_t queue_size() const override {
+      return event_consumer<K, V>::queue_size();
     }
 
     void commit(bool force) override {
@@ -106,8 +106,8 @@ namespace kspp {
       return processed;
     }
 
-    size_t queue_len() const override {
-      return event_consumer<void, V>::queue_len();
+    size_t queue_size() const override {
+      return event_consumer<void, V>::queue_size();
     }
 
     void commit(bool force) override {
@@ -169,8 +169,8 @@ namespace kspp {
     }
 
 
-    size_t queue_len() const override {
-      return event_consumer<K, void>::queue_len();
+    size_t queue_size() const override {
+      return event_consumer<K, void>::queue_size();
     }
 
     void commit(bool force) override {

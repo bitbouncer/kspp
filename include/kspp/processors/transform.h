@@ -60,11 +60,11 @@ namespace kspp {
     }
 
     bool eof() const override {
-      return queue_len() == 0 && _source->eof();
+      return queue_size() == 0 && _source->eof();
     }
 
-    size_t queue_len() const override {
-      return event_consumer<K, SV>::queue_len();
+    size_t queue_size() const override {
+      return event_consumer<K, SV>::queue_size();
     }
 
   private:
@@ -133,11 +133,11 @@ namespace kspp {
     }
 
     bool eof() const override {
-      return queue_len() == 0 && _source->eof();
+      return queue_size() == 0 && _source->eof();
     }
 
-    size_t queue_len() const override {
-      return event_consumer<K, V>::queue_len();
+    size_t queue_size() const override {
+      return event_consumer<K, V>::queue_size();
     }
 
   private:

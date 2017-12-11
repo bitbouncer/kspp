@@ -54,8 +54,8 @@ public:
     return "stream_sink";
   }
 
-  size_t queue_len() const override {
-    return event_consumer<K, V>::queue_len();
+  size_t queue_size() const override {
+    return event_consumer<K, V>::queue_size();
   }
 
   void commit(bool flush) override {

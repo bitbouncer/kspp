@@ -71,8 +71,8 @@ namespace kspp {
       return _state_store.offset();
     }
 
-    size_t queue_len() const override {
-      return event_consumer<K, V>::queue_len();
+    size_t queue_size() const override {
+      return event_consumer<K, V>::queue_size();
     }
 
     std::shared_ptr<const krecord <K, V>> get(const K &key) const override {

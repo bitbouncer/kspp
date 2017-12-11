@@ -44,12 +44,12 @@ namespace kspp {
       return _impl.close();
     }
 
-    size_t queue_len() const override {
-      return event_consumer<K, V>::queue_len() + _impl.queue_len();
+    size_t queue_size() const override {
+      return event_consumer<K, V>::queue_size() + _impl.queue_size();
     }
 
     size_t outbound_queue_len() const override {
-      return _impl.queue_len();
+      return _impl.queue_size();
     }
 
     void poll(int timeout) override {

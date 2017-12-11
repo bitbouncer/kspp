@@ -48,7 +48,7 @@ namespace kspp {
     }
 
     // TBD if we store last offset and end of stream offset we can use this...
-    size_t queue_len() const override {
+    size_t queue_size() const override {
       return _incomming_msg.size();
     }
 

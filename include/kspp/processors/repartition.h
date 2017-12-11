@@ -79,12 +79,12 @@ namespace kspp {
       return processed;
     }
 
-    size_t queue_len() const override {
-      return event_consumer < K, V > ::queue_len();
+    size_t queue_size() const override {
+      return event_consumer < K, V > ::queue_size();
     }
 
     bool eof() const override {
-      return queue_len() == 0 && _routing_table->eof() && _source->eof();
+      return queue_size() == 0 && _routing_table->eof() && _source->eof();
     }
 
     void commit(bool force) override {

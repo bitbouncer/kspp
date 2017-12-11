@@ -73,12 +73,12 @@ namespace kspp {
       _stream->commit(flush);
     }
 
-    size_t queue_len() const override {
-      return event_consumer < K, void > ::queue_len();
+    size_t queue_size() const override {
+      return event_consumer < K, void > ::queue_size();
     }
 
     bool eof() const override {
-      return queue_len() == 0 && _stream->eof();
+      return queue_size() == 0 && _stream->eof();
     }
 
     /**

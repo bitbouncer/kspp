@@ -37,9 +37,9 @@ namespace kspp {
       return _impl.close();
     }
 
-    size_t queue_len() const {
-      return topic_sink<K, V>::queue_len() + _impl.queue_len();
-    }
+    size_t queue_size() const {
+      return topic_sink<K, V>::queue_size() + _impl.queue_size();
+      queue_size
 
     void poll(int timeout) {
       return _impl.poll(timeout);

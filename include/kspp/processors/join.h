@@ -48,8 +48,8 @@ namespace kspp {
       _stream->close();
     }
 
-    size_t queue_len() const override {
-      return event_consumer<K, streamV>::queue_len();
+    size_t queue_size() const override {
+      return event_consumer<K, streamV>::queue_size();
     }
 
     bool process_one(int64_t tick) override {

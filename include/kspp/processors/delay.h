@@ -52,12 +52,12 @@ namespace kspp {
       _source->commit(flush);
     }
 
-    size_t queue_len() const override {
+    size_t queue_size() const override {
       return this->_queue.size();
     }
 
     bool eof() const override  {
-      return (queue_len() == 0) && _source->eof());
+      return (queue_size() == 0) && _source->eof());
     }
 
   private:
