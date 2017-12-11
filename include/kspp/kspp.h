@@ -30,11 +30,28 @@ namespace kspp {
   public:
     virtual ~processor() {}
 
+    /**
+     *
+     * @return true if all upstream processors are considered at eof
+     */
+    virtual bool eof() const = 0;
+
+    /**
+     *  closes the processor
+     */
+    virtual void close() = 0;
+
     const std::vector<metric *> &get_metrics() const {
       return _metrics;
     }
 
-    // not fast but useful for debugging
+
+    /**
+     *
+     * @param name the metric to get
+     * @return the current value of the metric
+     * note: not fast but useful for debugging
+     */
     int64_t get_metric(std::string name) {
       for (auto &&i : _metrics) {
         if (i->_name == name)
@@ -43,18 +60,39 @@ namespace kspp {
       return -1;
     }
 
+    /**
+     *  used for testing (should be removed??)
+     */
+    virtual void flush() = 0;
+
+    /**
+     *
+     * @return the type name of the record
+     */
     inline std::string record_type_name() const {
       return "[" + key_type_name() + "," + value_type_name() + "]";
     }
 
+    /**
+     *
+     * @return the type name of the key
+     */
     virtual std::string key_type_name() const = 0;
 
+    /**
+     *
+     * @return the type name of the value
+     */
     virtual std::string value_type_name() const = 0;
 
+    /**
+     *
+     * @return the simple name of the processor
+     */
     virtual std::string simple_name() const = 0;
 
     /**
-    * Process an input record
+    * Process an input record -
     */
     virtual bool process_one(int64_t tick) = 0;
 
@@ -71,6 +109,10 @@ namespace kspp {
     virtual size_t outbound_queue_len() const {
       return 0;
     }
+
+    virtual void poll(int timeout) {}
+
+    virtual void punctuate(int64_t timestamp) {}
 
     /**
     * Do periodic work - will be called infrequently
@@ -97,19 +139,14 @@ namespace kspp {
 
 // this seems to be only sinks - rename to a better name (topic_sinks taken...)
 // topic_sink_processor??
+/*
   class generic_sink : public processor {
   public:
     virtual ~generic_sink() {}
 
 
-    virtual void poll(int timeout) {} //TBD =0 to force sinks to process its queue
-    virtual bool eof() const = 0;
 
-    virtual void punctuate(int64_t timestamp) {}
 
-    virtual void close() = 0;
-
-    virtual void flush() = 0;
     //virtual void flush() {
     //  while (!eof())
     //    if (!process_one(kspp::milliseconds_since_epoch())) {
@@ -126,6 +163,7 @@ namespace kspp {
 
   protected:
   };
+*/
 
   class partition_processor : public processor {
   public:
@@ -146,10 +184,6 @@ namespace kspp {
       }
       return true;
     }
-
-    virtual void poll(int timeout) {}
-
-    virtual void punctuate(int64_t timestamp) {}
 
     virtual void close() {
       for(auto i : upstream_){
@@ -233,7 +267,7 @@ namespace kspp {
   public:
     typedef K key_type;
     typedef V value_type;
-    typedef kspp::kevent<K, V> record_type;
+    //typedef kspp::kevent<K, V> record_type;
 
     std::string key_type_name() const override {
       return type_name<K>::get();
@@ -258,8 +292,6 @@ namespace kspp {
   protected:
     partition_sink(int32_t partition)
         : event_consumer<K, V>(), partition_processor(nullptr, partition) {}
-
-    //kspp::event_queue<kevent<K, V>> _queue;
   };
 
 // specialisation for void key
@@ -268,7 +300,7 @@ namespace kspp {
   public:
     typedef void key_type;
     typedef V value_type;
-    typedef kspp::kevent<void, V> record_type;
+    //typedef kspp::kevent<void, V> record_type;
 
     std::string key_type_name() const override {
       return "void";
@@ -304,7 +336,7 @@ namespace kspp {
   public:
     typedef K key_type;
     typedef void value_type;
-    typedef kspp::kevent<K, void> record_type;
+    //typedef kspp::kevent<K, void> record_type;
 
     std::string key_type_name() const override {
       return type_name<K>::get();
@@ -355,12 +387,10 @@ namespace kspp {
   we need this class to get rid of the codec for templates..
 */
   template<class K, class V>
-  class topic_sink : public event_consumer<K, V>, public generic_sink {
+  class topic_sink : public event_consumer<K, V>, public processor {
   public:
     typedef K key_type;
     typedef V value_type;
-    //typedef kspp::kevent<K, V>  event_type;
-    //typedef kspp::krecord<K, V> record_type;
 
     std::string key_type_name() const override {
       return type_name<K>::get();
@@ -410,16 +440,14 @@ namespace kspp {
     }
 
   protected:
-    //kspp::event_queue<kevent<K, V>> _queue;
   };
 
 // spec for void key
   template<class V>
-  class topic_sink<void, V> : public generic_sink {
+  class topic_sink<void, V> : public processor {
   public:
     typedef void key_type;
     typedef V value_type;
-    //typedef kspp::kevent<void, V> record_type;
 
     std::string key_type_name() const override {
       return "void";
@@ -471,11 +499,10 @@ namespace kspp {
 
 // spec for void value
   template<class K>
-  class topic_sink<K, void> : public generic_sink {
+  class topic_sink<K, void> : public processor {
   public:
     typedef K key_type;
     typedef void value_type;
-    //typedef kspp::kevent<K, void> record_type;
 
     std::string key_type_name() const override {
       return type_name<K>::get();

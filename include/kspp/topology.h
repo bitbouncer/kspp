@@ -62,8 +62,7 @@ namespace kspp {
       return result;
     }
 
-    // should this be removed?? or renames to create_processor... right now only pipe support this (ie merge)
-
+    // should this be removed?? right now only pipe support this (ie merge)
     template<class pp, typename... Args>
     typename std::enable_if<std::is_base_of<kspp::partition_processor, pp>::value, std::shared_ptr<pp>>::type
     create_processor(Args... args) {
@@ -96,7 +95,7 @@ namespace kspp {
 
     /**
       joins between two arrays
-      we could probably have stricter contrainst on the types of v1 and v2
+      we could probably have stricter contraint on the types of v1 and v2
     */
     template<class pp, class sourceT, class leftT, typename... Args>
     typename std::enable_if<std::is_base_of<kspp::partition_processor, pp>::value, std::vector<std::shared_ptr<pp>>>::type
@@ -118,28 +117,16 @@ namespace kspp {
 
     // this seems to be only sinks???
     template<class pp, typename... Args>
-    typename std::enable_if<std::is_base_of<kspp::generic_sink, pp>::value, std::shared_ptr<pp>>::type
+    typename std::enable_if<std::is_base_of<kspp::processor, pp>::value, std::shared_ptr<pp>>::type
     create_sink(Args... args) {
       auto p = std::make_shared<pp>(*this, args...);
       _sinks.push_back(p);
       return p;
     }
 
-    // this seems to be only sinks???
-    /*
-     * template<class pp, class source, typename... Args>
-    typename std::enable_if<std::is_base_of<kspp::generic_sink, pp>::value, std::shared_ptr<pp>>::type
-    create_sink(std::shared_ptr<source> src, Args... args) {
-      auto p = std::make_shared<pp>(*this, args...);
-      _sinks.push_back(p);
-      src->add_sink(p);
-      return p;
-  };
-     */
-
     // this seems to be only sinks??? create from vector of sources - return one (sounds like merge??? exept merge is also source)
     template<class pp, class source, typename... Args>
-    typename std::enable_if<std::is_base_of<kspp::generic_sink, pp>::value, std::shared_ptr<pp>>::type
+    typename std::enable_if<std::is_base_of<kspp::processor, pp>::value, std::shared_ptr<pp>>::type
     create_sink(std::vector<std::shared_ptr<source>> sources, Args... args) {
       auto p = std::make_shared<pp>(*this, args...);
       _sinks.push_back(p);
@@ -157,14 +144,11 @@ namespace kspp {
     std::string _topology_id;
     boost::filesystem::path _root_path;
     std::vector<std::shared_ptr<partition_processor>> _partition_processors;
-    std::vector<std::shared_ptr<generic_sink>> _sinks;
+    std::vector<std::shared_ptr<processor>> _sinks;
     std::vector<std::shared_ptr<partition_processor>> _top_partition_processors;
     int64_t _next_gc_ts;
 
     std::set<std::string> _precondition_topics;
     std::string _precondition_consumer_group;
-
-    //next sink queue check loop count;
-    //last sink queue size
   };
 } // namespace

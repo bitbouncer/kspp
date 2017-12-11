@@ -13,9 +13,10 @@ namespace kspp {
   public:
     typedef std::function<void(const K &key, const streamV &left, const tableV &right, R &result)> value_joiner;
 
-    left_join(topology &t, std::shared_ptr<partition_source < K, streamV>>
-
-    stream, std::shared_ptr<materialized_source < K, tableV>> table, value_joiner f)
+    left_join(topology &t,
+              std::shared_ptr<partition_source<K, streamV>> stream,
+    std::shared_ptr<materialized_source<K, tableV>> table,
+    value_joiner f)
     : event_consumer<K, streamV>()
     , partition_source<K, R>(stream.get(), stream->partition())
     , _stream (stream)
@@ -48,7 +49,7 @@ namespace kspp {
     }
 
     size_t queue_len() const override {
-      return event_consumer < K, streamV > ::queue_len();
+      return event_consumer<K, streamV>::queue_len();
     }
 
     bool process_one(int64_t tick) override {
