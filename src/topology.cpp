@@ -155,7 +155,7 @@ namespace kspp {
     return true;
   }
 
-  int topology::process_one() {
+  std::size_t topology::process_one() {
     // this needs to be done to to trigger callbacks
     for (auto &&i : _sinks)
       i->poll(0);
@@ -176,7 +176,7 @@ namespace kspp {
 
     int64_t tick = milliseconds_since_epoch();
 
-    int res = 0;
+    auto res = 0u;
     for (auto &&i : _top_partition_processors) {
       res += i->process_one(tick);
     }
@@ -210,22 +210,27 @@ namespace kspp {
       i->commit(force);
   }
 
-// this is probably not enough if we have a topology that consists of 
+// this is probably not enough if we have a topology that consists of
 // sources -> sink -> source -> processing > sink -> source
 // we might have stuff in sinks that needs to be flushed before processing in following steps can finish
 // TBD how to capture this??
 // for now we start with a flush of the sinks but that is not enough
-  void topology::flush() {
+  void topology::flush(bool wait_for_events, std::size_t event_limit) {
     LOG_IF(FATAL, !_is_started) << "usage error - flush without start()";
 
-    while (true) {
+    auto processed = 0u;
+    while (processed < event_limit) {
       for (auto &&i : _sinks)
         i->flush();
 
       auto sz = process_one();
-      if (sz)
+
+      if (sz) {
+        processed += sz;
         continue;
-      if (sz == 0 && !eof())
+      }
+
+      if (sz == 0 && !eof() && wait_for_events)
         std::this_thread::sleep_for(10ms);
       else
         break;
@@ -234,14 +239,18 @@ namespace kspp {
     for (auto &&i : _top_partition_processors)
       i->flush();
 
-    while (true) {
+    while (processed < event_limit) {
       for (auto &&i : _sinks)
         i->flush();
 
       auto sz = process_one();
-      if (sz)
+
+      if (sz) {
+        processed += sz;
         continue;
-      if (sz == 0 && !eof())
+      }
+
+      if (sz == 0 && !eof() && wait_for_events)
         std::this_thread::sleep_for(10ms);
       else
         break;

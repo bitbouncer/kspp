@@ -1,4 +1,5 @@
 #include <kspp/kspp.h>
+#include <limits>
 #include <set>
 #pragma once
 
@@ -35,7 +36,7 @@ namespace kspp {
 
     bool eof();
 
-    int process_one();
+    std::size_t process_one();
 
     void close();
 
@@ -43,7 +44,7 @@ namespace kspp {
 
     void commit(bool force);
 
-    void flush();
+    void flush(bool wait_for_events = true, std::size_t event_limit = std::numeric_limits<std::size_t>::max());
 
     boost::filesystem::path get_storage_path();
 
