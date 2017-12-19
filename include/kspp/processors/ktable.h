@@ -56,10 +56,18 @@ namespace kspp {
     }
 
     bool eof() const override {
-      return _source->eof();
+      return this->_queue.size()==0 && _source->eof();
     }
 
     bool process_one(int64_t tick) override {
+      while (this->_queue.size()) {
+        ++_in_count;
+        auto trans = this->_queue.front();
+        _state_store.insert(trans->record(), trans->offset());
+        this->_queue.pop_front();
+        this->send_to_sinks(trans);
+      }
+
       return _source->process_one(tick);
     }
 
