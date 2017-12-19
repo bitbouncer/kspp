@@ -78,5 +78,8 @@ int main(int argc, char **argv) {
     for (auto&& i : ex2)
       for (auto&& j : *i)
         std::cerr << "item : " << j->key() << ": " << *j->value() << std::endl;
+
+
+
   }
 }

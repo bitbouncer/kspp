@@ -118,6 +118,28 @@ namespace kspp {
       return _store.size();
     }
 
+    /**
+    * deletes oldest record
+    *
+    * @param tick
+    */
+    void garbage_collect_one(int64_t tick) override {
+      K oldest_key;
+      int64_t oldest_ts = INT64_MAX;
+      for (auto && item : _store){
+        if (item.second->event_time() < oldest_ts){
+          oldest_ts = item.second->event_time();
+          oldest_key = item.second->key();
+        }
+      }
+      if (oldest_ts == INT64_MAX){
+        return;
+      }
+      _store.erase(oldest_key);
+      if (this->_sink)
+        this->_sink(std::make_shared<kevent<K, V>>(std::make_shared<krecord<K, V>>(oldest_key, nullptr, tick)));
+    }
+
     typename kspp::materialized_source<K, V>::iterator begin(void) const override {
       return typename kspp::materialized_source<K, V>::iterator(
               std::make_shared<iterator_impl>(_store, iterator_impl::BEGIN));

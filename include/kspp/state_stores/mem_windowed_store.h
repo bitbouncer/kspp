@@ -104,38 +104,25 @@ namespace kspp {
      * @param tick
      */
     void garbage_collect_one(int64_t tick) override {
-      if (_buckets.begin() == _buckets.end())
-        return;
-      auto &&bucket = _buckets.begin();
-
-      if (bucket->second->size()==0)
-        return;
-
-      K oldest_key;
-      int64_t oldest_ts = INT64_MAX;
-
-      for (auto && item : *bucket->second){
-        if (item.second->event_time() < oldest_ts){
-          oldest_ts = item.second->event_time();
-          oldest_key = item.second->key();
+      for (auto&& i : _buckets)
+      {
+        if (i.second->size()>0)
+        {
+          K oldest_key;
+          int64_t oldest_ts = INT64_MAX;
+          for (auto && item : *i.second){
+            if (item.second->event_time() <= oldest_ts){
+              oldest_ts = item.second->event_time();
+              oldest_key = item.second->key();
+            }
+          }
+          i.second->erase(oldest_key);
+          if (this->_sink)
+            this->_sink(std::make_shared<kevent<K, V>>(std::make_shared<krecord<K, V>>(oldest_key, nullptr, tick)));
+          return; // do this once and return
         }
       }
-
-      // not found!!! shoulkd never happen
-      if (oldest_ts == INT64_MAX){
-        return;
-      }
-
-      bucket->second->erase(oldest_key);
-      // last in bucket -> erase whole bucket
-      if (bucket->second->size()==0) {
-        _buckets.erase(bucket);
-      }
-
-      if (this->_sink)
-        this->_sink(std::make_shared<kevent<K, V>>(std::make_shared<krecord<K, V>>(oldest_key, nullptr, tick)));
-
-      }
+    }
 
     /**
     * Put a key-value pair
