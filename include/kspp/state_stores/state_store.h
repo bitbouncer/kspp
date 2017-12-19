@@ -15,7 +15,18 @@ namespace kspp {
 
     virtual ~state_store() {}
 
+    /**
+     * garbage collects elements if they should be deleted
+     * @param tick now
+     */
     virtual void garbage_collect(int64_t tick) {}
+
+    /**
+     * forces one of the oldest elements through garbage collection event if it's retention says it should be kept
+     * NOTE not guaranteed to be the oldest (just one of the oldest...)
+     * * @param tick now
+     */
+    virtual void garbage_collect_one(int64_t tick) {}
 
     virtual void close() = 0;
 

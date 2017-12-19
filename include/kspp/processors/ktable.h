@@ -67,6 +67,10 @@ namespace kspp {
       _state_store.garbage_collect(tick);
     }
 
+    void garbage_collect_one(int64_t tick) {
+      _state_store.garbage_collect_one(tick);
+    }
+
     int64_t offset() const {
       return _state_store.offset();
     }

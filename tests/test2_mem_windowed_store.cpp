@@ -77,7 +77,31 @@ int main(int argc, char **argv) {
     store.garbage_collect(t0 + 1300);
     assert(store.exact_size() == 0);
   }
+
+
+  // test manual garbage collection of oldest item
+  kspp::mem_windowed_store<int32_t, std::string> store2("", 100ms, 10);
+  auto t1 = kspp::milliseconds_since_epoch();
+  store2.insert(std::make_shared<kspp::krecord<int32_t, std::string>>(0, "value0", t1), -1);
+  store2.insert(std::make_shared<kspp::krecord<int32_t, std::string>>(1, "value1", t1 + 200), -1);
+  store2.insert(std::make_shared<kspp::krecord<int32_t, std::string>>(2, "value2", t1 + 400), -1);
+  assert(store2.exact_size() == 3);
+
+  //test user garbage collection
+  store2.garbage_collect_one(t1);
+  assert(store2.exact_size() == 2);
+
+  store2.garbage_collect_one(t1);
+  assert(store2.exact_size() == 1);
+
+  store2.garbage_collect_one(t1);
+  assert(store2.exact_size() == 0);
+
+
   return 0;
+
+
+
 }
 
 

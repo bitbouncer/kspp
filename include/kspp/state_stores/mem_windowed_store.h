@@ -72,7 +72,9 @@ namespace kspp {
     };
 
     mem_windowed_store(boost::filesystem::path storage_path, std::chrono::milliseconds slot_width, size_t nr_of_slots)
-            : _slot_width(slot_width.count()), _nr_of_slots(nr_of_slots) {
+        : _slot_width(slot_width.count())
+        , _nr_of_slots(nr_of_slots)
+        , _oldest_kept_slot(0){
     }
 
     static std::string type_name() {
@@ -95,6 +97,45 @@ namespace kspp {
       }
       _buckets.erase(_buckets.begin(), upper_bound);
     }
+
+    /**
+     * deletes oldest record
+     *
+     * @param tick
+     */
+    void garbage_collect_one(int64_t tick) override {
+      if (_buckets.begin() == _buckets.end())
+        return;
+      auto &&bucket = _buckets.begin();
+
+      if (bucket->second->size()==0)
+        return;
+
+      K oldest_key;
+      int64_t oldest_ts = INT64_MAX;
+
+      for (auto && item : *bucket->second){
+        if (item.second->event_time() < oldest_ts){
+          oldest_ts = item.second->event_time();
+          oldest_key = item.second->key();
+        }
+      }
+
+      // not found!!! shoulkd never happen
+      if (oldest_ts == INT64_MAX){
+        return;
+      }
+
+      bucket->second->erase(oldest_key);
+      // last in bucket -> erase whole bucket
+      if (bucket->second->size()==0) {
+        _buckets.erase(bucket);
+      }
+
+      if (this->_sink)
+        this->_sink(std::make_shared<kevent<K, V>>(std::make_shared<krecord<K, V>>(oldest_key, nullptr, tick)));
+
+      }
 
     /**
     * Put a key-value pair
