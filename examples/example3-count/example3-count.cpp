@@ -39,8 +39,7 @@ int main(int argc, char **argv) {
 
   {
     auto topology = builder.create_topology();
-    auto source = topology->create_processors<kspp::kafka_source<void, std::string, void, kspp::text_serdes>>(partition_list,
-                                                                                                        TOPIC_NAME);
+    auto source = topology->create_processors<kspp::kafka_source<void, std::string, void, kspp::text_serdes>>(partition_list, TOPIC_NAME);
     std::regex rgx("\\s+");
     auto word_stream = topology->create_processors<kspp::flat_map<void, std::string, std::string, void>>(
         source,

@@ -6,6 +6,9 @@ namespace kspp {
   template<class K, class V>
   class event_consumer {
   public:
+    typedef K key_type;
+    typedef V value_type;
+
     event_consumer() {
     }
 
@@ -65,6 +68,10 @@ namespace kspp {
   template<class V>
   class event_consumer<void, V> {
   public:
+    typedef void key_type;
+    typedef V value_type;
+
+
     event_consumer() {
     }
 

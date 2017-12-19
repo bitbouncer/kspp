@@ -8,6 +8,10 @@ namespace kspp {
   template<class K, class V, template<typename, typename, typename> class STATE_STORE, class CODEC = void>
   class count_by_key : public event_consumer<K, void>, public materialized_source<K, V> {
   public:
+    typedef K key_type;
+    typedef V value_type;
+
+
     template<typename... Args>
     count_by_key(topology &t,
                  std::shared_ptr<partition_source<K, void>> source,
