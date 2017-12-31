@@ -155,7 +155,7 @@ namespace kspp {
     return true;
   }
 
-  std::size_t topology::process_one() {
+  std::size_t topology::process(int64_t ts) {
     // this needs to be done to to trigger callbacks
     for (auto &&i : _sinks)
       i->poll(0);
@@ -174,22 +174,22 @@ namespace kspp {
     if (sink_queue_len > 50000)
       return 0;
 
-    int64_t tick = milliseconds_since_epoch();
+    //int64_t tick = milliseconds_since_epoch();
 
     auto res = 0u;
     for (auto &&i : _top_partition_processors) {
-      res += i->process_one(tick);
+      res += i->process(ts);
     }
 
     for (auto &&i : _sinks)
-      res += i->process_one(tick);
+      res += i->process(ts);
 
-    if (tick > _next_gc_ts) {
+    if (ts > _next_gc_ts) {
       for (auto &&i : _partition_processors)
-        i->garbage_collect(tick);
+        i->garbage_collect(ts);
       for (auto &&i : _sinks)
-        i->garbage_collect(tick);
-      _next_gc_ts = tick + 10000; // 10 sec
+        i->garbage_collect(ts);
+      _next_gc_ts = ts + 10000; // 10 sec
     }
 
     return res;
@@ -223,7 +223,7 @@ namespace kspp {
       for (auto &&i : _sinks)
         i->flush();
 
-      auto sz = process_one();
+      auto sz = process(milliseconds_since_epoch());
 
       if (sz) {
         processed += sz;
@@ -243,7 +243,7 @@ namespace kspp {
       for (auto &&i : _sinks)
         i->flush();
 
-      auto sz = process_one();
+      auto sz = process(milliseconds_since_epoch());
 
       if (sz) {
         processed += sz;

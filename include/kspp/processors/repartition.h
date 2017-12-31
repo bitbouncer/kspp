@@ -52,25 +52,22 @@ namespace kspp {
       _source->close();
     }
 
-    bool process_one(int64_t tick) override {
-      if (!_routing_table->eof()) {
-        // just eat it... no join since we only joins with events????
-        _routing_table->process_one(tick);
+    size_t process(int64_t tick) override {
+      if (_routing_table->process(tick)>0)
         _routing_table->commit(false);
-        return true;
-      }
 
-      _source->process_one(tick);
-      bool processed = (this->_queue.size() > 0);
-      while (this->_queue.size()) {
-        auto ev = this->_queue.front();
+      _source->process(tick);
+      size_t processed = 0;
+      while (this->_queue.next_event_time()<=tick) {
+        auto trans = this->_queue.pop_and_get();
         this->_queue.pop_front();
-        _lag.add_event_time(tick, ev->event_time());
-        auto routing_row = _routing_table->get(ev->record()->key());
+        _lag.add_event_time(tick, trans->event_time());
+        auto routing_row = _routing_table->get(trans->record()->key());
         if (routing_row) {
           if (routing_row->value()) {
             uint32_t hash = kspp::get_partition_hash<FOREIGN_KEY, CODEC>(*routing_row->value(), _repartition_codec);
-            _topic_sink->produce(hash, ev);
+            _topic_sink->push_back(hash, trans);
+            ++processed;
           }
         } else {
           // join failed
@@ -93,9 +90,9 @@ namespace kspp {
     }
 
   private:
-    std::shared_ptr<partition_source < K, V>> _source;
-    std::shared_ptr<materialized_source < K, FOREIGN_KEY>> _routing_table;
-    std::shared_ptr<topic_sink < K, V>> _topic_sink;
+    std::shared_ptr<partition_source<K, V>> _source;
+    std::shared_ptr<materialized_source<K, FOREIGN_KEY>> _routing_table;
+    std::shared_ptr<topic_sink<K, V>> _topic_sink;
     std::shared_ptr<CODEC> _repartition_codec;
     metric_lag _lag;
   };

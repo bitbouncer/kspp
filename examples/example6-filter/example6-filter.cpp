@@ -31,7 +31,7 @@ int main(int argc, char **argv) {
   {
     auto topology = builder.create_topology();
     auto sink = topology->create_sink<kspp::kafka_sink<void, std::string, void, kspp::text_serdes>>(TOPIC_NAME);
-    sink->produce("hello kafka streams");
+    sink->push_back("hello kafka streams");
   }
 
   {
@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
     auto mypipes = topology->create_processors<kspp::pipe<std::string, void>>(filtered_streams);
     auto sinks = topology->create_processors<stream_sink<std::string, void>>(mypipes, &std::cerr);
     for (auto i : mypipes)
-      i->produce("extra message injected");
+      i->push_back("extra message injected");
     topology->start(kspp::OFFSET_BEGINNING);
     topology->flush();
   }

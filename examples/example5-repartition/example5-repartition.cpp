@@ -30,39 +30,39 @@ int main(int argc, char **argv) {
   {
     auto topology = builder.create_topology();
     auto sink = topology->create_sink<kspp::kafka_sink<int, std::string, kspp::text_serdes, kspp::text_serdes>>("kspp_example5_usernames");
-    sink->produce(1, "user_1");
-    sink->produce(1, "user_1");
-    sink->produce(2, "user_2");
-    sink->produce(3, "user_3");
-    sink->produce(4, "user_4");
-    sink->produce(5, "user_5");
-    sink->produce(6, "user_6");
-    sink->produce(7, "user_7");
-    sink->produce(8, "user_8");
-    sink->produce(9, "user_9");
-    sink->produce(10, "user_10");
+    sink->push_back(1, "user_1");
+    sink->push_back(1, "user_1");
+    sink->push_back(2, "user_2");
+    sink->push_back(3, "user_3");
+    sink->push_back(4, "user_4");
+    sink->push_back(5, "user_5");
+    sink->push_back(6, "user_6");
+    sink->push_back(7, "user_7");
+    sink->push_back(8, "user_8");
+    sink->push_back(9, "user_9");
+    sink->push_back(10, "user_10");
   }
 
   {
     auto topology = builder.create_topology();
     auto sink = topology->create_sink<kspp::kafka_sink<int, int, kspp::text_serdes, kspp::text_serdes>>("kspp_example5_user_channel"); // <user_id, channel_id>
-    sink->produce(1, 1);
-    sink->produce(2, 1);
-    sink->produce(3, 1);
-    sink->produce(4, 1);
-    sink->produce(5, 2);
-    sink->produce(6, 2);
-    sink->produce(7, 2);
-    sink->produce(8, 2);
-    sink->produce(9, 2);
-    sink->produce(10, 2);
+    sink->push_back(1, 1);
+    sink->push_back(2, 1);
+    sink->push_back(3, 1);
+    sink->push_back(4, 1);
+    sink->push_back(5, 2);
+    sink->push_back(6, 2);
+    sink->push_back(7, 2);
+    sink->push_back(8, 2);
+    sink->push_back(9, 2);
+    sink->push_back(10, 2);
   }
 
   {
     auto topology = builder.create_topology();
     auto sink = topology->create_sink<kspp::kafka_sink<int, std::string, kspp::text_serdes, kspp::text_serdes>>("kspp_example5_channel_names");
-    sink->produce(1, "channel1");
-    sink->produce(2, "channel2");
+    sink->push_back(1, "channel1");
+    sink->push_back(2, "channel2");
   }
 
   auto partitions1 = kspp::kafka::get_number_partitions(config, "kspp_example5_usernames");

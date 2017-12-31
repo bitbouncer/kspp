@@ -1,6 +1,10 @@
 #include <kspp/kspp.h>
 #pragma once
 
+//TODO rename to mem_stream ???
+//add ordering of events in queue
+//change upstream lambda to insert in queue
+
 namespace kspp {
   template<class K, class V>
   class pipe : public event_consumer<K, V>, public partition_source<K, V> {
@@ -10,37 +14,44 @@ namespace kspp {
     typedef kspp::kevent<K, V> record_type;
 
     pipe(topology &t, int32_t partition)
-            : event_consumer<K, V>(), partition_source<K, V>(nullptr, partition) {
+        : event_consumer<K, V>()
+        , partition_source<K, V>(nullptr, partition) {
     }
 
     pipe(topology &topology, std::shared_ptr<kspp::partition_source<K, V>> upstream)
-            : event_consumer<K, V>(), partition_source<K, V>(upstream.get(), upstream->partition()) {
-      upstream->add_sink([this](auto r) {
-        this->send_to_sinks(r);
+        : event_consumer<K, V>()
+        , partition_source<K, V>(upstream.get(), upstream->partition()) {
+      upstream->add_sink([this](auto e) {
+        this->_queue.push_back(e);
       });
     }
 
     pipe(topology &t, std::vector<std::shared_ptr<kspp::partition_source<K, V>>> upstream, int32_t partition)
-            : event_consumer<K, V>()
-              , partition_source<K, V>(nullptr, partition) {
+        : event_consumer<K, V>()
+        , partition_source<K, V>(nullptr, partition) {
       for (auto i : upstream) {
         this->add_upstream(i.get());
-        i->add_sink([this](auto r) {
-          this->send_to_sinks(r);
+        i->add_sink([this](auto e) {
+          this->_queue.push_back(e);
         });
       }
     }
-
 
     std::string simple_name() const override {
       return "pipe";
     }
 
-    bool process_one(int64_t tick) override {
-      bool processed = false;
+    size_t process(int64_t tick) override {
       for (auto i : this->upstream_)
-        processed = i->process_one(tick);
-      return processed;
+        i->process(tick);
+
+      size_t processed=0;
+      //forward up this timestamp
+      while (this->_queue.next_event_time()<=tick){
+        auto p = this->_queue.pop_and_get();
+        this->send_to_sinks(p);
+        ++processed;
+      }
     }
 
     size_t queue_size() const override {
@@ -50,17 +61,6 @@ namespace kspp {
     void commit(bool force) override {
       for (auto i : this->upstream_)
         i->commit(force);
-    }
-
-
-    // do we have the right hierarchy since those are not overridden and they should????
-    int produce(std::shared_ptr<kevent < K, V>> r) {
-      this->send_to_sinks(r);
-      return 0;
-    }
-
-    int produce(const K &key, const V &value, int64_t ts = kspp::milliseconds_since_epoch()) {
-      return produce(std::make_shared<kevent<K, V>>(std::make_shared<krecord<K, V>>(key, value, ts)));
     }
   };
 
@@ -73,24 +73,25 @@ namespace kspp {
     typedef kspp::kevent<void, V> record_type;
 
     pipe(topology &t, int32_t partition)
-            : event_consumer<void, V>(), partition_source<void, V>(nullptr, partition) {
+        : event_consumer<void, V>()
+        , partition_source<void, V>(nullptr, partition) {
     }
 
     pipe(topology &t, std::shared_ptr<kspp::partition_source<void, V>> upstream)
-            : event_consumer<void, V>(), partition_source<void, V>(upstream.get(), upstream->partition()) {
+        : event_consumer<void, V>(), partition_source<void, V>(upstream.get(), upstream->partition()) {
       if (upstream)
-        upstream->add_sink([this](auto r) {
-          this->send_to_sinks(r);
+        upstream->add_sink([this](auto e) {
+          this->_queue.push_back(e);
         });
     }
 
     pipe(topology &t, std::vector<std::shared_ptr<kspp::partition_source<void, V>>> upstream, int32_t partition)
-            : event_consumer<void, V>()
-              , partition_source<void, V>(nullptr, partition) {
+        : event_consumer<void, V>()
+        , partition_source<void, V>(nullptr, partition) {
       for (auto i : upstream) {
         this->add_upstream(i.get());
-        i->add_sink([this](auto r) {
-          this->send_to_sinks(r);
+        i->add_sink([this](auto e) {
+          this->_queue.push_back(e);
         });
       }
     }
@@ -99,10 +100,18 @@ namespace kspp {
       return "pipe";
     }
 
-    bool process_one(int64_t tick) override {
-      bool processed = false;
+    size_t process(int64_t tick) override {
       for (auto i : this->upstream_)
-        processed = i->process_one(tick);
+        i->process(tick);
+
+      size_t processed=0;
+
+      //forward up this timestamp
+      while (this->_queue.next_event_time()<=tick){
+        auto p = this->_queue.pop_and_get();
+        this->send_to_sinks(p);
+        ++processed;
+      }
       return processed;
     }
 
@@ -114,17 +123,6 @@ namespace kspp {
       for (auto i : this->upstream_)
         i->commit(force);
     }
-
-
-    int produce(std::shared_ptr<kevent < void, V>> r)  {
-      this->send_to_sinks(r);
-      return 0;
-    }
-
-    int produce(const V &value)  {
-      return produce(std::make_shared<kevent<void, V>>(std::make_shared<krecord<void, V>>(value)));
-    }
-
   };
 
   template<class K>
@@ -135,24 +133,26 @@ namespace kspp {
     typedef kspp::kevent<K, void> record_type;
 
     pipe(topology &t, int32_t partition)
-            : event_consumer<K, void>(), partition_source<K, void>(nullptr, partition) {
+        : event_consumer<K, void>()
+        , partition_source<K, void>(nullptr, partition) {
     }
 
     pipe(topology &t, std::shared_ptr<kspp::partition_source<K, void>> upstream)
-            : event_consumer<K, void>(), partition_source<K, void>(upstream.get(), upstream->partition()) {
+        : event_consumer<K, void>()
+        , partition_source<K, void>(upstream.get(), upstream->partition()) {
       if (upstream)
-        upstream->add_sink([this](std::shared_ptr<kevent<K, void>> r) {
-          this->send_to_sinks(r);
+        upstream->add_sink([this](std::shared_ptr<kevent<K, void>> e) {
+          this->_queue.push_back(e);
         });
     }
 
     pipe(topology &t, std::vector<std::shared_ptr<kspp::partition_source<K, void>>> upstream, int32_t partition)
-            : event_consumer<K, void>()
-              , partition_source<K, void>(nullptr, partition) {
+        : event_consumer<K, void>()
+        , partition_source<K, void>(nullptr, partition) {
       for (auto i : upstream) {
         this->add_upstream(i.get());
-        i->add_sink([this](auto r) {
-          this->send_to_sinks(r);
+        i->add_sink([this](auto e) {
+          this->_queue.push_back(e);
         });
       }
     }
@@ -161,10 +161,17 @@ namespace kspp {
       return "pipe";
     }
 
-    bool process_one(int64_t tick) override {
-      bool processed = false;
+    size_t process(int64_t tick) override {
       for (auto i : this->upstream_)
-        processed = i->process_one(tick);
+        i->process(tick);
+
+      size_t processed=0;
+      //forward up this timestamp
+      while (this->_queue.next_event_time()<=tick){
+        auto p = this->_queue.pop_and_get();
+        this->send_to_sinks(p);
+        ++processed;
+      }
       return processed;
     }
 
@@ -177,15 +184,5 @@ namespace kspp {
       for (auto i : this->upstream_)
         i->commit(force);
     }
-
-    int produce(std::shared_ptr<kevent < K, void>> r) {
-      this->send_to_sinks(r);
-      return 0;
-    }
-
-    int produce(const K &key) {
-      return produce(std::make_shared<kevent<K, void>>(std::make_shared<krecord<K, void>>(key)));
-    }
-
   };
 }

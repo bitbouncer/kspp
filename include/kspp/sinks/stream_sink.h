@@ -62,14 +62,15 @@ public:
     // noop
   }
 
-  bool process_one(int64_t tick) override {
-    size_t count = 0;
+  size_t process(int64_t tick) override {
+    size_t processed = 0;
     while (this->_queue.size()) {
       auto ev = this->_queue.front();
       stream_sink_print(ev, _os, _codec.get());
       this->_queue.pop_front();
+      ++processed;
     }
-    return (count > 0);
+    return processed;
   }
 
   std::ostream &_os;

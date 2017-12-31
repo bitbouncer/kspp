@@ -183,12 +183,12 @@ int main(int argc, char **argv) {
     auto sink = topology->create_processor<kspp::kafka_partition_sink<int64_t, page_view_data, kspp::binary_serdes, kspp::binary_serdes>>(
             PARTITION,
             "kspp_PageViews");
-    sink->produce(1, {1440557383335, 1, "/home?user=1"});
-    sink->produce(1, {1440557383335, 1, "/home?user=1"});
-    sink->produce(5, {1440557383345, 5, "/home?user=5"});
-    sink->produce(2, {1440557383456, 2, "/profile?user=2"});
-    sink->produce(1, {1440557385365, 1, "/profile?user=1"});
-    sink->produce(1, {1440557385368, 1, "/profile?user=1"});
+    sink->push_back(1, {1440557383335, 1, "/home?user=1"});
+    sink->push_back(1, {1440557383335, 1, "/home?user=1"});
+    sink->push_back(5, {1440557383345, 5, "/home?user=5"});
+    sink->push_back(2, {1440557383456, 2, "/profile?user=2"});
+    sink->push_back(1, {1440557385365, 1, "/profile?user=1"});
+    sink->push_back(1, {1440557385368, 1, "/profile?user=1"});
   }
 
   {
@@ -196,10 +196,10 @@ int main(int argc, char **argv) {
     auto sink = topology->create_processor<kspp::kafka_partition_sink<int64_t, user_profile_data, kspp::binary_serdes, kspp::binary_serdes>>(
             PARTITION,
             "kspp_UserProfile");
-    sink->produce(1, {1440557383335, 1, "user1@aol.com"});
-    sink->produce(5, {1440557383345, 5, "user5@gmail.com"});
-    sink->produce(2, {1440557383456, 2, "user2@yahoo.com"});
-    sink->produce(1, {1440557385365, 1, "user1-new-email-addr@comcast.com"});
+    sink->push_back(1, {1440557383335, 1, "user1@aol.com"});
+    sink->push_back(5, {1440557383345, 5, "user5@gmail.com"});
+    sink->push_back(2, {1440557383456, 2, "user2@yahoo.com"});
+    sink->push_back(1, {1440557385365, 1, "user1-new-email-addr@comcast.com"});
   }
 
   {

@@ -31,7 +31,7 @@ int main(int argc, char **argv) {
   {
     auto topology = builder.create_topology();
     auto sink = topology->create_sink<kspp::kafka_sink<void, std::string, void, kspp::text_serdes>>(TOPIC_NAME);
-    sink->produce("hello kafka streams");
+    sink->push_back("hello kafka streams");
   }
 
   auto partitions = kspp::kafka::get_number_partitions(config, TOPIC_NAME);

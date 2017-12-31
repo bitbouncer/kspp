@@ -52,15 +52,16 @@ namespace kspp {
       return _incomming_msg.size();
     }
 
-    bool process_one(int64_t tick) override {
+    //TBD return up to timestamp
+    size_t process(int64_t tick) override {
       if (_incomming_msg.size() == 0)
-        return false;
+        return 0;
       auto p = _incomming_msg.front();
       _incomming_msg.pop_front();
       ++_in_count;
       _lag.add_event_time(tick, p->event_time());
       this->send_to_sinks(p);
-      return true;
+      return 1;
     }
 
     std::string topic() const override {

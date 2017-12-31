@@ -51,23 +51,24 @@ namespace kspp {
       _stream->close();
     }
 
-    bool process_one(int64_t tick) override {
-      _stream->process_one(tick);
-      bool processed = (this->_queue.size() > 0);
-      while (this->_queue.size()) {
-        auto trans = this->_queue.front();
-        // should this be on processing time our message time???
-        // what happens at end of stream if on messaage time...
+    size_t process(int64_t tick) override {
+      _stream->process(tick);
+
+      size_t processed=0;
+      //forward up this timestamp
+      while (this->_queue.next_event_time()<=tick){
+        auto trans = this->_queue.pop_and_get();
+
         if (_next_punctuate < trans->event_time()) {
           punctuate(_next_punctuate); // what happens here if message comes out of order??? TBD
           _next_punctuate = trans->event_time() + _punctuate_intervall;
           _dirty = false;
         }
 
+        ++processed;
         ++_in_count;
         _lag.add_event_time(tick, trans->event_time());
         _dirty = true; // aggregated but not committed
-        this->_queue.pop_front();
         _counter_store.insert(std::make_shared<krecord<K, V>>(trans->record()->key(), 1), trans->offset());
       }
       return processed;

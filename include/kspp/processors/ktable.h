@@ -59,16 +59,18 @@ namespace kspp {
       return this->_queue.size()==0 && _source->eof();
     }
 
-    bool process_one(int64_t tick) override {
-      while (this->_queue.size()) {
-        ++_in_count;
-        auto trans = this->_queue.front();
+    size_t process(int64_t tick) override {
+      _source->process(tick);
+      size_t processed=0;
+
+      while (this->_queue.next_event_time()<=tick) {
+        auto trans = this->_queue.pop_and_get();
         _state_store.insert(trans->record(), trans->offset());
-        this->_queue.pop_front();
+        ++_in_count;
+        ++processed;
         this->send_to_sinks(trans);
       }
-
-      return _source->process_one(tick);
+      return processed;
     }
 
     void garbage_collect(int64_t tick) override {

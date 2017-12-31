@@ -35,16 +35,16 @@ namespace kspp {
       _source->close();
     }
 
-    bool process_one(int64_t tick) override {
-      if (this->_queue.size() == 0)
-        _source->process_one(tick);
-      bool processed = (this->_queue.size() > 0);
-      while (this->_queue.size()) {
-        auto ev = this->_queue.front();
-        this->_queue.pop_front();
-        _lag.add_event_time(tick, ev->event_time());
-        if (_predicate(ev->record())) {
-          this->send_to_sinks(ev);
+    size_t process(int64_t tick) override {
+      _source->process(tick);
+      size_t processed = 0;
+
+      while (this->_queue.next_event_time()<=tick){
+        auto trans = this->_queue.pop_and_get();
+        ++processed;
+       _lag.add_event_time(tick, trans->event_time());
+        if (_predicate(trans->record())) {
+          this->send_to_sinks(trans);
         } else {
           ++_predicate_false;
         }

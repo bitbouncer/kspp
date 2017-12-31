@@ -32,7 +32,7 @@ namespace kspp {
       int64_t next_time_to_send = kspp::milliseconds_since_epoch() + 10 * 1000;
 
       while (_run) {
-        while (_metrics_topology->process_one()) {
+        while (_metrics_topology->process(milliseconds_since_epoch())) {
         }
 
         //time for report
@@ -47,7 +47,7 @@ namespace kspp {
               std::string value =
                       base_string + (measurement_tags.size() ? "," + measurement_tags : "") + " " + m.name() + "=" +
                       std::to_string(m.value()) + "i " + measurement_time_str;
-              _sink->produce(_hostname, value, measurement_time);
+              _sink->push_back(_hostname, value, measurement_time);
             });
           }
 

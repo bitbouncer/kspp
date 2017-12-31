@@ -12,7 +12,7 @@ namespace kspp {
   template<class K, class V>
   class thoughput_limiter : public event_consumer<K, V>, public partition_source<K, V> {
   public:
-    thoughput_limiter(topology &t, std::shared_ptr<partition_source < K, V>> source, double messages_per_sec)
+    thoughput_limiter(topology &t, std::shared_ptr<partition_source<K, V>> source, double messages_per_sec)
     : event_consumer<K, V>()
     , partition_source<K, V>(source.get(), source->partition())
     , _source(source)
@@ -42,20 +42,22 @@ namespace kspp {
       _source->close();
     }
 
-    bool process_one(int64_t tick) override {
-      if (this->_queue.size() == 0)
-        _source->process_one(tick);
+    size_t process(int64_t tick) override {
+      _source->process(tick);
 
-      if (this->_queue.size()) {
-        auto trans = this->_queue.front();
+      size_t processed = 0;
+      while (this->_queue.next_event_time()<=tick) {
+       auto trans = this->_queue.front();
         _lag.add_event_time(tick, trans->event_time());
         if (_token_bucket->consume(0, tick)) {
           this->_queue.pop_front();
           this->send_to_sinks(trans);
-          return true;
+          ++processed;
+        } else {
+          break;
         }
       }
-      return false;
+      return processed;
     }
 
     void commit(bool flush) override {

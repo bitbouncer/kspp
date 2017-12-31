@@ -39,12 +39,12 @@ namespace kspp {
       _source->close();
     }
 
-    bool process_one(int64_t tick) override {
-      _source->process_one(tick);
-      bool processed = (this->_queue.size() > 0);
-      while (this->_queue.size()) {
-        auto trans = this->_queue.front();
-        this->_queue.pop_front();
+    size_t process(int64_t tick) override {
+      _source->process(tick);
+      size_t processed=0;
+      while (this->_queue.next_event_time()<=tick){
+        auto trans = this->_queue.pop_and_get();
+        ++processed;
         _lag.add_event_time(tick, trans->event_time());
         _currrent_id = trans->id(); // we capture this to have it in push_back callback
         _extractor(trans->record(), this);

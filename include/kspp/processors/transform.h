@@ -39,14 +39,15 @@ namespace kspp {
       _source->close();
     }
 
-    bool process_one(int64_t tick) override {
-      _source->process_one(tick);
-      bool processed = (this->_queue.size() > 0);
+    size_t process(int64_t tick) override {
+      _source->process(tick);
+      size_t processed = 0;
       while (this->_queue.size()) {
         auto trans = this->_queue.front();
         _lag.add_event_time(tick, trans->event_time());
         this->_queue.pop_front();
         _extractor(trans, this);
+        ++processed;
       }
       return processed;
     }
@@ -107,16 +108,16 @@ namespace kspp {
       _source->close();
     }
 
-    bool process_one(int64_t tick) override {
-      _source->process_one(tick);
-      bool processed = (this->_queue.size() > 0);
-      while (this->_queue.size()) {
-        auto trans = this->_queue.front();
+    size_t process(int64_t tick) override {
+      _source->process(tick);
+      size_t processed = 0;
+      while (this->_queue.next_event_time()<=tick) {
+        auto trans = this->_queue.pop_and_get();
         _lag.add_event_time(tick, trans->event_time());
-        this->_queue.pop_front();
         _currrent_id = trans->id(); // we capture this to have it in push_back callback
         _extractor(trans, this);
         _currrent_id.reset(); // must be freed otherwise we continue to hold the last ev
+        ++processed;
       }
       return processed;
     }

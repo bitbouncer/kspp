@@ -44,19 +44,19 @@ namespace kspp {
       _source->close();
     }
 
-    bool process_one(int64_t tick) override {
-      _source->process_one(tick);
-      bool processed = (this->_queue.size() > 0);
-      while (this->_queue.size()) {
-        auto ev = this->_queue.front();
-        this->_queue.pop_front();
+    size_t process(int64_t tick) override {
+      _source->process(tick);
+      size_t processed = 0;
+      while (this->_queue.next_event_time()<=tick) {
+        auto trans = this->_queue.pop_and_get();
+        ++processed;
         ++_in_count;
-        _lag.add_event_time(tick, ev->event_time());
+        _lag.add_event_time(tick, trans->event_time());
         // milliseconds_since_epoch for processing time limiter
         //
-        if (_token_bucket->consume(ev->record()->key(), ev->event_time())) { // TBD tick???
+        if (_token_bucket->consume(trans->record()->key(), trans->event_time())) { // TBD tick???
           ++_out_count;
-          this->send_to_sinks(ev);
+          this->send_to_sinks(trans);
         } else {
           ++_rejection_count;
         }

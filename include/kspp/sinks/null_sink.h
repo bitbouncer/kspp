@@ -26,7 +26,7 @@ namespace kspp {
     }
 
     void flush() override {
-      while (process_one(0))
+      while (process(0))
       {
         ; // noop
       }
@@ -36,13 +36,13 @@ namespace kspp {
       return this->_queue.size();
     }
 
-    bool process_one(int64_t tick) override {
+    size_t process(int64_t tick) override {
       size_t count = 0;
       while (this->_queue.size()) {
         auto ev = this->_queue.front();
         this->_queue.pop_front();
       }
-      return (count > 0);
+      return count;
     }
   };
 }

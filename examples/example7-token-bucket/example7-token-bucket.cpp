@@ -36,9 +36,9 @@ int main(int argc, char **argv) {
     auto topology = builder.create_topology();
     auto sink = topology->create_sink<kspp::kafka_sink<void, std::string, void, kspp::text_serdes>>(TOPIC_NAME);
     for (int i = 0; i != 100; ++i) {
-      sink->produce("hello kafka streams");
-      sink->produce("more text to parse");
-      sink->produce("even more");
+      sink->push_back("hello kafka streams");
+      sink->push_back("more text to parse");
+      sink->push_back("even more");
     }
   }
 

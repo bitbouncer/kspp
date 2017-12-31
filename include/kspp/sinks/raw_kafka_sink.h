@@ -47,7 +47,7 @@ namespace kspp {
 
     void flush() {
       while (!eof()) {
-        process_one(kspp::milliseconds_since_epoch());
+        process(kspp::milliseconds_since_epoch());
         poll(0);
       }
 
@@ -63,7 +63,7 @@ namespace kspp {
     }
 
     // lets try to get as much as possible from queue to librdkafka - stop when queue is empty or librdkafka fails
-    bool process_one(int64_t tick) {
+    size_t process(int64_t tick) {
       size_t count = 0;
       while (this->_queue.size()) {
         auto ev = this->_queue.front();
@@ -78,14 +78,14 @@ namespace kspp {
 
         if (ec == RdKafka::ERR__QUEUE_FULL) {
           // expected and retriable
-          return (count > 0);
+          return count;
         }
 
         LOG(FATAL) << "RDKafa permanent failure - exiting ec:" << ec;
         // permanent failure - need to stop TBD
-        return (count > 0);
+        return count;
       } // while
-      return (count > 0);
+      return count;
     }
 
   protected:

@@ -66,18 +66,18 @@ int main(int argc, char **argv) {
     // start running stuff - overtwise it's a race between consumers starting at end and producers starting writing..
     std::chrono::time_point<std::chrono::system_clock> end0 = std::chrono::system_clock::now() + 2s;
     while (std::chrono::system_clock::now() < end0) {
-      topology->process_one();
+      topology->process(milliseconds_since_epoch());
     }
 
     // insert testdata in pipe
     for (auto &i : test_data) {
-      kafka_sink0->produce(i.key, i.value, t0);
+      kafka_sink0->push_back(i.key, i.value, t0);
     }
     kafka_sink0->flush();
 
     std::chrono::time_point<std::chrono::system_clock> end1 = std::chrono::system_clock::now() + 2s;
     while (std::chrono::system_clock::now() < end1) {
-      topology->process_one();
+      topology->process(milliseconds_since_epoch());
     }
 
     std::chrono::time_point<std::chrono::system_clock> end2 = std::chrono::system_clock::now() + 2s;
@@ -109,7 +109,7 @@ int main(int argc, char **argv) {
 
     // insert testdata in pipe
     for (auto &i : test_data) {
-      pipe->produce(i.key, i.value);
+      pipe->push_back(i.key, i.value);
     }
 
     std::chrono::time_point<std::chrono::system_clock> end = std::chrono::system_clock::now() + 2000ms;
@@ -146,7 +146,7 @@ int main(int argc, char **argv) {
 
     // insert testdata in pipe
     for (auto &i : test_data) {
-      pipe->produce(i.key, i.value);
+      pipe->push_back(i.key, i.value);
     }
 
     std::chrono::time_point<std::chrono::system_clock> end = std::chrono::system_clock::now() + 2000ms;

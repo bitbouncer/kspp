@@ -53,3 +53,11 @@ add_executable(test7_url_vector test7_url_vector.cpp)
 target_link_libraries(test7_url_vector ${CSI_LIBS_STATIC})
 add_test(NAME test7_url_vector COMMAND $<TARGET_FILE:test7_url_vector>)
 
+
+add_executable(test8_join test8_join.cpp)
+target_link_libraries(test8_join ${CSI_LIBS_STATIC})
+add_test(NAME test8_join COMMAND $<TARGET_FILE:test8_join>)
+
+
+
+

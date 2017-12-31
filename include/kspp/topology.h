@@ -1,4 +1,5 @@
 #include <kspp/kspp.h>
+#include <kspp/processors/merge.h>
 #include <limits>
 #include <set>
 #pragma once
@@ -36,7 +37,7 @@ namespace kspp {
 
     bool eof();
 
-    std::size_t process_one();
+    std::size_t process(int64_t ts); // =milliseconds_since_epoch()
 
     void close();
 
@@ -116,7 +117,8 @@ namespace kspp {
       return result;
     }
 
-    // this seems to be only sinks???
+    // TBD
+    // only kafka metrics reporter uses this - fix this by using a stream and a separate sink or raw sink
     template<class pp, typename... Args>
     typename std::enable_if<std::is_base_of<kspp::processor, pp>::value, std::shared_ptr<pp>>::type
     create_sink(Args... args) {
@@ -125,7 +127,17 @@ namespace kspp {
       return p;
     }
 
-    // this seems to be only sinks??? create from vector of sources - return one (sounds like merge??? exept merge is also source)
+    // create from vector of sources - return one (kafka sink)
+    template<class pp, class source, typename... Args>
+    typename std::enable_if<std::is_base_of<kspp::processor, pp>::value, std::shared_ptr<pp>>::type
+    create_sink(std::shared_ptr<source> src, Args... args) {
+      auto p = std::make_shared<pp>(*this, args...);
+      _sinks.push_back(p);
+      src->add_sink(p);
+      return p;
+    }
+
+    // create from vector of sources - return one (kafka sink..)
     template<class pp, class source, typename... Args>
     typename std::enable_if<std::is_base_of<kspp::processor, pp>::value, std::shared_ptr<pp>>::type
     create_sink(std::vector<std::shared_ptr<source>> sources, Args... args) {

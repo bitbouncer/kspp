@@ -62,7 +62,7 @@ namespace kspp {
 
     void flush() override {
       while (!eof()) {
-        process_one(kspp::milliseconds_since_epoch());
+        process(kspp::milliseconds_since_epoch());
         poll(0);
       }
 
@@ -77,18 +77,18 @@ namespace kspp {
       return this->_queue.size() == 0;
     }
 
-    bool process_one(int64_t tick) override {
+    size_t process(int64_t tick) override {
       size_t count = 0;
       while (this->_queue.size()) {
         auto ev = this->_queue.front();
         if (handle_event(ev) != 0)
-          return (count > 0);
+          return count;
         ++count;
         ++(this->_in_count);
         this->_lag.add_event_time(kspp::milliseconds_since_epoch(), ev->event_time()); // move outside loop
         this->_queue.pop_front();
       }
-      return (count > 0);
+      return count;
     }
 
   protected:

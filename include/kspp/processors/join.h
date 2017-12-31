@@ -52,41 +52,38 @@ namespace kspp {
       return event_consumer<K, streamV>::queue_size();
     }
 
-    bool process_one(int64_t tick) override {
-      if (!_table->eof()) {
-        // just eat it... no join since we only joins with events????
-        if (_table->process_one(tick))
+    size_t process(int64_t tick) override {
+      if (_table->process(tick)>0)
           _table->commit(false);
-        return true;
-      }
 
-      _stream->process_one(tick);
+      _stream->process(tick);
 
+      size_t processed =0;
       if (!this->_queue.size())
-        return false;
+        return 0;
 
       // reuse event time & commit it from event stream
-      while (this->_queue.size()) {
-        auto ev = this->_queue.front();
-        this->_queue.pop_front();
-        _lag.add_event_time(tick, ev->event_time());
-        auto table_row = _table->get(ev->record()->key());
+      while (this->_queue.next_event_time()<=tick) {
+        auto trans = this->_queue.pop_and_get();
+     _lag.add_event_time(tick, trans->event_time());
+        ++processed;
+        auto table_row = _table->get(trans->record()->key());
         if (table_row) {
-          if (ev->record()->value()) {
+          if (trans->record()->value()) {
             auto new_value = std::make_shared<R>();
-            _value_joiner(ev->record()->key(), *ev->record()->value(), *table_row->value(), *new_value);
-            auto record = std::make_shared<krecord<K, R>>(ev->record()->key(), new_value, ev->event_time());
-            this->send_to_sinks(std::make_shared<kspp::kevent<K, R>>(record, ev->id()));
+            _value_joiner(trans->record()->key(), *trans->record()->value(), *table_row->value(), *new_value);
+            auto record = std::make_shared<krecord<K, R>>(trans->record()->key(), new_value, trans->event_time());
+            this->send_to_sinks(std::make_shared<kspp::kevent<K, R>>(record, trans->id()));
           } else {
-            auto record = std::make_shared<krecord<K, R>>(ev->record()->key(), nullptr, ev->event_time());
-            this->send_to_sinks(std::make_shared<kspp::kevent<K, R>>(record, ev->id()));
+            auto record = std::make_shared<krecord<K, R>>(trans->record()->key(), nullptr, trans->event_time());
+            this->send_to_sinks(std::make_shared<kspp::kevent<K, R>>(record, trans->id()));
           }
         } else {
           // join failed - table row not found
           // TBD should we send delete event here???
         }
       }
-      return true;
+      return 1;
     }
 
     void commit(bool flush) override {

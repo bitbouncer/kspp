@@ -30,22 +30,22 @@ namespace kspp {
       _source->close();
     }
 
-    bool process_one(int64_t tick) override {
-      if (this->_queue.size() == 0)
-        _source->process_one();
+    size_t process(int64_t tick) override {
+      _source->process(tick);
 
-      if (this->_queue.size() == 0)
-        return false;
-
-      auto r = this->_queue.front();
-      _lag.add_event_time(tick, r->event_time());
-      if (r->event_time + _delay > tick) {
-        this->_queue.pop_front();
-        this->send_to_sinks(r);
-        return true;
+      size_t processed=0;
+      while (this->_queue.next_event_time()<=tick) {
+        auto r = this->_queue.front();
+        _lag.add_event_time(tick, r->event_time());
+        if (r->event_time + _delay > tick) {
+          this->_queue.pop_front();
+          this->send_to_sinks(r);
+          ++processed;
+        } else {
+          break;
+        }
       }
-
-      return false;
+      return processed;
     }
 
     void commit(flush) override {

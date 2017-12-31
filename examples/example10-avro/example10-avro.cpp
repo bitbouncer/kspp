@@ -52,7 +52,7 @@ int main(int argc, char **argv) {
 
     for (int64_t update_nr = 0; update_nr != 100; ++update_nr) {
       for (auto &i : ids) {
-        avro_stream->produce(i, update_nr);
+        avro_stream->push_back(i, update_nr);
       }
     }
     topology->flush();

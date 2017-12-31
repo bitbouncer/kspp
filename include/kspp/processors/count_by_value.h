@@ -43,11 +43,14 @@ namespace kspp {
       _stream->close();
     }
 
-    bool process_one(int64_t tick) override {
-      _stream->process_one(tick);
-      bool processed = (this->_queue.size() > 0);
-      while (this->_queue.size()) {
-        auto trans = this->_queue.front();
+    size_t process(int64_t tick) override {
+      _stream->process(tick);
+      size_t processed = 0;
+
+      size_t processed=0;
+      //forward up this timestamp
+      while (this->_queue.next_event_time()<=tick){
+        auto trans = this->_queue.pop_and_get();
         // should this be on processing time our message time???
         // what happens at end of stream if on messaage time...
         if (_next_punctuate < trans->event_time()) {
@@ -58,9 +61,9 @@ namespace kspp {
         }
 
         ++_in_count;
+        ++processed;
         _lag.add_event_time(tick, trans->event_time());
         _dirty = true; // aggregated but not committed
-        this->_queue.pop_front();
         _counter_store.insert(trans->record(), trans->offset());
       }
 
