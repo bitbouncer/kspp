@@ -7,7 +7,7 @@
 #include <kspp/state_stores/mem_store.h>
 #include <kspp/processors/ktable.h>
 #include <kspp/processors/join.h>
-#include <kspp/sinks/lambda_sink.hpp>
+#include <kspp/sinks/lambda_sink.h>
 /*
  * https://cwiki.apache.org/confluence/display/KAFKA/Kafka+Streams+Join+Semantics
  *
