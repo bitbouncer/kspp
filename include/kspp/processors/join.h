@@ -8,22 +8,20 @@
 namespace kspp {
 // alternative? replace with std::shared_ptr<const kevent<K, R>> left, std::shared_ptr<const kevent<K, R>> right, std::shared_ptr<kevent<K, R>> result;  
 
-  template<class K, class leftV, class tableV, class R>
-  class left_join : public event_consumer<K, leftV>, public partition_source<K, R> {
+  template<class K, class leftV, class tableV>
+  class left_join : public event_consumer<K, leftV>, public partition_source<K, std::pair<leftV, std::shared_ptr<tableV>>> {
   public:
     typedef std::pair<leftV, std::shared_ptr<tableV>> value_type;
 
-    typedef std::function<void(const K &key, const leftV &left, const tableV &right, R &result)> value_joiner;
+    //typedef std::function<void(const K &key, const leftV &left, const tableV &right, R &result)> value_joiner;
 
     left_join(topology &t,
               std::shared_ptr<partition_source<K, leftV>> left,
-    std::shared_ptr<materialized_source<K, tableV>> right,
-    value_joiner f)
+    std::shared_ptr<materialized_source<K, tableV>> right)
     : event_consumer<K, leftV>()
-    , partition_source<K, R>(left.get(), left->partition())
+    , partition_source<K, value_type>(left.get(), left->partition())
     , _left_stream (left)
-    , _right_table(right)
-    , _value_joiner(f) {
+    , _right_table(right) {
       _left_stream->add_sink([this](auto r) {
         this->_queue.push_back(r);
       });
@@ -63,6 +61,40 @@ namespace kspp {
       size_t processed =0;
       // reuse event time & commit it from event stream
       while (this->_queue.next_event_time()<=tick) {
+        auto left = this->_queue.pop_and_get();
+        _lag.add_event_time(tick, left->event_time());
+        ++processed;
+        // null values from left should be ignored
+        if (left->record() && left->record()->value()) {
+          auto right_record = _right_table->get(left->record()->key());
+          auto value = std::make_shared<value_type>();
+          value->first = *left->record()->value();
+          std::shared_ptr<tableV> right_val;
+          if (right_record) {
+            right_val = std::make_shared<tableV>(*right_record->value());
+          }
+          //value->second =
+          value->second = right_val;
+          //auto value = std::make_shared<value_type>(*left->record(), right);
+          auto record = std::make_shared<krecord<K, value_type>>(left->record()->key(), value, left->event_time());
+          this->send_to_sinks(std::make_shared<kspp::kevent<K, value_type>>(record, left->id()));
+        } else {
+          // no output on left null
+        }
+      }
+      return processed;
+    }
+
+    /*
+    size_t process(int64_t tick) override {
+      if (_right_table->process(tick)>0)
+        _right_table->commit(false);
+
+      _left_stream->process(tick);
+
+      size_t processed =0;
+      // reuse event time & commit it from event stream
+      while (this->_queue.next_event_time()<=tick) {
         auto trans = this->_queue.pop_and_get();
         _lag.add_event_time(tick, trans->event_time());
         ++processed;
@@ -84,6 +116,7 @@ namespace kspp {
       }
       return processed;
     }
+     */
 
     void commit(bool flush) override {
       _right_table->commit(flush);
@@ -97,7 +130,7 @@ namespace kspp {
   private:
     std::shared_ptr<partition_source < K, leftV>>   _left_stream;
     std::shared_ptr<materialized_source < K, tableV>> _right_table;
-    value_joiner _value_joiner;
+    //value_joiner _value_joiner;
     metric_lag _lag;
   };
 }

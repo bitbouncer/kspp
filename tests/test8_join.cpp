@@ -57,31 +57,29 @@ std::shared_ptr<std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::str
   return std::make_shared<std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>(nullptr, std::make_shared<std::string>(b));
 };
 
-std::shared_ptr<kspp::krecord<int32_t, std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>> make_result2(std::string a, std::string b, int64_t ts)
+std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, std::shared_ptr<std::string>>>> make_left_result(std::string a, std::string b, int64_t ts)
 {
-  auto pair = std::make_shared<std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>(std::make_shared<std::string>(a), std::make_shared<std::string>(b));
-  return std::make_shared<kspp::krecord<int32_t, std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>>(42, pair, ts);
+  auto pair = std::make_shared<std::pair<std::string, std::shared_ptr<std::string>>>(a, std::make_shared<std::string>(b));
+  return std::make_shared<kspp::krecord<int32_t, std::pair<std::string, std::shared_ptr<std::string>>>>(42, pair, ts);
 };
 
-std::shared_ptr<kspp::krecord<int32_t, std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>> make_result2(std::string a, std::nullptr_t, int64_t ts)
+std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, std::shared_ptr<std::string>>>> make_left_result(std::string a, std::nullptr_t, int64_t ts)
 {
-  return std::make_shared<kspp::krecord<int32_t, std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>>(42, make_result(a, nullptr), ts);
+  auto pair = std::make_shared<std::pair<std::string, std::shared_ptr<std::string>>>(a, nullptr);
+  return std::make_shared<kspp::krecord<int32_t, std::pair<std::string, std::shared_ptr<std::string>>>>(42, pair, ts);
 };
-
-std::shared_ptr<kspp::krecord<int32_t, std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>> make_result2(std::nullptr_t, std::string b, int64_t ts)
+/*
+std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, std::shared_ptr<std::string>>>> make_left_record(std::string a, std::shared_ptr<std::string> b, int64_t ts)
 {
-  return std::make_shared<kspp::krecord<int32_t, std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>>(42, make_result(nullptr, b), ts);
-};
-
-std::shared_ptr<kspp::krecord<int32_t, std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>> make_result3(std::shared_ptr<std::string> a, std::shared_ptr<std::string> b, int64_t ts)
-{
-  if (!a)
-    return std::make_shared<kspp::krecord<int32_t, std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>>(42, std::make_shared<std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>(nullptr, b), ts);
-  else if (!b)
-    return std::make_shared<kspp::krecord<int32_t, std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>>(42, std::make_shared<std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>(a, nullptr), ts);
+  make_left_result(a)
+  if (!b)
+    return std::make_shared<kspp::krecord<int32_t, std::pair<std::string, std::shared_ptr<std::string>>>>(
+        make_left_result(a, nullptr, ts)
+        std::make_shared<std::pair<std::string, std::shared_ptr<std::string>>>(a, nullptr), ts);
   else
-    return std::make_shared<kspp::krecord<int32_t, std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>>(42, std::make_shared<std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>(a, b), ts);
+    return std::make_shared<kspp::krecord<int32_t, std::pair<std::string, std::shared_ptr<std::string>>>>(42, std::make_shared<std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>(a, b), ts);
 };
+ */
 
 int main(int argc, char **argv) {
   auto config = std::make_shared<kspp::cluster_config>();
@@ -100,31 +98,25 @@ int main(int argc, char **argv) {
     auto streamB = topology->create_processor<kspp::pipe<int32_t, std::string>>(0);
     auto ktableB = topology->create_processor<kspp::ktable<int32_t, std::string, kspp::mem_store>>(streamB);
 
-    auto left_join = topology->create_processor<kspp::left_join<int32_t, std::string, std::string, std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>>(
-        streamA,
-        ktableB,
-        [](const int32_t &key, const std::string &left, const std::string &right,
-           std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>> &row) {
-          row.first = std::make_shared<std::string>(left);
-          row.second = std::make_shared<std::string>(right);
-        });
+    auto left_join = topology->create_processor<kspp::left_join<int32_t, std::string, std::string>>(streamA, ktableB);
 
-    std::vector<std::shared_ptr<kspp::krecord<int32_t, std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>>> expected;
-    std::vector<std::shared_ptr<kspp::krecord<int32_t, std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>>> actual;
-    expected.push_back(make_result2("A", nullptr, 3));
-    expected.push_back(make_result2("B", "a", 5));
-    expected.push_back(make_result2("C", nullptr, 9));
-    expected.push_back(make_result2("D", "d", 15));
+    std::vector<std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, std::shared_ptr<std::string>>>>> expected;
+    std::vector<std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, std::shared_ptr<std::string>>>>> actual;
+    expected.push_back(make_left_result("A", nullptr, 3));
+    expected.push_back(make_left_result("B", "a", 5));
+    expected.push_back(make_left_result("C", nullptr, 9));
+    expected.push_back(make_left_result("D", "d", 15));
 
-    auto sink = topology->create_sink<kspp::lambda_sink<int32_t, std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>>(
+    auto sink = topology->create_sink<kspp::lambda_sink<int32_t, kspp::left_join<int32_t, std::string, std::string>::value_type>>(
         left_join,
         //[](std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, std::string>>> r){
         [&](auto r) {
-          auto x = make_result3(r->value()->first, r->value()->second, r->event_time());
-          actual.push_back(x);
-          //std::cerr << r->record()->first << " "r->event_time() << std::endl;
+          if (r->value()->second)
+            actual.push_back(make_left_result(r->value()->first, *r->value()->second, r->event_time()));
+          else
+            actual.push_back(make_left_result(r->value()->first, nullptr, r->event_time()));
+          std::cerr << r->event_time() << std::endl;
         });
-
     produce_stream1(*streamA);
     produce_stream2(*streamB);
 
@@ -139,7 +131,14 @@ int main(int argc, char **argv) {
     for (int i = 0; i != expected.size(); ++i) {
       assert(expected[i]->event_time() == actual[i]->event_time());
       assert(expected[i]->key() == actual[i]->key());
-      assert(expected[i]->value() == actual[i]->value());
+      assert(expected[i]->value()->first == actual[i]->value()->first);
+
+      if (expected[i]->value()->second== nullptr)
+        assert (actual[i]->value()->second== nullptr);
+      else
+        assert (*expected[i]->value()->second == *actual[i]->value()->second);
+      //assert(expected[i]->value()->second == actual[i]->value()->second);
+      //assert(expected[i]->value() == actual[i]->value());
     }
   }
 
