@@ -63,6 +63,38 @@ std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, std::string>>> mak
   return std::make_shared<kspp::krecord<int32_t, std::pair<std::string, std::string>>>(42, pair, ts);
 };
 
+std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, std::string>>> make_inner_join_record(std::nullptr_t, int64_t ts)
+{
+  std::shared_ptr<std::pair<std::string, std::string>> pair; // nullptr..
+  return std::make_shared<kspp::krecord<int32_t, std::pair<std::string, std::string>>>(42, pair, ts);
+};
+
+//OUTER JOIN
+std::shared_ptr<kspp::krecord<int32_t, std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>> make_outer_join_record(std::string a, std::string b, int64_t ts)
+{
+  auto pair = std::make_shared<std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>(std::make_shared<std::string>(a), std::make_shared<std::string>(b));
+  return std::make_shared<kspp::krecord<int32_t, std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>>(42, pair, ts);
+};
+
+std::shared_ptr<kspp::krecord<int32_t, std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>> make_outer_join_record(std::string a, std::nullptr_t, int64_t ts)
+{
+  auto pair = std::make_shared<std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>(std::make_shared<std::string>(a), nullptr);
+  return std::make_shared<kspp::krecord<int32_t, std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>>(42, pair, ts);
+};
+
+std::shared_ptr<kspp::krecord<int32_t, std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>> make_outer_join_record(std::nullptr_t, std::string b, int64_t ts)
+{
+  auto pair = std::make_shared<std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>(nullptr, std::make_shared<std::string>(b));
+  return std::make_shared<kspp::krecord<int32_t, std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>>(42, pair, ts);
+};
+
+std::shared_ptr<kspp::krecord<int32_t, std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>> make_outer_join_record(std::nullptr_t, int64_t ts)
+{
+  std::shared_ptr<std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>> pair; // nullptr..
+  return std::make_shared<kspp::krecord<int32_t, std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>>(42, pair, ts);
+};
+
+
 int main(int argc, char **argv) {
   auto config = std::make_shared<kspp::cluster_config>();
   //config->load_config_from_env();
@@ -182,20 +214,20 @@ int main(int argc, char **argv) {
 
     std::vector<std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, std::shared_ptr<std::string>>>>> expected;
     std::vector<std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, std::shared_ptr<std::string>>>>> actual;
-    expected.push_back(make_left_join_record(nullptr, 1)); // this is not according to spec - but accoring to impl...
-    expected.push_back(make_left_join_record(nullptr, 2)); // this is not according to spec - but accoring to impl...
+    expected.push_back(make_left_join_record(nullptr, 1)); // this is not according to spec - but according to impl...
+    expected.push_back(make_left_join_record(nullptr, 2)); // this is not according to spec - but according to impl...
     expected.push_back(make_left_join_record("A", nullptr, 3));
     expected.push_back(make_left_join_record("A", "a", 4));
     expected.push_back(make_left_join_record("B", "a", 5));
     expected.push_back(make_left_join_record("B", "b", 6));
     expected.push_back(make_left_join_record(nullptr, 7));
-    expected.push_back(make_left_join_record(nullptr, 8));// this is not according to spec - but accoring to impl...
+    expected.push_back(make_left_join_record(nullptr, 8));// this is not according to spec - but according to impl...
     expected.push_back(make_left_join_record("C", nullptr, 9));
     expected.push_back(make_left_join_record("C", "c", 10));
     expected.push_back(make_left_join_record("C", nullptr, 11));
     expected.push_back(make_left_join_record(nullptr, 12));
-    expected.push_back(make_left_join_record(nullptr, 13));// this is not according to spec - but accoring to impl...
-    expected.push_back(make_left_join_record(nullptr, 14));// this is not according to spec - but accoring to impl...
+    expected.push_back(make_left_join_record(nullptr, 13));// this is not according to spec - but according to impl...
+    expected.push_back(make_left_join_record(nullptr, 14));// this is not according to spec - but according to impl...
     expected.push_back(make_left_join_record("D", "d", 15));
 
     auto sink = topology->create_sink<kspp::genric_topic_sink<int32_t, kspp::left_join<int32_t, std::string, std::string>::value_type>>(
@@ -237,5 +269,152 @@ int main(int argc, char **argv) {
         assert (*expected[i]->value()->second == *actual[i]->value()->second);
     }
   }
+
+
+  //KTable-KTable INNER Join - OLD SEMANTICS (IE MORE null values)
+  {
+    auto partition_list = {0};
+    auto builder = kspp::topology_builder("kspp-examples", argv[0], config);
+    auto topology = builder.create_topology();
+
+    auto streamA = topology->create_processor<kspp::pipe<int32_t, std::string>>(0);
+    auto ktableA = topology->create_processor<kspp::ktable<int32_t, std::string, kspp::mem_store>>(streamA);
+
+    auto streamB = topology->create_processor<kspp::pipe<int32_t, std::string>>(0);
+    auto ktableB = topology->create_processor<kspp::ktable<int32_t, std::string, kspp::mem_store>>(streamB);
+
+    auto left_join = topology->create_processor<kspp::ktable_inner_join<int32_t, std::string, std::string>>(ktableA, ktableB);
+
+    std::vector<std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, std::string>>>> expected;
+    std::vector<std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, std::string>>>> actual;
+    expected.push_back(make_inner_join_record(nullptr, 1)); // this is not according to spec - but according to impl...
+    expected.push_back(make_inner_join_record(nullptr, 2)); // this is not according to spec - but according to impl...
+    expected.push_back(make_inner_join_record(nullptr, 3)); // this is not according to spec - but according to impl...
+    expected.push_back(make_inner_join_record("A", "a", 4));
+    expected.push_back(make_inner_join_record("B", "a", 5));
+    expected.push_back(make_inner_join_record("B", "b", 6));
+    expected.push_back(make_inner_join_record(nullptr, 7));
+    expected.push_back(make_inner_join_record(nullptr, 8));// this is not according to spec - but according to impl...
+    expected.push_back(make_inner_join_record(nullptr, 9));
+    expected.push_back(make_inner_join_record("C", "c", 10));
+    expected.push_back(make_inner_join_record(nullptr, 11));
+    expected.push_back(make_inner_join_record(nullptr, 12));// this is not according to spec - but according to impl...
+    expected.push_back(make_inner_join_record(nullptr, 13));// this is not according to spec - but according to impl...
+    expected.push_back(make_inner_join_record(nullptr, 14));// this is not according to spec - but according to impl...
+    expected.push_back(make_inner_join_record("D", "d", 15));
+
+    auto sink = topology->create_sink<kspp::genric_topic_sink<int32_t, kspp::ktable_inner_join<int32_t, std::string, std::string>::value_type>>(
+        left_join,
+        [&](auto r) {
+          if (r->value()==nullptr)
+            actual.push_back(make_inner_join_record(nullptr, r->event_time()));
+          else
+            actual.push_back(make_inner_join_record(r->value()->first, r->value()->second, r->event_time()));
+          std::cerr << r->event_time() << std::endl;
+        });
+    produce_stream1(*streamA);
+    produce_stream2(*streamB);
+
+    topology->start(kspp::OFFSET_BEGINNING);
+
+    for (int64_t ts=0; ts!=20; ++ts)
+      topology->process(ts);
+
+
+    assert(expected.size() == actual.size());
+    for (int i = 0; i != expected.size(); ++i) {
+      //std::cerr << "expected:" << expected[i]->event_time() << ", actual:" << actual[i]->event_time() << std::endl;
+      assert(expected[i]->event_time() == actual[i]->event_time());
+      assert(expected[i]->key() == actual[i]->key());
+
+      if (expected[i]->value()==nullptr) {
+        assert(actual[i]->value() == nullptr);
+        continue;
+      }
+
+      assert(expected[i]->value()->first == actual[i]->value()->first);
+      assert (expected[i]->value()->second == actual[i]->value()->second);
+    }
+  }
+
+
+  //KTable-KTable OUTER Join - OLD SEMANTICS (IE MORE null values)
+  {
+    auto partition_list = {0};
+    auto builder = kspp::topology_builder("kspp-examples", argv[0], config);
+    auto topology = builder.create_topology();
+
+    auto streamA = topology->create_processor<kspp::pipe<int32_t, std::string>>(0);
+    auto ktableA = topology->create_processor<kspp::ktable<int32_t, std::string, kspp::mem_store>>(streamA);
+
+    auto streamB = topology->create_processor<kspp::pipe<int32_t, std::string>>(0);
+    auto ktableB = topology->create_processor<kspp::ktable<int32_t, std::string, kspp::mem_store>>(streamB);
+
+    auto left_join = topology->create_processor<kspp::ktable_outer_join<int32_t, std::string, std::string>>(ktableA, ktableB);
+
+    std::vector<std::shared_ptr<kspp::krecord<int32_t, std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>>> expected;
+    std::vector<std::shared_ptr<kspp::krecord<int32_t, std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>>> actual;
+    expected.push_back(make_outer_join_record(nullptr, 1)); // this is not according to spec - but according to impl...
+    expected.push_back(make_outer_join_record(nullptr, 2)); // this is not according to spec - but according to impl...
+    expected.push_back(make_outer_join_record("A", nullptr, 3));
+    expected.push_back(make_outer_join_record("A", "a", 4));
+    expected.push_back(make_outer_join_record("B", "a", 5));
+    expected.push_back(make_outer_join_record("B", "b", 6));
+    expected.push_back(make_outer_join_record(nullptr, "b", 7));
+    expected.push_back(make_outer_join_record(nullptr, 8));// this is not according to spec - but according to impl...
+    expected.push_back(make_outer_join_record("C", nullptr, 9));
+    expected.push_back(make_outer_join_record("C", "c", 10));
+    expected.push_back(make_outer_join_record("C", nullptr, 11));
+    expected.push_back(make_outer_join_record(nullptr, 12));
+    expected.push_back(make_outer_join_record(nullptr, 13));// this is not according to spec - but according to impl...
+    expected.push_back(make_outer_join_record(nullptr, "d", 14));
+    expected.push_back(make_outer_join_record("D", "d", 15));
+
+    auto sink = topology->create_sink<kspp::genric_topic_sink<int32_t, kspp::ktable_outer_join<int32_t, std::string, std::string>::value_type>>(
+        left_join,
+        [&](auto r) {
+          if (r->value()==nullptr)
+            actual.push_back(make_outer_join_record(nullptr, r->event_time()));
+          else if (r->value()->first && r->value()->second)
+            actual.push_back(make_outer_join_record(*r->value()->first, *r->value()->second, r->event_time()));
+          else if (r->value()->first && r->value()->second==nullptr)
+            actual.push_back(make_outer_join_record(*r->value()->first, nullptr, r->event_time()));
+          else if (r->value()->first==nullptr && r->value()->second)
+            actual.push_back(make_outer_join_record(nullptr, *r->value()->second, r->event_time()));
+          std::cerr << r->event_time() << std::endl;
+        });
+    produce_stream1(*streamA);
+    produce_stream2(*streamB);
+
+    topology->start(kspp::OFFSET_BEGINNING);
+
+    for (int64_t ts=0; ts!=20; ++ts)
+      topology->process(ts);
+
+
+    assert(expected.size() == actual.size());
+    for (int i = 0; i != expected.size(); ++i) {
+      //std::cerr << "expected:" << expected[i]->event_time() << ", actual:" << actual[i]->event_time() << std::endl;
+      assert(expected[i]->event_time() == actual[i]->event_time());
+      assert(expected[i]->key() == actual[i]->key());
+
+      if (expected[i]->value()==nullptr) {
+        assert(actual[i]->value() == nullptr);
+        continue;
+      }
+
+      if (expected[i]->value()->second== nullptr)
+        assert (actual[i]->value()->second== nullptr);
+      else
+        assert (*expected[i]->value()->second == *actual[i]->value()->second);
+
+      if (expected[i]->value()->first== nullptr)
+        assert (actual[i]->value()->first== nullptr);
+      else
+        assert (*expected[i]->value()->first == *actual[i]->value()->first);
+    }
+  }
+
+
   return 0;
 }
