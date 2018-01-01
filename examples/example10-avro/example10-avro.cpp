@@ -3,7 +3,7 @@
 #include <kspp/topology_builder.h>
 #include <kspp/sinks/kafka_sink.h>
 #include <kspp/sinks/stream_sink.h>
-#include <kspp/sinks/null_sink.h>
+#include <kspp/sinks/generic_sink.h>
 #include <kspp/processors/ktable.h>
 #include <kspp/processors/join.h>
 #include <kspp/processors/count.h>
@@ -143,7 +143,7 @@ int main(int argc, char **argv) {
             "kspp_test10_avro_B",
             config->avro_serdes(),
             config->avro_serdes());
-    auto sink = topology->create_sink<kspp::null_sink<kspp::GenericAvro, kspp::GenericAvro>>(sources);
+    auto sink = topology->create_sink<kspp::genric_topic_sink<kspp::GenericAvro, kspp::GenericAvro>>(sources, [](auto r){});
     topology->init_metrics();
     topology->start(kspp::OFFSET_BEGINNING);
     auto t0 = std::chrono::high_resolution_clock::now();

@@ -4,16 +4,16 @@
 
 namespace kspp {
   template<class K, class V>
-  class lambda_sink : public topic_sink<K, V> {
+  class genric_topic_sink : public topic_sink<K, V> {
   public:
     typedef std::function<void(std::shared_ptr<const krecord <K, V>> record)> handler;
 
-    lambda_sink(topology &t, handler f)
+    genric_topic_sink(topology &t, handler f)
         : topic_sink<K, V>()
         , _handler(f) {
     }
 
-    ~lambda_sink() override {
+    ~genric_topic_sink() override {
       this->flush();
     }
 
@@ -21,7 +21,7 @@ namespace kspp {
     }
 
     std::string simple_name() const override {
-      return "lambda_sink";
+      return "genric_topic_sink";
     }
 
     size_t queue_size() const override {
