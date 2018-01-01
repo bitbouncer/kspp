@@ -122,7 +122,7 @@ int main(int argc, char **argv) {
         [&](auto r) {
           auto x = make_result3(r->value()->first, r->value()->second, r->event_time());
           actual.push_back(x);
-          std::cerr << r->event_time() << std::endl;
+          //std::cerr << r->record()->first << " "r->event_time() << std::endl;
         });
 
     produce_stream1(*streamA);
