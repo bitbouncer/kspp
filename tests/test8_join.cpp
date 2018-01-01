@@ -100,14 +100,13 @@ int main(int argc, char **argv) {
     auto streamB = topology->create_processor<kspp::pipe<int32_t, std::string>>(0);
     auto ktableB = topology->create_processor<kspp::ktable<int32_t, std::string, kspp::mem_store>>(streamB);
 
-
-
     auto left_join = topology->create_processor<kspp::left_join<int32_t, std::string, std::string, std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>>(
         streamA,
         ktableB,
         [](const int32_t &key, const std::string &left, const std::string &right,
            std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>> &row) {
-          //row = std::make_pair(left, right);
+          row.first = std::make_shared<std::string>(left);
+          row.second = std::make_shared<std::string>(right);
         });
 
     std::vector<std::shared_ptr<kspp::krecord<int32_t, std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>>> expected;
@@ -120,7 +119,7 @@ int main(int argc, char **argv) {
     auto sink = topology->create_sink<kspp::lambda_sink<int32_t, std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>>(
         left_join,
         //[](std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, std::string>>> r){
-        [&actual](auto r) {
+        [&](auto r) {
           auto x = make_result3(r->value()->first, r->value()->second, r->event_time());
           actual.push_back(x);
           std::cerr << r->event_time() << std::endl;
@@ -129,9 +128,12 @@ int main(int argc, char **argv) {
     produce_stream1(*streamA);
     produce_stream2(*streamB);
 
+
     topology->start(kspp::OFFSET_BEGINNING);
+
     for (int64_t ts=0; ts!=20; ++ts)
-    topology->process(ts);
+      topology->process(ts);
+
 
     assert(expected.size() == actual.size());
     for (int i = 0; i != expected.size(); ++i) {

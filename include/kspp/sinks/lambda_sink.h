@@ -45,7 +45,7 @@ namespace kspp {
       //forward up this timestamp
       while (this->_queue.next_event_time()<=tick){
         auto r = this->_queue.pop_and_get();
-        //_handler(r);
+        _handler(r->record());
         ++processed;
       }
 

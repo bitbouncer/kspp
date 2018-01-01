@@ -59,9 +59,6 @@ namespace kspp {
       _stream->process(tick);
 
       size_t processed =0;
-      if (!this->_queue.size())
-        return 0;
-
       // reuse event time & commit it from event stream
       while (this->_queue.next_event_time()<=tick) {
         auto trans = this->_queue.pop_and_get();
@@ -83,7 +80,7 @@ namespace kspp {
           // TBD should we send delete event here???
         }
       }
-      return 1;
+      return processed;
     }
 
     void commit(bool flush) override {
