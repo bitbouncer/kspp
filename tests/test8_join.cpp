@@ -39,22 +39,22 @@ void produce_stream2(kspp::event_consumer<int32_t, std::string>& stream) {
 
 //KStream_KStream_left_join
 
-std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, std::shared_ptr<std::string>>>> make_left_join_record(std::string a, std::string b, int64_t ts)
+std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, boost::optional<std::string>>>> make_left_join_record(std::string a, std::string b, int64_t ts)
 {
-  auto pair = std::make_shared<std::pair<std::string, std::shared_ptr<std::string>>>(a, std::make_shared<std::string>(b));
-  return std::make_shared<kspp::krecord<int32_t, std::pair<std::string, std::shared_ptr<std::string>>>>(42, pair, ts);
+  auto pair = std::make_shared<std::pair<std::string, boost::optional<std::string>>>(a, b);
+  return std::make_shared<kspp::krecord<int32_t, std::pair<std::string, boost::optional<std::string>>>>(42, pair, ts);
 };
 
-std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, std::shared_ptr<std::string>>>> make_left_join_record(std::string a, std::nullptr_t, int64_t ts)
+std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, boost::optional<std::string>>>> make_left_join_record(std::string a, std::nullptr_t, int64_t ts)
 {
-  auto pair = std::make_shared<std::pair<std::string, std::shared_ptr<std::string>>>(a, nullptr);
-  return std::make_shared<kspp::krecord<int32_t, std::pair<std::string, std::shared_ptr<std::string>>>>(42, pair, ts);
+  auto pair = std::make_shared<std::pair<std::string, boost::optional<std::string>>>(a, boost::optional<std::string>());
+  return std::make_shared<kspp::krecord<int32_t, std::pair<std::string, boost::optional<std::string>>>>(42, pair, ts);
 };
 
-std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, std::shared_ptr<std::string>>>> make_left_join_record(std::nullptr_t, int64_t ts)
+std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, boost::optional<std::string>>>> make_left_join_record(std::nullptr_t, int64_t ts)
 {
-  std::shared_ptr<std::pair<std::string, std::shared_ptr<std::string>>> pair; // nullptr..
-  return std::make_shared<kspp::krecord<int32_t, std::pair<std::string, std::shared_ptr<std::string>>>>(42, pair, ts);
+  std::shared_ptr<std::pair<std::string, boost::optional<std::string>>> pair; // nullptr..
+  return std::make_shared<kspp::krecord<int32_t, std::pair<std::string, boost::optional<std::string>>>>(42, pair, ts);
 };
 
 std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, std::string>>> make_inner_join_record(std::string a, std::string b, int64_t ts)
@@ -70,28 +70,28 @@ std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, std::string>>> mak
 };
 
 //OUTER JOIN
-std::shared_ptr<kspp::krecord<int32_t, std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>> make_outer_join_record(std::string a, std::string b, int64_t ts)
+std::shared_ptr<kspp::krecord<int32_t, std::pair<boost::optional<std::string>, boost::optional<std::string>>>> make_outer_join_record(std::string a, std::string b, int64_t ts)
 {
-  auto pair = std::make_shared<std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>(std::make_shared<std::string>(a), std::make_shared<std::string>(b));
-  return std::make_shared<kspp::krecord<int32_t, std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>>(42, pair, ts);
+  auto pair = std::make_shared<std::pair<boost::optional<std::string>, boost::optional<std::string>>>(a, b);
+  return std::make_shared<kspp::krecord<int32_t, std::pair<boost::optional<std::string>, boost::optional<std::string>>>>(42, pair, ts);
 };
 
-std::shared_ptr<kspp::krecord<int32_t, std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>> make_outer_join_record(std::string a, std::nullptr_t, int64_t ts)
+std::shared_ptr<kspp::krecord<int32_t, std::pair<boost::optional<std::string>, boost::optional<std::string>>>> make_outer_join_record(std::string a, std::nullptr_t, int64_t ts)
 {
-  auto pair = std::make_shared<std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>(std::make_shared<std::string>(a), nullptr);
-  return std::make_shared<kspp::krecord<int32_t, std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>>(42, pair, ts);
+  auto pair = std::make_shared<std::pair<boost::optional<std::string>, boost::optional<std::string>>>(a, boost::optional<std::string>());
+  return std::make_shared<kspp::krecord<int32_t, std::pair<boost::optional<std::string>, boost::optional<std::string>>>>(42, pair, ts);
 };
 
-std::shared_ptr<kspp::krecord<int32_t, std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>> make_outer_join_record(std::nullptr_t, std::string b, int64_t ts)
+std::shared_ptr<kspp::krecord<int32_t, std::pair<boost::optional<std::string>, boost::optional<std::string>>>> make_outer_join_record(std::nullptr_t, std::string b, int64_t ts)
 {
-  auto pair = std::make_shared<std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>(nullptr, std::make_shared<std::string>(b));
-  return std::make_shared<kspp::krecord<int32_t, std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>>(42, pair, ts);
+  auto pair = std::make_shared<std::pair<boost::optional<std::string>, boost::optional<std::string>>>(boost::optional<std::string>(), b);
+  return std::make_shared<kspp::krecord<int32_t, std::pair<boost::optional<std::string>, boost::optional<std::string>>>>(42, pair, ts);
 };
 
-std::shared_ptr<kspp::krecord<int32_t, std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>> make_outer_join_record(std::nullptr_t, int64_t ts)
+std::shared_ptr<kspp::krecord<int32_t, std::pair<boost::optional<std::string>, boost::optional<std::string>>>> make_outer_join_record(std::nullptr_t, int64_t ts)
 {
-  std::shared_ptr<std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>> pair; // nullptr..
-  return std::make_shared<kspp::krecord<int32_t, std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>>(42, pair, ts);
+  std::shared_ptr<std::pair<boost::optional<std::string>, boost::optional<std::string>>> pair; // nullptr..
+  return std::make_shared<kspp::krecord<int32_t, std::pair<boost::optional<std::string>, boost::optional<std::string>>>>(42, pair, ts);
 };
 
 
@@ -114,8 +114,8 @@ int main(int argc, char **argv) {
 
     auto left_join = topology->create_processor<kspp::left_join<int32_t, std::string, std::string>>(streamA, ktableB);
 
-    std::vector<std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, std::shared_ptr<std::string>>>>> expected;
-    std::vector<std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, std::shared_ptr<std::string>>>>> actual;
+    std::vector<std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, boost::optional<std::string>>>>> expected;
+    std::vector<std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, boost::optional<std::string>>>>> actual;
     expected.push_back(make_left_join_record("A", nullptr, 3));
     expected.push_back(make_left_join_record("B", "a", 5));
     expected.push_back(make_left_join_record("C", nullptr, 9));
@@ -145,12 +145,10 @@ int main(int argc, char **argv) {
       assert(expected[i]->key() == actual[i]->key());
       assert(expected[i]->value()->first == actual[i]->value()->first);
 
-      if (expected[i]->value()->second== nullptr)
-        assert (actual[i]->value()->second== nullptr);
+      if (!expected[i]->value()->second)
+        assert (!actual[i]->value()->second);
       else
         assert (*expected[i]->value()->second == *actual[i]->value()->second);
-      //assert(expected[i]->value()->second == actual[i]->value()->second);
-      //assert(expected[i]->value() == actual[i]->value());
     }
   }
 
@@ -212,8 +210,8 @@ int main(int argc, char **argv) {
 
     auto left_join = topology->create_processor<kspp::ktable_left_join<int32_t, std::string, std::string>>(ktableA, ktableB);
 
-    std::vector<std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, std::shared_ptr<std::string>>>>> expected;
-    std::vector<std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, std::shared_ptr<std::string>>>>> actual;
+    std::vector<std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, boost::optional<std::string>>>>> expected;
+    std::vector<std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, boost::optional<std::string>>>>> actual;
     expected.push_back(make_left_join_record(nullptr, 1)); // this is not according to spec - but according to impl...
     expected.push_back(make_left_join_record(nullptr, 2)); // this is not according to spec - but according to impl...
     expected.push_back(make_left_join_record("A", nullptr, 3));
@@ -263,8 +261,8 @@ int main(int argc, char **argv) {
 
       assert(expected[i]->value()->first == actual[i]->value()->first);
 
-      if (expected[i]->value()->second== nullptr)
-        assert (actual[i]->value()->second== nullptr);
+      if (!expected[i]->value()->second)
+        assert (!actual[i]->value()->second);
       else
         assert (*expected[i]->value()->second == *actual[i]->value()->second);
     }
@@ -352,8 +350,8 @@ int main(int argc, char **argv) {
 
     auto left_join = topology->create_processor<kspp::ktable_outer_join<int32_t, std::string, std::string>>(ktableA, ktableB);
 
-    std::vector<std::shared_ptr<kspp::krecord<int32_t, std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>>> expected;
-    std::vector<std::shared_ptr<kspp::krecord<int32_t, std::pair<std::shared_ptr<std::string>, std::shared_ptr<std::string>>>>> actual;
+    std::vector<std::shared_ptr<kspp::krecord<int32_t, std::pair<boost::optional<std::string>, boost::optional<std::string>>>>> expected;
+    std::vector<std::shared_ptr<kspp::krecord<int32_t, std::pair<boost::optional<std::string>, boost::optional<std::string>>>>> actual;
     expected.push_back(make_outer_join_record(nullptr, 1)); // this is not according to spec - but according to impl...
     expected.push_back(make_outer_join_record(nullptr, 2)); // this is not according to spec - but according to impl...
     expected.push_back(make_outer_join_record("A", nullptr, 3));
@@ -377,9 +375,9 @@ int main(int argc, char **argv) {
             actual.push_back(make_outer_join_record(nullptr, r->event_time()));
           else if (r->value()->first && r->value()->second)
             actual.push_back(make_outer_join_record(*r->value()->first, *r->value()->second, r->event_time()));
-          else if (r->value()->first && r->value()->second==nullptr)
+          else if (r->value()->first && !r->value()->second)
             actual.push_back(make_outer_join_record(*r->value()->first, nullptr, r->event_time()));
-          else if (r->value()->first==nullptr && r->value()->second)
+          else if (!r->value()->first && r->value()->second)
             actual.push_back(make_outer_join_record(nullptr, *r->value()->second, r->event_time()));
           std::cerr << r->event_time() << std::endl;
         });
@@ -403,13 +401,13 @@ int main(int argc, char **argv) {
         continue;
       }
 
-      if (expected[i]->value()->second== nullptr)
-        assert (actual[i]->value()->second== nullptr);
+      if (!expected[i]->value()->second)
+        assert (!actual[i]->value()->second);
       else
         assert (*expected[i]->value()->second == *actual[i]->value()->second);
 
-      if (expected[i]->value()->first== nullptr)
-        assert (actual[i]->value()->first== nullptr);
+      if (!expected[i]->value()->first)
+        assert (!actual[i]->value()->first);
       else
         assert (*expected[i]->value()->first == *actual[i]->value()->first);
     }
