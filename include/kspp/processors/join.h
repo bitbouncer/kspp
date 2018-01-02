@@ -26,6 +26,74 @@ namespace kspp {
     typedef std::pair<boost::optional<LEFT>, boost::optional<RIGHT>> value_type;
   };
 
+  //LEFT JOIN
+  template<class KEY, class LEFT, class RIGHT>
+  std::shared_ptr<kspp::krecord<KEY, std::pair<LEFT, boost::optional<RIGHT>>>> make_left_join_record(KEY key, LEFT a, RIGHT b, int64_t ts)
+  {
+    auto pair = std::make_shared<std::pair<LEFT, boost::optional<RIGHT>>>(a, b);
+    return std::make_shared<kspp::krecord<KEY, std::pair<LEFT, boost::optional<RIGHT>>>>(key, pair, ts);
+  };
+
+  template<class KEY, class LEFT, class RIGHT>
+  std::shared_ptr<kspp::krecord<KEY, std::pair<std::string, boost::optional<std::string>>>> make_left_join_record(KEY key, std::string a, std::nullptr_t, int64_t ts)
+  {
+    auto pair = std::make_shared<std::pair<LEFT, boost::optional<RIGHT>>>(a, boost::optional<RIGHT>());
+    return std::make_shared<kspp::krecord<int32_t, std::pair<std::string, boost::optional<std::string>>>>(key, pair, ts);
+  };
+
+  template<class KEY, class LEFT, class RIGHT>
+  std::shared_ptr<kspp::krecord<KEY, std::pair<std::string, boost::optional<std::string>>>> make_left_join_record(KEY key, std::nullptr_t, int64_t ts)
+  {
+    std::shared_ptr<std::pair<LEFT, boost::optional<RIGHT>>> pair; // nullptr..
+    return std::make_shared<kspp::krecord<KEY, std::pair<LEFT, boost::optional<RIGHT>>>>(key, pair, ts);
+  };
+
+
+  //INNER JOIN
+  template<class KEY, class LEFT, class RIGHT>
+  std::shared_ptr<kspp::krecord<KEY, std::pair<LEFT, RIGHT>>> make_inner_join_record(KEY key, LEFT a, RIGHT b, int64_t ts)
+  {
+    auto pair = std::make_shared<std::pair<LEFT, RIGHT>>(a, b);
+    return std::make_shared<kspp::krecord<KEY, std::pair<LEFT, RIGHT>>>(key, pair, ts);
+  };
+
+  template<class KEY, class LEFT, class RIGHT>
+  std::shared_ptr<kspp::krecord<KEY, std::pair<LEFT, RIGHT>>> make_inner_join_record(KEY key, std::nullptr_t, int64_t ts)
+  {
+    std::shared_ptr<std::pair<LEFT, RIGHT>> pair; // nullptr..
+    return std::make_shared<kspp::krecord<KEY, std::pair<LEFT, RIGHT>>>(key, pair, ts);
+  };
+
+//OUTER JOIN
+  template<class KEY, class LEFT, class RIGHT>
+  std::shared_ptr<kspp::krecord<KEY, std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>>> make_outer_join_record(KEY key, LEFT a, RIGHT b, int64_t ts)
+  {
+    auto pair = std::make_shared<std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>>(a, b);
+    return std::make_shared<kspp::krecord<KEY, std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>>>(key, pair, ts);
+  };
+
+  template<class KEY, class LEFT, class RIGHT>
+  std::shared_ptr<kspp::krecord<KEY, std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>>> make_outer_join_record(KEY key, LEFT a, std::nullptr_t, int64_t ts)
+  {
+    auto pair = std::make_shared<std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>>(a, boost::optional<RIGHT>());
+    return std::make_shared<kspp::krecord<KEY, std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>>>(key, pair, ts);
+  };
+
+  template<class KEY, class LEFT, class RIGHT>
+  std::shared_ptr<kspp::krecord<KEY, std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>>> make_outer_join_record(KEY key, std::nullptr_t, RIGHT b, int64_t ts)
+  {
+    auto pair = std::make_shared<std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>>(boost::optional<LEFT>(), b);
+    return std::make_shared<kspp::krecord<KEY, std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>>>(key, pair, ts);
+  };
+
+  template<class KEY, class LEFT, class RIGHT>
+  std::shared_ptr<kspp::krecord<KEY, std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>>> make_outer_join_record(KEY key, std::nullptr_t, int64_t ts)
+  {
+    std::shared_ptr<std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>> pair; // nullptr..
+    return std::make_shared<kspp::krecord<KEY, std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>>>(key, pair, ts);
+  };
+
+
   template<class K, class LEFT, class RIGHT>
   class kstream_left_join : public event_consumer<K, LEFT>, public partition_source<K, typename left_join<LEFT, RIGHT>::value_type> {
   public:

@@ -16,6 +16,8 @@
 //STREAM_1:   1:null, 3:A, 5:B 7:null, 9:C, 12:null, 15:D
 //STREAM_2:   2:null, 4:a, 6:b, 8:null, 10:c, 11:null, 13:null, 14:d
 
+using namespace kspp;
+
 void produce_stream1(kspp::event_consumer<int32_t, std::string>& stream) {
   stream.push_back(std::make_shared<kspp::krecord < int32_t, std::string>>(42, nullptr, 1));
   stream.push_back(std::make_shared<kspp::krecord < int32_t, std::string>>(42, "A", 3));
@@ -37,62 +39,6 @@ void produce_stream2(kspp::event_consumer<int32_t, std::string>& stream) {
   stream.push_back(std::make_shared<kspp::krecord < int32_t, std::string>>(42, "d", 14));
 }
 
-//KStream_KStream_left_join
-
-std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, boost::optional<std::string>>>> make_left_join_record(std::string a, std::string b, int64_t ts)
-{
-  auto pair = std::make_shared<std::pair<std::string, boost::optional<std::string>>>(a, b);
-  return std::make_shared<kspp::krecord<int32_t, std::pair<std::string, boost::optional<std::string>>>>(42, pair, ts);
-};
-
-std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, boost::optional<std::string>>>> make_left_join_record(std::string a, std::nullptr_t, int64_t ts)
-{
-  auto pair = std::make_shared<std::pair<std::string, boost::optional<std::string>>>(a, boost::optional<std::string>());
-  return std::make_shared<kspp::krecord<int32_t, std::pair<std::string, boost::optional<std::string>>>>(42, pair, ts);
-};
-
-std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, boost::optional<std::string>>>> make_left_join_record(std::nullptr_t, int64_t ts)
-{
-  std::shared_ptr<std::pair<std::string, boost::optional<std::string>>> pair; // nullptr..
-  return std::make_shared<kspp::krecord<int32_t, std::pair<std::string, boost::optional<std::string>>>>(42, pair, ts);
-};
-
-std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, std::string>>> make_inner_join_record(std::string a, std::string b, int64_t ts)
-{
-  auto pair = std::make_shared<std::pair<std::string, std::string>>(a, b);
-  return std::make_shared<kspp::krecord<int32_t, std::pair<std::string, std::string>>>(42, pair, ts);
-};
-
-std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, std::string>>> make_inner_join_record(std::nullptr_t, int64_t ts)
-{
-  std::shared_ptr<std::pair<std::string, std::string>> pair; // nullptr..
-  return std::make_shared<kspp::krecord<int32_t, std::pair<std::string, std::string>>>(42, pair, ts);
-};
-
-//OUTER JOIN
-std::shared_ptr<kspp::krecord<int32_t, std::pair<boost::optional<std::string>, boost::optional<std::string>>>> make_outer_join_record(std::string a, std::string b, int64_t ts)
-{
-  auto pair = std::make_shared<std::pair<boost::optional<std::string>, boost::optional<std::string>>>(a, b);
-  return std::make_shared<kspp::krecord<int32_t, std::pair<boost::optional<std::string>, boost::optional<std::string>>>>(42, pair, ts);
-};
-
-std::shared_ptr<kspp::krecord<int32_t, std::pair<boost::optional<std::string>, boost::optional<std::string>>>> make_outer_join_record(std::string a, std::nullptr_t, int64_t ts)
-{
-  auto pair = std::make_shared<std::pair<boost::optional<std::string>, boost::optional<std::string>>>(a, boost::optional<std::string>());
-  return std::make_shared<kspp::krecord<int32_t, std::pair<boost::optional<std::string>, boost::optional<std::string>>>>(42, pair, ts);
-};
-
-std::shared_ptr<kspp::krecord<int32_t, std::pair<boost::optional<std::string>, boost::optional<std::string>>>> make_outer_join_record(std::nullptr_t, std::string b, int64_t ts)
-{
-  auto pair = std::make_shared<std::pair<boost::optional<std::string>, boost::optional<std::string>>>(boost::optional<std::string>(), b);
-  return std::make_shared<kspp::krecord<int32_t, std::pair<boost::optional<std::string>, boost::optional<std::string>>>>(42, pair, ts);
-};
-
-std::shared_ptr<kspp::krecord<int32_t, std::pair<boost::optional<std::string>, boost::optional<std::string>>>> make_outer_join_record(std::nullptr_t, int64_t ts)
-{
-  std::shared_ptr<std::pair<boost::optional<std::string>, boost::optional<std::string>>> pair; // nullptr..
-  return std::make_shared<kspp::krecord<int32_t, std::pair<boost::optional<std::string>, boost::optional<std::string>>>>(42, pair, ts);
-};
 
 
 int main(int argc, char **argv) {
@@ -116,18 +62,18 @@ int main(int argc, char **argv) {
 
     std::vector<std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, boost::optional<std::string>>>>> expected;
     std::vector<std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, boost::optional<std::string>>>>> actual;
-    expected.push_back(make_left_join_record("A", nullptr, 3));
-    expected.push_back(make_left_join_record("B", "a", 5));
-    expected.push_back(make_left_join_record("C", nullptr, 9));
-    expected.push_back(make_left_join_record("D", "d", 15));
+    expected.push_back(kspp::make_left_join_record<int32_t, std::string, std::string>(42, "A", nullptr, 3));
+    expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, "B", "a", 5));
+    expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, "C", nullptr, 9));
+    expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, "D", "d", 15));
 
     auto sink = topology->create_sink<kspp::genric_topic_sink<int32_t, kspp::left_join<std::string, std::string>::value_type>>(
         left_join,
         [&](auto r) {
           if (r->value()->second)
-            actual.push_back(make_left_join_record(r->value()->first, *r->value()->second, r->event_time()));
+            actual.push_back(make_left_join_record<int32_t, std::string, std::string>(r->key(), r->value()->first, *r->value()->second, r->event_time()));
           else
-            actual.push_back(make_left_join_record(r->value()->first, nullptr, r->event_time()));
+            actual.push_back(make_left_join_record<int32_t, std::string, std::string>(r->key(), r->value()->first, nullptr, r->event_time()));
           //std::cerr << r->event_time() << std::endl;
         });
     produce_stream1(*streamA);
@@ -167,13 +113,13 @@ int main(int argc, char **argv) {
 
     std::vector<std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, std::string>>>> expected;
     std::vector<std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, std::string>>>> actual;
-    expected.push_back(make_inner_join_record("B", "a", 5));
-    expected.push_back(make_inner_join_record("D", "d", 15));
+    expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, "B", "a", 5));
+    expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, "D", "d", 15));
 
     auto sink = topology->create_sink<kspp::genric_topic_sink<int32_t, kspp::inner_join<std::string, std::string>::value_type>>(
         left_join,
         [&](auto r) {
-          actual.push_back(make_inner_join_record(r->value()->first, r->value()->second, r->event_time()));
+          actual.push_back(make_inner_join_record<int32_t, std::string, std::string>(r->key(), r->value()->first, r->value()->second, r->event_time()));
           std::cerr << r->event_time() << std::endl;
         });
     produce_stream1(*streamA);
@@ -212,31 +158,31 @@ int main(int argc, char **argv) {
 
     std::vector<std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, boost::optional<std::string>>>>> expected;
     std::vector<std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, boost::optional<std::string>>>>> actual;
-    expected.push_back(make_left_join_record(nullptr, 1)); // this is not according to spec - but according to impl...
-    expected.push_back(make_left_join_record(nullptr, 2)); // this is not according to spec - but according to impl...
-    expected.push_back(make_left_join_record("A", nullptr, 3));
-    expected.push_back(make_left_join_record("A", "a", 4));
-    expected.push_back(make_left_join_record("B", "a", 5));
-    expected.push_back(make_left_join_record("B", "b", 6));
-    expected.push_back(make_left_join_record(nullptr, 7));
-    expected.push_back(make_left_join_record(nullptr, 8));// this is not according to spec - but according to impl...
-    expected.push_back(make_left_join_record("C", nullptr, 9));
-    expected.push_back(make_left_join_record("C", "c", 10));
-    expected.push_back(make_left_join_record("C", nullptr, 11));
-    expected.push_back(make_left_join_record(nullptr, 12));
-    expected.push_back(make_left_join_record(nullptr, 13));// this is not according to spec - but according to impl...
-    expected.push_back(make_left_join_record(nullptr, 14));// this is not according to spec - but according to impl...
-    expected.push_back(make_left_join_record("D", "d", 15));
+    expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, nullptr, 1)); // this is not according to spec - but according to impl...
+    expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, nullptr, 2)); // this is not according to spec - but according to impl...
+    expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, "A", nullptr, 3));
+    expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, "A", "a", 4));
+    expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, "B", "a", 5));
+    expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, "B", "b", 6));
+    expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, nullptr, 7));
+    expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, nullptr, 8));// this is not according to spec - but according to impl...
+    expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, "C", nullptr, 9));
+    expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, "C", "c", 10));
+    expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, "C", nullptr, 11));
+    expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, nullptr, 12));
+    expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, nullptr, 13));// this is not according to spec - but according to impl...
+    expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, nullptr, 14));// this is not according to spec - but according to impl...
+    expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, "D", "d", 15));
 
     auto sink = topology->create_sink<kspp::genric_topic_sink<int32_t, kspp::left_join<std::string, std::string>::value_type>>(
         left_join,
         [&](auto r) {
           if (r->value()==nullptr)
-            actual.push_back(make_left_join_record(nullptr, r->event_time()));
+            actual.push_back(make_left_join_record<int32_t, std::string, std::string>(r->key(), nullptr, r->event_time()));
           else if (r->value()->second)
-            actual.push_back(make_left_join_record(r->value()->first, *r->value()->second, r->event_time()));
+            actual.push_back(make_left_join_record<int32_t, std::string, std::string>(r->key(), r->value()->first, *r->value()->second, r->event_time()));
           else
-            actual.push_back(make_left_join_record(r->value()->first, nullptr, r->event_time()));
+            actual.push_back(make_left_join_record<int32_t, std::string, std::string>(r->key(), r->value()->first, nullptr, r->event_time()));
           std::cerr << r->event_time() << std::endl;
         });
     produce_stream1(*streamA);
@@ -285,29 +231,29 @@ int main(int argc, char **argv) {
 
     std::vector<std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, std::string>>>> expected;
     std::vector<std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, std::string>>>> actual;
-    expected.push_back(make_inner_join_record(nullptr, 1)); // this is not according to spec - but according to impl...
-    expected.push_back(make_inner_join_record(nullptr, 2)); // this is not according to spec - but according to impl...
-    expected.push_back(make_inner_join_record(nullptr, 3)); // this is not according to spec - but according to impl...
-    expected.push_back(make_inner_join_record("A", "a", 4));
-    expected.push_back(make_inner_join_record("B", "a", 5));
-    expected.push_back(make_inner_join_record("B", "b", 6));
-    expected.push_back(make_inner_join_record(nullptr, 7));
-    expected.push_back(make_inner_join_record(nullptr, 8));// this is not according to spec - but according to impl...
-    expected.push_back(make_inner_join_record(nullptr, 9));
-    expected.push_back(make_inner_join_record("C", "c", 10));
-    expected.push_back(make_inner_join_record(nullptr, 11));
-    expected.push_back(make_inner_join_record(nullptr, 12));// this is not according to spec - but according to impl...
-    expected.push_back(make_inner_join_record(nullptr, 13));// this is not according to spec - but according to impl...
-    expected.push_back(make_inner_join_record(nullptr, 14));// this is not according to spec - but according to impl...
-    expected.push_back(make_inner_join_record("D", "d", 15));
+    expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, nullptr, 1)); // this is not according to spec - but according to impl...
+    expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, nullptr, 2)); // this is not according to spec - but according to impl...
+    expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, nullptr, 3)); // this is not according to spec - but according to impl...
+    expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, "A", "a", 4));
+    expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, "B", "a", 5));
+    expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, "B", "b", 6));
+    expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, nullptr, 7));
+    expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, nullptr, 8));// this is not according to spec - but according to impl...
+    expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, nullptr, 9));
+    expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, "C", "c", 10));
+    expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, nullptr, 11));
+    expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, nullptr, 12));// this is not according to spec - but according to impl...
+    expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, nullptr, 13));// this is not according to spec - but according to impl...
+    expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, nullptr, 14));// this is not according to spec - but according to impl...
+    expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, "D", "d", 15));
 
     auto sink = topology->create_sink<kspp::genric_topic_sink<int32_t, kspp::inner_join<std::string, std::string>::value_type>>(
         left_join,
         [&](auto r) {
           if (r->value()==nullptr)
-            actual.push_back(make_inner_join_record(nullptr, r->event_time()));
+            actual.push_back(make_inner_join_record<int32_t, std::string, std::string>(r->key(), nullptr, r->event_time()));
           else
-            actual.push_back(make_inner_join_record(r->value()->first, r->value()->second, r->event_time()));
+            actual.push_back(make_inner_join_record<int32_t, std::string, std::string>(r->key(), r->value()->first, r->value()->second, r->event_time()));
           std::cerr << r->event_time() << std::endl;
         });
     produce_stream1(*streamA);
@@ -352,33 +298,33 @@ int main(int argc, char **argv) {
 
     std::vector<std::shared_ptr<kspp::krecord<int32_t, std::pair<boost::optional<std::string>, boost::optional<std::string>>>>> expected;
     std::vector<std::shared_ptr<kspp::krecord<int32_t, std::pair<boost::optional<std::string>, boost::optional<std::string>>>>> actual;
-    expected.push_back(make_outer_join_record(nullptr, 1)); // this is not according to spec - but according to impl...
-    expected.push_back(make_outer_join_record(nullptr, 2)); // this is not according to spec - but according to impl...
-    expected.push_back(make_outer_join_record("A", nullptr, 3));
-    expected.push_back(make_outer_join_record("A", "a", 4));
-    expected.push_back(make_outer_join_record("B", "a", 5));
-    expected.push_back(make_outer_join_record("B", "b", 6));
-    expected.push_back(make_outer_join_record(nullptr, "b", 7));
-    expected.push_back(make_outer_join_record(nullptr, 8));// this is not according to spec - but according to impl...
-    expected.push_back(make_outer_join_record("C", nullptr, 9));
-    expected.push_back(make_outer_join_record("C", "c", 10));
-    expected.push_back(make_outer_join_record("C", nullptr, 11));
-    expected.push_back(make_outer_join_record(nullptr, 12));
-    expected.push_back(make_outer_join_record(nullptr, 13));// this is not according to spec - but according to impl...
-    expected.push_back(make_outer_join_record(nullptr, "d", 14));
-    expected.push_back(make_outer_join_record("D", "d", 15));
+    expected.push_back(make_outer_join_record<int32_t, std::string, std::string>(42, nullptr, 1)); // this is not according to spec - but according to impl...
+    expected.push_back(make_outer_join_record<int32_t, std::string, std::string>(42, nullptr, 2)); // this is not according to spec - but according to impl...
+    expected.push_back(make_outer_join_record<int32_t, std::string, std::string>(42, "A", nullptr, 3));
+    expected.push_back(make_outer_join_record<int32_t, std::string, std::string>(42, "A", "a", 4));
+    expected.push_back(make_outer_join_record<int32_t, std::string, std::string>(42, "B", "a", 5));
+    expected.push_back(make_outer_join_record<int32_t, std::string, std::string>(42, "B", "b", 6));
+    expected.push_back(make_outer_join_record<int32_t, std::string, std::string>(42, nullptr, "b", 7));
+    expected.push_back(make_outer_join_record<int32_t, std::string, std::string>(42, nullptr, 8));// this is not according to spec - but according to impl...
+    expected.push_back(make_outer_join_record<int32_t, std::string, std::string>(42, "C", nullptr, 9));
+    expected.push_back(make_outer_join_record<int32_t, std::string, std::string>(42, "C", "c", 10));
+    expected.push_back(make_outer_join_record<int32_t, std::string, std::string>(42, "C", nullptr, 11));
+    expected.push_back(make_outer_join_record<int32_t, std::string, std::string>(42, nullptr, 12));
+    expected.push_back(make_outer_join_record<int32_t, std::string, std::string>(42, nullptr, 13));// this is not according to spec - but according to impl...
+    expected.push_back(make_outer_join_record<int32_t, std::string, std::string>(42, nullptr, "d", 14));
+    expected.push_back(make_outer_join_record<int32_t, std::string, std::string>(42, "D", "d", 15));
 
     auto sink = topology->create_sink<kspp::genric_topic_sink<int32_t, kspp::outer_join<std::string, std::string>::value_type>>(
         left_join,
         [&](auto r) {
           if (r->value()==nullptr)
-            actual.push_back(make_outer_join_record(nullptr, r->event_time()));
+            actual.push_back(make_outer_join_record<int32_t, std::string, std::string>(r->key(), nullptr, r->event_time()));
           else if (r->value()->first && r->value()->second)
-            actual.push_back(make_outer_join_record(*r->value()->first, *r->value()->second, r->event_time()));
+            actual.push_back(make_outer_join_record<int32_t, std::string, std::string>(r->key(), *r->value()->first, *r->value()->second, r->event_time()));
           else if (r->value()->first && !r->value()->second)
-            actual.push_back(make_outer_join_record(*r->value()->first, nullptr, r->event_time()));
+            actual.push_back(make_outer_join_record<int32_t, std::string, std::string>(r->key(), *r->value()->first, nullptr, r->event_time()));
           else if (!r->value()->first && r->value()->second)
-            actual.push_back(make_outer_join_record(nullptr, *r->value()->second, r->event_time()));
+            actual.push_back(make_outer_join_record<int32_t, std::string, std::string>(r->key(), nullptr, *r->value()->second, r->event_time()));
           std::cerr << r->event_time() << std::endl;
         });
     produce_stream1(*streamA);
