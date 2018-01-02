@@ -68,6 +68,8 @@ public:
       auto ev = this->_queue.front();
       stream_sink_print(ev, _os, _codec.get());
       this->_queue.pop_front();
+      ++(this->_processed_count);
+      this->_lag.add_event_time(kspp::milliseconds_since_epoch(), ev->event_time()); // move outside loop
       ++processed;
     }
     return processed;

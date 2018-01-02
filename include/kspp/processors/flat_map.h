@@ -14,13 +14,8 @@ namespace kspp {
     : event_consumer<SK, SV>()
     , partition_source<RK, RV>(source.get(), source->partition())
     , _source(source)
-    , _extractor(f)
-    , _in_count("in_count") {
-      _source->add_sink([this](auto r) {
-        this->_queue.push_back(r);
-      });
-      this->add_metric(&_in_count);
-      this->add_metric(&_lag);
+    , _extractor(f) {
+      _source->add_sink([this](auto r) { this->_queue.push_back(r); });
     }
 
     ~flat_map() {
@@ -45,11 +40,11 @@ namespace kspp {
       while (this->_queue.next_event_time()<=tick){
         auto trans = this->_queue.pop_and_get();
         ++processed;
-        _lag.add_event_time(tick, trans->event_time());
+        this->_lag.add_event_time(tick, trans->event_time());
+        ++(this->_processed_count);
         _currrent_id = trans->id(); // we capture this to have it in push_back callback
         _extractor(trans->record(), this);
         _currrent_id.reset(); // must be freed otherwise we continue to hold the last ev
-        ++_in_count;
       }
       return processed;
     }
@@ -84,8 +79,6 @@ namespace kspp {
     std::shared_ptr<partition_source < SK, SV>> _source;
     extractor _extractor;
     std::shared_ptr<commit_chain::autocommit_marker> _currrent_id; // used to briefly hold the commit open during process one
-    metric_counter _in_count;
-    metric_lag _lag;
   };
 }
 

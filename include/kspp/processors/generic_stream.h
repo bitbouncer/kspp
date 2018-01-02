@@ -1,24 +1,20 @@
 #include <kspp/kspp.h>
 #pragma once
 
-//TODO rename to mem_stream ???
-//add ordering of events in queue
-//change upstream lambda to insert in queue
-
 namespace kspp {
   template<class K, class V>
-  class pipe : public event_consumer<K, V>, public partition_source<K, V> {
+  class generic_stream : public event_consumer<K, V>, public partition_source<K, V> {
   public:
     typedef K key_type;
     typedef V value_type;
     typedef kspp::kevent<K, V> record_type;
 
-    pipe(topology &t, int32_t partition)
+    generic_stream(topology &t, int32_t partition)
         : event_consumer<K, V>()
         , partition_source<K, V>(nullptr, partition) {
     }
 
-    pipe(topology &topology, std::shared_ptr<kspp::partition_source<K, V>> upstream)
+    generic_stream(topology &topology, std::shared_ptr<kspp::partition_source<K, V>> upstream)
         : event_consumer<K, V>()
         , partition_source<K, V>(upstream.get(), upstream->partition()) {
       upstream->add_sink([this](auto e) {
@@ -26,7 +22,7 @@ namespace kspp {
       });
     }
 
-    pipe(topology &t, std::vector<std::shared_ptr<kspp::partition_source<K, V>>> upstream, int32_t partition)
+    generic_stream(topology &t, std::vector<std::shared_ptr<kspp::partition_source<K, V>>> upstream, int32_t partition)
         : event_consumer<K, V>()
         , partition_source<K, V>(nullptr, partition) {
       for (auto i : upstream) {
@@ -38,7 +34,7 @@ namespace kspp {
     }
 
     std::string simple_name() const override {
-      return "pipe";
+      return "generic_stream";
     }
 
     size_t process(int64_t tick) override {
@@ -50,6 +46,8 @@ namespace kspp {
       while (this->_queue.next_event_time()<=tick){
         auto p = this->_queue.pop_and_get();
         this->send_to_sinks(p);
+        ++(this->_processed_count);
+        this->_lag.add_event_time(kspp::milliseconds_since_epoch(), p->event_time()); // move outside loop
         ++processed;
       }
     }
@@ -66,18 +64,18 @@ namespace kspp {
 
 //<null, VALUE>
   template<class V>
-  class pipe<void, V> : public event_consumer<void, V>, public partition_source<void, V> {
+  class generic_stream<void, V> : public event_consumer<void, V>, public partition_source<void, V> {
   public:
     typedef void key_type;
     typedef V value_type;
     typedef kspp::kevent<void, V> record_type;
 
-    pipe(topology &t, int32_t partition)
+    generic_stream(topology &t, int32_t partition)
         : event_consumer<void, V>()
         , partition_source<void, V>(nullptr, partition) {
     }
 
-    pipe(topology &t, std::shared_ptr<kspp::partition_source<void, V>> upstream)
+    generic_stream(topology &t, std::shared_ptr<kspp::partition_source<void, V>> upstream)
         : event_consumer<void, V>(), partition_source<void, V>(upstream.get(), upstream->partition()) {
       if (upstream)
         upstream->add_sink([this](auto e) {
@@ -85,7 +83,7 @@ namespace kspp {
         });
     }
 
-    pipe(topology &t, std::vector<std::shared_ptr<kspp::partition_source<void, V>>> upstream, int32_t partition)
+    generic_stream(topology &t, std::vector<std::shared_ptr<kspp::partition_source<void, V>>> upstream, int32_t partition)
         : event_consumer<void, V>()
         , partition_source<void, V>(nullptr, partition) {
       for (auto i : upstream) {
@@ -97,7 +95,7 @@ namespace kspp {
     }
 
     std::string simple_name() const override {
-      return "pipe";
+      return "generic_stream";
     }
 
     size_t process(int64_t tick) override {
@@ -110,6 +108,8 @@ namespace kspp {
       while (this->_queue.next_event_time()<=tick){
         auto p = this->_queue.pop_and_get();
         this->send_to_sinks(p);
+        ++(this->_processed_count);
+        this->_lag.add_event_time(kspp::milliseconds_since_epoch(), p->event_time()); // move outside loop
         ++processed;
       }
       return processed;
@@ -126,18 +126,18 @@ namespace kspp {
   };
 
   template<class K>
-  class pipe<K, void> : public event_consumer<K, void>, public partition_source<K, void> {
+  class generic_stream<K, void> : public event_consumer<K, void>, public partition_source<K, void> {
   public:
     typedef K key_type;
     typedef void value_type;
     typedef kspp::kevent<K, void> record_type;
 
-    pipe(topology &t, int32_t partition)
+    generic_stream(topology &t, int32_t partition)
         : event_consumer<K, void>()
         , partition_source<K, void>(nullptr, partition) {
     }
 
-    pipe(topology &t, std::shared_ptr<kspp::partition_source<K, void>> upstream)
+    generic_stream(topology &t, std::shared_ptr<kspp::partition_source<K, void>> upstream)
         : event_consumer<K, void>()
         , partition_source<K, void>(upstream.get(), upstream->partition()) {
       if (upstream)
@@ -146,7 +146,7 @@ namespace kspp {
         });
     }
 
-    pipe(topology &t, std::vector<std::shared_ptr<kspp::partition_source<K, void>>> upstream, int32_t partition)
+    generic_stream(topology &t, std::vector<std::shared_ptr<kspp::partition_source<K, void>>> upstream, int32_t partition)
         : event_consumer<K, void>()
         , partition_source<K, void>(nullptr, partition) {
       for (auto i : upstream) {
@@ -158,7 +158,7 @@ namespace kspp {
     }
 
     std::string simple_name() const override {
-      return "pipe";
+      return "generic_stream";
     }
 
     size_t process(int64_t tick) override {
@@ -170,11 +170,12 @@ namespace kspp {
       while (this->_queue.next_event_time()<=tick){
         auto p = this->_queue.pop_and_get();
         this->send_to_sinks(p);
+        ++(this->_processed_count);
+        this->_lag.add_event_time(kspp::milliseconds_since_epoch(), p->event_time()); // move outside loop
         ++processed;
       }
       return processed;
     }
-
 
     size_t queue_size() const override {
       return event_consumer<K, void>::queue_size();

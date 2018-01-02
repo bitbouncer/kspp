@@ -14,15 +14,13 @@ namespace kspp {
   public:
     rate_limiter(topology &t, std::shared_ptr<partition_source<K, V>> source,
                  std::chrono::milliseconds agetime, size_t capacity)
-            : event_consumer<K, V>(), partition_source<K, V>(source.get(), source->partition()), _source(source),
-              _token_bucket(std::make_shared<mem_token_bucket_store<K, size_t>>(agetime, capacity)),
-              _in_count("in_count"), _out_count("out_count"), _rejection_count("rejection_count") {
+            : event_consumer<K, V>(), partition_source<K, V>(source.get(), source->partition())
+        , _source(source)
+        , _token_bucket(std::make_shared<mem_token_bucket_store<K, size_t>>(agetime, capacity))
+        , _rejection_count("rejection_count") {
       _source->add_sink([this](auto r) {
         this->_queue.push_back(r);
       });
-      this->add_metric(&_lag);
-      this->add_metric(&_in_count);
-      this->add_metric(&_out_count);
       this->add_metric(&_rejection_count);
     }
 
@@ -50,12 +48,11 @@ namespace kspp {
       while (this->_queue.next_event_time()<=tick) {
         auto trans = this->_queue.pop_and_get();
         ++processed;
-        ++_in_count;
-        _lag.add_event_time(tick, trans->event_time());
+        ++(this->_processed_count);
+        this->_lag.add_event_time(tick, trans->event_time());
         // milliseconds_since_epoch for processing time limiter
         //
         if (_token_bucket->consume(trans->record()->key(), trans->event_time())) { // TBD tick???
-          ++_out_count;
           this->send_to_sinks(trans);
         } else {
           ++_rejection_count;
@@ -79,9 +76,6 @@ namespace kspp {
   private:
     std::shared_ptr<partition_source<K, V>> _source;
     std::shared_ptr<mem_token_bucket_store<K, size_t>> _token_bucket;
-    metric_lag _lag;
-    metric_counter _in_count;
-    metric_counter _out_count;
     metric_counter _rejection_count;
   };
 } // namespace

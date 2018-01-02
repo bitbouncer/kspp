@@ -23,12 +23,8 @@ namespace kspp {
           _key_codec(key_codec),
           _val_codec(val_codec)
         , _impl(cconfig, topic)
-        , _fixed_partition(partition)
-        , _in_count("in_count")
-        , _lag() {
-      this->add_metric(&_in_count);
-      this->add_metric(&_lag);
-    }
+        , _fixed_partition(partition) {
+       }
 
     std::string simple_name() const override {
       return "kafka_partition_sink(" + _impl.topic() + ")";
@@ -37,7 +33,6 @@ namespace kspp {
     std::string topic() const override {
       return _impl.topic();
     }
-
 
     void close() override {
       flush();
@@ -84,7 +79,7 @@ namespace kspp {
         if (handle_event(ev) != 0)
           return count;
         ++count;
-        ++(this->_in_count);
+        ++(this->_processed_count);
         this->_lag.add_event_time(kspp::milliseconds_since_epoch(), ev->event_time()); // move outside loop
         this->_queue.pop_front();
       }
@@ -98,8 +93,6 @@ namespace kspp {
     std::shared_ptr<KEY_CODEC> _key_codec;
     std::shared_ptr<VAL_CODEC> _val_codec;
     size_t _fixed_partition;
-    metric_counter _in_count;
-    metric_lag _lag;
   };
 
   template<class K, class V, class KEY_CODEC, class VAL_CODEC>

@@ -70,7 +70,7 @@ namespace kspp {
         int ec = handle_event(ev);
         if (ec == 0) {
           ++count;
-          ++(this->_in_count);
+          ++(this->_processed_count);
           this->_lag.add_event_time(kspp::milliseconds_since_epoch(), ev->event_time()); // move outside loop
           this->_queue.pop_front();
           continue;
@@ -98,9 +98,9 @@ namespace kspp {
         ,  _val_codec(val_codec)
         , _impl(config, topic)
         , _partitioner(p)
-        , _in_count("in_count")
+        , _processed_count("processed_count")
         , _lag() {
-      this->add_metric(&_in_count);
+      this->add_metric(&_processed_count);
       this->add_metric(&_lag);
     }
 
@@ -111,9 +111,9 @@ namespace kspp {
         : _key_codec(key_codec)
         , _val_codec(val_codec)
         , _impl(config, topic)
-        , _in_count("in_count")
+        , _processed_count("processed_count")
         , _lag() {
-      this->add_metric(&_in_count);
+      this->add_metric(&_processed_count);
       this->add_metric(&_lag);
     }
 
@@ -134,7 +134,7 @@ namespace kspp {
     std::shared_ptr<VAL_CODEC> _val_codec;
     kafka_producer _impl;
     partitioner _partitioner;
-    metric_counter _in_count;
+    metric_counter _processed_count;
     metric_lag _lag;
   };
 

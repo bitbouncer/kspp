@@ -12,11 +12,10 @@ namespace kspp {
     ktable(topology &t, std::shared_ptr<kspp::partition_source<K, V>> source, Args... args)
             : event_consumer<K, V>(), materialized_source<K, V>(source.get(), source->partition()), _source(source),
               _state_store(this->get_storage_path(t.get_storage_path()), args...),
-              _in_count("in_count"),
               _state_store_count("state_store_count", [this]() { return _state_store.aprox_size(); }) {
       _source->add_sink([this](auto ev) {
-        _lag.add_event_time(kspp::milliseconds_since_epoch(), ev->event_time());
-        ++_in_count;
+        this->_lag.add_event_time(kspp::milliseconds_since_epoch(), ev->event_time());
+        ++(this->_processed_count);
         _state_store.insert(ev->record(), ev->offset());
         this->send_to_sinks(ev);
       });
@@ -24,8 +23,6 @@ namespace kspp {
       _state_store.set_sink([this](auto ev) {
         this->send_to_sinks(ev);
       });
-      this->add_metric(&_lag);
-      this->add_metric(&_in_count);
       this->add_metric(&_state_store_count);
     }
 
@@ -66,7 +63,7 @@ namespace kspp {
       while (this->_queue.next_event_time()<=tick) {
         auto trans = this->_queue.pop_and_get();
         _state_store.insert(trans->record(), trans->offset());
-        ++_in_count;
+        ++(this->_processed_count);
         ++processed;
         this->send_to_sinks(trans);
       }
@@ -104,8 +101,6 @@ namespace kspp {
   private:
     std::shared_ptr<kspp::partition_source<K, V>> _source;
     STATE_STORE<K, V, CODEC> _state_store;
-    metric_lag _lag;
-    metric_counter _in_count;
     metric_evaluator _state_store_count;
   };
 }

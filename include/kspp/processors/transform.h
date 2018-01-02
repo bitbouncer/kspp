@@ -71,7 +71,6 @@ namespace kspp {
   private:
     std::shared_ptr <partition_source<K, SV>> _source;
     extractor _extractor;
-    metric_lag _lag;
   };
 
 
@@ -113,7 +112,8 @@ namespace kspp {
       size_t processed = 0;
       while (this->_queue.next_event_time()<=tick) {
         auto trans = this->_queue.pop_and_get();
-        _lag.add_event_time(tick, trans->event_time());
+        this->_lag.add_event_time(tick, trans->event_time());
+        ++(this->_processed_count);
         _currrent_id = trans->id(); // we capture this to have it in push_back callback
         _extractor(trans, this);
         _currrent_id.reset(); // must be freed otherwise we continue to hold the last ev
@@ -145,7 +145,6 @@ namespace kspp {
     std::shared_ptr <partition_source<K, V>> _source;
     extractor _extractor;
     std::shared_ptr <commit_chain::autocommit_marker> _currrent_id; // used to briefly hold the commit open during process one
-    metric_lag _lag;
   };
 }
 

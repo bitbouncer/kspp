@@ -7,7 +7,7 @@
 #include <kspp/sources/kafka_source.h>
 #include <kspp/processors/filter.h>
 #include <kspp/processors/flat_map.h>
-#include <kspp/sources/pipe.h>
+#include <kspp/processors/generic_stream.h>
 #include <kspp/sinks/stream_sink.h>
 #include <kspp/sinks/kafka_sink.h>
 #include <kspp/utils/kafka_utils.h>
@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
       return (record->key() != "hello");
     });
 
-    auto mypipes = topology->create_processors<kspp::pipe<std::string, void>>(filtered_streams);
+    auto mypipes = topology->create_processors<kspp::generic_stream<std::string, void>>(filtered_streams);
     auto sinks = topology->create_processors<stream_sink<std::string, void>>(mypipes, &std::cerr);
     for (auto i : mypipes)
       i->push_back("extra message injected");

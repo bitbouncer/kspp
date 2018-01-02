@@ -22,14 +22,8 @@ namespace kspp {
     , _counter_store(this->get_storage_path(t.get_storage_path()), args...)
     , _punctuate_intervall(punctuate_intervall.count()) // tbd we should use intervalls since epoch similar to windowed
     , _next_punctuate(0)
-    , _dirty(false)
-    , _in_count("in_count")
-    , _lag() {
-      source->add_sink([this](auto e) {
-        this->_queue.push_back(e);
-      });
-      this->add_metric(&_in_count);
-      this->add_metric(&_lag);
+    , _dirty(false) {
+      source->add_sink([this](auto e) { this->_queue.push_back(e); });
     }
 
     ~count_by_key() {
@@ -66,8 +60,8 @@ namespace kspp {
         }
 
         ++processed;
-        ++_in_count;
-        _lag.add_event_time(tick, trans->event_time());
+        ++(this->_processed_count);
+        this->_lag.add_event_time(tick, trans->event_time());
         _dirty = true; // aggregated but not committed
         _counter_store.insert(std::make_shared<krecord<K, V>>(trans->record()->key(), 1), trans->offset());
       }
@@ -79,7 +73,7 @@ namespace kspp {
     }
 
     size_t queue_size() const override {
-      return event_consumer < K, void > ::queue_size();
+      return event_consumer<K, void>::queue_size();
     }
 
     bool eof() const override {
@@ -94,7 +88,7 @@ namespace kspp {
         for (auto i : _counter_store) {
           //we need to create a new instance
           this->send_to_sinks(
-                  std::make_shared<kevent<K, V>>(std::make_shared<krecord<K, V>>(i->key(), *i->value(), timestamp)));
+              std::make_shared<kevent<K, V>>(std::make_shared<krecord<K, V>>(i->key(), *i->value(), timestamp)));
         }
       }
       _dirty = false;
@@ -119,7 +113,5 @@ namespace kspp {
     int64_t _punctuate_intervall;
     int64_t _next_punctuate;
     bool _dirty;
-    metric_counter _in_count;
-    metric_lag _lag;
   };
 }

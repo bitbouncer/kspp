@@ -17,11 +17,7 @@ namespace kspp {
             _counter_store(this->get_storage_path(topology.get_storage_path()), args...), _punctuate_intervall(
                     punctuate_intervall.count()) // tbd we should use intervalls since epoch similar to windowed
               , _next_punctuate(0), _dirty(false), _in_count("in_count"), _lag() {
-      source->add_sink([this](auto e) {
-        this->_queue.push_back(e);
-      });
-      this->add_metric(&_in_count);
-      this->add_metric(&_lag);
+      source->add_sink([this](auto e) { this->_queue.push_back(e); });
     }
 
     ~count_by_value() {
@@ -31,7 +27,6 @@ namespace kspp {
     std::string simple_name() const override {
       return "count_by_value";
     }
-
 
     void start(int64_t offset) override {
       if (offset != kspp::OFFSET_STORED)
@@ -60,9 +55,9 @@ namespace kspp {
           _dirty = false;
         }
 
-        ++_in_count;
+        ++(this->_processed_count);
         ++processed;
-        _lag.add_event_time(tick, trans->event_time());
+        this->_lag.add_event_time(tick, trans->event_time());
         _dirty = true; // aggregated but not committed
         _counter_store.insert(trans->record(), trans->offset());
       }
@@ -122,7 +117,5 @@ namespace kspp {
     int64_t _punctuate_intervall;
     int64_t _next_punctuate;
     bool _dirty;
-    metric_counter _in_count;
-    metric_lag _lag;
   };
 }

@@ -8,10 +8,7 @@ namespace kspp {
 
     delay(topology_base &topology, std::shared_ptr <partition_source<K, V>> source, int ms)
             : partition_source<K, V>(source->partition()), _source(source), _delay(ms) {
-      _source->add_sink([this](auto r) {
-        this->_queue.push_back(r);
-      });
-      this->add_metric(&_lag);
+      _source->add_sink([this](auto r) { this->_queue.push_back(r); });
     }
 
     ~delay() {
@@ -36,8 +33,9 @@ namespace kspp {
       size_t processed=0;
       while (this->_queue.next_event_time()<=tick) {
         auto r = this->_queue.front();
-        _lag.add_event_time(tick, r->event_time());
         if (r->event_time + _delay > tick) {
+          _lag.add_event_time(tick, r->event_time());
+          ++(this->_processed_count);
           this->_queue.pop_front();
           this->send_to_sinks(r);
           ++processed;
@@ -63,6 +61,5 @@ namespace kspp {
   private:
     std::shared_ptr <partition_source<K, V>> _source;
     int _delay;
-    metric_lag _lag;
   };
 } // namespace

@@ -78,7 +78,7 @@ namespace kspp {
         int ec = handle_event(ev);
         if (ec == 0) {
           ++count;
-          ++(this->_in_count);
+          ++(this->_processed_count);
           this->_lag.add_event_time(kspp::milliseconds_since_epoch(), ev->event_time()); // move outside loop
           this->_queue.pop_front();
           continue;
@@ -104,11 +104,7 @@ namespace kspp {
         , _key_codec(key_codec)
         , _val_codec(val_codec)
         , _impl(cconfig, topic)
-        , _partitioner(p)
-        , _in_count("in_count")
-        , _lag() {
-      this->add_metric(&_in_count);
-      this->add_metric(&_lag);
+        , _partitioner(p) {
     }
 
     kafka_sink_base(std::shared_ptr<cluster_config> cconfig,
@@ -118,11 +114,7 @@ namespace kspp {
         : topic_sink<K, V>()
         , _key_codec(key_codec)
         , _val_codec(val_codec)
-        , _impl(cconfig, topic)
-        , _in_count("in_count")
-        , _lag() {
-      this->add_metric(&_in_count);
-      this->add_metric(&_lag);
+        , _impl(cconfig, topic) {
     }
 
     virtual int handle_event(std::shared_ptr<kevent<K, V>>) = 0;
@@ -131,8 +123,6 @@ namespace kspp {
     std::shared_ptr<VAL_CODEC> _val_codec;
     kafka_producer _impl;
     partitioner _partitioner;
-    metric_counter _in_count;
-    metric_lag _lag;
   };
 
   template<class K, class V, class KEY_CODEC, class VAL_CODEC>

@@ -15,7 +15,6 @@ namespace kspp {
       _source->add_sink([this](auto r) {
         this->_queue.push_back(r);
       });
-      this->add_metric(&_lag);
       this->add_metric(&_predicate_false);
     }
 
@@ -42,7 +41,8 @@ namespace kspp {
       while (this->_queue.next_event_time()<=tick){
         auto trans = this->_queue.pop_and_get();
         ++processed;
-       _lag.add_event_time(tick, trans->event_time());
+       this->_lag.add_event_time(tick, trans->event_time());
+        ++(this->_processed_count);
         if (_predicate(trans->record())) {
           this->send_to_sinks(trans);
         } else {
@@ -67,7 +67,6 @@ namespace kspp {
   private:
     std::shared_ptr<partition_source < K, V>> _source;
     predicate _predicate;
-    metric_lag _lag;
     metric_counter _predicate_false;
   };
 } // namespace

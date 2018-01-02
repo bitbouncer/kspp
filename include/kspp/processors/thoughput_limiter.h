@@ -48,11 +48,12 @@ namespace kspp {
       size_t processed = 0;
       while (this->_queue.next_event_time()<=tick) {
        auto trans = this->_queue.front();
-        _lag.add_event_time(tick, trans->event_time());
         if (_token_bucket->consume(0, tick)) {
+          this->_lag.add_event_time(tick, trans->event_time());
+          ++(this->_processed_count);
+          ++processed;
           this->_queue.pop_front();
           this->send_to_sinks(trans);
-          ++processed;
         } else {
           break;
         }
@@ -75,6 +76,5 @@ namespace kspp {
   private:
     std::shared_ptr<partition_source < K, V>> _source;
     std::shared_ptr<mem_token_bucket_store < int, size_t>> _token_bucket;
-    metric_lag _lag;
   };
 } // namespace

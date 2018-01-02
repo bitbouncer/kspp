@@ -39,7 +39,6 @@ namespace kspp {
     , _left_stream (left)
     , _right_table(right) {
       _left_stream->add_sink([this](auto r) { this->_queue.push_back(r); });
-      this->add_metric(&_lag);
     }
 
     ~kstream_left_join() {
@@ -74,7 +73,8 @@ namespace kspp {
       // reuse event time & commit it from event stream
       while (this->_queue.next_event_time() <= tick) {
         auto left = this->_queue.pop_and_get();
-        _lag.add_event_time(tick, left->event_time());
+        this->_lag.add_event_time(tick, left->event_time());
+        ++(this->_processed_count);
         ++processed;
         // null values from left should be ignored
         if (left->record() && left->record()->value()) {
@@ -106,7 +106,6 @@ namespace kspp {
   private:
     std::shared_ptr<partition_source<K, LEFT>>   _left_stream;
     std::shared_ptr<materialized_source<K, RIGHT>> _right_table;
-    metric_lag _lag;
   };
 
   template<class K, class LEFT, class RIGHT>
@@ -123,7 +122,6 @@ namespace kspp {
     , _left_stream (left)
     , _right_table(right) {
       _left_stream->add_sink([this](auto r) { this->_queue.push_back(r); });
-      this->add_metric(&_lag);
     }
 
     ~kstream_inner_join() {
@@ -158,7 +156,8 @@ namespace kspp {
       // reuse event time & commit it from event stream
       while (this->_queue.next_event_time() <= tick) {
         auto left = this->_queue.pop_and_get();
-        _lag.add_event_time(tick, left->event_time());
+        this->_lag.add_event_time(tick, left->event_time());
+        ++(this->_processed_count);
         ++processed;
         // null values from left should be ignored
         if (left->record() && left->record()->value()) {
@@ -189,7 +188,6 @@ namespace kspp {
   private:
     std::shared_ptr<partition_source<K, LEFT>>   _left_stream;
     std::shared_ptr<materialized_source<K, RIGHT>> _right_table;
-    metric_lag _lag;
   };
 
 
@@ -208,7 +206,6 @@ namespace kspp {
     , _right_table(right) {
       _left_table->add_sink([this](auto r) { this->_queue.push_back(r); });
       _right_table->add_sink([this](auto r) { this->_queue.push_back(r); });
-      this->add_metric(&_lag);
     }
 
     ~ktable_left_join() {
@@ -244,7 +241,8 @@ namespace kspp {
       //
       while (this->_queue.next_event_time() <= tick) {
         auto ev = this->_queue.pop_and_get();
-        _lag.add_event_time(tick, ev->event_time());
+        this->_lag.add_event_time(tick, ev->event_time());
+        ++(this->_processed_count);
         ++processed;
         // null values from left should be ignored
 
@@ -282,7 +280,6 @@ namespace kspp {
   private:
     std::shared_ptr<materialized_source<K, LEFT>>  _left_table;
     std::shared_ptr<materialized_source<K, RIGHT>> _right_table;
-    metric_lag _lag;
   };
 
 
@@ -300,7 +297,6 @@ namespace kspp {
     , _right_table(right) {
       _left_table->add_sink([this](auto r)  { this->_queue.push_back(r); });
       _right_table->add_sink([this](auto r) { this->_queue.push_back(r); });
-      this->add_metric(&_lag);
     }
 
     ~ktable_inner_join() {
@@ -336,7 +332,8 @@ namespace kspp {
       //
       while (this->_queue.next_event_time() <= tick) {
         auto ev = this->_queue.pop_and_get();
-        _lag.add_event_time(tick, ev->event_time());
+        this->_lag.add_event_time(tick, ev->event_time());
+        ++(this->_processed_count);
         ++processed;
         // null values from left should be ignored
 
@@ -369,7 +366,6 @@ namespace kspp {
   private:
     std::shared_ptr<materialized_source<K, LEFT>>  _left_table;
     std::shared_ptr<materialized_source<K, RIGHT>> _right_table;
-    metric_lag _lag;
   };
 
 
@@ -386,7 +382,6 @@ namespace kspp {
     , _right_table(right) {
       _left_table->add_sink([this](auto r)  { this->_queue.push_back(r); });
       _right_table->add_sink([this](auto r) { this->_queue.push_back(r); });
-      this->add_metric(&_lag);
     }
 
     ~ktable_outer_join() {
@@ -422,7 +417,8 @@ namespace kspp {
       //
       while (this->_queue.next_event_time() <= tick) {
         auto ev = this->_queue.pop_and_get();
-        _lag.add_event_time(tick, ev->event_time());
+        this->_lag.add_event_time(tick, ev->event_time());
+        ++(this->_processed_count);
         ++processed;
         // null values from left should be ignored
 
@@ -464,6 +460,5 @@ namespace kspp {
   private:
     std::shared_ptr<materialized_source<K, LEFT>>  _left_table;
     std::shared_ptr<materialized_source<K, RIGHT>> _right_table;
-    metric_lag _lag;
   };
 }

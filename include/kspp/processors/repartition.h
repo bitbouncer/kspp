@@ -60,8 +60,8 @@ namespace kspp {
       size_t processed = 0;
       while (this->_queue.next_event_time()<=tick) {
         auto trans = this->_queue.pop_and_get();
-        this->_queue.pop_front();
-        _lag.add_event_time(tick, trans->event_time());
+        this->_lag.add_event_time(tick, trans->event_time());
+        ++(this->_processed_count);
         auto routing_row = _routing_table->get(trans->record()->key());
         if (routing_row) {
           if (routing_row->value()) {
@@ -94,7 +94,6 @@ namespace kspp {
     std::shared_ptr<materialized_source<K, FOREIGN_KEY>> _routing_table;
     std::shared_ptr<topic_sink<K, V>> _topic_sink;
     std::shared_ptr<CODEC> _repartition_codec;
-    metric_lag _lag;
   };
 }
 

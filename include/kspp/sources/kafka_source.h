@@ -58,8 +58,8 @@ namespace kspp {
         return 0;
       auto p = _incomming_msg.front();
       _incomming_msg.pop_front();
-      ++_in_count;
-      _lag.add_event_time(tick, p->event_time());
+      ++(this->_processed_count);
+      this->_lag.add_event_time(tick, p->event_time());
       this->send_to_sinks(p);
       return 1;
     }
@@ -86,16 +86,12 @@ namespace kspp {
         , _commit_chain(topic, partition)
         , _start_point_ms(std::chrono::time_point_cast<std::chrono::milliseconds>(start_point).time_since_epoch().count())
         , _parse_errors("parse_errors")
-        , _in_count("in_count")
         , _commit_chain_size("commit_chain_size", [this]() { return _commit_chain.size(); })
-        , _lag() {
-      this->add_metric(&_in_count);
+    {
       this->add_metric(&_commit_chain_size);
-      this->add_metric(&_lag);
     }
 
     virtual std::shared_ptr<kevent<K, V>> parse(const std::unique_ptr<RdKafka::Message> &ref) = 0;
-
 
     void thread_f()
     {
@@ -155,9 +151,7 @@ namespace kspp {
     commit_chain _commit_chain;
     int64_t _start_point_ms;
     metric_counter _parse_errors;
-    metric_counter _in_count;
     metric_evaluator _commit_chain_size;
-    metric_lag _lag;
   };
 
   template<class K, class V,  class KEY_CODEC, class VAL_CODEC>
