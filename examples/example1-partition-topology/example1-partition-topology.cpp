@@ -228,10 +228,10 @@ int main(int argc, char **argv) {
 
     auto table = topology->create_processor<kspp::ktable<int64_t, user_profile_data, kspp::mem_store>>(table_source);
 
-    auto join = topology->create_processor<kspp::left_join<int64_t, page_view_data, user_profile_data>>(stream, table);
+    auto join = topology->create_processor<kspp::kstream_left_join<int64_t, page_view_data, user_profile_data>>(stream, table);
 
     auto decorated_data = topology->create_processor<kspp::flat_map<
-        int64_t, kspp::left_join<int64_t, page_view_data, user_profile_data>::value_type,
+        int64_t, kspp::left_join<page_view_data, user_profile_data>::value_type,
         int64_t, page_view_decorated>>(
         join,
         [](const auto record, auto flat_map) {

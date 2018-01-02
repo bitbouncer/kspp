@@ -112,7 +112,7 @@ int main(int argc, char **argv) {
     auto streamB = topology->create_processor<kspp::pipe<int32_t, std::string>>(0);
     auto ktableB = topology->create_processor<kspp::ktable<int32_t, std::string, kspp::mem_store>>(streamB);
 
-    auto left_join = topology->create_processor<kspp::left_join<int32_t, std::string, std::string>>(streamA, ktableB);
+    auto left_join = topology->create_processor<kspp::kstream_left_join<int32_t, std::string, std::string>>(streamA, ktableB);
 
     std::vector<std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, boost::optional<std::string>>>>> expected;
     std::vector<std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, boost::optional<std::string>>>>> actual;
@@ -121,7 +121,10 @@ int main(int argc, char **argv) {
     expected.push_back(make_left_join_record("C", nullptr, 9));
     expected.push_back(make_left_join_record("D", "d", 15));
 
-    auto sink = topology->create_sink<kspp::genric_topic_sink<int32_t, kspp::left_join<int32_t, std::string, std::string>::value_type>>(
+    //decltype(left_join)::element_type::value_type
+
+
+    auto sink = topology->create_sink<kspp::genric_topic_sink<int32_t, kspp::left_join<std::string, std::string>::value_type>>(
         left_join,
         [&](auto r) {
           if (r->value()->second)
@@ -163,14 +166,14 @@ int main(int argc, char **argv) {
     auto streamB = topology->create_processor<kspp::pipe<int32_t, std::string>>(0);
     auto ktableB = topology->create_processor<kspp::ktable<int32_t, std::string, kspp::mem_store>>(streamB);
 
-    auto left_join = topology->create_processor<kspp::inner_join<int32_t, std::string, std::string>>(streamA, ktableB);
+    auto left_join = topology->create_processor<kspp::kstream_inner_join<int32_t, std::string, std::string>>(streamA, ktableB);
 
     std::vector<std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, std::string>>>> expected;
     std::vector<std::shared_ptr<kspp::krecord<int32_t, std::pair<std::string, std::string>>>> actual;
     expected.push_back(make_inner_join_record("B", "a", 5));
     expected.push_back(make_inner_join_record("D", "d", 15));
 
-    auto sink = topology->create_sink<kspp::genric_topic_sink<int32_t, kspp::inner_join<int32_t, std::string, std::string>::value_type>>(
+    auto sink = topology->create_sink<kspp::genric_topic_sink<int32_t, kspp::inner_join<std::string, std::string>::value_type>>(
         left_join,
         [&](auto r) {
           actual.push_back(make_inner_join_record(r->value()->first, r->value()->second, r->event_time()));
@@ -228,7 +231,7 @@ int main(int argc, char **argv) {
     expected.push_back(make_left_join_record(nullptr, 14));// this is not according to spec - but according to impl...
     expected.push_back(make_left_join_record("D", "d", 15));
 
-    auto sink = topology->create_sink<kspp::genric_topic_sink<int32_t, kspp::left_join<int32_t, std::string, std::string>::value_type>>(
+    auto sink = topology->create_sink<kspp::genric_topic_sink<int32_t, kspp::left_join<std::string, std::string>::value_type>>(
         left_join,
         [&](auto r) {
           if (r->value()==nullptr)
@@ -301,7 +304,7 @@ int main(int argc, char **argv) {
     expected.push_back(make_inner_join_record(nullptr, 14));// this is not according to spec - but according to impl...
     expected.push_back(make_inner_join_record("D", "d", 15));
 
-    auto sink = topology->create_sink<kspp::genric_topic_sink<int32_t, kspp::ktable_inner_join<int32_t, std::string, std::string>::value_type>>(
+    auto sink = topology->create_sink<kspp::genric_topic_sink<int32_t, kspp::inner_join<std::string, std::string>::value_type>>(
         left_join,
         [&](auto r) {
           if (r->value()==nullptr)
@@ -368,7 +371,7 @@ int main(int argc, char **argv) {
     expected.push_back(make_outer_join_record(nullptr, "d", 14));
     expected.push_back(make_outer_join_record("D", "d", 15));
 
-    auto sink = topology->create_sink<kspp::genric_topic_sink<int32_t, kspp::ktable_outer_join<int32_t, std::string, std::string>::value_type>>(
+    auto sink = topology->create_sink<kspp::genric_topic_sink<int32_t, kspp::outer_join<std::string, std::string>::value_type>>(
         left_join,
         [&](auto r) {
           if (r->value()==nullptr)

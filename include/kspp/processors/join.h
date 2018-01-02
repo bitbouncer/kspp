@@ -8,65 +8,60 @@
 #pragma once
 
 namespace kspp {
-// alternative? replace with std::shared_ptr<const kevent<K, R>> left, std::shared_ptr<const kevent<K, R>> right, std::shared_ptr<kevent<K, R>> result;  
-
-  template<class K, class leftV, class tableV>
-  class left_join
-      : public event_consumer<K, leftV>, public partition_source<K, std::pair<leftV, boost::optional<tableV>>> {
+  template<class LEFT, class RIGHT>
+  class left_join{
   public:
-    typedef std::pair<leftV, boost::optional<tableV>> value_type;
+    typedef std::pair<LEFT, boost::optional<RIGHT>> value_type;
+  };
 
-    left_join(topology &t,
-              std::shared_ptr<partition_source < K, leftV>>
+  template<class LEFT, class RIGHT>
+  class inner_join {
+  public:
+    typedef std::pair<LEFT, RIGHT> value_type;
+  };
 
-    left,
-    std::shared_ptr<materialized_source < K, tableV>> right)
-    :
+  template<class LEFT, class RIGHT>
+  class outer_join {
+  public:
+    typedef std::pair<boost::optional<LEFT>, boost::optional<RIGHT>> value_type;
+  };
 
-    event_consumer<K, leftV>()
-    , partition_source<K, value_type>(left
+  template<class K, class LEFT, class RIGHT>
+  class kstream_left_join : public event_consumer<K, LEFT>, public partition_source<K, typename left_join<LEFT, RIGHT>::value_type> {
+  public:
+    typedef typename left_join<LEFT, RIGHT>::value_type value_type;
 
-    .
-
-    get(), left
-
-    ->
-
-    partition()
-
-    )
-    ,
-
-    _left_stream (left)
+    kstream_left_join(topology &t,
+              std::shared_ptr<partition_source<K, LEFT>> left,
+    std::shared_ptr<materialized_source<K, RIGHT>> right)
+    : event_consumer<K, LEFT>()
+    , partition_source<K, value_type>(left.get(), left->partition())
+    , _left_stream (left)
     , _right_table(right) {
-      _left_stream->add_sink([this](auto r) {
-        this->_queue.push_back(r);
-      });
+      _left_stream->add_sink([this](auto r) { this->_queue.push_back(r); });
       this->add_metric(&_lag);
     }
 
-    ~left_join() {
+    ~kstream_left_join() {
       close();
     }
 
     std::string simple_name() const override {
-      return "left_join";
+      return "kstream_left_join";
     }
 
     void start(int64_t offset) override {
-      // if we request begin - should we restart table here???
-      //it seems that we should retain whatever's in the cache in as many cases as possible
-      _right_table->start(kspp::OFFSET_STORED);
-      _left_stream->start(offset);
-    }
+       _left_stream->start(offset);
+       _right_table->start(offset);
+      }
 
     void close() override {
-      _right_table->close();
       _left_stream->close();
+      _right_table->close();
     }
 
     size_t queue_size() const override {
-      return event_consumer < K, leftV > ::queue_size();
+      return event_consumer<K, LEFT>::queue_size();
     }
 
     size_t process(int64_t tick) override {
@@ -85,7 +80,7 @@ namespace kspp {
         if (left->record() && left->record()->value()) {
           auto right_record = _right_table->get(left->record()->key());
 
-          boost::optional<tableV> right_val;
+          boost::optional<RIGHT> right_val;
           if (right_record && right_record->value())
             right_val = *right_record->value();
 
@@ -99,7 +94,6 @@ namespace kspp {
       return processed;
     }
 
-
     void commit(bool flush) override {
       _right_table->commit(flush);
       _left_stream->commit(flush);
@@ -110,60 +104,39 @@ namespace kspp {
     }
 
   private:
-    std::shared_ptr<partition_source < K, leftV>>   _left_stream;
-    std::shared_ptr<materialized_source < K, tableV>> _right_table;
-    //value_joiner _value_joiner;
+    std::shared_ptr<partition_source<K, LEFT>>   _left_stream;
+    std::shared_ptr<materialized_source<K, RIGHT>> _right_table;
     metric_lag _lag;
   };
 
-
-  template<class K, class leftV, class tableV>
-  class inner_join : public event_consumer<K, leftV>, public partition_source<K, std::pair<leftV, tableV>> {
+  template<class K, class LEFT, class RIGHT>
+  class kstream_inner_join : public event_consumer<K, LEFT>, public partition_source<K, typename inner_join<LEFT, RIGHT>::value_type> {
   public:
-    typedef std::pair<leftV, tableV> value_type;
+    typedef typename inner_join<LEFT, RIGHT>::value_type value_type;
 
-    inner_join(topology &t,
-               std::shared_ptr<partition_source < K, leftV>>
-
-    left,
-    std::shared_ptr<materialized_source < K, tableV>> right)
-    :
-
-    event_consumer<K, leftV>()
-    , partition_source<K, value_type>(left
-
-    .
-
-    get(), left
-
-    ->
-
-    partition()
-
-    )
-    ,
-
-    _left_stream (left)
+    kstream_inner_join(topology &t,
+               std::shared_ptr<partition_source<K, LEFT>>
+               left,
+               std::shared_ptr<materialized_source<K, RIGHT>> right)
+    : event_consumer<K, LEFT>()
+    , partition_source<K, value_type>(left.get(), left->partition())
+    , _left_stream (left)
     , _right_table(right) {
-      _left_stream->add_sink([this](auto r) {
-        this->_queue.push_back(r);
-      });
+      _left_stream->add_sink([this](auto r) { this->_queue.push_back(r); });
       this->add_metric(&_lag);
     }
 
-    ~inner_join() {
+    ~kstream_inner_join() {
       close();
     }
 
     std::string simple_name() const override {
-      return "inner_join";
+      return "kstream_inner_join";
     }
 
     void start(int64_t offset) override {
-      // if we request begin - should we restart table here???
-      //it seems that we should retain whatever's in the cache in as many cases as possible
-      _right_table->start(kspp::OFFSET_STORED);
       _left_stream->start(offset);
+      _right_table->start(offset);
     }
 
     void close() override {
@@ -172,7 +145,7 @@ namespace kspp {
     }
 
     size_t queue_size() const override {
-      return event_consumer < K, leftV > ::queue_size();
+      return event_consumer<K, LEFT >::queue_size();
     }
 
     size_t process(int64_t tick) override {
@@ -204,7 +177,6 @@ namespace kspp {
       return processed;
     }
 
-
     void commit(bool flush) override {
       _right_table->commit(flush);
       _left_stream->commit(flush);
@@ -215,48 +187,27 @@ namespace kspp {
     }
 
   private:
-    std::shared_ptr<partition_source < K, leftV>>   _left_stream;
-    std::shared_ptr<materialized_source < K, tableV>> _right_table;
-    //value_joiner _value_joiner;
+    std::shared_ptr<partition_source<K, LEFT>>   _left_stream;
+    std::shared_ptr<materialized_source<K, RIGHT>> _right_table;
     metric_lag _lag;
   };
 
 
-  template<class K, class leftV, class tableV>
+  template<class K, class LEFT, class RIGHT>
   class ktable_left_join
-      : public event_consumer<K, leftV>, public partition_source<K, std::pair<leftV, boost::optional<tableV>>> {
+      : public event_consumer<K, LEFT>, public partition_source<K, typename left_join<LEFT, RIGHT>::value_type> {
   public:
-    typedef std::pair<leftV, boost::optional<tableV>> value_type;
+    typedef typename left_join<LEFT, RIGHT>::value_type value_type;
 
     ktable_left_join(topology &t,
-                     std::shared_ptr<materialized_source < K, leftV>>
-
-    left,
-    std::shared_ptr<materialized_source < K, tableV>> right)
-    :
-
-    event_consumer<K, leftV>()
-    , partition_source<K, value_type>(left
-
-    .
-
-    get(), left
-
-    ->
-
-    partition()
-
-    )
-    ,
-
-    _left_table (left)
+                     std::shared_ptr<materialized_source < K, LEFT>> left,
+    std::shared_ptr<materialized_source<K, RIGHT>> right)
+    : event_consumer<K, LEFT>()
+    , partition_source<K, value_type>(left.get(), left->partition())
+    , _left_table (left)
     , _right_table(right) {
-      _left_table->add_sink([this](auto r) {
-        this->_queue.push_back(r);
-      });
-      _right_table->add_sink([this](auto r) {
-        this->_queue.push_back(r);
-      });
+      _left_table->add_sink([this](auto r) { this->_queue.push_back(r); });
+      _right_table->add_sink([this](auto r) { this->_queue.push_back(r); });
       this->add_metric(&_lag);
     }
 
@@ -281,7 +232,7 @@ namespace kspp {
     }
 
     size_t queue_size() const override {
-      return event_consumer < K, leftV > ::queue_size();
+      return event_consumer<K, LEFT > ::queue_size();
     }
 
     size_t process(int64_t tick) override {
@@ -303,7 +254,7 @@ namespace kspp {
           //std::shared_ptr<leftV> left_val = std::make_shared<leftV>(*left_record->value());
 
           auto right_record = _right_table->get(ev->record()->key());
-          boost::optional<tableV> right_val;
+          boost::optional<RIGHT> right_val;
           if (right_record && right_record->value())
             right_val = *right_record->value();
 
@@ -319,7 +270,6 @@ namespace kspp {
       return processed;
     }
 
-
     void commit(bool flush) override {
       _right_table->commit(flush);
       _left_table->commit(flush);
@@ -330,46 +280,26 @@ namespace kspp {
     }
 
   private:
-    std::shared_ptr<materialized_source < K, leftV>>  _left_table;
-    std::shared_ptr<materialized_source < K, tableV>> _right_table;
+    std::shared_ptr<materialized_source<K, LEFT>>  _left_table;
+    std::shared_ptr<materialized_source<K, RIGHT>> _right_table;
     metric_lag _lag;
   };
 
 
-  template<class K, class leftV, class tableV>
-  class ktable_inner_join : public event_consumer<K, leftV>, public partition_source<K, std::pair<leftV, tableV>> {
+  template<class K, class LEFT, class RIGHT>
+  class ktable_inner_join : public event_consumer<K, LEFT>, public partition_source<K, typename inner_join<LEFT, RIGHT>::value_type> {
   public:
-    typedef std::pair<leftV, tableV> value_type;
+    typedef typename inner_join<LEFT, RIGHT>::value_type value_type;
 
     ktable_inner_join(topology &t,
-                      std::shared_ptr<materialized_source < K, leftV>>
-
-    left,
-    std::shared_ptr<materialized_source < K, tableV>> right)
-    :
-
-    event_consumer<K, leftV>()
-    , partition_source<K, value_type>(left
-
-    .
-
-    get(), left
-
-    ->
-
-    partition()
-
-    )
-    ,
-
-    _left_table (left)
+                      std::shared_ptr<materialized_source<K, LEFT>> left,
+    std::shared_ptr<materialized_source<K, RIGHT>> right)
+    : event_consumer<K, LEFT>()
+    , partition_source<K, value_type>(left.get(), left->partition())
+    , _left_table (left)
     , _right_table(right) {
-      _left_table->add_sink([this](auto r) {
-        this->_queue.push_back(r);
-      });
-      _right_table->add_sink([this](auto r) {
-        this->_queue.push_back(r);
-      });
+      _left_table->add_sink([this](auto r)  { this->_queue.push_back(r); });
+      _right_table->add_sink([this](auto r) { this->_queue.push_back(r); });
       this->add_metric(&_lag);
     }
 
@@ -394,7 +324,7 @@ namespace kspp {
     }
 
     size_t queue_size() const override {
-      return event_consumer < K, leftV > ::queue_size();
+      return event_consumer<K, LEFT > ::queue_size();
     }
 
     size_t process(int64_t tick) override {
@@ -437,48 +367,25 @@ namespace kspp {
     }
 
   private:
-    std::shared_ptr<materialized_source < K, leftV>>  _left_table;
-    std::shared_ptr<materialized_source < K, tableV>> _right_table;
+    std::shared_ptr<materialized_source<K, LEFT>>  _left_table;
+    std::shared_ptr<materialized_source<K, RIGHT>> _right_table;
     metric_lag _lag;
   };
 
 
-  template<class K, class leftV, class tableV>
+  template<class K, class LEFT, class RIGHT>
   class ktable_outer_join
-      : public event_consumer<K, leftV>,
-        public partition_source<K, std::pair<boost::optional<leftV>, boost::optional<tableV>>> {
+      : public event_consumer<K, LEFT>, public partition_source<K, typename outer_join<LEFT, RIGHT>::value_type> {
   public:
-    typedef std::pair<boost::optional<leftV>, boost::optional<tableV>> value_type;
+    typedef typename outer_join<LEFT, RIGHT>::value_type value_type;
 
-    ktable_outer_join(topology &t,
-                      std::shared_ptr<materialized_source < K, leftV>>
-
-    left,
-    std::shared_ptr<materialized_source < K, tableV>> right)
-    :
-
-    event_consumer<K, leftV>()
-    , partition_source<K, value_type>(left
-
-    .
-
-    get(), left
-
-    ->
-
-    partition()
-
-    )
-    ,
-
-    _left_table (left)
+    ktable_outer_join(topology &t, std::shared_ptr<materialized_source<K, LEFT>> left, std::shared_ptr<materialized_source<K, RIGHT>> right)
+    : event_consumer<K, LEFT>()
+    , partition_source<K, value_type>(left.get(), left->partition())
+    , _left_table (left)
     , _right_table(right) {
-      _left_table->add_sink([this](auto r) {
-        this->_queue.push_back(r);
-      });
-      _right_table->add_sink([this](auto r) {
-        this->_queue.push_back(r);
-      });
+      _left_table->add_sink([this](auto r)  { this->_queue.push_back(r); });
+      _right_table->add_sink([this](auto r) { this->_queue.push_back(r); });
       this->add_metric(&_lag);
     }
 
@@ -503,7 +410,7 @@ namespace kspp {
     }
 
     size_t queue_size() const override {
-      return event_consumer < K, leftV > ::queue_size();
+      return event_consumer<K, LEFT>::queue_size();
     }
 
     size_t process(int64_t tick) override {
@@ -523,8 +430,8 @@ namespace kspp {
         auto left_record = _left_table->get(ev->record()->key());
 
         if (right_record || left_record) {
-          boost::optional<tableV> right_val;
-          boost::optional<leftV> left_val;
+          boost::optional<RIGHT> right_val;
+          boost::optional<LEFT> left_val;
 
           if (right_record && right_record->value())
             right_val = *right_record->value();
@@ -555,8 +462,8 @@ namespace kspp {
     }
 
   private:
-    std::shared_ptr<materialized_source < K, leftV>>  _left_table;
-    std::shared_ptr<materialized_source < K, tableV>> _right_table;
+    std::shared_ptr<materialized_source<K, LEFT>>  _left_table;
+    std::shared_ptr<materialized_source<K, RIGHT>> _right_table;
     metric_lag _lag;
   };
 }

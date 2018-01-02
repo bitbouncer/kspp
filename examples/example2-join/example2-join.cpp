@@ -43,11 +43,11 @@ int main(int argc, char **argv) {
         partition_list, "kspp_test0_table");
     auto tables = topology->create_processors<kspp::ktable<boost::uuids::uuid, int64_t, kspp::mem_store>>(
         table_sources);
-    auto joins = topology->create_processors<kspp::left_join<boost::uuids::uuid, int64_t, int64_t>>(
+    auto joins = topology->create_processors<kspp::kstream_left_join<boost::uuids::uuid, int64_t, int64_t>>(
         streams,
         tables);
 
-    auto sinks = topology->create_sink<kspp::genric_topic_sink<boost::uuids::uuid, kspp::left_join<boost::uuids::uuid, int64_t, int64_t>::value_type>>(
+    auto sinks = topology->create_sink<kspp::genric_topic_sink<boost::uuids::uuid, kspp::left_join<int64_t, int64_t>::value_type>>(
         joins,
         [&join_count](auto r) {
           join_count++;
