@@ -23,6 +23,23 @@ namespace kspp {
             : _event_time(ts), _key(k), _value(nullptr) {
     }
 
+    inline bool operator==(const krecord<K,V>& other) const
+    {
+      if (_event_time != other._event_time)
+        return false;
+
+      if (_key != other._key)
+        return false;
+
+      if (_value.get() == nullptr)
+        if (other._value.get() == nullptr)
+          return true;
+      else
+          return false;
+
+      return (*_value.get() == *other._value.get());
+    }
+
     inline const K &key() const {
       return _key;
     }
