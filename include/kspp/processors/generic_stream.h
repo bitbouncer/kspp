@@ -56,6 +56,11 @@ namespace kspp {
       return event_consumer<K, V>::queue_size();
     }
 
+    int64_t next_event_time() const override {
+      return event_consumer<K, V>::next_event_time();
+    }
+
+
     void commit(bool force) override {
       for (auto i : this->upstream_)
         i->commit(force);
@@ -119,6 +124,11 @@ namespace kspp {
       return event_consumer<void, V>::queue_size();
     }
 
+    int64_t next_event_time() const override {
+      return event_consumer<void, V>::next_event_time();
+    }
+
+
     void commit(bool force) override {
       for (auto i : this->upstream_)
         i->commit(force);
@@ -179,6 +189,10 @@ namespace kspp {
 
     size_t queue_size() const override {
       return event_consumer<K, void>::queue_size();
+    }
+
+    int64_t next_event_time() const override {
+      return event_consumer<K, void>::next_event_time();
     }
 
     void commit(bool force) override {

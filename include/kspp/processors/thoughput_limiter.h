@@ -73,6 +73,10 @@ namespace kspp {
       return event_consumer<K, V>::queue_size();
     }
 
+    int64_t next_event_time() const override {
+      return event_consumer<K, V>::next_event_time();
+    }
+
   private:
     std::shared_ptr<partition_source < K, V>> _source;
     std::shared_ptr<mem_token_bucket_store < int, size_t>> _token_bucket;

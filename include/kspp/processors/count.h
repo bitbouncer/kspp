@@ -76,6 +76,10 @@ namespace kspp {
       return event_consumer<K, void>::queue_size();
     }
 
+    int64_t next_event_time() const override {
+      return event_consumer<K, void>::next_event_time();
+    }
+
     bool eof() const override {
       return queue_size() == 0 && _stream->eof();
     }

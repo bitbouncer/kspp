@@ -58,7 +58,10 @@ namespace kspp {
     }
 
     size_t queue_size() const override {
-      return event_consumer < SK, SV > ::queue_size();
+      return event_consumer<SK, SV>::queue_size();
+    }
+    int64_t next_event_time() const override {
+      return event_consumer<SK, SV>::next_event_time();
     }
 
     /**

@@ -24,6 +24,10 @@ namespace kspp {
       return _queue.size();
     }
 
+    inline int64_t next_event_time() const {
+      return this->_queue.next_event_time();
+    }
+
     inline void push_back(std::shared_ptr<krecord<K, V>> r) {
       this->_queue.push_back(std::make_shared<kevent<K, V>>(r));
     }
@@ -87,6 +91,10 @@ namespace kspp {
       return _queue.size();
     }
 
+    inline int64_t next_event_time() const {
+      return this->_queue.next_event_time();
+    }
+
     inline void push_back(std::shared_ptr <krecord<void, V>> r) {
       this->_queue.push_back(std::make_shared < kevent < void, V >> (r));
     }
@@ -142,6 +150,10 @@ namespace kspp {
 
     inline size_t queue_size() const {
       return _queue.size();
+    }
+
+    inline int64_t next_event_time() const {
+      return this->_queue.next_event_time();
     }
 
     inline void push_back(std::shared_ptr <krecord<K, void>> r) {

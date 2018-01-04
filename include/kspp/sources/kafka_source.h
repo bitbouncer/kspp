@@ -52,6 +52,10 @@ namespace kspp {
       return _incomming_msg.size();
     }
 
+    int64_t next_event_time() const override {
+      return _incomming_msg.next_event_time();
+    }
+
     //TBD return up to timestamp
     size_t process(int64_t tick) override {
       if (_incomming_msg.size() == 0)

@@ -106,9 +106,12 @@ namespace kspp {
     /**
     * returns the inbound queue len
     */
-    virtual size_t queue_size() const {
-      return 0;
-    }
+    virtual size_t queue_size() const = 0;
+
+    /**
+     * returns the next event to be processed or INT64_MAX if no events exist
+     */
+    virtual int64_t next_event_time() const = 0;
 
     /**
     * returns the outbound queue len (only sinks has this??? TODO
@@ -242,6 +245,10 @@ namespace kspp {
       return event_consumer<K, V>::value_type_name();
     }
 
+    virtual int64_t next_event_time() const {
+      return event_consumer<K, V>::next_event_time();
+    }
+
     size_t queue_size() const override {
       return event_consumer<K, V>::queue_size();
     }
@@ -292,6 +299,10 @@ namespace kspp {
 
     size_t queue_size() const override {
       return event_consumer<K, V>::queue_size();
+    }
+
+    virtual int64_t next_event_time() const {
+      return event_consumer<K, V>::next_event_time();
     }
 
   protected:
