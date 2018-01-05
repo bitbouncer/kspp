@@ -1,6 +1,7 @@
 #include <kspp/topology.h>
 #include <kspp/kspp.h>
 #include <kspp/utils/kafka_utils.h>
+#include <algorithm>
 
 using namespace std::chrono_literals;
 
@@ -12,8 +13,9 @@ namespace kspp {
       , _cluster_config(cc)
       , _is_started(false)
       , _topology_id(topology_id)
-      , _next_gc_ts(0) {
-
+      , _next_gc_ts(0)
+      , _min_buffering_ms(cc->get_min_topology_buffering().count())
+      , _max_pending_sink_messages(cc->get_max_pending_sink_messages()) {
     LOG(INFO) << "topology created, name:" << name();
   }
 
@@ -171,7 +173,7 @@ namespace kspp {
     size_t sink_queue_len = 0;
     for (auto &&i : _sinks)
       sink_queue_len += i->outbound_queue_len();
-    if (sink_queue_len > 50000)
+    if (sink_queue_len > _max_pending_sink_messages)
       return 0;
 
     //int64_t tick = milliseconds_since_epoch();
@@ -193,6 +195,46 @@ namespace kspp {
     }
 
     return res;
+  }
+
+  std::size_t topology::process_1s(){
+    for (auto &&i : _sinks)
+      i->poll(0);
+    for (auto &&i : _partition_processors)
+      i->poll(0);
+
+    size_t sink_queue_len = 0;
+    for (auto &&i : _sinks)
+      sink_queue_len += i->outbound_queue_len();
+    if (sink_queue_len > _max_pending_sink_messages)
+      return 0;
+
+    int64_t min_ts = INT64_MAX;
+    for (auto &&i : _partition_processors)
+      min_ts = std::min(min_ts, i->next_event_time());
+
+
+    int64_t max_ts = std::min(min_ts+1000, kspp::milliseconds_since_epoch()-_min_buffering_ms);
+
+    for (auto &&i : _sinks)
+      i->process(max_ts);
+
+    size_t ev_count=0;
+
+    for (int64_t ts = min_ts; ts != max_ts; ++ts)
+    for (auto &&i : _partition_processors)
+      i->process(ts);
+
+    for (auto &&i : _sinks)
+      i->process(max_ts);
+
+    if (max_ts > _next_gc_ts) {
+      for (auto &&i : _partition_processors)
+        i->garbage_collect(max_ts);
+      for (auto &&i : _sinks)
+        i->garbage_collect(max_ts);
+      _next_gc_ts = max_ts + 10000; // 10 sec
+    }
   }
 
   void topology::close() {

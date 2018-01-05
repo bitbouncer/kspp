@@ -7,7 +7,6 @@
 #include <kspp/state_stores/mem_store.h>
 #include <kspp/processors/ktable.h>
 #include <kspp/processors/join.h>
-//#include <kspp/sinks/generic_sink.h>
 #include <kspp/sinks/array_sink.h>
 
 /*
@@ -112,8 +111,7 @@ int main(int argc, char **argv) {
 
     topology->start(kspp::OFFSET_BEGINNING);
 
-    for (int64_t ts=0; ts!=20; ++ts)
-      topology->process(ts);
+    topology->process_1s();
 
     assert(expected.size() == actual.size());
     for (int i = 0; i != expected.size(); ++i)
@@ -161,8 +159,7 @@ int main(int argc, char **argv) {
 
     topology->start(kspp::OFFSET_BEGINNING);
 
-    for (int64_t ts=0; ts!=20; ++ts)
-      topology->process(ts);
+    topology->process_1s();
 
     assert(expected.size() == actual.size());
     for (int i = 0; i != expected.size(); ++i)
@@ -210,8 +207,7 @@ int main(int argc, char **argv) {
 
     topology->start(kspp::OFFSET_BEGINNING);
 
-    for (int64_t ts=0; ts!=20; ++ts)
-      topology->process(ts);
+    topology->process_1s();
 
     assert(expected.size() == actual.size());
     for (int i = 0; i != expected.size(); ++i)
@@ -259,8 +255,8 @@ int main(int argc, char **argv) {
 
     topology->start(kspp::OFFSET_BEGINNING);
 
-    for (int64_t ts=0; ts!=20; ++ts)
-      topology->process(ts);
+    topology->process_1s();
+
 
     assert(expected.size() == actual.size());
     for (int i = 0; i != expected.size(); ++i)

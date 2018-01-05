@@ -37,6 +37,8 @@ namespace kspp {
 
     bool eof();
 
+    std::size_t process_1s();
+
     std::size_t process(int64_t ts); // =milliseconds_since_epoch()
 
     void close();
@@ -160,7 +162,8 @@ namespace kspp {
     std::vector<std::shared_ptr<processor>> _sinks;
     std::vector<std::shared_ptr<partition_processor>> _top_partition_processors;
     int64_t _next_gc_ts;
-
+    int64_t _min_buffering_ms;
+    size_t _max_pending_sink_messages;
     std::set<std::string> _precondition_topics;
     std::string _precondition_consumer_group;
   };

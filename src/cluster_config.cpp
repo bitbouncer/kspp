@@ -11,11 +11,13 @@ using namespace std::chrono_literals;
 
 namespace kspp {
   cluster_config::cluster_config()
-      : producer_buffering_(std::chrono::milliseconds(1000))
+      : min_topology_buffering_(std::chrono::milliseconds(1000))
+      , producer_buffering_(std::chrono::milliseconds(1000))
       , producer_message_timeout_(std::chrono::milliseconds(0))
       , consumer_buffering_(std::chrono::milliseconds(1000))
       , schema_registry_timeout_(std::chrono::milliseconds(10000))
       , cluster_state_timeout_(std::chrono::seconds(60))
+      , max_pending_sink_messages_(50000)
       , fail_fast_(true) {
   }
 
@@ -145,6 +147,22 @@ namespace kspp {
 
   std::chrono::milliseconds cluster_config::get_producer_message_timeout() const {
     return producer_message_timeout_;
+  }
+
+  void cluster_config::set_min_topology_buffering(std::chrono::milliseconds timeout) {
+    min_topology_buffering_ = timeout;
+  }
+
+  std::chrono::milliseconds cluster_config::get_min_topology_buffering() const{
+    return min_topology_buffering_;
+  }
+
+  void cluster_config::set_max_pending_sink_messages(size_t sz){
+    max_pending_sink_messages_ = sz;
+  }
+
+  size_t cluster_config::get_max_pending_sink_messages() const {
+    return max_pending_sink_messages_;
   }
 
   void cluster_config::set_fail_fast(bool state) {

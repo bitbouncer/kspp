@@ -27,6 +27,12 @@ namespace kspp {
     void set_producer_message_timeout(std::chrono::milliseconds timeout);
     std::chrono::milliseconds get_producer_message_timeout() const;
 
+    void set_min_topology_buffering(std::chrono::milliseconds timeout);
+    std::chrono::milliseconds get_min_topology_buffering() const;
+
+    void set_max_pending_sink_messages(size_t sz);
+    size_t get_max_pending_sink_messages() const;
+
     void set_ca_cert_path(std::string path);
     std::string get_ca_cert_path() const;
 
@@ -64,11 +70,13 @@ namespace kspp {
     std::string client_cert_path_;
     std::string private_key_path_;
     std::string private_key_passphrase_;
+    std::chrono::milliseconds min_topology_buffering_;
     std::chrono::milliseconds producer_buffering_;
     std::chrono::milliseconds producer_message_timeout_;
     std::chrono::milliseconds consumer_buffering_;
     std::chrono::milliseconds schema_registry_timeout_;
     std::chrono::seconds cluster_state_timeout_;
+    size_t max_pending_sink_messages_;
     std::string root_path_;
     std::string schema_registry_uri_;
     bool fail_fast_;
