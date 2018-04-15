@@ -34,7 +34,7 @@ int main(int argc, char **argv) {
   for (int i = 0; i != 10; ++i)
     ids.push_back(to_uuid(i));
 
-  std::cerr << "creating " << avro_stream->simple_name() << std::endl;
+  std::cerr << "creating " << avro_stream->log_name() << std::endl;
   for (int64_t update_nr = 0; update_nr != 10; ++update_nr) {
     for (auto &i : ids) {
 

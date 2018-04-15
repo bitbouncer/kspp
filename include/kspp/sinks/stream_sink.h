@@ -36,6 +36,7 @@ void stream_sink_print(std::shared_ptr<kevent<K, void>> ev, std::ostream &_os, k
 
 template<class K, class V>
 class stream_sink : public partition_sink<K, V> {
+  static constexpr const char* PROCESSOR_NAME = "stream_sink";
 public:
   enum { MAX_KEY_SIZE = 1000 };
 
@@ -44,14 +45,15 @@ public:
   , _os (*os)
   , _codec(std::make_shared<kspp::text_serdes>()) {
     source->add_sink(this);
+    this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "stream_sink");
   }
 
   ~stream_sink() override {
     this->flush();;
   }
 
-  std::string simple_name() const override {
-    return "stream_sink";
+  std::string log_name() const override {
+    return PROCESSOR_NAME;
   }
 
   size_t queue_size() const override {

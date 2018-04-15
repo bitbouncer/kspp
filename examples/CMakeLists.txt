@@ -19,6 +19,10 @@ add_subdirectory(example12-generic-avro)
 #    add_subdirectory(example13-zk)
 #endif ()
 
-
 add_subdirectory(example14-raw-sink)
 add_subdirectory(example17-kafka-utils)
+
+add_subdirectory(example18-metrics20-ingest-telegraf)
+add_subdirectory(example18-metrics20-map)
+add_subdirectory(example18-metrics20-reduce)
+add_subdirectory(example18-metrics20-statsd)

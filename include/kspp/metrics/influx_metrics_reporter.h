@@ -24,6 +24,7 @@ namespace kspp {
     std::shared_ptr<kspp::kafka_sink<std::string, std::string, kspp::text_serdes, kspp::text_serdes>> _sink;
     const std::string _prefix;
     const std::string _tags;
+    std::vector<metrics20::avro::metrics20_key_tags_t> _real_tags;
     const std::string _hostname;
     std::shared_ptr<std::thread> _thread;
   };

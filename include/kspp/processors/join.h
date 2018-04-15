@@ -32,23 +32,21 @@ namespace kspp {
   make_left_join_record(KEY key, LEFT a, RIGHT b, int64_t ts) {
     auto pair = std::make_shared<std::pair<LEFT, boost::optional<RIGHT>>>(a, b);
     return std::make_shared<kspp::krecord<KEY, std::pair<LEFT, boost::optional<RIGHT>>>>(key, pair, ts);
-  };
+  }
 
   template<class KEY, class LEFT, class RIGHT>
   std::shared_ptr<kspp::krecord<KEY, std::pair<std::string, boost::optional<std::string>>>>
   make_left_join_record(KEY key, std::string a, std::nullptr_t, int64_t ts) {
     auto pair = std::make_shared<std::pair<LEFT, boost::optional<RIGHT>>>(a, boost::optional<RIGHT>());
-    return std::make_shared<kspp::krecord<int32_t, std::pair<std::string, boost::optional<std::string>>>>(key, pair,
-                                                                                                          ts);
-  };
+    return std::make_shared<kspp::krecord<int32_t, std::pair<std::string, boost::optional<std::string>>>>(key, pair, ts);
+  }
 
   template<class KEY, class LEFT, class RIGHT>
   std::shared_ptr<kspp::krecord<KEY, std::pair<std::string, boost::optional<std::string>>>>
   make_left_join_record(KEY key, std::nullptr_t, int64_t ts) {
     std::shared_ptr<std::pair<LEFT, boost::optional<RIGHT>>> pair; // nullptr..
     return std::make_shared<kspp::krecord<KEY, std::pair<LEFT, boost::optional<RIGHT>>>>(key, pair, ts);
-  };
-
+  }
 
   //INNER JOIN
   template<class KEY, class LEFT, class RIGHT>
@@ -56,53 +54,49 @@ namespace kspp {
   make_inner_join_record(KEY key, LEFT a, RIGHT b, int64_t ts) {
     auto pair = std::make_shared<std::pair<LEFT, RIGHT>>(a, b);
     return std::make_shared<kspp::krecord<KEY, std::pair<LEFT, RIGHT>>>(key, pair, ts);
-  };
+  }
 
   template<class KEY, class LEFT, class RIGHT>
   std::shared_ptr<kspp::krecord<KEY, std::pair<LEFT, RIGHT>>>
   make_inner_join_record(KEY key, std::nullptr_t, int64_t ts) {
     std::shared_ptr<std::pair<LEFT, RIGHT>> pair; // nullptr..
     return std::make_shared<kspp::krecord<KEY, std::pair<LEFT, RIGHT>>>(key, pair, ts);
-  };
+  }
 
 //OUTER JOIN
   template<class KEY, class LEFT, class RIGHT>
   std::shared_ptr<kspp::krecord<KEY, std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>>>
   make_outer_join_record(KEY key, LEFT a, RIGHT b, int64_t ts) {
     auto pair = std::make_shared<std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>>(a, b);
-    return std::make_shared<kspp::krecord<KEY, std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>>>(key, pair,
-                                                                                                          ts);
-  };
+    return std::make_shared<kspp::krecord<KEY, std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>>>(key, pair, ts);
+  }
 
   template<class KEY, class LEFT, class RIGHT>
   std::shared_ptr<kspp::krecord<KEY, std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>>>
   make_outer_join_record(KEY key, LEFT a, std::nullptr_t, int64_t ts) {
     auto pair = std::make_shared<std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>>(a, boost::optional<RIGHT>());
-    return std::make_shared<kspp::krecord<KEY, std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>>>(key, pair,
-                                                                                                          ts);
-  };
+    return std::make_shared<kspp::krecord<KEY, std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>>>(key, pair, ts);
+  }
 
   template<class KEY, class LEFT, class RIGHT>
   std::shared_ptr<kspp::krecord<KEY, std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>>>
   make_outer_join_record(KEY key, std::nullptr_t, RIGHT b, int64_t ts) {
     auto pair = std::make_shared<std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>>(boost::optional<LEFT>(), b);
-    return std::make_shared<kspp::krecord<KEY, std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>>>(key, pair,
-                                                                                                          ts);
-  };
+    return std::make_shared<kspp::krecord<KEY, std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>>>(key, pair, ts);
+  }
 
   template<class KEY, class LEFT, class RIGHT>
   std::shared_ptr<kspp::krecord<KEY, std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>>>
   make_outer_join_record(KEY key, std::nullptr_t, int64_t ts) {
     std::shared_ptr<std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>> pair; // nullptr..
-    return std::make_shared<kspp::krecord<KEY, std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>>>(key, pair,
-                                                                                                          ts);
-  };
-
+    return std::make_shared<kspp::krecord<KEY, std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>>>(key, pair, ts);
+  }
 
   template<class KEY, class LEFT, class RIGHT>
   class kstream_left_join :
       public event_consumer<KEY, LEFT>,
       public partition_source<KEY, typename left_join<LEFT, RIGHT>::value_type> {
+    static constexpr const char* PROCESSOR_NAME = "kstream_left_join";
   public:
     typedef typename left_join<LEFT, RIGHT>::value_type value_type;
 
@@ -114,6 +108,8 @@ namespace kspp {
     , partition_source<KEY, value_type>(left.get(), left->partition())
     , _left_stream (left)
     , _right_table(right) {
+      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "kstream_left_join");
+      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(left->partition()));
       _left_stream->add_sink([this](auto r) { this->_queue.push_back(r); });
     }
 
@@ -121,8 +117,8 @@ namespace kspp {
       close();
     }
 
-    std::string simple_name() const override {
-      return "kstream_left_join";
+    std::string log_name() const override {
+      return PROCESSOR_NAME;
     }
 
     void start(int64_t offset) override {
@@ -194,6 +190,7 @@ namespace kspp {
   class kstream_inner_join :
       public event_consumer<KEY, LEFT>,
       public partition_source<KEY, typename inner_join<LEFT, RIGHT>::value_type> {
+    static constexpr const char* PROCESSOR_NAME = "kstream_inner_join";
   public:
     typedef typename inner_join<LEFT, RIGHT>::value_type value_type;
 
@@ -204,6 +201,8 @@ namespace kspp {
     : event_consumer<KEY, LEFT>(), partition_source<KEY, value_type>(left.get(), left->partition())
     , _left_stream (left)
     , _right_table(right) {
+      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "kstream_inner_join");
+      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(left->partition()));
       _left_stream->add_sink([this](auto r) { this->_queue.push_back(r); });
     }
 
@@ -211,8 +210,8 @@ namespace kspp {
       close();
     }
 
-    std::string simple_name() const override {
-      return "kstream_inner_join";
+    std::string log_name() const override {
+      return PROCESSOR_NAME;
     }
 
     void start(int64_t offset) override {
@@ -284,6 +283,7 @@ namespace kspp {
   class ktable_left_join
       : public event_consumer<KEY, LEFT>,
         public partition_source<KEY, typename left_join<LEFT, RIGHT>::value_type> {
+    static constexpr const char* PROCESSOR_NAME = "ktable_left_join";
   public:
     typedef typename left_join<LEFT, RIGHT>::value_type value_type;
 
@@ -295,6 +295,8 @@ namespace kspp {
     , partition_source<KEY, value_type>(left.get(), left->partition())
     , _left_table (left)
     , _right_table(right) {
+      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "ktable_left_join");
+      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(left->partition()));
       _left_table->add_sink([this](auto r) { this->_queue.push_back(r); });
       _right_table->add_sink([this](auto r) { this->_queue.push_back(r); });
     }
@@ -303,8 +305,8 @@ namespace kspp {
       close();
     }
 
-    std::string simple_name() const override {
-      return "ktable_left_join";
+    std::string log_name() const override {
+      return PROCESSOR_NAME;
     }
 
     void start(int64_t offset) override {
@@ -384,6 +386,7 @@ namespace kspp {
   template<class KEY, class LEFT, class RIGHT>
   class ktable_inner_join
       : public event_consumer<KEY, LEFT>, public partition_source<KEY, typename inner_join<LEFT, RIGHT>::value_type> {
+    static constexpr const char* PROCESSOR_NAME = "ktable_inner_join";
   public:
     typedef typename inner_join<LEFT, RIGHT>::value_type value_type;
 
@@ -395,6 +398,8 @@ namespace kspp {
     , partition_source<KEY, value_type>(left.get(), left->partition())
     , _left_table (left)
     , _right_table(right) {
+      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "ktable_inner_join");
+      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(left->partition()));
       _left_table->add_sink([this](auto r) { this->_queue.push_back(r); });
       _right_table->add_sink([this](auto r) { this->_queue.push_back(r); });
     }
@@ -403,8 +408,8 @@ namespace kspp {
       close();
     }
 
-    std::string simple_name() const override {
-      return "ktable_inner_join";
+    std::string log_name() const override {
+      return PROCESSOR_NAME;
     }
 
     void start(int64_t offset) override {
@@ -477,6 +482,7 @@ namespace kspp {
   template<class KEY, class LEFT, class RIGHT>
   class ktable_outer_join
       : public event_consumer<KEY, LEFT>, public partition_source<KEY, typename outer_join<LEFT, RIGHT>::value_type> {
+    static constexpr const char* PROCESSOR_NAME = "ktable_outer_join";
   public:
     typedef typename outer_join<LEFT, RIGHT>::value_type value_type;
 
@@ -487,6 +493,8 @@ namespace kspp {
     , partition_source<KEY, value_type>(left.get(), left->partition())
     , _left_table (left)
     , _right_table(right) {
+      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "ktable_outer_join");
+      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(left->partition()));
       _left_table->add_sink([this](auto r) { this->_queue.push_back(r); });
       _right_table->add_sink([this](auto r) { this->_queue.push_back(r); });
     }
@@ -495,8 +503,8 @@ namespace kspp {
       close();
     }
 
-    std::string simple_name() const override {
-      return "ktable_outer_join";
+    std::string log_name() const override {
+      return PROCESSOR_NAME;
     }
 
     void start(int64_t offset) override {

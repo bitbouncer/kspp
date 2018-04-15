@@ -30,7 +30,7 @@ namespace kspp {
   class processor {
   protected:
     processor() :
-      _processed_count("processed_count") {
+      _processed_count("processed", "msg") {
       add_metric(&_processed_count);
       add_metric(&_lag);
     }
@@ -94,9 +94,9 @@ namespace kspp {
 
     /**
      *
-     * @return the simple name of the processor
+     * @return the log name of the processor
      */
-    virtual std::string simple_name() const = 0;
+    virtual std::string log_name() const = 0;
 
     /**
     * Process input records up to ts -
@@ -136,6 +136,11 @@ namespace kspp {
      */
     virtual std::string topic() const {
       return "";
+    }
+
+    void add_metrics_tag(std::string key, std::string value) {
+       for (auto i : _metrics)
+         i->add_tag(key, value);
     }
 
   protected:
@@ -317,8 +322,7 @@ namespace kspp {
     typedef V value_type;
 
     partition_source(partition_processor *upstream, int32_t partition)
-        : partition_processor(upstream, partition), _out_messages("out_message_count") {
-      this->add_metric(&_out_messages);
+        : partition_processor(upstream, partition) {
     }
 
     std::string key_type_name() const override {
@@ -362,12 +366,10 @@ namespace kspp {
     virtual void send_to_sinks(std::shared_ptr<kevent<K, V>> p)  {
       if (!p)
         return;
-      ++_out_messages;
       for (auto f : _sinks)
         f(p);
     }
 
-    metric_counter _out_messages;
     std::vector<sink_function> _sinks;
   };
 
@@ -431,7 +433,7 @@ namespace kspp {
 
     virtual boost::filesystem::path get_storage_path(boost::filesystem::path storage_path) {
       boost::filesystem::path p(std::move(storage_path));
-      p /= sanitize_filename(this->simple_name() + this->record_type_name() + "#" + std::to_string(this->partition()));
+      p /= sanitize_filename(this->log_name() + this->record_type_name() + "#" + std::to_string(this->partition()));
       return p;
     }
   };

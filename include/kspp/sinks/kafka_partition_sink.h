@@ -13,6 +13,7 @@ namespace kspp {
   // this is just to only override the necessary key value specifications
   template<class K, class V, class KEY_CODEC, class VAL_CODEC>
   class kafka_partition_sink_base : public partition_sink<K, V> {
+    static constexpr const char* PROCESSOR_NAME = "kafka_partition_sink";
   protected:
     kafka_partition_sink_base(std::shared_ptr<cluster_config> cconfig,
                               std::string topic,
@@ -24,10 +25,13 @@ namespace kspp {
           _val_codec(val_codec)
         , _impl(cconfig, topic)
         , _fixed_partition(partition) {
+      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "kafka_partition_sink");
+      this->add_metrics_tag(KSPP_TOPIC_TAG, topic);
+      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(partition));
        }
 
-    std::string simple_name() const override {
-      return "kafka_partition_sink(" + _impl.topic() + ")";
+    std::string log_name() const override {
+      return PROCESSOR_NAME;
     }
 
     std::string topic() const override {
@@ -140,6 +144,7 @@ namespace kspp {
 // value only topic
   template<class V, class VAL_CODEC>
   class kafka_partition_sink<void, V, void, VAL_CODEC> : public kafka_partition_sink_base<void, V, void, VAL_CODEC> {
+    static constexpr const char* PROCESSOR_NAME = "kafka_partition_sink";
   public:
     kafka_partition_sink(topology &t,
                          int32_t partition,

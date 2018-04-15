@@ -9,6 +9,7 @@
 namespace kspp {
   template<class K, class V, template<typename, typename, typename> class STATE_STORE, class CODEC = void>
   class count_by_value : public materialized_source<K, V> {
+    static constexpr const char* PROCESSOR_NAME = "count_by_value";
   public:
     template<typename... Args>
     count_by_value(topology_base &topology, std::shared_ptr <partition_source<K, V>> source,
@@ -18,14 +19,16 @@ namespace kspp {
                     punctuate_intervall.count()) // tbd we should use intervalls since epoch similar to windowed
               , _next_punctuate(0), _dirty(false), _in_count("in_count"), _lag() {
       source->add_sink([this](auto e) { this->_queue.push_back(e); });
+      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "count_by_value");
+      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(source->partition()));
     }
 
     ~count_by_value() {
       close();
     }
 
-    std::string simple_name() const override {
-      return "count_by_value";
+    std::string log_name() const override {
+      return PROCESSOR_NAME;
     }
 
     void start(int64_t offset) override {

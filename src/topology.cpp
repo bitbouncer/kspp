@@ -54,28 +54,28 @@ namespace kspp {
     return s4;
   }
 
-  void topology::init_metrics() {
+  void topology::init_metrics(std::vector<metrics20::avro::metrics20_key_tags_t> app_tags) {
     for (auto &&i : _partition_processors) {
+      for (auto j : app_tags)
+        i->add_metrics_tag(j.key, j.value);
+
+      i->add_metrics_tag(KSPP_KEY_TYPE_TAG, escape_influx(i->key_type_name()));
+      i->add_metrics_tag(KSPP_VALUE_TYPE_TAG, escape_influx(i->value_type_name()));
+      i->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(i->partition()));
+
       for (auto &&j : i->get_metrics()) {
-        std::string metrics_tags = "depth=" + std::to_string(i->depth())
-                                   + ",key_type=" + escape_influx(i->key_type_name())
-                                   + ",partition=" + std::to_string(i->partition())
-                                   + ",processor_type=" + escape_influx(i->simple_name())
-                                   + ",record_type=" + escape_influx(i->record_type_name())
-                                   + ",topology=" + escape_influx(_topology_id)
-                                   + ",value_type=" + escape_influx(i->value_type_name());
-        j->set_tags(metrics_tags);
+        j->finalize_tags(); // maybe add string escape function here...
       }
     }
 
     for (auto &&i : _sinks) {
+      for (auto j : app_tags)
+        i->add_metrics_tag(j.key, j.value);
+      i->add_metrics_tag(KSPP_KEY_TYPE_TAG, escape_influx(i->key_type_name()));
+      i->add_metrics_tag(KSPP_VALUE_TYPE_TAG, escape_influx(i->value_type_name()));
+
       for (auto &&j : i->get_metrics()) {
-        std::string metrics_tags = "key_type=" + escape_influx(i->key_type_name())
-                                   + ",processor_type=" + escape_influx(i->simple_name())
-                                   + ",record_type=" + escape_influx(i->record_type_name())
-                                   + ",topology=" + escape_influx(_topology_id)
-                                   + ",value_type=" + escape_influx(i->value_type_name());
-        j->set_tags(metrics_tags);
+        j->finalize_tags();
       }
     }
   }
@@ -100,10 +100,10 @@ namespace kspp {
           upstream_of_something = true;
       }
       if (!upstream_of_something) {
-        DLOG(INFO) << "topology << " << name() << ": adding " << i->simple_name() << " to top";
+        DLOG(INFO) << "topology << " << name() << ": adding " << i->log_name() << " to top";
         _top_partition_processors.push_back(i);
       } else {
-        DLOG(INFO) << "topology << " << name() << ": skipping poll of " << i->simple_name();
+        DLOG(INFO) << "topology << " << name() << ": skipping poll of " << i->log_name();
       }
     }
   }
@@ -318,4 +318,5 @@ namespace kspp {
     return top_of_topology;
   }
 }
+
 

@@ -4,6 +4,7 @@
 namespace kspp {
   template<class K, class V>
   class generic_stream : public event_consumer<K, V>, public partition_source<K, V> {
+    static constexpr const char* PROCESSOR_NAME = "generic_stream";
   public:
     typedef K key_type;
     typedef V value_type;
@@ -12,6 +13,8 @@ namespace kspp {
     generic_stream(topology &t, int32_t partition)
         : event_consumer<K, V>()
         , partition_source<K, V>(nullptr, partition) {
+      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
+      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(partition));
     }
 
     generic_stream(topology &topology, std::shared_ptr<kspp::partition_source<K, V>> upstream)
@@ -20,6 +23,8 @@ namespace kspp {
       upstream->add_sink([this](auto e) {
         this->_queue.push_back(e);
       });
+      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
+      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(upstream->partition()));
     }
 
     generic_stream(topology &t, std::vector<std::shared_ptr<kspp::partition_source<K, V>>> upstream, int32_t partition)
@@ -31,10 +36,12 @@ namespace kspp {
           this->_queue.push_back(e);
         });
       }
+      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
+      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(partition));
     }
 
-    std::string simple_name() const override {
-      return "generic_stream";
+    std::string log_name() const override {
+      return PROCESSOR_NAME;
     }
 
     size_t process(int64_t tick) override {
@@ -70,6 +77,7 @@ namespace kspp {
 //<null, VALUE>
   template<class V>
   class generic_stream<void, V> : public event_consumer<void, V>, public partition_source<void, V> {
+    static constexpr const char* PROCESSOR_NAME = "generic_stream";
   public:
     typedef void key_type;
     typedef V value_type;
@@ -78,6 +86,8 @@ namespace kspp {
     generic_stream(topology &t, int32_t partition)
         : event_consumer<void, V>()
         , partition_source<void, V>(nullptr, partition) {
+      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
+      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(partition));
     }
 
     generic_stream(topology &t, std::shared_ptr<kspp::partition_source<void, V>> upstream)
@@ -86,6 +96,8 @@ namespace kspp {
         upstream->add_sink([this](auto e) {
           this->_queue.push_back(e);
         });
+      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
+      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(upstream->partition()));
     }
 
     generic_stream(topology &t, std::vector<std::shared_ptr<kspp::partition_source<void, V>>> upstream, int32_t partition)
@@ -97,10 +109,12 @@ namespace kspp {
           this->_queue.push_back(e);
         });
       }
+      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
+      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(partition));
     }
 
-    std::string simple_name() const override {
-      return "generic_stream";
+    std::string log_name() const override {
+      return PROCESSOR_NAME;
     }
 
     size_t process(int64_t tick) override {
@@ -137,6 +151,7 @@ namespace kspp {
 
   template<class K>
   class generic_stream<K, void> : public event_consumer<K, void>, public partition_source<K, void> {
+    static constexpr const char* PROCESSOR_NAME = "generic_stream";
   public:
     typedef K key_type;
     typedef void value_type;
@@ -145,6 +160,8 @@ namespace kspp {
     generic_stream(topology &t, int32_t partition)
         : event_consumer<K, void>()
         , partition_source<K, void>(nullptr, partition) {
+      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
+      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(partition));
     }
 
     generic_stream(topology &t, std::shared_ptr<kspp::partition_source<K, void>> upstream)
@@ -154,11 +171,14 @@ namespace kspp {
         upstream->add_sink([this](std::shared_ptr<kevent<K, void>> e) {
           this->_queue.push_back(e);
         });
+      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
+      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(upstream->partition()));
     }
 
     generic_stream(topology &t, std::vector<std::shared_ptr<kspp::partition_source<K, void>>> upstream, int32_t partition)
         : event_consumer<K, void>()
         , partition_source<K, void>(nullptr, partition) {
+      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
       for (auto i : upstream) {
         this->add_upstream(i.get());
         i->add_sink([this](auto e) {
@@ -167,8 +187,8 @@ namespace kspp {
       }
     }
 
-    std::string simple_name() const override {
-      return "generic_stream";
+    std::string log_name() const override {
+      return PROCESSOR_NAME;
     }
 
     size_t process(int64_t tick) override {

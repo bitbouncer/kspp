@@ -125,7 +125,7 @@ int main(int argc, char **argv) {
     int64_t sz = 0;
     for (auto &&i : streams) {
       auto s = i->get_metric("in_count");
-      LOG(INFO) << i->simple_name() <<  ", count:" << s;
+      LOG(INFO) << i->log_name() <<  ", count:" << s;
       sz += i->get_metric("in_count");
     }
     LOG(INFO) << "sz: " << sz << " expected : " <<  TEST_SIZE;
@@ -162,7 +162,7 @@ int main(int argc, char **argv) {
     int64_t sz = 0;
     for (auto &&i : streams) {
       auto s = i->get_metric("in_count");
-      LOG(INFO) << i->simple_name() <<  ", count:" << s;
+      LOG(INFO) << i->log_name() <<  ", count:" << s;
       sz += i->get_metric("in_count");
     }
     LOG(INFO) << "sz: " << sz << " expected : " <<  TEST_SIZE;

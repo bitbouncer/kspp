@@ -3,6 +3,7 @@
 namespace kspp {
   template<class K, class V>
   class filter : public event_consumer<K, V>, public partition_source<K, V> {
+    static constexpr const char* PROCESSOR_NAME = "filter";
   public:
     typedef std::function<bool(std::shared_ptr<const krecord <K, V>> record)> predicate; // return true to keep
 
@@ -11,19 +12,21 @@ namespace kspp {
     , partition_source<K, V>(source.get(), source->partition())
     , _source(source)
     , _predicate(f)
-    , _predicate_false("predicate_false") {
+    , _predicate_false("predicate_false", "msg") {
       _source->add_sink([this](auto r) {
         this->_queue.push_back(r);
       });
       this->add_metric(&_predicate_false);
+      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "filter");
+      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(source->partition()));
     }
 
     ~filter() {
       close();
     }
 
-    std::string simple_name() const override {
-      return "filter";
+    std::string log_name() const override {
+      return PROCESSOR_NAME;
     }
 
     void start(int64_t offset) override {

@@ -1,12 +1,33 @@
 #include <string>
 #include <chrono>
 #include <functional>
+#include "metric20_key_t.h"
 #pragma once
+
+#define KSPP_KEY_TYPE_TAG "key_type"
+#define KSPP_VALUE_TYPE_TAG "value_type"
+#define KSPP_PROCESSOR_TYPE_TAG "processor_type"
+#define KSPP_PARTITION_TAG "partition"
+#define KSPP_TOPIC_TAG "topic"
+
+
 
 namespace kspp {
   struct metric {
-    metric(std::string s)
-            : _name(s) {
+    enum mtype { RATE, COUNT, GAUGE, COUNTER, TIMESTAMP }; // http://metrics20.org/spec/
+
+    metric(std::string what, mtype mt, std::string unit)
+            : _name("kspp." + what) {
+      add_tag("framework", "kspp");
+      add_tag("what", what);
+      switch (mt) {
+        case RATE: add_tag("mtype", "rate"); break;
+        case COUNT: add_tag("mtype", "count"); break;
+        case GAUGE: add_tag("mtype", "gauge"); break;
+        case COUNTER: add_tag("mtype", "counter"); break;
+        case TIMESTAMP: add_tag("mtype", "timestamp"); break;
+      }
+      add_tag("unit", unit);
     }
 
     virtual int64_t value() const = 0;
@@ -15,21 +36,49 @@ namespace kspp {
       return _name;
     }
 
-    void set_tags(std::string s) {
+    void finalize_tags()
+    {
+      _derived_tags.clear();
+      for (std::map<std::string, std::string>::const_iterator i =_real_tags.begin(); i!=_real_tags.end(); ++i)
+      {
+        _derived_tags += i->first + "=" + i->second;
+        if (std::next(i) != _real_tags.end())
+          _derived_tags += ",";
+      }
+    }
+
+    /*void set_tags(std::string s) {
       _tags = s;
     }
+     */
 
     inline std::string tags() const {
-      return _tags;
+      return _derived_tags;
     }
 
-    std::string _name;
-    std::string _tags;
+    void add_tag(std::string key, std::string val)
+    {
+      _real_tags[key]=val;
+    }
+
+    /*
+     * static bool tag_order_fn (const metrics20::avro::metrics20_key_tags_t& i,const metrics20::avro::metrics20_key_tags_t& j) { return (i.key<j.key); }
+
+    inline void sort_tags() {
+      std::sort(_real_tags.begin(), _real_tags.end(), tag_order_fn);
+    }
+     */
+
+    std::string _name; // what
+    std::string _derived_tags;
+    std::map<std::string, std::string> _real_tags;
   };
 
   struct metric_counter : public metric {
-    metric_counter(std::string s)
-            : metric(s), _value(0) {}
+    metric_counter(std::string what, std::string unit)
+            : metric(what, COUNTER, unit),
+              _value(0) {
+    }
 
     virtual int64_t value() const {
       return _value;
@@ -64,8 +113,8 @@ namespace kspp {
   };
 
   struct metric_average : public metric {
-    metric_average(std::string s)
-            : metric(s), _sum(0), _count(0) {}
+    metric_average(std::string what, std::string unit)
+            : metric(what, GAUGE, unit), _sum(0), _count(0) {}
 
     void add_measurement(int64_t v) {
       _sum += v;
@@ -87,7 +136,7 @@ namespace kspp {
 
   struct metric_lag : public metric {
     metric_lag()
-            : metric("lag"), _lag(-1) {}
+            : metric("streaming_lag", GAUGE, "ms"), _lag(-1) {}
 
     inline void add_event_time(int64_t tick, int64_t event_time) {
       if (event_time > 0)
@@ -107,8 +156,8 @@ namespace kspp {
   struct metric_evaluator : public metric {
     using evaluator = std::function<int64_t(void)>;
 
-    metric_evaluator(std::string s, evaluator f)
-            : metric(s), _f(f) {}
+    metric_evaluator(std::string what,  mtype mt, std::string unit, evaluator f)
+            : metric(what, mt, unit), _f(f) {}
 
     virtual int64_t value() const {
       return _f();

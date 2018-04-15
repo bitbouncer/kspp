@@ -172,6 +172,11 @@ namespace kspp {
       void set_client_credentials(std::string client_cert_path, std::string client_key_path, std::string client_key_passphrase);
 
       /*
+       *  ssl verify peer true/false
+       */
+      void set_verify_host(bool);
+
+      /*
        * user_define_id user defined string that is prepended in logs if defined
        */
       void set_request_id(std::string user_define_id);
@@ -263,10 +268,11 @@ namespace kspp {
       std::string _client_cert;
       std::string _client_key;
       std::string _client_key_passphrase;
+      bool _verify_host = { true };
 
       // logging stuff
       std::string _request_id;
-      bool _curl_verbose;
+      bool _curl_verbose = { false };
 
       callback _callback;
       //TX

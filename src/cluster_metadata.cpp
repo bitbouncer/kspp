@@ -249,8 +249,9 @@ namespace kspp{
       DLOG_IF(INFO, err!=0) << "rd_kafka_list_groups: " << consumer_group.c_str() << ", res: " << err;
       DLOG_IF(INFO, err==0) << "rd_kafka_list_groups: " << consumer_group.c_str() << ", res: OK" << " grplist->group_cnt: "
                             << grplist->group_cnt;
-    } while ((err == RD_KAFKA_RESP_ERR__TRANSPORT || err == RD_KAFKA_RESP_ERR_GROUP_LOAD_IN_PROGRESS) ||
-             (err == 0 && grplist && grplist->group_cnt == 0));
+    } while (err == RD_KAFKA_RESP_ERR__TRANSPORT || err == RD_KAFKA_RESP_ERR_GROUP_LOAD_IN_PROGRESS);
+    //} while ((err == RD_KAFKA_RESP_ERR__TRANSPORT || err == RD_KAFKA_RESP_ERR_GROUP_LOAD_IN_PROGRESS) ||
+    // (err == 0 && grplist && grplist->group_cnt == 0));
 
     if (err) {
       LOG(ERROR) << "failed to retrieve groups, ec: " << rd_kafka_err2str(err);

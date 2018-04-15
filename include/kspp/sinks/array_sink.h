@@ -10,10 +10,12 @@
 namespace kspp {
   template<class K, class V>
   class array_topic_sink : public topic_sink<K, V> {
+    static constexpr const char* PROCESSOR_NAME = "array_sink";
   public:
     array_topic_sink(topology &t, std::vector<std::shared_ptr<const krecord <K, V>>>* a)
         : topic_sink<K, V>()
         , _array(a) {
+      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "array_sink");
     }
 
     ~array_topic_sink() override {
@@ -23,8 +25,8 @@ namespace kspp {
     void close() override {
     }
 
-    std::string simple_name() const override {
-      return "array_topic_sink";
+    std::string log_name() const override {
+      return PROCESSOR_NAME;
     }
 
     size_t queue_size() const override {

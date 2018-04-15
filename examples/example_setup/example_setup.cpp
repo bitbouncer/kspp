@@ -39,14 +39,14 @@ int main(int argc, char **argv) {
   for (int i = 0; i != 10000; ++i)
     ids.push_back(to_uuid(i));
 
-  std::cerr << "creating " << table_stream->simple_name() << std::endl;
+  std::cerr << "creating " << table_stream->log_name() << std::endl;
   for (int64_t update_nr = 0; update_nr != 100; ++update_nr) {
     for (auto &i : ids) {
       table_stream->push_back(i, update_nr);
     }
   }
 
-  std::cerr << "creating " << event_stream->simple_name() << std::endl;
+  std::cerr << "creating " << event_stream->log_name() << std::endl;
   for (int64_t event_nr = 0; event_nr != 100; ++event_nr) {
     for (auto &i : ids) {
       event_stream->push_back(i, event_nr);

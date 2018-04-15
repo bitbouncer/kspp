@@ -4,6 +4,7 @@ namespace kspp {
 
   template<class K, class V>
   class merge : public event_consumer<K, V>, public partition_source<K, V> {
+    static constexpr const char* PROCESSOR_NAME = "merge";
   public:
     typedef K key_type;
     typedef V value_type;
@@ -14,6 +15,7 @@ namespace kspp {
     merge(topology &unused, const std::vector<std::shared_ptr<source>>& upstream, int32_t partition=-1)
         : event_consumer<K, V>()
         , partition_source<K, V>(nullptr, partition) {
+      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "merge");
       for (auto&& i : upstream) {
         i->add_sink([this](auto e) {
           this->_queue.push_back(e);
@@ -21,8 +23,8 @@ namespace kspp {
       }
     }
 
-    std::string simple_name() const override {
-      return "merge";
+    std::string log_name() const override {
+      return PROCESSOR_NAME;
     }
 
     size_t process(int64_t tick) override {
@@ -65,6 +67,7 @@ namespace kspp {
 //<null, VALUE>
   template<class V>
   class merge<void, V> : public event_consumer<void, V>, public partition_source<void, V> {
+    static constexpr const char* PROCESSOR_NAME = "merge";
   public:
     typedef void key_type;
     typedef V value_type;
@@ -73,6 +76,7 @@ namespace kspp {
     merge(topology &unused, std::vector<partition_source<void, V>*> upstream, int32_t partition=-1)
     : event_consumer<void, V>()
     , partition_source<void, V>(nullptr, partition) {
+      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "merge");
       for (auto&& i : upstream) {
         i->add_sink([this](auto e) {
           this->_queue.push_back(e);
@@ -125,6 +129,7 @@ namespace kspp {
 
   template<class K>
   class merge<K, void> : public event_consumer<K, void>, public partition_source<K, void> {
+    static constexpr const char* PROCESSOR_NAME = "merge";
   public:
     typedef K key_type;
     typedef void value_type;
@@ -133,13 +138,14 @@ namespace kspp {
     merge(topology &unused, std::vector<partition_source<K, void>*> upstream, int32_t partition=-1)
     : event_consumer<K, void>()
     , partition_source<K, void>(nullptr, partition) {
+      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "merge");
       for (auto&& i : upstream) {
         i->add_sink([this](auto e) { this->_queue.push_back(e); });
       }
     }
 
-    std::string simple_name() const override {
-      return "merge";
+    std::string log_name() const override {
+      return PROCESSOR_NAME;
     }
 
     size_t process(int64_t tick) override {

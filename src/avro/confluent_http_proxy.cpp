@@ -109,6 +109,7 @@ namespace kspp {
             _http_timeout);
         request->set_timeout(_http_timeout);
         request->set_ca_cert_path(_ca_cert_path);
+        request->set_verify_host(_verify_host);
         request->set_client_credentials(_client_cert_path,
                                         _private_key_path,
                                         _private_key_passphrase);
@@ -153,6 +154,7 @@ namespace kspp {
             headers,
             _http_timeout);
         request->set_ca_cert_path(_ca_cert_path);
+        request->set_verify_host(_verify_host);
         request->set_client_credentials(_client_cert_path,
                                         _private_key_path,
                                         _private_key_passphrase);
@@ -176,6 +178,8 @@ namespace kspp {
               LOG(ERROR) << "confluent_http_proxy cannot parse response";
 #endif
           }
+          LOG(ERROR) << "confluent_http_proxy http_response_code: " <<  request->http_result() << ", " << std::string(request->rx_content(), request->rx_content_length());
+
           cb(-1);
         });
       });
@@ -200,6 +204,7 @@ namespace kspp {
             headers,
             _http_timeout);
         request->set_ca_cert_path(_ca_cert_path);
+        request->set_verify_host(_verify_host);
         request->set_client_credentials(_client_cert_path,
                                         _private_key_path,
                                         _private_key_passphrase);

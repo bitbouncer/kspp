@@ -13,17 +13,20 @@ influx_sink::influx_sink(kspp::topology &,
     , _next_time_to_send(kspp::milliseconds_since_epoch() + 100)
     , _next_time_to_poll(0)
     , _http_timeout(http_timeout)
-    , _http_bytes("http_bytes")
-    , _http_requests("http_request")
-    , _http_timeouts("http_timeout")
-    , _http_error("http_error")
-    , _http_ok("http_ok") {
+    , _http_bytes("http_bytes", "bytes")
+    , _http_requests("http_request", "msg")
+    , _http_timeouts("http_timeout", "msg")
+    , _http_error("http_error", "msg")
+    , _http_ok("http_ok", "msg") {
+
   this->add_metric(&_lag);
   this->add_metric(&_http_bytes);
   this->add_metric(&_http_requests);
   this->add_metric(&_http_timeouts);
   this->add_metric(&_http_error);
   this->add_metric(&_http_ok);
+  this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "influx_sink");
+
   curl_global_init(CURL_GLOBAL_NOTHING); /* minimal */
   _http_handler.set_user_agent(
       "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36");
@@ -36,15 +39,15 @@ influx_sink::~influx_sink() {
   //_source->remove_sink()
 }
 
-std::string influx_sink::simple_name() const {
-  return "vast_reporter";
+std::string influx_sink::log_name() const {
+  return "influx_sink";
 }
 
 bool influx_sink::eof() const {
   return (this->_queue.size() == 0);
 }
 
-bool influx_sink::process_one(int64_t tick) {
+size_t influx_sink::process(int64_t tick) {
   size_t sz = this->_queue.size();
   if (sz >= _batch_size || tick > _next_time_to_send) {
     _next_time_to_send = kspp::milliseconds_since_epoch() + 100;
@@ -52,9 +55,9 @@ bool influx_sink::process_one(int64_t tick) {
       send();
       _next_time_to_send = kspp::milliseconds_since_epoch() + 100; // give some time for more data to come in - it's easy to get into the state where we send one message at a time...
     }
-    return true;
+    return sz;
   }
-  return false;
+  return 0;
 }
 
 void influx_sink::close() {
@@ -96,14 +99,8 @@ kspp::async::work<influx_sink::work_result_t>::async_function
 influx_sink::create_work(std::shared_ptr<kspp::kevent<void, std::string>> ev) {
   kspp::async::work<work_result_t>::async_function f = [this, ev](std::function<void(work_result_t)> cb) {
     auto record = ev->record();
-    //std::vector<std::string> headers({"on_behalf_of:" + record->value()->client_ip});
-    kspp::http::method_t http_method = (kspp::http::method_t) record->value()->vast_tracking_method;
-    auto request = std::make_shared<kspp::http::request>(
-        http_method,
-        url,
-        headers,
-        _http_timeout);
-    _http_handler.perform_async(request, [this, url, cb](std::shared_ptr<kspp::http::request> h) {
+    auto request = std::make_shared<kspp::http::request>(kspp::http::POST, _base_url, {}, _http_timeout);
+    _http_handler.perform_async(request, [this, cb](std::shared_ptr<kspp::http::request> h) {
       if (!h->ok()) {
         if (!h->transport_result()) {
           cb(TIMEOUT);
@@ -152,4 +149,5 @@ void influx_sink::send() {
     return;
   }
 }
+
 

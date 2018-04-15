@@ -7,19 +7,18 @@
 #include <kspp/impl/sources/kafka_consumer.h>
 
 #pragma once
-//#define KSPP_LOG_NAME this->simple_name() << "-" << CODEC::name()
-#define KSPP_LOG_NAME this->simple_name()
 
 namespace kspp {
   template<class K, class V, class KEY_CODEC, class VAL_CODEC>
   class kafka_source_base : public partition_source<K, V> {
+    static constexpr const char* PROCESSOR_NAME = "kafka_source";
   public:
     virtual ~kafka_source_base() {
       close();
     }
 
-    std::string simple_name() const override {
-      return "kafka_source(" + _impl.topic() + ")";
+    std::string log_name() const override {
+      return PROCESSOR_NAME;
     }
 
     void start(int64_t offset) override {
@@ -63,6 +62,7 @@ namespace kspp {
       auto p = _incomming_msg.front();
       _incomming_msg.pop_front();
       ++(this->_processed_count);
+
       this->_lag.add_event_time(tick, p->event_time());
       this->send_to_sinks(p);
       return 1;
@@ -89,10 +89,13 @@ namespace kspp {
         , _val_codec(val_codec)
         , _commit_chain(topic, partition)
         , _start_point_ms(std::chrono::time_point_cast<std::chrono::milliseconds>(start_point).time_since_epoch().count())
-        , _parse_errors("parse_errors")
-        , _commit_chain_size("commit_chain_size", [this]() { return _commit_chain.size(); })
+        , _parse_errors("parse_errors", "err")
+        , _commit_chain_size("commit_chain_size", metric::GAUGE, "msg", [this]() { return _commit_chain.size(); })
     {
       this->add_metric(&_commit_chain_size);
+      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
+      this->add_metrics_tag(KSPP_TOPIC_TAG, topic);
+      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(partition));
     }
 
     virtual std::shared_ptr<kevent<K, V>> parse(const std::unique_ptr<RdKafka::Message> &ref) = 0;
@@ -199,7 +202,7 @@ namespace kspp {
 
       if (ref->key_len()==0) {
         LOG_EVERY_N(WARNING, 100)
-          << KSPP_LOG_NAME
+          << this->log_name()
           << ", skipping item with empty key ("
           << google::COUNTER
           << ")";
@@ -211,11 +214,11 @@ namespace kspp {
 
         size_t consumed = this->_key_codec->decode((const char *) ref->key_pointer(), ref->key_len(), tmp_key);
         if (consumed == 0) {
-          LOG_IF(ERROR, ref->key_len()!=0) << KSPP_LOG_NAME << ", decode key failed, actual key sz:" << ref->key_len();
+          LOG_IF(ERROR, ref->key_len()!=0) << this->log_name() << ", decode key failed, actual key sz:" << ref->key_len();
           return nullptr;
-        } else if (consumed != ref->key_len()) {
+        } else if (ref->key_len() - consumed > 1 ) {// patch for 0 terminated string or not... if text encoding
           LOG(ERROR)
-              << KSPP_LOG_NAME
+              << this->log_name()
               << ", decode key failed, consumed: "
               << consumed
               << ", actual: "
@@ -231,11 +234,10 @@ namespace kspp {
         tmp_value = std::make_shared<V>();
         size_t consumed = this->_val_codec->decode((const char *) ref->payload(), sz, *tmp_value);
         if (consumed == 0) {
-          LOG(ERROR) << KSPP_LOG_NAME << ", decode value failed, size:" << sz;
+          LOG(ERROR) << this->log_name() << ", decode value failed, size:" << sz;
           return nullptr;
-        } else if (consumed != sz) {
-          LOG(ERROR) << KSPP_LOG_NAME << ", decode value failed, consumed: " << consumed << ", actual: "
-                     << sz;
+        } else if (sz -consumed > 1) { // patch for 0 terminated string or not... if text encoding
+          LOG(ERROR) << this->log_name() << ", decode value failed, consumed: " << consumed << ", actual: " << sz;
           return nullptr;
         }
       }
@@ -291,11 +293,11 @@ namespace kspp {
         }
 
         if (consumed == 0) {
-          LOG(ERROR) << KSPP_LOG_NAME << ", decode value failed, size:" << sz;
+          LOG(ERROR) << this->log_name() << ", decode value failed, size:" << sz;
           return nullptr;
         }
 
-        LOG(ERROR) << KSPP_LOG_NAME << ", decode value failed, consumed: " << consumed << ", actual: " << sz;
+        LOG(ERROR) << this->log_name() << ", decode value failed, consumed: " << consumed << ", actual: " << sz;
         return nullptr;
       }
       return nullptr; // just parsed an empty message???
@@ -342,11 +344,10 @@ namespace kspp {
       K tmp_key;
       size_t consumed = this->_key_codec->decode((const char *) ref->key_pointer(), ref->key_len(), tmp_key);
       if (consumed == 0) {
-        LOG(ERROR) << KSPP_LOG_NAME << ", decode key failed, actual key sz:" << ref->key_len();
+        LOG(ERROR) << this->log_name() << ", decode key failed, actual key sz:" << ref->key_len();
         return nullptr;
       } else if (consumed != ref->key_len()) {
-        LOG(ERROR) << KSPP_LOG_NAME << ", decode key failed, consumed: " << consumed << ", actual: "
-                   << ref->key_len();
+        LOG(ERROR) << this->log_name() << ", decode key failed, consumed: " << consumed << ", actual: " << ref->key_len();
         return nullptr;
       }
       auto record = std::make_shared<krecord<K, void>>(tmp_key, timestamp);

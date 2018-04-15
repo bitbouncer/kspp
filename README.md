@@ -68,7 +68,7 @@ cd ../../../..
 rm avro.tar.gz && \
 rm -rf arvo
 
-wget -O librdkafka.tar.gz "https://github.com/edenhill/librdkafka/archive/v0.11.3.tar.gz" && \
+wget -O librdkafka.tar.gz "https://github.com/edenhill/librdkafka/archive/v0.11.4.tar.gz" && \
 mkdir -p librdkafka && \
 tar \
   --extract \

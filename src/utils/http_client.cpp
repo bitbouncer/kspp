@@ -149,7 +149,6 @@ namespace kspp {
         : _transport_ok(true)
         , _method(method)
         , _uri(uri)
-        , _curl_verbose(false)
         , _timeout(timeout)
         , _http_result(kspp::http::undefined)
         , _tx_headers(headers)
@@ -184,6 +183,12 @@ namespace kspp {
       _client_key = client_key_path;
       _client_key_passphrase = client_key_passphrase;
     }
+
+    void request::set_verify_host(bool state)
+    {
+      _verify_host = state;
+    }
+
 
     void request::set_tx_headers(const std::vector<std::string> &headers)
     {
@@ -323,7 +328,10 @@ namespace kspp {
         res = curl_easy_setopt(request->_curl_easy, CURLOPT_VERBOSE, 1L);
       } else {
         res = curl_easy_setopt(request->_curl_easy, CURLOPT_SSL_VERIFYPEER, 1L);
-        res = curl_easy_setopt(request->_curl_easy, CURLOPT_SSL_VERIFYHOST, 2L);
+        if (request->_verify_host)
+          res = curl_easy_setopt(request->_curl_easy, CURLOPT_SSL_VERIFYHOST, 2L);
+        else
+          res = curl_easy_setopt(request->_curl_easy, CURLOPT_SSL_VERIFYHOST, 0L);  // unsafe
         res = curl_easy_setopt(request->_curl_easy, CURLOPT_CAINFO, request->_ca_cert.c_str());
       }
 

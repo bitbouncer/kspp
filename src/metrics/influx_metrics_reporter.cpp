@@ -68,7 +68,7 @@ namespace kspp {
   }
 
   void influx_metrics_reporter::add_metrics(std::shared_ptr<topology> p) {
-    p->init_metrics();
+    p->init_metrics(_real_tags);
     // maybe we need a mutex here... TBD
     _reported_t_topologys.push_back(p);
   }

@@ -31,7 +31,7 @@ namespace kspp {
 
     std::chrono::milliseconds max_buffering_time() const;
 
-    void init_metrics();
+    void init_metrics(std::vector<metrics20::avro::metrics20_key_tags_t> tags = std::vector<metrics20::avro::metrics20_key_tags_t>());
 
     void for_each_metrics(std::function<void(kspp::metric &)> f);
 

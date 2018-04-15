@@ -8,9 +8,11 @@ namespace kspp {
   template<class K, class V, template<typename, typename, typename> class STATE_STORE, class CODEC = void>
   class count_by_key : public event_consumer<K, void>, public materialized_source<K, V> {
   public:
+
     typedef K key_type;
     typedef V value_type;
 
+    static constexpr const char* PROCESSOR_NAME = "count_by_key";
 
     template<typename... Args>
     count_by_key(topology &t,
@@ -24,14 +26,16 @@ namespace kspp {
     , _next_punctuate(0)
     , _dirty(false) {
       source->add_sink([this](auto e) { this->_queue.push_back(e); });
+      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
+      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(source->partition()));
     }
 
     ~count_by_key() {
       close();
     }
 
-    std::string simple_name() const override {
-      return "count_by_key";
+    std::string log_name() const override {
+      return PROCESSOR_NAME;
     }
 
     void start(int64_t offset) override {

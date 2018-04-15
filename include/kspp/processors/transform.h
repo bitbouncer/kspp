@@ -8,6 +8,7 @@
 namespace kspp {
   template<class K, class SV, class RV>
   class transform_value : public event_consumer<K, SV>, public partition_source<K, RV> {
+    static constexpr const char* PROCESSOR_NAME = "transform_value";
   public:
     typedef std::function<void(std::shared_ptr < kevent < K, SV >> record,
                                transform_value * self)> extractor; // maybe better to pass this and send() directrly
@@ -21,6 +22,8 @@ namespace kspp {
         this->_queue.push_back(r);
       });
       this->add_metric(&_lag);
+      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "transform_value");
+      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(source->partition()));
     }
 
     ~transform_value() {
@@ -76,6 +79,7 @@ namespace kspp {
 
   template<class K, class V>
   class transform : public event_consumer<K, V>, public partition_source<K, V> {
+    static constexpr const char* PROCESSOR_NAME = "transform";
   public:
     typedef std::function<void(std::shared_ptr < kevent < K, V >> record,
                                transform * self)> extractor; // maybe better to pass this and send() directrly
@@ -89,14 +93,16 @@ namespace kspp {
         this->_queue.push_back(r);
       });
       this->add_metric(&_lag);
+      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "transform_value");
+      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(source->partition()));
     }
 
     ~transform() {
       close();
     }
 
-    std::string simple_name() const override {
-      return "transform";
+    std::string log_name() const override {
+      return PROCESSOR_NAME;
     }
 
     void start(int64_t offset) override {

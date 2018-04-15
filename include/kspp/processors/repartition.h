@@ -8,6 +8,7 @@
 namespace kspp {
   template<class K, class V, class FOREIGN_KEY, class CODEC>
   class repartition_by_foreign_key : public event_consumer<K, V>, public partition_processor {
+    static constexpr const char* PROCESSOR_NAME = "repartition_by_foreign_key";
   public:
     repartition_by_foreign_key(topology &t,
         std::shared_ptr<partition_source < K, V>> source,
@@ -24,14 +25,16 @@ namespace kspp {
         this->_queue.push_back(r);
       });
       this->add_metric(&_lag);
+      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "repartition_by_foreign_key");
+      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(source->partition()));
     }
 
     ~repartition_by_foreign_key() {
       close();
     }
 
-    std::string simple_name() const override {
-      return "repartition_by_foreign_key";
+    std::string log_name() const override {
+      return PROCESSOR_NAME;
     }
 
     std::string key_type_name() const override {

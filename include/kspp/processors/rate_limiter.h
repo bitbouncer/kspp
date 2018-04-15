@@ -11,13 +11,16 @@
 namespace kspp {
   template<class K, class V>
   class rate_limiter : public event_consumer<K, V>, public partition_source<K, V> {
+    static constexpr const char* PROCESSOR_NAME = "rate_limiter";
   public:
     rate_limiter(topology &t, std::shared_ptr<partition_source<K, V>> source,
                  std::chrono::milliseconds agetime, size_t capacity)
             : event_consumer<K, V>(), partition_source<K, V>(source.get(), source->partition())
         , _source(source)
         , _token_bucket(std::make_shared<mem_token_bucket_store<K, size_t>>(agetime, capacity))
-        , _rejection_count("rejection_count") {
+        , _rejection_count("rejection_count", "msg") {
+      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "rate_limiter");
+      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(source->partition()));
       _source->add_sink([this](auto r) {
         this->_queue.push_back(r);
       });
@@ -28,8 +31,8 @@ namespace kspp {
       close();
     }
 
-    std::string simple_name() const override {
-      return "rate_limiter";
+    std::string log_name() const override {
+      return PROCESSOR_NAME;
     }
 
     void start(int64_t offset) override {

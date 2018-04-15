@@ -24,13 +24,14 @@ namespace kspp {
 
   template<class K, class V, class KEY_CODEC, class VAL_CODEC>
   class kafka_sink_base : public topic_sink<K, V> {
+    static constexpr const char* PROCESSOR_NAME = "kafka_sink";
   public:
     enum { MAX_KEY_SIZE = 1000 };
 
     using partitioner = typename kafka_partitioner_base<K>::partitioner;
 
-    std::string simple_name() const override {
-      return "kafka_sink(" + _impl.topic() + ")";
+    std::string log_name() const override {
+      return PROCESSOR_NAME;
     }
 
     std::string topic() const override {
@@ -82,14 +83,14 @@ namespace kspp {
           this->_lag.add_event_time(kspp::milliseconds_since_epoch(), ev->event_time()); // move outside loop
           this->_queue.pop_front();
           continue;
-        }
-
-        if (ec == RdKafka::ERR__QUEUE_FULL) {
+        } else if (ec == RdKafka::ERR__QUEUE_FULL) {
           // expected and retriable
           count;
+        } else  {
+          LOG(ERROR) << "other error from rd_kafka ec:" << ec;
+          // permanent failure - need to stop TBD
+          return count;
         }
-        // permanent failure - need to stop TBD
-        return count;
       } // while
       return count;
     }
@@ -105,6 +106,8 @@ namespace kspp {
         , _val_codec(val_codec)
         , _impl(cconfig, topic)
         , _partitioner(p) {
+      this->add_metrics_tag(KSPP_TOPIC_TAG, topic);
+      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "kafka_sink");
     }
 
     kafka_sink_base(std::shared_ptr<cluster_config> cconfig,
@@ -115,6 +118,8 @@ namespace kspp {
         , _key_codec(key_codec)
         , _val_codec(val_codec)
         , _impl(cconfig, topic) {
+      this->add_metrics_tag(KSPP_TOPIC_TAG, topic);
+      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "kafka_sink");
     }
 
     virtual int handle_event(std::shared_ptr<kevent<K, V>>) = 0;

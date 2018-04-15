@@ -14,9 +14,9 @@ public:
             int32_t http_batch_size,
             std::chrono::milliseconds http_timeout);
   ~influx_sink() override;
-  std::string simple_name() const override;
+  std::string log_name() const override;
   bool eof() const override;
-  bool process_one(int64_t tick) override;
+  size_t process(int64_t tick) override;
   void close() override;
   void flush() override;
 private:

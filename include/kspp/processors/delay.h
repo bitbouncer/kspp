@@ -3,20 +3,23 @@
 namespace kspp {
   template<class K, class V>
   class delay : public partition_source<K, V> {
+    static constexpr const char* PROCESSOR_NAME = "delay";
   public:
     typedef std::function<bool(std::shared_ptr < kevent < K, V >> record)> predicate; // return true to keep
 
     delay(topology_base &topology, std::shared_ptr <partition_source<K, V>> source, int ms)
             : partition_source<K, V>(source->partition()), _source(source), _delay(ms) {
       _source->add_sink([this](auto r) { this->_queue.push_back(r); });
+      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "delay");
+      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(source->partition()));
     }
 
     ~delay() {
       close();
     }
 
-    std::string simple_name() const override {
-      return "delay";
+    std::string log_name() const override {
+      return PROCESSOR_NAME;
     }
 
     void start(int64_t offset) override {

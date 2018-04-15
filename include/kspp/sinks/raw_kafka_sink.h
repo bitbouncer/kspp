@@ -21,6 +21,7 @@ namespace kspp {
 
   template<class K, class V, class KEY_CODEC, class VAL_CODEC>
   class raw_kafka_sink_base {
+    static constexpr const char* PROCESSOR_NAME = "kafka_sink";
   public:
     virtual ~raw_kafka_sink_base() {}
 
@@ -28,8 +29,8 @@ namespace kspp {
 
     using partitioner = typename kafka_partitioner_base<K>::partitioner;
 
-    std::string simple_name() const {
-      return "kafka_sink(" + _impl.topic() + ")";
+    std::string log_name() const {
+      return PROCESSOR_NAME;
     }
 
     void close() {
@@ -98,10 +99,12 @@ namespace kspp {
         ,  _val_codec(val_codec)
         , _impl(config, topic)
         , _partitioner(p)
-        , _processed_count("processed_count")
+        , _processed_count("processed", "msg")
         , _lag() {
       this->add_metric(&_processed_count);
       this->add_metric(&_lag);
+      //this->add_metrics_tag(KSPP_TOPIC_TAG, topic);
+      //this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "kafka_sink");
     }
 
     raw_kafka_sink_base(std::shared_ptr<cluster_config> config,
@@ -111,10 +114,12 @@ namespace kspp {
         : _key_codec(key_codec)
         , _val_codec(val_codec)
         , _impl(config, topic)
-        , _processed_count("processed_count")
+        , _processed_count("processed", "msg")
         , _lag() {
       this->add_metric(&_processed_count);
       this->add_metric(&_lag);
+      //this->add_metrics_tag(KSPP_TOPIC_TAG, topic);
+      //this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "kafka_sink");
     }
 
     virtual int handle_event(std::shared_ptr<kevent<K, V>>) = 0;

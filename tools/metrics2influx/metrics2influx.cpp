@@ -5,7 +5,7 @@
 #include <iostream>
 #include <csignal>
 #include <boost/program_options.hpp>
-#include <kspp/impl/kafka_utils.h>
+//#include <kspp/impl/kafka_utils.h>
 #include <kspp/processors/filter.h>
 #include <kspp/sources/kafka_source.h>
 #include <kspp/sinks/kafka_sink.h>

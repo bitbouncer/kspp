@@ -7,6 +7,7 @@
 namespace kspp {
   template<class SK, class SV, class RK, class RV>
   class flat_map : public event_consumer<SK, SV>, public partition_source<RK, RV> {
+    static constexpr const char* PROCESSOR_NAME = "flat_map";
   public:
     typedef std::function<void(std::shared_ptr<const krecord <SK, SV>> record, flat_map *self)> extractor;
 
@@ -16,14 +17,16 @@ namespace kspp {
     , _source(source)
     , _extractor(f) {
       _source->add_sink([this](auto r) { this->_queue.push_back(r); });
+      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "flat_map");
+      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(source->partition()));
     }
 
     ~flat_map() {
       close();
     }
 
-    std::string simple_name() const override {
-      return "flat_map";
+    std::string log_name() const override {
+      return PROCESSOR_NAME;
     }
 
     void start(int64_t offset) override {
@@ -60,6 +63,7 @@ namespace kspp {
     size_t queue_size() const override {
       return event_consumer<SK, SV>::queue_size();
     }
+
     int64_t next_event_time() const override {
       return event_consumer<SK, SV>::next_event_time();
     }
@@ -67,15 +71,15 @@ namespace kspp {
     /**
     * use from from extractor callback
     */
-    inline void push_back(std::shared_ptr<krecord < RK, RV>>record) {
-      this->send_to_sinks(std::make_shared<kevent < RK, RV>>(record, _currrent_id));
+    inline void push_back(std::shared_ptr<krecord<RK, RV>>record) {
+      this->send_to_sinks(std::make_shared<kevent<RK, RV>>(record, _currrent_id));
     }
 
     /**
     * use from from extractor callback to force a custom partition hash
     */
-    inline void push_back(std::shared_ptr<krecord < RK, RV>> record, uint32_t partition_hash) {
-      this->send_to_sinks(std::make_shared<kevent < RK, RV>>(record, _currrent_id, partition_hash));
+    inline void push_back(std::shared_ptr<krecord<RK, RV>> record, uint32_t partition_hash) {
+      this->send_to_sinks(std::make_shared<kevent<RK, RV>>(record, _currrent_id, partition_hash));
     }
 
   private:
