@@ -2,11 +2,12 @@ cmake_minimum_required(VERSION 2.8.11)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
-option(ENABLE_ROCKSDB "enable rocksdb support" OFF)
+option(ENABLE_ROCKSDB "enable rocksdb support" ON)
 option(ENABLE_ZK "enable zk support" OFF)
+option(ENABLE_POSTGRES "enable postgres support" ON)
 option(BUILD_TOOLS "build tools" ON)
-option(BUILD_SAMPLES "build examples" OFF)
-option(BUILD_TESTS "build tests" OFF)
+option(BUILD_SAMPLES "build examples" ON)
+option(BUILD_TESTS "build tests" ON)
 
 set(KSPP_VERSION_MAJOR 1)
 set(KSPP_VERSION_MINOR 0)
@@ -154,6 +155,9 @@ else () #LINUX
         SET(LIBZK_LIBS csi-zk)
     endif () #ZK
 
+    if (ENABLE_POSTGRES)
+        SET(POSTGRES_LIBS pq)
+    endif() #POSTGRES
 
     SET(LIBRDKAFKA_LIBS rdkafka++ rdkafka)
 
@@ -162,8 +166,8 @@ else () #LINUX
     add_definitions(-g -D_FILE_OFFSET_BITS=64 -D_REENTRANT -DEXTERNAL_LOCKS -DMULTITHREAD)
     add_definitions(-fPIC)
     add_definitions(-Wno-deprecated)
-    SET(EXT_LIBS ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${BOOST_LIBS} glog crypto ssl)
-    SET(EXT_LIBS_STATIC ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${BOOST_LIBS} glog crypto ssl)
+    SET(EXT_LIBS ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${BOOST_LIBS} ${POSTGRES_LIBS} glog crypto ssl)
+    SET(EXT_LIBS_STATIC ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${BOOST_LIBS} ${POSTGRES_LIBS} glog crypto ssl)
 
     SET(CSI_LIBS kspp ${EXT_LIBS})
     SET(CSI_LIBS_STATIC kspp_s ${EXT_LIBS_STATIC})
@@ -236,16 +240,23 @@ IF(ENABLE_ROCKSDB)
             src/impl/rocksdb/*.cpp)
 ENDIF()
 
-ADD_LIBRARY(kspp_s STATIC ${LIB_SRCS} ${ROCKDB_LIB_SRCS} ${KSPP_INCLUDE_FILES})
+if (ENABLE_POSTGRES)
+    file(GLOB POSTGRES_LIB_SRCS
+            include/impl/connect/postgres/*.h
+            src/impl/connect/postgres/*.cpp)
+ENDIF()
+
+ADD_LIBRARY(kspp_s STATIC ${LIB_SRCS} ${ROCKDB_LIB_SRCS} ${POSTGRES_LIB_SRCS} ${KSPP_INCLUDE_FILES})
 INSTALL(TARGETS kspp_s
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
         )
 
-ADD_LIBRARY(kspp SHARED ${LIB_SRCS} ${ROCKDB_LIB_SRCS} ${KSPP_INCLUDE_FILES})
+ADD_LIBRARY(kspp SHARED ${LIB_SRCS} ${ROCKDB_LIB_SRCS} ${POSTGRES_LIB_SRCS} ${KSPP_INCLUDE_FILES})
 IF(APPLE)
     TARGET_LINK_LIBRARIES(kspp ${EXT_LIBS})
 ENDIF()
+
 INSTALL(TARGETS kspp
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
