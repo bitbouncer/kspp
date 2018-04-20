@@ -4,16 +4,16 @@
 #include <thread>
 #include <glog/logging.h>
 #include <kspp/topology.h>
-#include <kspp/impl/sources/kafka_consumer.h>
+#include <kspp/impl/sources/postgres_consumer.h>
 
 #pragma once
 
 namespace kspp {
   template<class K, class V, class KEY_CODEC, class VAL_CODEC>
-  class kafka_source_base : public partition_source<K, V> {
-    static constexpr const char* PROCESSOR_NAME = "kafka_source";
+  class postgres_source_base : public partition_source<K, V> {
+    static constexpr const char* PROCESSOR_NAME = "postgres_source";
   public:
-    virtual ~kafka_source_base() {
+    virtual ~postgres_source_base() {
       close();
     }
 
@@ -69,12 +69,12 @@ namespace kspp {
     }
 
     std::string topic() const override {
-      return _impl.topic();
+      return _impl.table();
     }
 
   protected:
-    kafka_source_base(std::shared_ptr<cluster_config> config,
-                      std::string topic,
+    postgres_source_base(std::shared_ptr<connect_config> config,
+                      std::string table,
                       int32_t partition,
                       std::string consumer_group,
                       std::chrono::system_clock::time_point start_point,
@@ -83,11 +83,11 @@ namespace kspp {
         : partition_source<K, V>(nullptr, partition)
         , _started(false)
         , _exit(false)
-        , _thread(&kafka_source_base::thread_f, this)
-        , _impl(config, topic, partition, consumer_group)
+        , _thread(&postgres_source_base::thread_f, this)
+        , _impl(config, table, partition, consumer_group)
         , _key_codec(key_codec)
         , _val_codec(val_codec)
-        , _commit_chain(topic, partition)
+        , _commit_chain(table, partition)
         , _start_point_ms(std::chrono::time_point_cast<std::chrono::milliseconds>(start_point).time_since_epoch().count())
         , _parse_errors("parse_errors", "err")
         , _commit_chain_size("commit_chain_size", metric::GAUGE, "msg", [this]() { return _commit_chain.size(); })
@@ -98,7 +98,7 @@ namespace kspp {
       this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(partition));
     }
 
-    virtual std::shared_ptr<kevent<K, V>> parse(const std::unique_ptr<RdKafka::Message> &ref) = 0;
+    //virtual std::shared_ptr<kevent<K, V>> parse(const std::unique_ptr<RdKafka::Message> &ref) = 0;
 
     void thread_f()
     {
@@ -152,7 +152,7 @@ namespace kspp {
     bool _exit;
     std::thread _thread;
     event_queue<K, V> _incomming_msg;
-    kafka_consumer _impl;
+    postgres_consumer _impl;
     std::shared_ptr<KEY_CODEC> _key_codec;
     std::shared_ptr<VAL_CODEC> _val_codec;
     commit_chain _commit_chain;
@@ -162,14 +162,14 @@ namespace kspp {
   };
 
   template<class K, class V,  class KEY_CODEC, class VAL_CODEC>
-  class kafka_source : public kafka_source_base<K, V, KEY_CODEC, VAL_CODEC> {
+  class postgres_source : public postgres_source_base<K, V, KEY_CODEC, VAL_CODEC> {
   public:
-    kafka_source(topology &t,
+    postgres_source(topology &t,
                  int32_t partition,
                  std::string topic,
                  std::shared_ptr<KEY_CODEC> key_codec = std::make_shared<KEY_CODEC>(),
                  std::shared_ptr<VAL_CODEC> val_codec = std::make_shared<VAL_CODEC>())
-        : kafka_source_base<K, V, KEY_CODEC, VAL_CODEC>(
+        : postgres_source_base<K, V, KEY_CODEC, VAL_CODEC>(
         t.get_cluster_config(),
         topic, partition,
         t.consumer_group(),
@@ -178,13 +178,13 @@ namespace kspp {
         val_codec) {
     }
 
-    kafka_source(topology &t,
+    postgres_source(topology &t,
                  int32_t partition,
                  std::string topic,
                  std::chrono::system_clock::time_point start_point,
                  std::shared_ptr<KEY_CODEC> key_codec = std::make_shared<KEY_CODEC>(),
                  std::shared_ptr<VAL_CODEC> val_codec = std::make_shared<VAL_CODEC>())
-        : kafka_source_base<K, V, KEY_CODEC, VAL_CODEC>(
+        : postgres_source_base<K, V, KEY_CODEC, VAL_CODEC>(
         t.get_cluster_config(),
         topic, partition,
         t.consumer_group(),
@@ -248,13 +248,13 @@ namespace kspp {
 
   // <void, VALUE>
   template<class V, class VAL_CODEC>
-  class kafka_source<void, V, void, VAL_CODEC> : public kafka_source_base<void, V, void, VAL_CODEC> {
+  class postgres_source<void, V, void, VAL_CODEC> : public postgres_source_base<void, V, void, VAL_CODEC> {
   public:
-    kafka_source(topology &t,
+    postgres_source(topology &t,
                  int32_t partition,
                  std::string topic,
                  std::shared_ptr<VAL_CODEC> val_codec = std::make_shared<VAL_CODEC>())
-        : kafka_source_base<void, V, void, VAL_CODEC>(
+        : postgres_source_base<void, V, void, VAL_CODEC>(
         t.get_cluster_config(),
         topic,
         partition,
@@ -264,12 +264,12 @@ namespace kspp {
         val_codec) {
     }
 
-    kafka_source(topology &t,
+    postgres_source(topology &t,
                  int32_t partition,
                  std::string topic,
                  std::chrono::system_clock::time_point start_point,
                  std::shared_ptr<VAL_CODEC> val_codec = std::make_shared<VAL_CODEC>())
-        : kafka_source_base<void, V, void, VAL_CODEC>(
+        : postgres_source_base<void, V, void, VAL_CODEC>(
         t.get_cluster_config(),
         topic, partition,
         t.consumer_group(),
@@ -306,13 +306,13 @@ namespace kspp {
 
   //<KEY, nullptr>
   template<class K, class KEY_CODEC>
-  class kafka_source<K, void, KEY_CODEC, void> : public kafka_source_base<K, void, KEY_CODEC, void> {
+  class postgres_source<K, void, KEY_CODEC, void> : public postgres_source_base<K, void, KEY_CODEC, void> {
   public:
-    kafka_source(topology &t,
+    postgres_source(topology &t,
                  int32_t partition,
                  std::string topic,
                  std::shared_ptr<KEY_CODEC> key_codec = std::make_shared<KEY_CODEC>())
-        : kafka_source_base<K, void, KEY_CODEC, void>(
+        : postgres_source_base<K, void, KEY_CODEC, void>(
         t.get_cluster_config(),
         topic, partition,
         t.consumer_group(),
@@ -321,12 +321,12 @@ namespace kspp {
         nullptr) {
     }
 
-    kafka_source(topology &t,
+    postgres_source(topology &t,
                  int32_t partition,
                  std::string topic,
                  std::chrono::system_clock::time_point start_point,
                  std::shared_ptr<KEY_CODEC> key_codec = std::make_shared<KEY_CODEC>())
-        : kafka_source_base<K, void, KEY_CODEC, void>(
+        : postgres_source_base<K, void, KEY_CODEC, void>(
         t.get_cluster_config(),
         topic, partition,
         t.consumer_group(),

@@ -1,3 +1,6 @@
 add_subdirectory(kspp_avrogencpp)
 #add_subdirectory(metrics2influx)
+if (ENABLE_POSTGRES)
 add_subdirectory(postgres2file)
+add_subdirectory(postgres2kafka)
+endif()
