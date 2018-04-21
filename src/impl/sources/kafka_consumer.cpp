@@ -102,8 +102,6 @@ namespace kspp {
   kafka_consumer::~kafka_consumer() {
     if (!_closed)
       close();
-    close();
-
     for (auto i : _topic_partition) // should be exactly 1
       delete i;
   }

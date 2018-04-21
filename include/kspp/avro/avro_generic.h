@@ -87,6 +87,24 @@ namespace kspp {
       }
       throw std::invalid_argument(std::string("wrong type, expected:") + to_string(cpp_to_avro_type<T>()) +  ", actual: " + to_string(field.type()));
     }
+
+    bool is_null(std::string name){
+      if (!record_.hasField(name))
+        throw std::invalid_argument("no such member: " + name);
+
+      const avro::GenericDatum &field = record_.field(name);
+
+      if(field.type() == avro::AVRO_NULL) // can this ever happen???
+        return true;
+
+      if (field.isUnion()) {
+        const avro::GenericUnion &generic_union(field.value<avro::GenericUnion>());
+        return (generic_union.datum().type() == avro::AVRO_NULL);
+      }
+
+      return false;
+    }
+
   private:
     const avro::GenericRecord& record_;
   };
@@ -125,6 +143,10 @@ namespace kspp {
       return _schema_id;
     }
 
+    inline avro::Type type() const {
+      return _generic_datum->type();
+    }
+
     avro_generic_record record() const {
       if (_generic_datum->type() == avro::AVRO_RECORD) {
         return avro_generic_record(_generic_datum->value<avro::GenericRecord>());
@@ -132,6 +154,7 @@ namespace kspp {
         throw std::invalid_argument(std::string("wrong type, expected: ") + to_string(avro::AVRO_RECORD) + " actual: " + to_string(_generic_datum->type()));
        }
     }
+
 
   private:
     std::shared_ptr<avro::GenericDatum>      _generic_datum;

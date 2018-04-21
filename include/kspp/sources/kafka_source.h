@@ -56,6 +56,7 @@ namespace kspp {
     }
 
     //TBD return up to timestamp
+    /*
     size_t process(int64_t tick) override {
       if (_incomming_msg.size() == 0)
         return 0;
@@ -67,6 +68,25 @@ namespace kspp {
       this->send_to_sinks(p);
       return 1;
     }
+     */
+
+    size_t process(int64_t tick) override {
+      if (_incomming_msg.size() == 0)
+        return 0;
+      size_t processed=0;
+      while(!_incomming_msg.empty()) {
+        auto p = _incomming_msg.front();
+        if (p==nullptr || p->event_time() > tick)
+          return processed;
+        _incomming_msg.pop_front();
+        this->send_to_sinks(p);
+        ++(this->_processed_count);
+        ++processed;
+        this->_lag.add_event_time(tick, p->event_time());
+      }
+      return processed;
+    }
+
 
     std::string topic() const override {
       return _impl.topic();

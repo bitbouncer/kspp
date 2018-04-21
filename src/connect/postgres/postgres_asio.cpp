@@ -1,4 +1,4 @@
-#include <kspp/impl/connect/postgres/postgres_asio.h>
+#include <kspp/connect/postgres/postgres_asio.h>
 #include <future>
 #include <boost/bind.hpp>
 #include <boost/uuid/uuid.hpp>
@@ -22,12 +22,12 @@ namespace postgres_asio {
   inline static std::shared_ptr<PGresult> make_shared(PGresult* p) { return std::shared_ptr<PGresult>(p, PQclear); }
 
   connection::connection(boost::asio::io_service& fg, boost::asio::io_service& bg, std::string trace_id) :
-    _fg_ios(fg),
-    _bg_ios(bg),
-    _socket(fg),
-    _pg_conn(NULL),
-    _warn_timeout(60000),
-    _trace_id(trace_id) {
+      _fg_ios(fg),
+      _bg_ios(bg),
+      _socket(fg),
+      _pg_conn(NULL),
+      _warn_timeout(60000),
+      _trace_id(trace_id) {
     if (!_trace_id.size()) {
       auto uuid = boost::uuids::random_generator();
       _trace_id = to_string(uuid());
@@ -82,6 +82,11 @@ namespace postgres_asio {
     });
     f.wait();
     return f.get();
+  }
+
+  void connection::close()
+  {
+    LOG(WARNING) << _trace_id << " postgres::close - NOT IMPLEMENTED";
   }
 
   // connect syncrounous and run callcack from fg thread event loop
@@ -177,29 +182,29 @@ namespace postgres_asio {
 
     int status = PQresultStatus(last_result.get());
     switch(status) {
-    case PGRES_EMPTY_QUERY:
-    case PGRES_COMMAND_OK:
-    case PGRES_TUPLES_OK:
-    case PGRES_COPY_OUT:
-    case PGRES_COPY_IN:
-    case PGRES_NONFATAL_ERROR:
-    case PGRES_COPY_BOTH:
-    case PGRES_SINGLE_TUPLE:
-      //LOG(INFO) << _trace_id << ", postgres::exec complete, t=" << duration << ", s=" << _current_statement.substr(0, STATEMENT_LOG_BYTES);
-    if(duration > _warn_timeout) {
-      LOG(WARNING) << _trace_id << ", postgres::exec complete - took long time, t=" << duration << ", s = " << _current_statement.substr(0, STATEMENT_LOG_BYTES);
-    }
-    cb(0, std::move(last_result));
-    break;
-    case PGRES_BAD_RESPONSE:
-    case PGRES_FATAL_ERROR:
-      LOG(ERROR) << _trace_id << ", postgres::exec failed " << last_error() << ", t=" << duration << ", s=" << _current_statement.substr(0, STATEMENT_LOG_BYTES);
-    cb(status, std::move(last_result));
-    break;
-    default:
-    LOG(WARNING) << _trace_id << ", postgres::exec unknown status code, t=" << duration << ", s=" << _current_statement.substr(0, STATEMENT_LOG_BYTES);
-    cb(status, std::move(last_result));
-    break;
+      case PGRES_EMPTY_QUERY:
+      case PGRES_COMMAND_OK:
+      case PGRES_TUPLES_OK:
+      case PGRES_COPY_OUT:
+      case PGRES_COPY_IN:
+      case PGRES_NONFATAL_ERROR:
+      case PGRES_COPY_BOTH:
+      case PGRES_SINGLE_TUPLE:
+        //LOG(INFO) << _trace_id << ", postgres::exec complete, t=" << duration << ", s=" << _current_statement.substr(0, STATEMENT_LOG_BYTES);
+        if(duration > _warn_timeout) {
+          LOG(WARNING) << _trace_id << ", postgres::exec complete - took long time, t=" << duration << ", s = " << _current_statement.substr(0, STATEMENT_LOG_BYTES);
+        }
+        cb(0, std::move(last_result));
+        break;
+      case PGRES_BAD_RESPONSE:
+      case PGRES_FATAL_ERROR:
+        LOG(ERROR) << _trace_id << ", postgres::exec failed " << last_error() << ", t=" << duration << ", s=" << _current_statement.substr(0, STATEMENT_LOG_BYTES);
+        cb(status, std::move(last_result));
+        break;
+      default:
+        LOG(WARNING) << _trace_id << ", postgres::exec unknown status code, t=" << duration << ", s=" << _current_statement.substr(0, STATEMENT_LOG_BYTES);
+        cb(status, std::move(last_result));
+        break;
     }
   }
 

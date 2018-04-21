@@ -1,11 +1,10 @@
-#pragma once
 #include <memory>
 #include <utility>
 #include <functional>
 #include <deque>
 #include <boost/asio.hpp>
-//#include <boost/chrono/system_clocks.hpp>
 #include <postgresql/libpq-fe.h>
+#pragma once
 
 //inspiration
 //https://github.com/brianc/node-libpq
@@ -18,6 +17,8 @@ namespace postgres_asio {
 
     connection(boost::asio::io_service& fg, boost::asio::io_service& bg, std::string trace_id = "");
     ~connection();
+
+    void close();
 
     /*
         host     -- host to connect to.If a non-zero-length string is specified, TCP/IP communication is used.Without a host name, libpq will connect using a local Unix domain socket.

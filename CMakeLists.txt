@@ -4,7 +4,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
 option(ENABLE_ROCKSDB "enable rocksdb support" ON)
 option(ENABLE_ZK "enable zk support" OFF)
-option(ENABLE_POSTGRES "enable postgres support" OFF)
+option(ENABLE_POSTGRES "enable postgres support" ON)
 option(BUILD_TOOLS "build tools" ON)
 option(BUILD_SAMPLES "build examples" ON)
 option(BUILD_TESTS "build tests" ON)
@@ -217,6 +217,7 @@ file(GLOB LIB_SRCS
 file(GLOB KSPP_INCLUDE_FILES
         include/kspp/*.h
         include/kspp/avro/*.h
+        include/kspp/connect/avro_file/*.h
         include/kspp/utils/*
         include/kspp/utils.h
         include/kspp/metrics/*.h
@@ -242,8 +243,8 @@ ENDIF()
 
 if (ENABLE_POSTGRES)
     file(GLOB POSTGRES_LIB_SRCS
-            include/impl/connect/postgres/*.h
-            src/impl/connect/postgres/*.cpp)
+            include/connect/postgres/*.h
+            src/connect/postgres/*.cpp)
 ENDIF()
 
 ADD_LIBRARY(kspp_s STATIC ${LIB_SRCS} ${ROCKDB_LIB_SRCS} ${POSTGRES_LIB_SRCS} ${KSPP_INCLUDE_FILES})
