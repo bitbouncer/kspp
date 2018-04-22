@@ -11,12 +11,15 @@ namespace kspp
                                                              std::string table,
                                                              std::string connect_string,
                                                              std::string id_column,
-                                                             std::string ts_column)
+                                                             std::string ts_column,
+                                                             std::shared_ptr<kspp::avro_schema_registry> registry)
       : partition_source<void, kspp::GenericAvro>(nullptr, partition)
       , _started(false)
       , _exit(false)
       , _thread(&postgres_generic_avro_source::thread_f, this)
       , _impl(partition, table, t.consumer_group(), connect_string, id_column, ts_column)
+      , _schema_registry(registry)
+      , _schema_id(-1)
       , _commit_chain(table, partition)
       , _parse_errors("parse_errors", "err")
       , _commit_chain_size("commit_chain_size", metric::GAUGE, "msg", [this]() { return _commit_chain.size(); })
@@ -34,14 +37,19 @@ namespace kspp
       return;
 
     // first time?
-    if (!this->_schema)
+    if (!this->_schema) {
       this->_schema = std::make_shared<avro::ValidSchema>(*schema_for_table_row(this->topic(), result));
+      if (_schema_registry) {
+        _schema_id = _schema_registry->put_schema(this->topic(),
+                                                  this->_schema); // we should probably prepend the name with a prefix (like _my_db_table_name)
+      }
+    }
 
     int nRows = PQntuples(result);
 
     for (int i = 0; i < nRows; i++)
     {
-      auto gd = std::make_shared<kspp::GenericAvro>(this->_schema, -1); // here we should really have the option to connect to schema registry and add the correct id...
+      auto gd = std::make_shared<kspp::GenericAvro>(this->_schema, _schema_id);
       assert(gd->type() == avro::AVRO_RECORD);
       avro::GenericRecord& record(gd->generic_datum()->value<avro::GenericRecord>());
       size_t nFields = record.fieldCount();

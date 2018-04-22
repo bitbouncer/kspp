@@ -90,8 +90,8 @@ namespace kspp {
       , _client_cert_path(config.get_client_cert_path())
       , _private_key_path(config.get_private_key_path())
       , _private_key_passphrase(config.get_private_key_passphrase()) {
-    _base_urls = kspp::split_url_list(config.get_schema_registry(), "http");
-    LOG_IF(FATAL, _base_urls.size()==0) << "confluent_http_proxy bad url: " << config.get_schema_registry();
+    _base_urls = kspp::split_url_list(config.get_schema_registry_uri(), "http");
+    LOG_IF(FATAL, _base_urls.size()==0) << "confluent_http_proxy bad url: " << config.get_schema_registry_uri();
   }
 
   void confluent_http_proxy::get_config(get_top_level_config_callback cb) {

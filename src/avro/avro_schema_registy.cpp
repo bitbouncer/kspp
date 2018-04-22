@@ -60,7 +60,7 @@ namespace kspp {
     future.wait();
     auto rpc_result = future.get();
     if (rpc_result.ec) {
-      LOG_IF(FATAL, _fail_fast) << "avro_schema_registry get failed: ec" << rpc_result.ec;
+      //LOG_IF(FATAL, _fail_fast) << "avro_schema_registry get failed: ec" << rpc_result.ec;
       LOG(ERROR) << "avro_schema_registry get failed: ec" << rpc_result.ec;
       return nullptr;
     }

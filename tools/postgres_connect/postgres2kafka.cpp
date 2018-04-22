@@ -182,7 +182,7 @@ int main(int argc, char **argv) {
 
   auto config = std::make_shared<kspp::cluster_config>();
   config->set_brokers(broker);
-  config->set_schema_registry(schema_registry);
+  config->set_schema_registry_uri(schema_registry);
   config->set_producer_buffering_time(1000ms);
   config->set_consumer_buffering_time(500ms);
   config->set_ca_cert_path(kspp::default_ca_cert_path());
@@ -191,6 +191,7 @@ int main(int argc, char **argv) {
                                kspp::default_client_key_passphrase());
   config->validate();
   config->log();
+  auto s= config->avro_serdes();
 
   LOG(INFO) << "postgres_host               : " << postgres_host;
   LOG(INFO) << "postgres_port               : " << postgres_port;
@@ -215,9 +216,7 @@ int main(int argc, char **argv) {
 
   kspp::topology_builder generic_builder("kspp", SERVICE_NAME, config);
   auto topology = generic_builder.create_topology();
-
-  auto source0 = topology->create_processors<kspp::postgres_generic_avro_source>({0}, postgres_table, connect_string,
-                                                                                 "id", "");
+  auto source0 = topology->create_processors<kspp::postgres_generic_avro_source>({0}, postgres_table, connect_string, "id", "", config->get_schema_registry());
   if (filename.size()) {
     topology->create_sink<kspp::avro_file_sink>(source0, "/tmp/" + topic_prefix + postgres_table + ".avro");
   } else {

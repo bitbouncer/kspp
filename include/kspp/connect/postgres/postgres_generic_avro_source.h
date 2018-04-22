@@ -17,7 +17,8 @@ namespace kspp {
                                  std::string table,
                                  std::string connect_string,
                                  std::string id_column,
-                                 std::string ts_column);
+                                 std::string ts_column,
+                                 std::shared_ptr<kspp::avro_schema_registry>);
 
     virtual ~postgres_generic_avro_source() {
       close();
@@ -91,7 +92,9 @@ namespace kspp {
     std::thread _thread;
     event_queue<void, kspp::GenericAvro> _incomming_msg;
     postgres_consumer _impl;
+    std::shared_ptr<kspp::avro_schema_registry> _schema_registry;
     std::shared_ptr<avro::ValidSchema> _schema;
+    int32_t _schema_id;
     commit_chain _commit_chain;
     metric_counter _parse_errors;
     metric_evaluator _commit_chain_size;

@@ -41,8 +41,8 @@ namespace kspp {
     std::string get_private_key_path() const;
     std::string get_private_key_passphrase() const;
 
-    void set_schema_registry(std::string);
-    std::string get_schema_registry() const;
+    void set_schema_registry_uri(std::string);
+    std::string get_schema_registry_uri() const;
 
     void set_schema_registry_timeout(std::chrono::milliseconds timeout);
     std::chrono::milliseconds get_schema_registry_timeout() const;
@@ -59,6 +59,10 @@ namespace kspp {
     std::chrono::seconds get_cluster_state_timeout() const ;
 
     std::shared_ptr<kspp::avro_serdes> avro_serdes();
+
+    std::shared_ptr<kspp::avro_schema_registry> get_schema_registry(){
+      return avro_schema_registry_;
+    }
 
     void validate() const;
 

@@ -30,7 +30,7 @@ namespace kspp {
     set_private_key_path(default_client_cert_path(),
                          default_client_key_path(),
                          default_client_key_passphrase());
-    set_schema_registry(default_schema_registry_uri());
+    set_schema_registry_uri(default_schema_registry_uri());
     //set_schema_registry_timeout()
     //set_fail_fast()
   }
@@ -107,13 +107,13 @@ namespace kspp {
     return private_key_passphrase_;
   }
 
-  void cluster_config::set_schema_registry(std::string urls) {
+  void cluster_config::set_schema_registry_uri(std::string urls) {
     auto v = kspp::split_url_list(urls, "http");
     LOG_IF(FATAL, v.size() == 0) << "cluster_config, bad schema registry urls: " << urls;
     schema_registry_uri_ = urls;
   }
 
-  std::string cluster_config::get_schema_registry() const {
+  std::string cluster_config::get_schema_registry_uri() const {
     return schema_registry_uri_;
   }
 
@@ -238,8 +238,8 @@ namespace kspp {
       LOG(INFO) << "cluster_config, kafka producer_message_timeout: " << get_producer_message_timeout().count()
                 << " ms";
 
-    LOG_IF(INFO, get_schema_registry().size() > 0) << "cluster_config, schema_registry: " << get_schema_registry();
-    LOG_IF(INFO, get_schema_registry().size() > 0)
+    LOG_IF(INFO, get_schema_registry_uri().size() > 0) << "cluster_config, schema_registry: " << get_schema_registry_uri();
+    LOG_IF(INFO, get_schema_registry_uri().size() > 0)
     << "cluster_config, schema_registry_timeout: " << get_schema_registry_timeout().count() << " ms";
     LOG(INFO) << "kafka cluster_state_timeout: " << get_cluster_state_timeout().count() << " s";
   }

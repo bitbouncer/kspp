@@ -381,7 +381,15 @@ namespace kspp {
     int32_t encoded_schema_id = -1;
     memcpy(&encoded_schema_id, &payload[1], 4);
     int32_t schema_id = ntohl(encoded_schema_id);
+
+    // this should net be in the stream - not possible to decode
+    if (schema_id<0) {
+      LOG(ERROR) << "schema id invalid: " <<  schema_id;
+      return 0;
+    }
+
     auto validSchema  = _registry->get_schema(schema_id);
+
 
     if (validSchema == nullptr)
       return 0;
@@ -402,6 +410,7 @@ namespace kspp {
   }
 
   template<> inline size_t avro_serdes::encode(const kspp::GenericAvro& src, std::ostream& dst) {
+    assert(src.schema_id()>=0);
     return encode(src.schema_id(), *src.generic_datum(), dst);
   }
 }
