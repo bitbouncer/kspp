@@ -135,8 +135,8 @@ namespace kspp {
       return _generic_datum;
     }
 
-    inline const avro::ValidSchema* valid_schema() const {
-      return _valid_schema.get();
+    inline std::shared_ptr<const avro::ValidSchema> valid_schema() const {
+      return _valid_schema;
     }
 
     inline int32_t schema_id() const {

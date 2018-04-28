@@ -28,6 +28,11 @@ namespace kspp {
 
     static std::string name() { return "kspp::avro"; }
 
+    template<class T>
+    int32_t register_schema(std::string name, const T& dummy){
+      return _registry->put_schema(name, dummy.valid_schema());
+    }
+
     /*
     * confluent avro encoded data
     * write avro format
@@ -148,7 +153,7 @@ namespace kspp {
     }
 
   private:
-    std::tuple<int32_t, std::shared_ptr<const avro::ValidSchema>> register_schema(std::string schema_name, std::string schema_as_string) {
+    std::tuple<int32_t, std::shared_ptr<const avro::ValidSchema>> _put_schema(std::string schema_name, std::string schema_as_string) {
       auto valid_schema = std::make_shared<const avro::ValidSchema>(avro::compileJsonSchemaFromString(schema_as_string));
       auto schema_id = _registry->put_schema(schema_name, valid_schema);
       return std::make_tuple(schema_id, valid_schema);
@@ -157,12 +162,19 @@ namespace kspp {
     std::shared_ptr<avro_schema_registry> _registry;
   };
 
+  template<> inline  int32_t avro_serdes::register_schema(std::string name, const std::string& dummy){
+    int32_t schema_id=0;
+    std::shared_ptr<const avro::ValidSchema> not_used;
+    std::tie(schema_id, not_used) = _put_schema(name, "{\"type\":\"string\"}");
+    return schema_id;
+  }
+
   template<> inline size_t avro_serdes::encode(const std::string& src, std::ostream& dst) {
     static int32_t schema_id = -1;
     std::shared_ptr<const avro::ValidSchema> not_used;
     if (schema_id > 0)
       return encode(schema_id, src, dst);
-    std::tie(schema_id, not_used) = register_schema("string", "{\"type\":\"string\"}");
+    std::tie(schema_id, not_used) = _put_schema("string", "{\"type\":\"string\"}");
     if (schema_id > 0)
       return encode(schema_id, src, dst);
     else
@@ -174,11 +186,18 @@ namespace kspp {
     static std::shared_ptr<const avro::ValidSchema> valid_schema; // this means we never free memory from used schemas???
     if (schema_id>0)
       return decode(schema_id, valid_schema, payload, size, dst);
-    std::tie(schema_id, valid_schema) = register_schema("string", "{\"type\":\"string\"}");
+    std::tie(schema_id, valid_schema) = _put_schema("string", "{\"type\":\"string\"}");
     if (schema_id > 0)
       return decode(schema_id, valid_schema, payload, size, dst);
     else
       return 0;
+  }
+
+  template<> inline  int32_t avro_serdes::register_schema(std::string name, const int64_t& dummy){
+    int32_t schema_id=0;
+    std::shared_ptr<const avro::ValidSchema> not_used;
+    std::tie(schema_id, not_used) = _put_schema(name,  "{\"type\":\"long\"}");
+    return schema_id;
   }
 
   template<> inline size_t avro_serdes::encode(const int64_t& src, std::ostream& dst) {
@@ -186,7 +205,7 @@ namespace kspp {
     std::shared_ptr<const avro::ValidSchema> not_used;
     if (schema_id > 0)
       return encode(schema_id, src, dst);
-    std::tie(schema_id, not_used) = register_schema("long", "{\"type\":\"long\"}");
+    std::tie(schema_id, not_used) = _put_schema("long", "{\"type\":\"long\"}");
     if (schema_id > 0)
       return encode(schema_id, src, dst);
     else
@@ -198,11 +217,18 @@ namespace kspp {
     static std::shared_ptr<const avro::ValidSchema> valid_schema; // this means we never free memory from used schemas???
     if (schema_id>0)
       return decode(schema_id, valid_schema, payload, size, dst);
-    std::tie(schema_id, valid_schema) = register_schema("long", "{\"type\":\"long\"}");
+    std::tie(schema_id, valid_schema) = _put_schema("long", "{\"type\":\"long\"}");
     if (schema_id > 0)
       return decode(schema_id, valid_schema, payload, size, dst);
     else
       return 0;
+  }
+
+  template<> inline  int32_t avro_serdes::register_schema(std::string name, const int32_t&){
+    int32_t schema_id=0;
+    std::shared_ptr<const avro::ValidSchema> not_used;
+    std::tie(schema_id, not_used) = _put_schema(name,  "{\"type\":\"int\"}");
+    return schema_id;
   }
 
   template<> inline size_t avro_serdes::encode(const int32_t& src, std::ostream& dst) {
@@ -210,7 +236,7 @@ namespace kspp {
     std::shared_ptr<const avro::ValidSchema> not_used;
     if (schema_id > 0)
       return encode(schema_id, src, dst);
-    std::tie(schema_id, not_used) = register_schema("int", "{\"type\":\"int\"}");
+    std::tie(schema_id, not_used) = _put_schema("int", "{\"type\":\"int\"}");
     if (schema_id > 0)
       return encode(schema_id, src, dst);
     else
@@ -222,11 +248,18 @@ namespace kspp {
     static std::shared_ptr<const avro::ValidSchema> valid_schema; // this means we never free memory from used schemas???
     if (schema_id>0)
       return decode(schema_id, valid_schema, payload, size, dst);
-    std::tie(schema_id, valid_schema) = register_schema("int", "{\"type\":\"int\"}");
+    std::tie(schema_id, valid_schema) = _put_schema("int", "{\"type\":\"int\"}");
     if (schema_id > 0)
       return decode(schema_id, valid_schema, payload, size, dst);
     else
       return 0;
+  }
+
+  template<> inline  int32_t avro_serdes::register_schema(std::string name, const bool& dummy){
+    int32_t schema_id=0;
+    std::shared_ptr<const avro::ValidSchema> not_used;
+    std::tie(schema_id, not_used) = _put_schema(name,  "{\"type\":\"boolean\"}");
+    return schema_id;
   }
 
   template<> inline size_t avro_serdes::encode(const bool& src, std::ostream& dst) {
@@ -234,7 +267,7 @@ namespace kspp {
     std::shared_ptr<const avro::ValidSchema> not_used;
     if (schema_id > 0)
       return encode(schema_id, src, dst);
-    std::tie(schema_id, not_used) = register_schema("boolean", "{\"type\":\"boolean\"}");
+    std::tie(schema_id, not_used) = _put_schema("boolean", "{\"type\":\"boolean\"}");
     if (schema_id > 0)
       return encode(schema_id, src, dst);
     else
@@ -246,11 +279,18 @@ namespace kspp {
     static std::shared_ptr<const avro::ValidSchema> valid_schema; // this means we never free memory from used schemas???
     if (schema_id>0)
       return decode(schema_id, valid_schema, payload, size, dst);
-    std::tie(schema_id, valid_schema) = register_schema("boolean", "{\"type\":\"boolean\"}");
+    std::tie(schema_id, valid_schema) = _put_schema("boolean", "{\"type\":\"boolean\"}");
     if (schema_id > 0)
       return decode(schema_id, valid_schema, payload, size, dst);
     else
       return 0;
+  }
+
+  template<> inline  int32_t avro_serdes::register_schema(std::string name, const float& dummy){
+    int32_t schema_id=0;
+    std::shared_ptr<const avro::ValidSchema> not_used;
+    std::tie(schema_id, not_used) = _put_schema(name,  "{\"type\":\"float\"}");
+    return schema_id;
   }
 
   template<> inline size_t avro_serdes::encode(const float& src, std::ostream& dst) {
@@ -258,7 +298,7 @@ namespace kspp {
     std::shared_ptr<const avro::ValidSchema> not_used;
     if (schema_id > 0)
       return encode(schema_id, src, dst);
-    std::tie(schema_id, not_used) = register_schema("float", "{\"type\":\"float\"}");
+    std::tie(schema_id, not_used) = _put_schema("float", "{\"type\":\"float\"}");
     if (schema_id > 0)
       return encode(schema_id, src, dst);
     else
@@ -270,11 +310,18 @@ namespace kspp {
     static std::shared_ptr<const avro::ValidSchema> valid_schema; // this means we never free memory from used schemas???
     if (schema_id>0)
       return decode(schema_id, valid_schema, payload, size, dst);
-    std::tie(schema_id, valid_schema) = register_schema("float", "{\"type\":\"float\"}");
+    std::tie(schema_id, valid_schema) = _put_schema("float", "{\"type\":\"float\"}");
     if (schema_id > 0)
       return decode(schema_id, valid_schema, payload, size, dst);
     else
       return 0;
+  }
+
+  template<> inline int32_t avro_serdes::register_schema(std::string name, const double& dummy){
+    int32_t schema_id=0;
+    std::shared_ptr<const avro::ValidSchema> not_used;
+    std::tie(schema_id, not_used) = _put_schema(name,  "{\"type\":\"double\"}");
+    return schema_id;
   }
 
   template<> inline size_t avro_serdes::encode(const double& src, std::ostream& dst) {
@@ -282,7 +329,7 @@ namespace kspp {
     std::shared_ptr<const avro::ValidSchema> not_used;
     if (schema_id > 0)
       return encode(schema_id, src, dst);
-    std::tie(schema_id, not_used) = register_schema("double", "{\"type\":\"double\"}");
+    std::tie(schema_id, not_used) = _put_schema("double", "{\"type\":\"double\"}");
     if (schema_id > 0)
       return encode(schema_id, src, dst);
     else
@@ -294,11 +341,18 @@ namespace kspp {
     static std::shared_ptr<const avro::ValidSchema> valid_schema; // this means we never free memory from used schemas???
     if (schema_id>0)
       return decode(schema_id, valid_schema, payload, size, dst);
-    std::tie(schema_id, valid_schema) = register_schema("double", "{\"type\":\"double\"}");
+    std::tie(schema_id, valid_schema) = _put_schema("double", "{\"type\":\"double\"}");
     if (schema_id > 0)
       return decode(schema_id, valid_schema, payload, size, dst);
     else
       return 0;
+  }
+
+  template<> inline  int32_t avro_serdes::register_schema(std::string name, const std::vector<uint8_t>& dummy){
+    int32_t schema_id=0;
+    std::shared_ptr<const avro::ValidSchema> not_used;
+    std::tie(schema_id, not_used) = _put_schema(name,  "{\"type\":\"bytes\"}");
+    return schema_id;
   }
 
   template<> inline size_t avro_serdes::encode(const std::vector<uint8_t>& src, std::ostream& dst) {
@@ -306,7 +360,7 @@ namespace kspp {
     std::shared_ptr<const avro::ValidSchema> not_used;
     if (schema_id > 0)
       return encode(schema_id, src, dst);
-    std::tie(schema_id, not_used) = register_schema("bytes", "{\"type\":\"bytes\"}");
+    std::tie(schema_id, not_used) = _put_schema("bytes", "{\"type\":\"bytes\"}");
     if (schema_id > 0)
       return encode(schema_id, src, dst);
     else
@@ -318,11 +372,18 @@ namespace kspp {
     static std::shared_ptr<const avro::ValidSchema> valid_schema; // this means we never free memory from used schemas???
     if (schema_id>0)
       return decode(schema_id, valid_schema, payload, size, dst);
-    std::tie(schema_id, valid_schema) = register_schema("bytes", "{\"type\":\"bytes\"}");
+    std::tie(schema_id, valid_schema) = _put_schema("bytes", "{\"type\":\"bytes\"}");
     if (schema_id > 0)
       return decode(schema_id, valid_schema, payload, size, dst);
     else
       return 0;
+  }
+
+  template<> inline  int32_t avro_serdes::register_schema(std::string name, const boost::uuids::uuid& dummy){
+    int32_t schema_id=0;
+    std::shared_ptr<const avro::ValidSchema> not_used;
+    std::tie(schema_id, not_used) = _put_schema(name,  "{\"type\":\"string\"}");
+    return schema_id;
   }
 
   template<> inline size_t avro_serdes::encode(const boost::uuids::uuid& src, std::ostream& dst) {
@@ -330,7 +391,7 @@ namespace kspp {
     std::shared_ptr<const avro::ValidSchema> not_used;
     if (schema_id > 0)
       return encode(schema_id, boost::uuids::to_string(src), dst);
-    std::tie(schema_id, not_used) = register_schema("uuid", "{\"type\":\"string\"}");
+    std::tie(schema_id, not_used) = _put_schema("uuid", "{\"type\":\"string\"}");
     if (schema_id > 0)
       return encode(schema_id, boost::uuids::to_string(src), dst);
     else
@@ -355,7 +416,7 @@ namespace kspp {
       }
     }
 
-    std::tie(schema_id, valid_schema) = register_schema("uuid", "{\"type\":\"string\"}");
+    std::tie(schema_id, valid_schema) = _put_schema("uuid", "{\"type\":\"string\"}");
 
     if (schema_id > 0) {
       std::string s;
@@ -407,6 +468,10 @@ namespace kspp {
       return 0;
     }
     return 0; // should never get here
+  }
+
+  template<> inline  int32_t avro_serdes::register_schema(std::string name, const kspp::GenericAvro& dummy) {
+    return _registry->put_schema(name, dummy.valid_schema());
   }
 
   template<> inline size_t avro_serdes::encode(const kspp::GenericAvro& src, std::ostream& dst) {
