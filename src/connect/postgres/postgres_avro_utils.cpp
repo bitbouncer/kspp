@@ -318,7 +318,7 @@ namespace kspp {
           avro::GenericRecord &record(gd->value<avro::GenericRecord>());
           for (int j = 0; j < nFields; j++) {
               if (record.fieldAt(j).type() != avro::AVRO_UNION) {
-                  std::cerr << "unexpected schema - bailing out" << std::endl;
+                  LOG(FATAL) << "unexpected schema - bailing out";
                   break;
               }
 
@@ -362,8 +362,7 @@ namespace kspp {
                       case avro::AVRO_FIXED:
                       case avro::AVRO_NULL:
                       default:
-                          std::cerr << "unexpectd / non supported type e:" << avro_item.type() << std::endl;;
-                      assert(false);
+                          LOG(FATAL)  << "unexpected / non supported type e:" << avro_item.type();
                   }
               }
           }
@@ -393,8 +392,7 @@ namespace kspp {
           size_t nFields = record.fieldCount();
           for (int j = 0; j < nFields; j++) {
               if (record.fieldAt(j).type() != avro::AVRO_UNION) {
-                  std::cerr << "unexpected schema - bailing out, type:" << record.fieldAt(j).type() << std::endl;
-                  assert(false);
+                  LOG(FATAL) << "unexpected schema - bailing out, type:" << record.fieldAt(j).type();
                   break;
               }
               avro::GenericUnion &au(record.fieldAt(j).value<avro::GenericUnion>());
@@ -404,8 +402,7 @@ namespace kspp {
               //which pg column has this value?
               int column_index = PQfnumber(res, column_name.c_str());
               if (column_index < 0) {
-                  std::cerr << "unknown column - bailing out: " << column_name << std::endl;
-                  assert(false);
+                  LOG(FATAL) << "unknown column - bailing out: " << column_name;
                   break;
               }
 
@@ -447,8 +444,7 @@ namespace kspp {
                       case avro::AVRO_FIXED:
                       case avro::AVRO_NULL:
                       default:
-                          std::cerr << "unexpectd / non supported type e:" << avro_item.type() << std::endl;;
-                      assert(false);
+                         LOG(FATAL) << "unexpected / non supported type e:" << avro_item.type();
                   }
               }
           }
@@ -564,7 +560,7 @@ std::string escapeSQL(SQLConnection & connection, const std::string & dataIn)
           std::string val;
 
           if (record.fieldAt(i).type() != avro::AVRO_UNION) {
-              std::cerr << "unexpected schema - bailing out" << std::endl;
+              LOG(ERROR) << "unexpected schema - bailing out";
               break;
           }
 
@@ -603,8 +599,7 @@ std::string escapeSQL(SQLConnection & connection, const std::string & dataIn)
               case avro::AVRO_UNION:
               case avro::AVRO_FIXED:
               default:
-                  std::cerr << "unexpectd / non supported type e:" << column.type() << std::endl;;
-              assert(false);
+                  LOG(FATAL) << "unexpected / non supported type e:" << column.type();
           }
           if (i < (nFields - 1))
               result += val + ", ";
@@ -651,4 +646,72 @@ std::string escapeSQL(SQLConnection & connection, const std::string & dataIn)
       */
       return s;
   }
+
+
+
+  static Oid avro_type_to_oid(avro::Type avro_type)
+  {
+      switch (avro_type)
+      {
+          case avro::AVRO_STRING: return TEXTOID;
+          case avro::AVRO_BYTES:  return BYTEAOID;
+          case avro::AVRO_INT:    return INT4OID;
+          case avro::AVRO_LONG:   return INT8OID;
+          case avro::AVRO_FLOAT:  return FLOAT4OID;
+          case avro::AVRO_DOUBLE: return FLOAT8OID;
+          case avro::AVRO_BOOL:   return BOOLOID;
+          case avro::AVRO_RECORD:
+          case avro::AVRO_ENUM:
+          case avro::AVRO_ARRAY:
+          case avro::AVRO_MAP:
+          case avro::AVRO_UNION:
+          case avro::AVRO_FIXED:
+          case avro::AVRO_NULL:
+          default:
+              LOG(FATAL) << "unsupported / non supported type e:" << avro_type;
+      }
+      return TEXTOID;
+  }
+
+  static std::string to_string(Oid oid)
+  {
+      switch ((PG_OIDS)oid)
+      {
+          case BOOLOID:    return "boolean";
+          case FLOAT4OID:  return "float4";
+          case FLOAT8OID:  return "float8";
+          case INT2OID:    return "smallint";
+          case INT4OID:    return "integer";
+          case INT8OID:    return "bigint";
+          case BYTEAOID:   return "bytea";
+          case CHAROID:    return "char";
+          case NAMEOID:    return "name";
+          case TEXTOID:    return "text";
+          default:
+              LOG(FATAL) << "unsupported / non supported type e:" << oid;
+          break;
+      }
+      return "unsupported";
+  }
+
+  std::string avro2sql_create_table_statement(const std::string& tablename, std::string keys, const avro::ValidSchema& schema)
+  {
+      auto r = schema.root();
+      assert(r->type() == avro::AVRO_RECORD);
+      std::string s = "CREATE TABLE " + tablename + " (\n";
+      size_t sz = r->names();
+      for (int i = 0; i != sz; ++i)
+      {
+          s += r->nameAt(i) + " " + to_string(avro_type_to_oid(r->leafAt(i)->type()));
+          if (i != sz - 1)
+              s += ",";
+      }
+
+      if (keys.size()>0)
+          s += ", PRIMARY KEY(" + keys + ") ";
+
+      s += ")";
+      return s;
+  }
+
 } // namespace

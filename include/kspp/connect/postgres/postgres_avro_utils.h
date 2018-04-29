@@ -61,5 +61,7 @@ namespace kspp {
   std::string avro2sql_table_name(boost::shared_ptr<avro::ValidSchema> schema, avro::GenericDatum &datum);
 
   std::string avro2sql_column_names(boost::shared_ptr<avro::ValidSchema> schema, avro::GenericDatum &datum);
+
+  std::string avro2sql_create_table_statement(const std::string& tablename, std::string keys, const avro::ValidSchema& schema);
 }
 

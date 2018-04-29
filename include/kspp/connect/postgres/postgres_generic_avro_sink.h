@@ -29,34 +29,34 @@ namespace kspp {
     void close() override {
       if (!_exit) {
         _exit = true;
-        _thread.join();
+        //_thread.join();
       }
 
       _impl.close();
     }
 
     bool eof() const override {
-      return _incomming_msg.size()==0 && _impl.eof();
+      return this->_queue.size()==0 && _impl.eof();
     }
 
-    // TBD if we store last offset and end of stream offset we can use this...
     size_t queue_size() const override {
-      return _incomming_msg.size();
+      return this->_queue.size();
     }
 
     int64_t next_event_time() const override {
-      return _incomming_msg.next_event_time();
+      return this->_queue.next_event_time();
     }
 
     size_t process(int64_t tick) override {
-      if (_incomming_msg.size() == 0)
+      if (this->_queue.empty())
         return 0;
       size_t processed=0;
-      while(!_incomming_msg.empty()) {
-        auto p = _incomming_msg.front();
+      while(!this->_queue.empty()) {
+        auto p = this->_queue.front();
         if (p==nullptr || p->event_time() > tick)
           return processed;
-        _incomming_msg.pop_front();
+        this->_queue.pop_front();
+        _impl.insert(p);
         //this->send_to_sinks(p); // TODO not implemted yet
         ++(this->_processed_count);
         ++processed;
@@ -69,6 +69,9 @@ namespace kspp {
       return _impl.table();
     }
 
+    void poll(int timeout) override {
+      _impl.poll();
+    }
 
     void flush() override {
       while (!eof()) {
@@ -85,12 +88,12 @@ namespace kspp {
 
   protected:
     void parse(const PGresult* ref);
-    void thread_f();
+    //void thread_f();
 
     bool _started;
     bool _exit;
-    std::thread _thread;
-    event_queue<void, kspp::GenericAvro> _incomming_msg;
+    //std::thread _thread;
+    //event_queue<void, kspp::GenericAvro> _incomming_msg;
     postgres_producer _impl;
     std::shared_ptr<kspp::avro_schema_registry> _schema_registry;
     std::shared_ptr<avro::ValidSchema> _schema;

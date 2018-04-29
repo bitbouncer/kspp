@@ -18,8 +18,10 @@ namespace kspp {
 
     void close();
 
+
+
     //std::unique_ptr<RdKafka::Message> consume();
-    std::shared_ptr<PGresult> consume();
+    //std::shared_ptr<PGresult> consume();
 
     inline bool eof() const {
       return _eof;
@@ -31,14 +33,23 @@ namespace kspp {
 
     void stop();
 
-    void subscribe();
+    //void subscribe();
 
     bool is_connected() const { return _connected; }
     bool is_query_running() const { return !_eof; }
 
+    inline void insert(std::shared_ptr<kevent<void, kspp::GenericAvro>> p){
+      _incomming_msg.push_back(p);
+    }
+
+    void poll();
+
   private:
     void connect_async();
     void check_table_exists_async();
+    void write_some_async();
+
+
 
     //void select_async();
     //void handle_fetch_cb(int ec, std::shared_ptr<PGresult> res);
@@ -58,6 +69,7 @@ namespace kspp {
     const std::string _id_column;
 
     //kspp::queue<std::shared_ptr<PGresult>> _queue;
+    event_queue<void, kspp::GenericAvro> _incomming_msg;
     size_t _max_items_in_fetch;
     uint64_t _msg_cnt;
     uint64_t _msg_bytes;
@@ -67,6 +79,8 @@ namespace kspp {
     bool _closed;
     bool _table_checked;
     bool _table_exists;
+    bool _table_create_pending;
+    bool _insert_in_progress;
   };
 }
 

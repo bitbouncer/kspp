@@ -1,11 +1,10 @@
 #include <kspp/connect/postgres/postgres_producer.h>
-
-#include <kspp/connect/postgres/postgres_consumer.h>
-#include <kspp/kspp.h>
 #include <chrono>
 #include <memory>
 #include <glog/logging.h>
 #include <boost/bind.hpp>
+#include <kspp/kspp.h>
+#include <kspp/connect/postgres/postgres_avro_utils.h>
 
 namespace kspp {
   postgres_producer::postgres_producer(std::string table, std::string connect_string, std::string id_column, size_t max_items_in_fetch)
@@ -25,7 +24,9 @@ namespace kspp {
       , _eof(false)
       , _connected(false)
       , _table_checked(false)
-      , _table_exists(false) {
+      , _table_exists(false)
+      , _table_create_pending(false)
+      , _insert_in_progress(false){
     connect_async();
   }
 
@@ -127,6 +128,51 @@ namespace kspp {
 
                           _table_checked = true;
     });
+  }
+
+  void postgres_producer::write_some_async() {
+    if (_incomming_msg.empty())
+      return;
+
+    if (!_table_exists){
+      if (_table_create_pending)
+        return;
+      _table_create_pending = true;
+      auto msg = _incomming_msg.front();
+
+      //TODO verify that the data actually has the _id_column(s)
+
+      std::string statement = avro2sql_create_table_statement(_table, _id_column, *msg->record()->value()->valid_schema());
+      DLOG(INFO) << "exec(" + statement + ")";
+      _connection->exec(statement,
+                        [this, statement](int ec, std::shared_ptr<PGresult> res) {
+
+                          if (ec) {
+                            LOG(FATAL) << statement  << " failed ec:" << ec << " last_error: " << _connection->last_error();
+                            _table_checked = true;
+                            _table_create_pending = false;
+                            return;
+                          }
+                          _table_exists = true;
+                          _table_create_pending = false;
+                        });
+
+    }
+
+    _insert_in_progress=true;
+
+    size_t msg_in_batch = 0 ;
+    while(!_incomming_msg.empty() && msg_in_batch<1000) {
+      auto msg = _incomming_msg.pop_and_get();
+    }
+
+    _insert_in_progress=false;
+  }
+
+  void postgres_producer::poll() {
+      if (_insert_in_progress)
+        return;
+    write_some_async();
   }
 
 /*
