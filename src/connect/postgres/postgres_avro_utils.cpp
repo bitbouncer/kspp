@@ -545,69 +545,6 @@ std::string escapeSQL(SQLConnection & connection, const std::string & dataIn)
     const char *chars;
   };
 
-  std::string escapeSQLstring(std::string src) {
-      //we should escape the sql string instead of doing this... - for now this removes ' characters in string
-      src.erase(std::remove_if(src.begin(), src.end(), IsChars("'")), src.end());
-      return std::string("'" + src + "'"); // we have to do real escaping here to prevent injection attacks  TBD
-  }
-
-  std::string avro2sql_values(boost::shared_ptr<avro::ValidSchema> schema, avro::GenericDatum &datum) {
-      std::string result = "(";
-      assert(datum.type() == avro::AVRO_RECORD);
-      avro::GenericRecord &record(datum.value<avro::GenericRecord>());
-      size_t nFields = record.fieldCount();
-      for (int i = 0; i < nFields; i++) {
-          std::string val;
-
-          if (record.fieldAt(i).type() != avro::AVRO_UNION) {
-              LOG(ERROR) << "unexpected schema - bailing out";
-              break;
-          }
-
-          avro::GenericUnion &au(record.fieldAt(i).value<avro::GenericUnion>());
-          avro::GenericDatum &column = au.datum();
-          auto t = column.type();
-          switch (t) {
-              case avro::AVRO_NULL:
-                  val = "NULL";
-              break;
-              case avro::AVRO_STRING:
-                  val = escapeSQLstring(column.value<std::string>());
-              break;
-              case avro::AVRO_BYTES:
-                  val = column.value<std::string>();
-              break;
-              case avro::AVRO_INT:
-                  val = std::to_string(column.value<int32_t>());
-              break;
-              case avro::AVRO_LONG:
-                  val = std::to_string(column.value<int64_t>());
-              break;
-              case avro::AVRO_FLOAT:
-                  val = std::to_string(column.value<float>());
-              break;
-              case avro::AVRO_DOUBLE:
-                  val = std::to_string(column.value<double>());
-              break;
-              case avro::AVRO_BOOL:
-                  val = column.value<bool>() ? "True" : "False";
-              break;
-              case avro::AVRO_RECORD:
-              case avro::AVRO_ENUM:
-              case avro::AVRO_ARRAY:
-              case avro::AVRO_MAP:
-              case avro::AVRO_UNION:
-              case avro::AVRO_FIXED:
-              default:
-                  LOG(FATAL) << "unexpected / non supported type e:" << column.type();
-          }
-          if (i < (nFields - 1))
-              result += val + ", ";
-          else
-              result += val + ")";
-      }
-      return result;
-  }
 
   std::string avro2sql_table_name(boost::shared_ptr<avro::ValidSchema> schema, avro::GenericDatum &datum) {
       auto r = schema->root();
@@ -713,5 +650,172 @@ std::string escapeSQL(SQLConnection & connection, const std::string & dataIn)
       s += ")";
       return s;
   }
+
+
+  std::string avro2sql_build_insert_1(const std::string& tablename, const avro::ValidSchema& schema){
+      auto r = schema.root();
+      assert(r->type() == avro::AVRO_RECORD);
+      std::string s = "INSERT INTO " + tablename + "(\n";
+      size_t sz = r->names();
+      for (int i = 0; i != sz; ++i)
+      {
+          s += r->nameAt(i);
+          if (i != sz - 1)
+              s += ",";
+      }
+      s += ") VALUES\n";
+      return s;
+  }
+
+  std::string avro2sql_build_upsert_2(const std::string& tablename, const std::string& primary_key, const avro::ValidSchema& schema){
+    auto r = schema.root();
+    assert(r->type() == avro::AVRO_RECORD);
+    std::string s = "ON CONFLICT (" + primary_key + ") DO UPDATE SET (\n";
+    size_t sz = r->names();
+    for (int i = 0; i != sz; ++i)
+    {
+      s += r->nameAt(i);
+      if (i != sz - 1)
+        s += ",";
+    }
+    s += ") = \n(";
+
+    for (int i = 0; i != sz; ++i)
+    {
+      s += "EXCLUDED." + r->nameAt(i);
+      if (i != sz - 1)
+        s += ",";
+    }
+    s += ")\n";
+
+    return s;
+  }
+
+
+  std::string escapeSQLstring(std::string src) {
+      //we should escape the sql string instead of doing this... - for now this removes ' characters in string
+      src.erase(std::remove_if(src.begin(), src.end(), IsChars("'")), src.end());
+      return std::string("'" + src + "'"); // we have to do real escaping here to prevent injection attacks  TBD
+  }
+
+  // only maps simple types to value
+  static std::string avro2sql_simple_column_value(const avro::GenericDatum &column) {
+    auto t = column.type();
+    switch (t) {
+      // nullable columns are represented as union of NULL and value
+      // parse those recursive
+      case avro::AVRO_UNION: {
+        const avro::GenericUnion& au(column.value<avro::GenericUnion>());
+        return avro2sql_simple_column_value(au.datum());
+      }
+      case avro::AVRO_NULL:
+        return "NULL";
+        break;
+      case avro::AVRO_STRING:
+        return escapeSQLstring(column.value<std::string>());
+        break;
+      case avro::AVRO_BYTES:
+        return column.value<std::string>();
+        break;
+      case avro::AVRO_INT:
+        return std::to_string(column.value<int32_t>());
+        break;
+      case avro::AVRO_LONG:
+        return std::to_string(column.value<int64_t>());
+        break;
+      case avro::AVRO_FLOAT:
+        return std::to_string(column.value<float>());
+        break;
+      case avro::AVRO_DOUBLE:
+        return std::to_string(column.value<double>());
+        break;
+      case avro::AVRO_BOOL:
+        return column.value<bool>() ? "True" : "False";
+        break;
+      case avro::AVRO_RECORD:
+      case avro::AVRO_ENUM:
+      case avro::AVRO_ARRAY:
+      case avro::AVRO_MAP:
+
+      case avro::AVRO_FIXED:
+      default:
+        LOG(FATAL) << "unexpected / non supported type e:" << column.type();
+    }
+
+  }
+
+  // handles both nullable and non nullable columns
+  std::string avro2sql_values(const avro::ValidSchema& schema, const avro::GenericDatum &datum) {
+    std::string result = "(";
+    assert(datum.type() == avro::AVRO_RECORD);
+    const avro::GenericRecord& record(datum.value<avro::GenericRecord>());
+    size_t nFields = record.fieldCount();
+    for (int i = 0; i < nFields; i++) {
+      std::string val = avro2sql_simple_column_value(record.fieldAt(i));
+      if (i < (nFields - 1))
+        result += val + ", ";
+      else
+        result += val + ")";
+    }
+    return result;
+  }
+
+//  std::string avro2sql_values(const avro::ValidSchema& schema, const avro::GenericDatum &datum) {
+//      std::string result = "(";
+//      assert(datum.type() == avro::AVRO_RECORD);
+//      const avro::GenericRecord& record(datum.value<avro::GenericRecord>());
+//      size_t nFields = record.fieldCount();
+//      for (int i = 0; i < nFields; i++) {
+//          std::string val;
+//
+//          if (record.fieldAt(i).type() != avro::AVRO_UNION) {
+//              LOG(ERROR) << "unexpected schema - bailing out";
+//              break;
+//          }
+//
+//          const avro::GenericUnion& au(record.fieldAt(i).value<avro::GenericUnion>());
+//          const avro::GenericDatum& column = au.datum();
+//          auto t = column.type();
+//          switch (t) {
+//              case avro::AVRO_NULL:
+//                  val = "NULL";
+//              break;
+//              case avro::AVRO_STRING:
+//                  val = escapeSQLstring(column.value<std::string>());
+//              break;
+//              case avro::AVRO_BYTES:
+//                  val = column.value<std::string>();
+//              break;
+//              case avro::AVRO_INT:
+//                  val = std::to_string(column.value<int32_t>());
+//              break;
+//              case avro::AVRO_LONG:
+//                  val = std::to_string(column.value<int64_t>());
+//              break;
+//              case avro::AVRO_FLOAT:
+//                  val = std::to_string(column.value<float>());
+//              break;
+//              case avro::AVRO_DOUBLE:
+//                  val = std::to_string(column.value<double>());
+//              break;
+//              case avro::AVRO_BOOL:
+//                  val = column.value<bool>() ? "True" : "False";
+//              break;
+//              case avro::AVRO_RECORD:
+//              case avro::AVRO_ENUM:
+//              case avro::AVRO_ARRAY:
+//              case avro::AVRO_MAP:
+//              case avro::AVRO_UNION:
+//              case avro::AVRO_FIXED:
+//              default:
+//                  LOG(FATAL) << "unexpected / non supported type e:" << column.type();
+//          }
+//          if (i < (nFields - 1))
+//              result += val + ", ";
+//          else
+//              result += val + ")";
+//      }
+//      return result;
+//  }
 
 } // namespace

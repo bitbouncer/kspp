@@ -56,12 +56,16 @@ namespace kspp {
   std::vector<std::shared_ptr<kspp::GenericAvro>>
   to_avro3(boost::shared_ptr<avro::ValidSchema> schema, const PGresult* res);
 
-  std::string avro2sql_values(boost::shared_ptr<avro::ValidSchema> schema, avro::GenericDatum &datum);
 
   std::string avro2sql_table_name(boost::shared_ptr<avro::ValidSchema> schema, avro::GenericDatum &datum);
-
   std::string avro2sql_column_names(boost::shared_ptr<avro::ValidSchema> schema, avro::GenericDatum &datum);
 
+  // SINK UTILS
   std::string avro2sql_create_table_statement(const std::string& tablename, std::string keys, const avro::ValidSchema& schema);
+  std::string avro2sql_build_insert_1(const std::string& tablename, const avro::ValidSchema& schema);
+  std::string avro2sql_build_upsert_2(const std::string& tablename, const std::string& primary_key, const avro::ValidSchema& schema);
+  std::string avro2sql_values(const avro::ValidSchema& schema, const avro::GenericDatum &datum);
+
+
 }
 

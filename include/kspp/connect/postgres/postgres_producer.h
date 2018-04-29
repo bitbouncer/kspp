@@ -24,7 +24,7 @@ namespace kspp {
     //std::shared_ptr<PGresult> consume();
 
     inline bool eof() const {
-      return _eof;
+      return (_incomming_msg.empty() && _pending_for_delete.empty());
     }
 
     inline std::string table() const {
@@ -36,7 +36,7 @@ namespace kspp {
     //void subscribe();
 
     bool is_connected() const { return _connected; }
-    bool is_query_running() const { return !_eof; }
+    //bool is_query_running() const { return !_eof; }
 
     inline void insert(std::shared_ptr<kevent<void, kspp::GenericAvro>> p){
       _incomming_msg.push_back(p);
@@ -70,12 +70,12 @@ namespace kspp {
 
     //kspp::queue<std::shared_ptr<PGresult>> _queue;
     event_queue<void, kspp::GenericAvro> _incomming_msg;
+    event_queue<void, kspp::GenericAvro> _pending_for_delete;
     size_t _max_items_in_fetch;
     uint64_t _msg_cnt;
     uint64_t _msg_bytes;
     bool _good;
     bool _connected;
-    bool _eof;
     bool _closed;
     bool _table_checked;
     bool _table_exists;

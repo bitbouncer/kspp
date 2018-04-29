@@ -21,7 +21,6 @@ namespace kspp {
       , _msg_bytes(0)
       , _good(true)
       , _closed(false)
-      , _eof(false)
       , _connected(false)
       , _table_checked(false)
       , _table_exists(false)
@@ -85,13 +84,11 @@ namespace kspp {
         bool r1 = _connection->set_client_encoding("UTF8");
         _good = true;
         _connected = true;
-        _eof = true;
         check_table_exists_async();
       } else {
         LOG(ERROR) << "connect failed";
         _good = false;
         _connected = false;
-        _eof = true;
       }
     });
   }
@@ -107,27 +104,27 @@ namespace kspp {
 
   void postgres_producer::check_table_exists_async() {
     std::string statement = "SELECT 1 FROM pg_tables WHERE tablename = '" + _table + "'";
-      DLOG(INFO) << "exec(" + statement + ")";
-      _connection->exec(statement,
-                        [this, statement](int ec, std::shared_ptr<PGresult> res) {
+    DLOG(INFO) << "exec(" + statement + ")";
+    _connection->exec(statement,
+                      [this, statement](int ec, std::shared_ptr<PGresult> res) {
 
-                          if (ec) {
-                            LOG(FATAL) << statement  << " failed ec:" << ec << " last_error: " << _connection->last_error();
-                            _table_checked = true;
-                            return;
-                          }
-
-                          int tuples_in_batch = PQntuples(res.get());
-
-                          if(tuples_in_batch>0) {
-                            LOG(INFO) << _table << " exists";
-                            _table_exists = true;
-                          } else {
-                            LOG(INFO) << _table << " not existing - will be created later";
-                          }
-
+                        if (ec) {
+                          LOG(FATAL) << statement  << " failed ec:" << ec << " last_error: " << _connection->last_error();
                           _table_checked = true;
-    });
+                          return;
+                        }
+
+                        int tuples_in_batch = PQntuples(res.get());
+
+                        if(tuples_in_batch>0) {
+                          LOG(INFO) << _table << " exists";
+                          _table_exists = true;
+                        } else {
+                          LOG(INFO) << _table << " not existing - will be created later";
+                        }
+
+                        _table_checked = true;
+                      });
   }
 
   void postgres_producer::write_some_async() {
@@ -161,17 +158,48 @@ namespace kspp {
 
     _insert_in_progress=true;
 
+    auto msg = _incomming_msg.front();
+    std::string statement = avro2sql_build_insert_1(_table, *msg->record()->value()->valid_schema());
+    std::string upsert_part = avro2sql_build_upsert_2(_table, _id_column, *msg->record()->value()->valid_schema());
+
+
     size_t msg_in_batch = 0 ;
     while(!_incomming_msg.empty() && msg_in_batch<1000) {
-      auto msg = _incomming_msg.pop_and_get();
+      if (msg_in_batch>0)
+        statement += ", \n";
+      auto msg = _incomming_msg.pop_and_get(); // TODO we need to store commit markes somewhere since they will be closed here otherwise...
+      _pending_for_delete.push_back(msg);
+      statement += avro2sql_values(*msg->record()->value()->valid_schema(), *msg->record()->value()->generic_datum());
+      ++msg_in_batch;
     }
+    statement += "\n";
+    statement += upsert_part;
+    //std::cerr << statement << std::endl;
 
-    _insert_in_progress=false;
+    _connection->exec(statement,
+                      [this, statement](int ec, std::shared_ptr<PGresult> res) {
+
+                        if (ec) {
+                          LOG(FATAL) << statement  << " failed ec:" << ec << " last_error: " << _connection->last_error();
+                          _insert_in_progress=false;
+                          return;
+                        }
+
+                        // frees the commit markers
+                        while(!_pending_for_delete.empty())
+                          _pending_for_delete.pop_front();
+
+                        _insert_in_progress=false;
+                        // TODO we should proably call ourselves were but since this is called from boost thread
+                        // TODO we nned to use a post in the main thread to trigger write_some_async from boost thread
+                        // this is handled through poll() now...
+                      });
   }
 
+
   void postgres_producer::poll() {
-      if (_insert_in_progress)
-        return;
+    if (_insert_in_progress)
+      return;
     write_some_async();
   }
 

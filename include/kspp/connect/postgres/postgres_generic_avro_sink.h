@@ -77,7 +77,9 @@ namespace kspp {
       while (!eof()) {
         process(kspp::milliseconds_since_epoch());
         poll(0);
-      }
+        std::this_thread::sleep_for(std::chrono::milliseconds(10)); // TODO the deletable messages should be deleted when poill gets called an not from background thread 3rd queue is needed...
+       }
+
       while (true) {
         int ec=0; // TODO fixme
         //auto ec = _impl.flush(1000);
