@@ -85,4 +85,4 @@ namespace postgres_asio {
     boost::asio::io_service& _fg_ios;
     boost::asio::io_service& _bg_ios;
     };*/
-};
+}

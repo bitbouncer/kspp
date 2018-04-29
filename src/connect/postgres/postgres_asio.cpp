@@ -223,5 +223,5 @@ namespace postgres_asio {
   //void connection_pool::release(boost::shared_ptr<postgres_asio::connection>)
   //{
   //}
-};
+}
 
