@@ -51,7 +51,7 @@ namespace kspp {
 
     if (_connection) {
       _connection->close();
-      LOG(INFO) << "postgres_producer table:" << _table << ", closed - consumed " << _msg_cnt << " messages (" << _msg_bytes << " bytes)";
+      LOG(INFO) << "postgres_producer table:" << _table << ", closed - producer " << _msg_cnt << " messages (" << _msg_bytes << " bytes)";
     }
 
     _connected = false;
@@ -131,6 +131,9 @@ namespace kspp {
     if (_incomming_msg.empty())
       return;
 
+    if (_insert_in_progress)
+      return;
+
     if (!_table_exists){
       if (_table_create_pending)
         return;
@@ -153,7 +156,7 @@ namespace kspp {
                           _table_exists = true;
                           _table_create_pending = false;
                         });
-
+      return; // we must exit since we must wait for completion of above
     }
 
     _insert_in_progress=true;
@@ -162,22 +165,35 @@ namespace kspp {
     std::string statement = avro2sql_build_insert_1(_table, *msg->record()->value()->valid_schema());
     std::string upsert_part = avro2sql_build_upsert_2(_table, _id_column, *msg->record()->value()->valid_schema());
 
-
     size_t msg_in_batch = 0 ;
+    size_t bytes_in_batch=0;
+    std::set<std::string> unique_keys_in_batch;
     while(!_incomming_msg.empty() && msg_in_batch<1000) {
+      auto msg = _incomming_msg.front();
+
+      // we cannot have the id columns of this update more than once
+      // postgres::exec failed ERROR:  ON CONFLICT DO UPDATE command cannot affect row a second time
+      auto key_string = avro2sql_key_values(*msg->record()->value()->valid_schema(), _id_column, *msg->record()->value()->generic_datum());
+      auto res = unique_keys_in_batch.insert(key_string);
+      if (res.second==false) {
+        DLOG(INFO) << "breaking up upsert due to 'ON CONFLICT DO UPDATE command cannot affect row a second time...' batch size: " << msg_in_batch;
+        break;
+      }
+
       if (msg_in_batch>0)
         statement += ", \n";
-      auto msg = _incomming_msg.pop_and_get(); // TODO we need to store commit markes somewhere since they will be closed here otherwise...
-      _pending_for_delete.push_back(msg);
-      statement += avro2sql_values(*msg->record()->value()->valid_schema(), *msg->record()->value()->generic_datum());
+      statement += avro2sql_values(*msg->record()->value()->valid_schema(), *msg->record()->value()->generic_datum());;
       ++msg_in_batch;
+      _pending_for_delete.push_back(msg);
+      _incomming_msg.pop_front();
     }
     statement += "\n";
     statement += upsert_part;
+    bytes_in_batch +=  statement.size();
     //std::cerr << statement << std::endl;
 
     _connection->exec(statement,
-                      [this, statement](int ec, std::shared_ptr<PGresult> res) {
+                      [this, statement, msg_in_batch, bytes_in_batch](int ec, std::shared_ptr<PGresult> res) {
 
                         if (ec) {
                           LOG(FATAL) << statement  << " failed ec:" << ec << " last_error: " << _connection->last_error();
@@ -185,9 +201,13 @@ namespace kspp {
                           return;
                         }
 
+                        _msg_cnt += msg_in_batch;
+                        _msg_bytes += bytes_in_batch;
+
                         // frees the commit markers
-                        while(!_pending_for_delete.empty())
+                        while(!_pending_for_delete.empty()) {
                           _pending_for_delete.pop_front();
+                        }
 
                         _insert_in_progress=false;
                         // TODO we should proably call ourselves were but since this is called from boost thread

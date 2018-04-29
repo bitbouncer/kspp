@@ -597,11 +597,12 @@ std::string escapeSQL(SQLConnection & connection, const std::string & dataIn)
           case avro::AVRO_FLOAT:  return FLOAT4OID;
           case avro::AVRO_DOUBLE: return FLOAT8OID;
           case avro::AVRO_BOOL:   return BOOLOID;
+          case avro::AVRO_UNION:
           case avro::AVRO_RECORD:
           case avro::AVRO_ENUM:
           case avro::AVRO_ARRAY:
           case avro::AVRO_MAP:
-          case avro::AVRO_UNION:
+
           case avro::AVRO_FIXED:
           case avro::AVRO_NULL:
           default:
@@ -631,16 +632,32 @@ std::string escapeSQL(SQLConnection & connection, const std::string & dataIn)
       return "unsupported";
   }
 
+  // this is hackish - if the column is a union type we assume that it can be null
+  static bool avro2sql_is_column_nullable(const avro::GenericDatum &column) {
+    auto t = column.type();
+    return (t==avro::AVRO_UNION);
+  }
+
   std::string avro2sql_create_table_statement(const std::string& tablename, std::string keys, const avro::ValidSchema& schema)
   {
-      auto r = schema.root();
-      assert(r->type() == avro::AVRO_RECORD);
+      auto root = schema.root();
+      assert(root->type() == avro::AVRO_RECORD);
       std::string s = "CREATE TABLE " + tablename + " (\n";
-      size_t sz = r->names();
+      size_t sz = root->names();
       for (int i = 0; i != sz; ++i)
       {
-          s += r->nameAt(i) + " " + to_string(avro_type_to_oid(r->leafAt(i)->type()));
-          if (i != sz - 1)
+        auto leaf = root->leafAt(i);
+
+        // nullable or not??
+        if (leaf->type() == avro::AVRO_UNION){
+          //auto avro_null = leaf->leafAt(0);
+          auto avro_val = leaf->leafAt(1);
+          s += root->nameAt(i) + " " + to_string(avro_type_to_oid(avro_val->type()));
+        } else {
+          s += root->nameAt(i) + " " + to_string(avro_type_to_oid(root->leafAt(i)->type())) + " NOT NULL";
+        }
+
+        if (i != sz - 1)
               s += ",";
       }
 
@@ -744,6 +761,7 @@ std::string escapeSQL(SQLConnection & connection, const std::string & dataIn)
 
   }
 
+
   // handles both nullable and non nullable columns
   std::string avro2sql_values(const avro::ValidSchema& schema, const avro::GenericDatum &datum) {
     std::string result = "(";
@@ -760,62 +778,17 @@ std::string escapeSQL(SQLConnection & connection, const std::string & dataIn)
     return result;
   }
 
-//  std::string avro2sql_values(const avro::ValidSchema& schema, const avro::GenericDatum &datum) {
-//      std::string result = "(";
-//      assert(datum.type() == avro::AVRO_RECORD);
-//      const avro::GenericRecord& record(datum.value<avro::GenericRecord>());
-//      size_t nFields = record.fieldCount();
-//      for (int i = 0; i < nFields; i++) {
-//          std::string val;
-//
-//          if (record.fieldAt(i).type() != avro::AVRO_UNION) {
-//              LOG(ERROR) << "unexpected schema - bailing out";
-//              break;
-//          }
-//
-//          const avro::GenericUnion& au(record.fieldAt(i).value<avro::GenericUnion>());
-//          const avro::GenericDatum& column = au.datum();
-//          auto t = column.type();
-//          switch (t) {
-//              case avro::AVRO_NULL:
-//                  val = "NULL";
-//              break;
-//              case avro::AVRO_STRING:
-//                  val = escapeSQLstring(column.value<std::string>());
-//              break;
-//              case avro::AVRO_BYTES:
-//                  val = column.value<std::string>();
-//              break;
-//              case avro::AVRO_INT:
-//                  val = std::to_string(column.value<int32_t>());
-//              break;
-//              case avro::AVRO_LONG:
-//                  val = std::to_string(column.value<int64_t>());
-//              break;
-//              case avro::AVRO_FLOAT:
-//                  val = std::to_string(column.value<float>());
-//              break;
-//              case avro::AVRO_DOUBLE:
-//                  val = std::to_string(column.value<double>());
-//              break;
-//              case avro::AVRO_BOOL:
-//                  val = column.value<bool>() ? "True" : "False";
-//              break;
-//              case avro::AVRO_RECORD:
-//              case avro::AVRO_ENUM:
-//              case avro::AVRO_ARRAY:
-//              case avro::AVRO_MAP:
-//              case avro::AVRO_UNION:
-//              case avro::AVRO_FIXED:
-//              default:
-//                  LOG(FATAL) << "unexpected / non supported type e:" << column.type();
-//          }
-//          if (i < (nFields - 1))
-//              result += val + ", ";
-//          else
-//              result += val + ")";
-//      }
-//      return result;
-//  }
+  // TODO mutiple keys
+  std::string avro2sql_key_values(const avro::ValidSchema& schema, const std::string& key, const avro::GenericDatum &datum){
+    assert(datum.type() == avro::AVRO_RECORD);
+    const avro::GenericRecord& record(datum.value<avro::GenericRecord>());
+    std::string result;
+    auto x = record.field(key);
+    result += avro2sql_simple_column_value(x);
+    return result;
+  }
+
+
+
 
 } // namespace

@@ -65,6 +65,7 @@ namespace kspp {
   std::string avro2sql_build_insert_1(const std::string& tablename, const avro::ValidSchema& schema);
   std::string avro2sql_build_upsert_2(const std::string& tablename, const std::string& primary_key, const avro::ValidSchema& schema);
   std::string avro2sql_values(const avro::ValidSchema& schema, const avro::GenericDatum &datum);
+  std::string avro2sql_key_values(const avro::ValidSchema& schema, const std::string& key, const avro::GenericDatum &datum);
 
 
 }
