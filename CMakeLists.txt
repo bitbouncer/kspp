@@ -5,6 +5,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 option(ENABLE_ROCKSDB "enable rocksdb support" ON)
 option(ENABLE_ZK "enable zk support" OFF)
 option(ENABLE_POSTGRES "enable postgres support" ON)
+option(ENABLE_ELASTICSEARCH "enable elastic search support" ON)
 option(BUILD_TOOLS "build tools" ON)
 option(BUILD_SAMPLES "build examples" ON)
 option(BUILD_TESTS "build tests" ON)
@@ -247,13 +248,22 @@ if (ENABLE_POSTGRES)
             src/connect/postgres/*.cpp)
 ENDIF()
 
-ADD_LIBRARY(kspp_s STATIC ${LIB_SRCS} ${ROCKDB_LIB_SRCS} ${POSTGRES_LIB_SRCS} ${KSPP_INCLUDE_FILES})
+if (ENABLE_ELASTICSEARCH)
+    file(GLOB ELASTICSEARCH_LIB_SRCS
+            include/connect/elasticsearch/*.h
+            src/connect/elasticsearch/*.cpp)
+ENDIF()
+
+
+
+
+ADD_LIBRARY(kspp_s STATIC ${LIB_SRCS} ${ROCKDB_LIB_SRCS} ${POSTGRES_LIB_SRCS} ${ELASTICSEARCH_LIB_SRCS} ${KSPP_INCLUDE_FILES})
 INSTALL(TARGETS kspp_s
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
         )
 
-ADD_LIBRARY(kspp SHARED ${LIB_SRCS} ${ROCKDB_LIB_SRCS} ${POSTGRES_LIB_SRCS} ${KSPP_INCLUDE_FILES})
+ADD_LIBRARY(kspp SHARED ${LIB_SRCS} ${ROCKDB_LIB_SRCS} ${POSTGRES_LIB_SRCS} ${ELASTICSEARCH_LIB_SRCS} ${KSPP_INCLUDE_FILES})
 IF(APPLE)
     TARGET_LINK_LIBRARIES(kspp ${EXT_LIBS})
 ENDIF()

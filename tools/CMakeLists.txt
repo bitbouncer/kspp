@@ -3,3 +3,7 @@ add_subdirectory(kspp_avrogencpp)
 if (ENABLE_POSTGRES)
 add_subdirectory(postgres_connect)
 endif()
+
+if (ENABLE_ELASTICSEARCH)
+    add_subdirectory(elasticsearch_sink)
+endif()
