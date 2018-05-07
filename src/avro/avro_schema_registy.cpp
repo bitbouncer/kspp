@@ -67,7 +67,7 @@ namespace kspp {
 
     std::stringstream ss;
     rpc_result.schema->toJson(ss);
-    DLOG(INFO) << "avro_schema_registry get " << schema_id << "-> " << ss.str();
+    LOG(INFO) << "avro_schema_registry get " << schema_id << "-> " << ss.str();
 
     {
       kspp::spinlock::scoped_lock xxx(_spinlock);

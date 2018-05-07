@@ -109,7 +109,7 @@ namespace kspp {
 
     std::string url = _base_url + "/" + _index_name + "/" + "_doc" + "/" + key_string;
     std::string body = avro2elastic_to_json(*doc.valid_schema(), *doc.generic_datum());
-    std::cerr << body << std::endl;
+    //std::cerr << body << std::endl;
 
     kspp::async::work<work_result_t>::async_function f = [this, body, url](std::function<void(work_result_t)> cb) {
       std::vector<std::string> headers({ "Content-Type: application/json" });
@@ -118,7 +118,7 @@ namespace kspp {
       //std::string dummy_body = "{ \"user\" : \"kimchy\", \"post_date\" : \"2009-11-15T14:12:12\", \"message\" : \"trying out Elasticsearch\" }";
 
       request->append(body);
-      request->set_verbose(true);
+      //request->set_verbose(true);
       _http_handler.perform_async(
           request,
           [this, cb](std::shared_ptr<kspp::http::request> h) {
