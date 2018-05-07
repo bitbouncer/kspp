@@ -4,28 +4,37 @@
 #include <glog/logging.h>
 #include <kspp/kspp.h>
 #include <kspp/topology.h>
+
+#include <kspp/connect/generic_avro_sink.h>
 #include <kspp/connect/postgres/postgres_producer.h>
+
 #include <kspp/avro/avro_generic.h>
 #pragma once
 
 namespace kspp {
-  class postgres_generic_avro_sink : public topic_sink<void, kspp::GenericAvro> {
+  class postgres_generic_avro_sink : public generic_avro_sink {
     static constexpr const char* PROCESSOR_NAME = "postgres_avro_sink";
   public:
     postgres_generic_avro_sink(topology &t,
                                  std::string table,
                                  std::string connect_string,
                                  std::string id_column,
-                                 std::shared_ptr<kspp::avro_schema_registry>);
+                                 std::shared_ptr<kspp::avro_schema_registry> schema_registry)
+    : generic_avro_sink(t, std::make_shared<kspp::postgres_producer>(table, connect_string, id_column), schema_registry){
+    }
 
-    virtual ~postgres_generic_avro_sink() {
+
+    /*
+     * virtual ~postgres_generic_avro_sink() {
       close();
     }
+     */
 
     std::string log_name() const override {
       return PROCESSOR_NAME;
     }
 
+    /*
     void close() override {
       if (!_exit) {
         _exit = true;
@@ -87,16 +96,13 @@ namespace kspp {
           break;
       }
     }
+    */
 
   protected:
-    void parse(const PGresult* ref);
-    //void thread_f();
+    //bool _started;
+    //bool _exit;
+    //postgres_producer _impl;
 
-    bool _started;
-    bool _exit;
-    //std::thread _thread;
-    //event_queue<void, kspp::GenericAvro> _incomming_msg;
-    postgres_producer _impl;
     std::shared_ptr<kspp::avro_schema_registry> _schema_registry;
     std::shared_ptr<avro::ValidSchema> _schema;
     int32_t _schema_id;

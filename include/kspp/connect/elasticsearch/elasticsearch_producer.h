@@ -3,12 +3,15 @@
 #include <kspp/impl/queue.h>
 #include <kspp/utils/async.h>
 #include <kspp/utils/http_client.h>
-#include <kspp/topology.h>
+#include <kspp/avro/avro_generic.h>
+#include <kspp/impl/event_queue.h>
+#include <kspp/kevent.h>
+#include <kspp/connect/generic_producer.h>
 
 #pragma once
 
 namespace kspp {
-  class elasticsearch_producer
+  class elasticsearch_producer : public generic_producer<void, kspp::GenericAvro>
   {
   public:
     enum work_result_t { SUCCESS = 0, TIMEOUT = -1, HTTP_ERROR = -2, PARSE_ERROR = -3 };
@@ -18,17 +21,18 @@ namespace kspp {
                       std::string user,
                       std::string password,
                       std::string id_column,
-                      size_t http_batch_size=20);
+                      size_t http_batch_size);
+
     ~elasticsearch_producer();
 
-    void close();
+    void close() override;
 
 
-    inline bool eof() const {
+    bool eof() const override {
       return (_incomming_msg.empty() && _pending_for_delete.empty());
     }
 
-    inline std::string table() const {
+    std::string topic() const override {
       return _index_name;
     }
 
@@ -39,7 +43,7 @@ namespace kspp {
     bool is_connected() const { return _connected; }
     //bool is_query_running() const { return !_eof; }
 
-    inline void insert(std::shared_ptr<kevent<void, kspp::GenericAvro>> p){
+    void insert(std::shared_ptr<kevent<void, kspp::GenericAvro>> p) override{
       _incomming_msg.push_back(p);
     }
 

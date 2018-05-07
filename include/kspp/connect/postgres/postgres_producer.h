@@ -3,11 +3,11 @@
 #include <kspp/impl/queue.h>
 #include <kspp/connect/postgres/postgres_asio.h>
 #include <kspp/topology.h>
-
+#include <kspp/connect/generic_producer.h>
 #pragma once
 
 namespace kspp {
-  class postgres_producer
+  class postgres_producer : public generic_producer<void, kspp::GenericAvro>
   {
   public:
     postgres_producer(std::string table,
@@ -16,44 +16,35 @@ namespace kspp {
                       size_t max_items_in_fetch=1000);
     ~postgres_producer();
 
-    void close();
+    void close() override;
 
 
 
     //std::unique_ptr<RdKafka::Message> consume();
     //std::shared_ptr<PGresult> consume();
 
-    inline bool eof() const {
+    bool eof() const override {
       return (_incomming_msg.empty() && _pending_for_delete.empty());
     }
 
-    inline std::string table() const {
+    std::string topic() const override {
       return _table;
     }
 
     void stop();
 
-    //void subscribe();
-
     bool is_connected() const { return _connected; }
-    //bool is_query_running() const { return !_eof; }
 
-    inline void insert(std::shared_ptr<kevent<void, kspp::GenericAvro>> p){
+    void insert(std::shared_ptr<kevent<void, kspp::GenericAvro>> p) override {
       _incomming_msg.push_back(p);
     }
 
-    void poll();
+    void poll() override;
 
   private:
     void connect_async();
     void check_table_exists_async();
     void write_some_async();
-
-
-
-    //void select_async();
-    //void handle_fetch_cb(int ec, std::shared_ptr<PGresult> res);
-
 
     boost::asio::io_service _fg_ios;
     boost::asio::io_service _bg_ios;
@@ -63,12 +54,10 @@ namespace kspp {
     std::thread _bg;
     std::shared_ptr<postgres_asio::connection> _connection;
 
-    //std::shared_ptr<connect_config> _config;
     const std::string _table;
     const std::string _connect_string;
     const std::string _id_column;
 
-    //kspp::queue<std::shared_ptr<PGresult>> _queue;
     event_queue<void, kspp::GenericAvro> _incomming_msg;
     event_queue<void, kspp::GenericAvro> _pending_for_delete;
     size_t _max_items_in_fetch;

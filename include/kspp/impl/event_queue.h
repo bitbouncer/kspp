@@ -2,7 +2,7 @@
 #include <memory>
 #include <cstdint>
 #include <kspp/utils/spinlock.h>
-
+#include <kspp/kevent.h>
 #pragma once
 
 namespace kspp {
