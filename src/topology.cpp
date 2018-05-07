@@ -115,13 +115,15 @@ namespace kspp {
       _precondition_consumer_group = consumer_group();
 
     for (auto &&i : _partition_processors){
-      auto topic = i->topic();
+      auto topic = i->precondition_topic();
       if (topic.size())
         _precondition_topics.insert(topic);
     }
 
     for (auto &&i : _sinks){
-      // get used kafka topics - TODO
+      auto topic = i->precondition_topic();
+      if (topic.size())
+        _precondition_topics.insert(topic);
     }
 
     validate_preconditions();

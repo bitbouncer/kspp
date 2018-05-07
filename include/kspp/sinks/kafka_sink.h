@@ -38,6 +38,10 @@ namespace kspp {
       return _impl.topic();
     }
 
+    std::string precondition_topic() const override {
+      return _impl.topic();
+    }
+
     void close() override {
       flush();
       return _impl.close();

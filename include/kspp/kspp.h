@@ -138,6 +138,14 @@ namespace kspp {
       return "";
     }
 
+    /**
+   *
+   * @return returns the kafka topic
+   */
+    virtual std::string precondition_topic() const {
+      return "";
+    }
+
     void add_metrics_tag(std::string key, std::string value) {
        for (auto i : _metrics)
          i->add_tag(key, value);

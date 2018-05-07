@@ -193,6 +193,8 @@ int main(int argc, char **argv) {
   config->log();
   auto s= config->avro_serdes();
 
+  std::string topic_name = topic_prefix + postgres_table;
+
   LOG(INFO) << "postgres_host               : " << postgres_host;
   LOG(INFO) << "postgres_port               : " << postgres_port;
   LOG(INFO) << "postgres_dbname             : " << postgres_dbname;
@@ -202,6 +204,8 @@ int main(int argc, char **argv) {
   LOG(INFO) << "postgres_max_items_in_fetch : " << postgres_max_items_in_fetch;
   LOG(INFO) << "postgres_warning_timeout    : " << postgres_warning_timeout;
   LOG(INFO) << "topic_prefix                : " << topic_prefix;
+  LOG(INFO) << "kafka_topic                 : " << topic_name;
+
 
   std::string connect_string =
       "host=" + postgres_host + " port=" + std::to_string(postgres_port) + " user=" + postgres_user + " password=" +
@@ -220,9 +224,7 @@ int main(int argc, char **argv) {
   if (filename.size()) {
     topology->create_sink<kspp::avro_file_sink>(source0, "/tmp/" + topic_prefix + postgres_table + ".avro");
   } else {
-    topology->create_sink<kspp::kafka_sink<void, kspp::GenericAvro, void, kspp::avro_serdes>>(source0, topic_prefix +
-                                                                                                      postgres_table,
-                                                                                              config->avro_serdes());
+    topology->create_sink<kspp::kafka_sink<void, kspp::GenericAvro, void, kspp::avro_serdes>>(source0, topic_name, config->avro_serdes());
   }
 
 

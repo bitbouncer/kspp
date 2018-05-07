@@ -87,8 +87,11 @@ namespace kspp {
       return processed;
     }
 
-
     std::string topic() const override {
+      return _impl.topic();
+    }
+
+    std::string precondition_topic() const override {
       return _impl.topic();
     }
 
