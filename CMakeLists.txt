@@ -5,6 +5,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 option(ENABLE_ROCKSDB "enable rocksdb support" ON)
 option(ENABLE_ZK "enable zk support" OFF)
 option(ENABLE_POSTGRES "enable postgres support" ON)
+option(ENABLE_TDS "enable tds support" ON)
 option(ENABLE_ELASTICSEARCH "enable elastic search support" ON)
 option(BUILD_TOOLS "build tools" ON)
 option(BUILD_SAMPLES "build examples" ON)
@@ -248,22 +249,26 @@ if (ENABLE_POSTGRES)
             src/connect/postgres/*.cpp)
 ENDIF()
 
+if (ENABLE_TDS)
+    file(GLOB TDS_LIB_SRCS
+            include/connect/tds/*.h
+            src/connect/tds/*.cpp)
+ENDIF()
+
+
 if (ENABLE_ELASTICSEARCH)
     file(GLOB ELASTICSEARCH_LIB_SRCS
             include/connect/elasticsearch/*.h
             src/connect/elasticsearch/*.cpp)
 ENDIF()
 
-
-
-
-ADD_LIBRARY(kspp_s STATIC ${LIB_SRCS} ${ROCKDB_LIB_SRCS} ${POSTGRES_LIB_SRCS} ${ELASTICSEARCH_LIB_SRCS} ${KSPP_INCLUDE_FILES})
+ADD_LIBRARY(kspp_s STATIC ${LIB_SRCS} ${KSPP_INCLUDE_FILES})
 INSTALL(TARGETS kspp_s
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
         )
 
-ADD_LIBRARY(kspp SHARED ${LIB_SRCS} ${ROCKDB_LIB_SRCS} ${POSTGRES_LIB_SRCS} ${ELASTICSEARCH_LIB_SRCS} ${KSPP_INCLUDE_FILES})
+ADD_LIBRARY(kspp SHARED ${LIB_SRCS} ${KSPP_INCLUDE_FILES})
 IF(APPLE)
     TARGET_LINK_LIBRARIES(kspp ${EXT_LIBS})
 ENDIF()
@@ -272,6 +277,58 @@ INSTALL(TARGETS kspp
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
         )
+
+#ROCKSDB
+ADD_LIBRARY(kspp_rocksdb_s STATIC ${ROCKDB_LIB_SRCS})
+INSTALL(TARGETS kspp_rocksdb_s
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        )
+ADD_LIBRARY(kspp_rocksdb SHARED ${ROCKDB_LIB_SRCS})
+INSTALL(TARGETS kspp_rocksdb
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        )
+
+#PG
+ADD_LIBRARY(kspp_pg_s STATIC ${POSTGRES_LIB_SRCS})
+INSTALL(TARGETS kspp_pg_s
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        )
+ADD_LIBRARY(kspp_pg SHARED ${POSTGRES_LIB_SRCS})
+INSTALL(TARGETS kspp_pg
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        )
+
+#TDS
+ADD_LIBRARY(kspp_tds_s STATIC ${TDS_LIB_SRCS})
+INSTALL(TARGETS kspp_tds_s
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        )
+ADD_LIBRARY(kspp_tds SHARED ${TDS_LIB_SRCS})
+INSTALL(TARGETS kspp_tds
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        )
+
+#ES
+ADD_LIBRARY(kspp_es_s STATIC ${ELASTICSEARCH_LIB_SRCS})
+INSTALL(TARGETS kspp_es_s
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        )
+ADD_LIBRARY(kspp_es SHARED ${ELASTICSEARCH_LIB_SRCS})
+INSTALL(TARGETS kspp_es
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        )
+
+
+
+
 
 INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/include/ DESTINATION include)
 

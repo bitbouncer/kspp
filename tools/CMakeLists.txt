@@ -7,3 +7,6 @@ endif()
 if (ENABLE_ELASTICSEARCH)
     add_subdirectory(elasticsearch_sink)
 endif()
+
+
+add_subdirectory(tds_connect)
