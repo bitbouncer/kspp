@@ -201,18 +201,31 @@ namespace kspp {
         LOG(FATAL) << "exec failed";
 
 
+      if (dbhasretstat(res.second) == TRUE) {
+        LOG(INFO) << "Procedure returned: " << dbretstatus(res.second);
+      } else {
+        LOG(INFO) << "Procedure returned: none";
+      }
+
+      int ncomputeids = dbnumcompute(res.second);
+
       while (dbnextrow(res.second) != NO_MORE_ROWS) {
         std::cerr << ".";
       }
 
-      int src_numcols;
+      int ncols=0;
       if (NO_MORE_RESULTS != dbresults(res.second)) {
-        if (0 == (src_numcols = dbnumcols(res.second))) {
+        if (0 == (ncols = dbnumcols(res.second))) {
           LOG(ERROR) << "Error in dbnumcols";
         }
       }
 
 
+      for (int c=0; c < ncols; c++) {
+        /* Get and print the metadata.  Optional: get only what you need. */
+        LOG(INFO) << dbcolname(res.second, c + 1) << ", type: " << dbcoltype(res.second, c + 1) << "size: "
+                  << dbcollen(res.second, c + 1);
+      }
       //handle_fetch();
 
       bool more_data = true;
