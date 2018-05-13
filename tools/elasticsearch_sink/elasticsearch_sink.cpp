@@ -239,30 +239,25 @@ int main(int argc, char **argv) {
   topology->create_sink<kspp::elasticsearch_generic_avro_sink>(source0, es_index, base_url, elasticsearch_user, elasticsearch_password, "id", config->get_schema_registry());
 
 
-  //auto sink   = topology->create_sink<kspp::kafka_sink<void, kspp::GenericAvro, void, kspp::avro_serdes>>(source, topic_prefix + postgres_table, config->avro_serdes());
-
-  //topology->init_metrics();
+  topology->init_metrics();
   //topology->start(kspp::OFFSET_STORED);
-  //topology->init();
+  topology->start(kspp::OFFSET_BEGINNING);
 
+  std::signal(SIGINT, sigterm);
+  std::signal(SIGTERM, sigterm);
+  std::signal(SIGPIPE, SIG_IGN);
 
-  //signal(SIGINT, sigterm);
-  //signal(SIGTERM, sigterm);
+  LOG(INFO) << "status is up";
 
-  // output metrics and run...
   {
-    //auto metrics_reporter = std::make_shared<kspp::influx_metrics_reporter>(generic_builder, metrics_topic, "kspp", "") << topology;
-    /*while (run) {
-      if (topology->process_one() == 0) {
+    auto metrics_reporter = std::make_shared<kspp::influx_metrics_reporter>(generic_builder, "kspp_metrics", "kspp", "") << topology;
+    while (run) {
+      if (topology->process(kspp::milliseconds_since_epoch()) == 0) {
         std::this_thread::sleep_for(10ms);
         topology->commit(false);
       }
     }
-     */
   }
-
-  topology->start(kspp::OFFSET_BEGINNING);
-  topology->flush();
 
   topology->commit(true);
   topology->close();

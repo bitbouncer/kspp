@@ -33,7 +33,7 @@ namespace kspp{
           break;
 
           /* String-like types: fall through to the default, which is to create a string representation */
-        case SYBCHAR:    /* "char": single character */
+        case SYBCHAR:
         default:
           value_schema = boost::make_shared<avro::StringSchema>();
           break;
@@ -46,11 +46,8 @@ namespace kspp{
       boost::shared_ptr<avro::UnionSchema> union_schema = boost::make_shared<avro::UnionSchema>();
       union_schema->addType(*null_schema);
       union_schema->addType(*value_schema);
-      //avro_schema_decref(null_schema);
-      //avro_schema_decref(value_schema);
       return union_schema;
     }
-
 
     boost::shared_ptr<avro::RecordSchema> schema_for_table_row(std::string schema_name, DBPROCESS *context) {
       boost::shared_ptr<avro::RecordSchema> record_schema = boost::make_shared<avro::RecordSchema>(schema_name);
@@ -65,5 +62,8 @@ namespace kspp{
       }
       return record_schema;
     }
+
+
+
   }
 }

@@ -20,5 +20,6 @@ namespace kspp {
 
     boost::shared_ptr<avro::Schema> schema_for_oid(TDS_OIDS typid);
     boost::shared_ptr<avro::RecordSchema> schema_for_table_row(std::string schema_name, DBPROCESS *context);
+    //boost::shared_ptr<avro::Schema> schema_for_table_ts(std::string ts_field, DBPROCESS *context);
   }
 }

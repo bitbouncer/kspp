@@ -8,6 +8,7 @@
 #include <boost/make_shared.hpp>
 #include <kspp/connect/tds/tds_connection.h>
 #include <kspp/connect/tds/tds_generic_avro_source.h>
+#include <kspp/connect/avro_file/avro_file_sink.h>
 #include <kspp/processors/transform.h>
 #include <kspp/processors/flat_map.h>
 
@@ -29,6 +30,13 @@ static std::string get_env(const char *env) {
   return "";
 }
 
+static std::string get_env_with_default(const char *env, const char* default_value) {
+  std::cerr << env << std::endl;
+  const char *env_p = std::getenv(env);
+  if (env_p)
+    return std::string(env_p);
+  return default_value;
+}
 
 int main(int argc, char **argv) {
   FLAGS_logtostderr = 1;
@@ -51,13 +59,10 @@ int main(int argc, char **argv) {
        "db_password")
       ("db_dbname", boost::program_options::value<std::string>()->default_value(get_env("DB_DBNAME")),
        "db_dbname")
-      ("db_max_items_in_fetch", boost::program_options::value<int32_t>()->default_value(1000),
-       "db_max_items_in_fetch")
-      ("db_warning_timeout", boost::program_options::value<int32_t>()->default_value(1000),
-       "db_warning_timeout")
       ("db_table", boost::program_options::value<std::string>()->default_value(get_env("DB_TABLE")),
        "db_table")
-      ("topic_prefix", boost::program_options::value<std::string>()->default_value("postgres_"), "topic_prefix")
+      ("db_polltime", boost::program_options::value<int32_t>()->default_value(60), "db_polltime")
+      ("topic_prefix", boost::program_options::value<std::string>()->default_value(get_env_with_default("TOPIC_PREFIX", "sqlserver_")), "topic_prefix")
       ("filename", boost::program_options::value<std::string>(), "filename");
 
   boost::program_options::variables_map vm;
@@ -119,6 +124,14 @@ int main(int argc, char **argv) {
     return 0;
   }
 
+  int db_polltime;
+  if (vm.count("db_polltime")) {
+    db_polltime = vm["db_polltime"].as<int>();
+  } else {
+    std::cout << "--db_polltime must be specified" << std::endl;
+    return 0;
+  }
+
   std::string db_dbname;
   if (vm.count("db_dbname")) {
     db_dbname = vm["db_dbname"].as<std::string>();
@@ -148,22 +161,6 @@ int main(int argc, char **argv) {
     db_password = vm["db_password"].as<std::string>();
   } else {
     std::cout << "--db_password must be specified" << std::endl;
-    return 0;
-  }
-
-  int db_max_items_in_fetch;
-  if (vm.count("db_max_items_in_fetch")) {
-    db_max_items_in_fetch = vm["db_max_items_in_fetch"].as<int>();
-  } else {
-    std::cout << "--db_max_items_in_fetch must be specified" << std::endl;
-    return 0;
-  }
-
-  int db_warning_timeout;
-  if (vm.count("db_warning_timeout")) {
-    db_warning_timeout = vm["db_warning_timeout"].as<int>();
-  } else {
-    std::cout << "--db_warning_timeout must be specified" << std::endl;
     return 0;
   }
 
@@ -201,11 +198,9 @@ int main(int argc, char **argv) {
   LOG(INFO) << "db_table              : " << db_table;
   LOG(INFO) << "db_user               : " << db_user;
   LOG(INFO) << "db_password           : " << "[hidden]";
-  LOG(INFO) << "db_max_items_in_fetch : " << db_max_items_in_fetch;
-  LOG(INFO) << "db_warning_timeout    : " << db_warning_timeout;
-  LOG(INFO) << "topic_prefix                : " << topic_prefix;
-  LOG(INFO) << "kafka_topic                 : " << topic_name;
-
+  LOG(INFO) << "db_polltime           : " << db_polltime;
+  LOG(INFO) << "topic_prefix          : " << topic_prefix;
+  LOG(INFO) << "kafka_topic           : " << topic_name;
 
   std::string connect_string =
       "host=" + db_host + " port=" + std::to_string(db_port) + " user=" + db_user + " password=" +
@@ -220,48 +215,57 @@ int main(int argc, char **argv) {
 
   setlocale(LC_ALL, "");
 
-  kspp::topology_builder generic_builder("kspp", SERVICE_NAME, config);
+  kspp::topology_builder generic_builder("kspp", SERVICE_NAME + db_dbname, config);
   auto topology = generic_builder.create_topology();
 
-  auto source0 = topology->create_processors<kspp::tds_generic_avro_source>({0}, db_table, db_host, db_user, db_password, db_dbname, "id", "", config->get_schema_registry());
+  auto source0 = topology->create_processors<kspp::tds_generic_avro_source>({0}, db_table, db_host, db_user, db_password, db_dbname, "id", "ts", config->get_schema_registry(),  std::chrono::seconds(db_polltime));
 
-   /*
-    * if (filename.size()) {
+
+   if (filename.size()) {
     topology->create_sink<kspp::avro_file_sink>(source0, "/tmp/" + topic_prefix + db_table + ".avro");
   } else {
     topology->create_sink<kspp::kafka_sink<void, kspp::GenericAvro, void, kspp::avro_serdes>>(source0, topic_name, config->avro_serdes());
   }
-    */
 
 
-
-  //auto sink   = topology->create_sink<kspp::kafka_sink<void, kspp::GenericAvro, void, kspp::avro_serdes>>(source, topic_prefix + postgres_table, config->avro_serdes());
-
-  //topology->init_metrics();
+  topology->init_metrics();
   //topology->start(kspp::OFFSET_STORED);
-  //topology->init();
+  topology->start(kspp::OFFSET_BEGINNING);
+
+  std::signal(SIGINT, sigterm);
+  std::signal(SIGTERM, sigterm);
+  std::signal(SIGPIPE, SIG_IGN);
+
+  LOG(INFO) << "status is up";
 
 
-  //signal(SIGINT, sigterm);
-  //signal(SIGTERM, sigterm);
+  /*
+   * topology->for_each_metrics([](kspp::metric &m) {
+    std::cerr << "metrics: " << m.name() << " : " << m.value() << std::endl;
+  });
+   */
 
-  // output metrics and run...
+
+  // output metrics and run
   {
-    //auto metrics_reporter = std::make_shared<kspp::influx_metrics_reporter>(generic_builder, metrics_topic, "kspp", "") << topology;
-    /*while (run) {
-      if (topology->process_one() == 0) {
+    auto metrics_reporter = std::make_shared<kspp::influx_metrics_reporter>(generic_builder, "kspp_metrics", "kspp", "") << topology;
+    while (run) {
+      if (topology->process(kspp::milliseconds_since_epoch()) == 0) {
         std::this_thread::sleep_for(10ms);
         topology->commit(false);
       }
     }
-     */
   }
-
-  topology->start(kspp::OFFSET_BEGINNING);
-  topology->flush();
 
   topology->commit(true);
   topology->close();
+
+
+
+
+
+
+
 
   return 0;
 }

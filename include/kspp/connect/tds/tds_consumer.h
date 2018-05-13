@@ -3,6 +3,7 @@
 #include <kspp/impl/queue.h>
 #include <kspp/connect/tds/tds_connection.h>
 #include <kspp/topology.h>
+#include <kspp/avro/avro_generic.h>
 
 #pragma once
 
@@ -18,7 +19,8 @@ namespace kspp {
                  std::string database,
                  std::string id_column,
                  std::string ts_column,
-                 size_t max_items_in_fetch = 1000);
+                 std::shared_ptr<kspp::avro_schema_registry>,
+                 std::chrono::seconds poll_intervall);
 
     ~tds_consumer();
 
@@ -30,7 +32,10 @@ namespace kspp {
     //std::shared_ptr<PGresult> consume();
 
     inline bool eof() const {
-      return _eof;
+      bool eof = (_incomming_msg.size() == 0) && _eof;
+      if (eof)
+        std::cerr << "eof()" << std::endl;
+       return (_incomming_msg.size() == 0) && _eof;
     }
 
     inline std::string table() const {
@@ -43,15 +48,13 @@ namespace kspp {
 
     void start(int64_t offset);
 
-    void stop();
+    //void stop();
 
-    int32_t commit(int64_t offset, bool flush = false);
+    //int32_t commit(int64_t offset, bool flush = false);
 
-    inline int64_t commited() const {
-      return _can_be_committed;
-    }
-
-    int update_eof();
+    //inline int64_t commited() const {
+    //  return _can_be_committed;
+    //}
 
     void subscribe();
 
@@ -59,24 +62,41 @@ namespace kspp {
 
     bool is_query_running() const { return !_eof; }
 
+    inline event_queue<void, kspp::GenericAvro>& queue(){
+      return _incomming_msg;
+    };
+
+    inline const event_queue<void, kspp::GenericAvro>& queue() const {
+      return _incomming_msg;
+    };
 
   private:
-    void connect_async();
+    // this should go away when we can parse datetime2
+    struct COL
+    {
+      char *name;
+      char *buffer;
+      int type;
+      int size;
+      int status;
+    };
 
+    void connect_async();
+    int64_t parse_ts(DBPROCESS *stream);
+    int parse_avro(DBPROCESS* stream, COL* columns, size_t ncols);
+    int parse_response(DBPROCESS* stream);
     void _thread();
 
-    //void handle_fetch_cb(int ec, std::shared_ptr<PGresult> res);
+    bool _exit;
+    bool _good;
+    bool _connected;
+    bool _eof;
+    bool _closed;
+    std::chrono::seconds poll_intervall_;
 
-
-    //boost::asio::io_service _fg_ios;
-    //boost::asio::io_service _bg_ios;
-    //std::auto_ptr<boost::asio::io_service::work> _fg_work;
-    //std::auto_ptr<boost::asio::io_service::work> _bg_work;
-    //std::thread _fg;
     std::thread _bg;
     std::shared_ptr<kspp_tds::connection> _connection;
 
-    //std::shared_ptr<connect_config> _config;
     const std::string _table;
     const int32_t _partition;
     const std::string _consumer_group;
@@ -89,17 +109,15 @@ namespace kspp {
     const std::string _id_column;
     const std::string _ts_column;
 
-    //kspp::queue<std::shared_ptr<PGresult>> _queue;
-    size_t _max_items_in_fetch;
-    int64_t _can_be_committed;
-    int64_t _last_committed;
-    size_t _max_pending_commits;
+    int ts_column_index_;
+    int64_t last_ts_;
+
+    std::shared_ptr<kspp::avro_schema_registry> schema_registry_;
+    std::shared_ptr<avro::ValidSchema> schema_;
+    int32_t schema_id_;
+    event_queue<void, kspp::GenericAvro> _incomming_msg;
+
     uint64_t _msg_cnt;
-    uint64_t _msg_bytes;
-    bool _good;
-    bool _connected;
-    bool _eof;
-    bool _closed;
   };
 }
 
