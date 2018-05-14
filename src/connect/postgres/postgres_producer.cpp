@@ -16,7 +16,7 @@ namespace kspp {
       , _table(table)
       , _connect_string(connect_string)
       , _id_column(id_column)
-      , _client_encoding(_client_encoding)
+      , _client_encoding(client_encoding)
       , _max_items_in_fetch(max_items_in_fetch)
       , _msg_cnt(0)
       , _msg_bytes(0)
