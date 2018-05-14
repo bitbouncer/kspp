@@ -13,6 +13,7 @@ namespace kspp {
     postgres_producer(std::string table,
                       std::string connect_string,
                       std::string id_column,
+                      std::string client_encoding,
                       size_t max_items_in_fetch=1000);
     ~postgres_producer();
 
@@ -57,6 +58,7 @@ namespace kspp {
     const std::string _table;
     const std::string _connect_string;
     const std::string _id_column;
+    const std::string _client_encoding;
 
     event_queue<void, kspp::GenericAvro> _incomming_msg;
     event_queue<void, kspp::GenericAvro> _pending_for_delete;

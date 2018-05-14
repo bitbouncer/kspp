@@ -18,7 +18,8 @@ namespace kspp {
                                  std::string connect_string,
                                  std::string id_column,
                                  std::string ts_column,
-                                 std::shared_ptr<kspp::avro_schema_registry>);
+                                 std::shared_ptr<kspp::avro_schema_registry>,
+                                 std::chrono::seconds poll_intervall);
 
     virtual ~postgres_generic_avro_source() {
       close();

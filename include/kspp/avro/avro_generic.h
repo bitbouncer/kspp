@@ -37,6 +37,7 @@ namespace kspp {
     }
 
 
+    /*
     template<class T>
     boost::optional<T> get_optional(std::string name){
       if (!record_.hasField(name))
@@ -60,7 +61,25 @@ namespace kspp {
       }
       throw std::invalid_argument(std::string("wrong type, expected:") + to_string(cpp_to_avro_type<T>()) +  ", actual: " + to_string(field.type()));
     }
+     */
 
+    template<class T>
+    boost::optional<T> get_optional(const std::string& name){
+      if (!record_.hasField(name))
+        throw std::invalid_argument("no such member: " + name);
+
+      const avro::GenericDatum &field = record_.field(name);
+
+      if (field.isUnion()) {
+        const avro::GenericUnion &generic_union(field.value<avro::GenericUnion>());
+        if (generic_union.datum().type() == avro::AVRO_NULL)
+          return boost::none;
+        else
+          return convert<T>(generic_union.datum());
+      } else {
+         return convert<T>(field);
+      }
+    }
 
     template<class T>
     T get(std::string name, const T& default_value){

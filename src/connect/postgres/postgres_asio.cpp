@@ -40,18 +40,59 @@ namespace postgres_asio {
     PQfinish(_pg_conn);
   }
 
-  std::string connection::user_name() const { return PQuser(_pg_conn); }
-  std::string connection::password() const { return PQpass(_pg_conn); }
-  std::string connection::host_name() const { return PQhost(_pg_conn); }
-  std::string connection::port() const { return PQport(_pg_conn); }
-  std::string connection::options() const { return PQoptions(_pg_conn); }
-  bool        connection::good() const { return (PQstatus(_pg_conn) == CONNECTION_OK); }
-  std::string connection::last_error() const { return PQerrorMessage(_pg_conn); }
-  uint32_t    connection::backend_pid() const { return (uint32_t) PQbackendPID(_pg_conn); }
-  int         connection::socket() const { return PQsocket(_pg_conn); }
-  bool        connection::set_client_encoding(std::string s) { return (PQsetClientEncoding(_pg_conn, s.c_str()) == 0); }
-  std::string connection::trace_id() const { return _trace_id; }
-  void        connection::set_warning_timout(uint32_t ms) { _warn_timeout = ms; }
+  std::string connection::user_name() const {
+    return PQuser(_pg_conn);
+  }
+
+  std::string connection::password() const {
+    return PQpass(_pg_conn);
+  }
+
+  std::string connection::host_name() const {
+    return PQhost(_pg_conn);
+  }
+
+  std::string connection::port() const {
+    return PQport(_pg_conn);
+  }
+
+  std::string connection::options() const {
+    return PQoptions(_pg_conn);
+  }
+
+  bool connection::good() const {
+    return (PQstatus(_pg_conn) == CONNECTION_OK);
+  }
+
+  std::string connection::last_error() const {
+    return PQerrorMessage(_pg_conn);
+  }
+
+  uint32_t connection::backend_pid() const {
+    return (uint32_t) PQbackendPID(_pg_conn);
+  }
+
+  int connection::socket() const {
+    return PQsocket(_pg_conn);
+  }
+
+  bool connection::set_client_encoding(std::string s) {
+    return (PQsetClientEncoding(_pg_conn, s.c_str()) == 0);
+  }
+
+  std::string connection::get_client_encoding() const{
+     int e = PQclientEncoding(_pg_conn);
+     const char* s = pg_encoding_to_char(e);
+     return s;
+  }
+
+  std::string connection::trace_id() const {
+    return _trace_id;
+  }
+
+  void connection::set_warning_timout(uint32_t ms) {
+    _warn_timeout = ms;
+  }
 
   // connect is a blocking thing - pass this to bg thread pool
   void connection::connect(std::string connect_string, on_connect_callback cb) {

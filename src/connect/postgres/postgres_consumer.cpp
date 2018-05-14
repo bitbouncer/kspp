@@ -5,34 +5,45 @@
 #include <glog/logging.h>
 #include <boost/bind.hpp>
 
+using namespace std::chrono_literals;
+
 namespace kspp {
-  postgres_consumer::postgres_consumer(int32_t partition, std::string table, std::string consumer_group, std::string connect_string, std::string id_column, std::string ts_column, size_t max_items_in_fetch)
-      : _fg_work(new boost::asio::io_service::work(_fg_ios))
+  postgres_consumer::postgres_consumer(int32_t partition, std::string table, std::string consumer_group, std::string connect_string, std::string id_column, std::string ts_column, std::chrono::seconds poll_intervall, size_t max_items_in_fetch)
+      : _exit(false)
+      , _good(true)
+      , _closed(false)
+      , _eof(false)
+      , _connected(false)
+      , _fg_work(new boost::asio::io_service::work(_fg_ios))
       , _bg_work(new boost::asio::io_service::work(_bg_ios))
       , _fg(boost::bind(&boost::asio::io_service::run, &_fg_ios))
       , _bg(boost::bind(&boost::asio::io_service::run, &_bg_ios))
       , _connection(std::make_shared<postgres_asio::connection>(_fg_ios, _bg_ios))
+      , _main_thread([this] { _thread(); })
       , _table(table)
       , _partition(partition)
       , _consumer_group(consumer_group)
       , _connect_string(connect_string)
       , _id_column(id_column)
       , _ts_column(ts_column)
+      , ts_column_index_(-1)
+      , last_ts_(0)
+      , poll_intervall_(poll_intervall)
       , _max_items_in_fetch(max_items_in_fetch)
       , _can_be_committed(0)
       , _last_committed(-1)
       , _max_pending_commits(0)
       , _msg_cnt(0)
-      , _msg_bytes(0)
-      , _good(true)
-      , _closed(false)
-      , _eof(false)
-      , _connected(false) {
+      , _msg_bytes(0) {
   }
 
   postgres_consumer::~postgres_consumer(){
+    _exit = true;
+
     if (!_closed)
       close();
+
+    _main_thread.join();
 
     _fg_work.reset();
     _bg_work.reset();
@@ -46,6 +57,8 @@ namespace kspp {
   }
 
   void postgres_consumer::close(){
+    _exit = true;
+
     if (_closed)
       return;
     _closed = true;
@@ -99,6 +112,35 @@ namespace kspp {
 
   int postgres_consumer::update_eof() {
 
+  }
+
+  void postgres_consumer::_thread(){
+    while (!_exit) {
+      if (_closed)
+        break;
+
+      // connected
+      if (!_connected) {
+        std::this_thread::sleep_for(1s);
+        continue;
+      }
+
+      _eof = false;
+      auto last_msg_count = _msg_cnt;
+      _eof = true;
+      LOG(INFO) << "poll done - got: " << _msg_cnt - last_msg_count << " messages, total: " << _msg_cnt << ", last ts: " << last_ts_;
+      //LOG(INFO) << "waiting for next poll - sleeping " << poll_intervall_.count() << " seconds";
+
+      // if we sleep long we cannot be killed
+      int count= poll_intervall_.count();
+      for (int i=0; i!=count; ++i){
+        std::this_thread::sleep_for(1s);
+        if (_exit)
+          break;
+      }
+
+    }
+    DLOG(INFO) << "exiting thread";
   }
 
   void postgres_consumer::connect_async() {

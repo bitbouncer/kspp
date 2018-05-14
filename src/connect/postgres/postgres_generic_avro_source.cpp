@@ -12,12 +12,13 @@ namespace kspp
                                                              std::string connect_string,
                                                              std::string id_column,
                                                              std::string ts_column,
-                                                             std::shared_ptr<kspp::avro_schema_registry> registry)
+                                                             std::shared_ptr<kspp::avro_schema_registry> registry,
+                                                             std::chrono::seconds poll_intervall)
       : partition_source<void, kspp::GenericAvro>(nullptr, partition)
       , _started(false)
       , _exit(false)
       , _thread(&postgres_generic_avro_source::thread_f, this)
-      , _impl(partition, table, t.consumer_group(), connect_string, id_column, ts_column)
+      , _impl(partition, table, t.consumer_group(), connect_string, id_column, ts_column, poll_intervall)
       , _schema_registry(registry)
       , _schema_id(-1)
       , _commit_chain(table, partition)

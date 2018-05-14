@@ -51,6 +51,9 @@ namespace postgres_asio {
     uint32_t    backend_pid() const;
 
     bool        set_client_encoding(std::string s);
+
+    std::string get_client_encoding() const;
+
     std::string trace_id() const;
     void        set_warning_timout(uint32_t ms);
 

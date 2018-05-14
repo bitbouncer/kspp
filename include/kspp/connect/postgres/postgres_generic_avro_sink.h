@@ -19,8 +19,9 @@ namespace kspp {
                                std::string table,
                                std::string connect_string,
                                std::string id_column,
-                               std::shared_ptr<kspp::avro_schema_registry> schema_registry)
-        : generic_avro_sink(t, std::make_shared<kspp::postgres_producer>(table, connect_string, id_column), schema_registry){
+                               std::shared_ptr<kspp::avro_schema_registry> schema_registry,
+                               std::string client_encoding="UTF8")
+        : generic_avro_sink(t, std::make_shared<kspp::postgres_producer>(table, connect_string, id_column, client_encoding), schema_registry){
       this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
       this->add_metrics_tag(KSPP_TOPIC_TAG, table);
     }

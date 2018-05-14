@@ -19,5 +19,5 @@ sudo apt-get remove  freetds-dev freetds-bin
  tsql -H hostmachine -p port -U username -P password
 
 
-tsql -H 10.1.46.42 -p 1143 -U SA -P 2Secrets
+tsql -H 10.1.46.42 -p 1433 -U SA -P 2Secrets
 

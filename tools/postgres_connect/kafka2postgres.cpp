@@ -59,6 +59,7 @@ int main(int argc, char **argv) {
       ("postgres_warning_timeout", boost::program_options::value<int32_t>()->default_value(1000),
        "postgres_warning_timeout")
       ("table_prefix", boost::program_options::value<std::string>()->default_value("kafka_"), "table_prefix")
+      ("character_encoding", boost::program_options::value<std::string>()->default_value("UTF8"), "character_encoding")
       ("filename", boost::program_options::value<std::string>(), "filename");
 
   boost::program_options::variables_map vm;
@@ -177,6 +178,14 @@ int main(int argc, char **argv) {
     return 0;
   }
 
+  std::string character_encoding;
+  if (vm.count("character_encoding")) {
+    character_encoding = vm["character_encoding"].as<std::string>();
+  } else {
+    std::cout << "--character_encoding must be specified" << std::endl;
+    return 0;
+  }
+
   std::string filename;
   if (vm.count("filename")) {
     filename = vm["filename"].as<std::string>();
@@ -200,12 +209,12 @@ int main(int argc, char **argv) {
   LOG(INFO) << "postgres_host               : " << postgres_host;
   LOG(INFO) << "postgres_port               : " << postgres_port;
   LOG(INFO) << "postgres_dbname             : " << postgres_dbname;
-  //LOG(INFO) << "postgres_table              : " << postgres_table;
   LOG(INFO) << "postgres_user               : " << postgres_user;
   LOG(INFO) << "postgres_password           : " << "[hidden]";
   LOG(INFO) << "postgres_max_items_in_fetch : " << postgres_max_items_in_fetch;
   LOG(INFO) << "postgres_warning_timeout    : " << postgres_warning_timeout;
   LOG(INFO) << "table_prefix                : " << table_prefix;
+  LOG(INFO) << "character_encoding          : " << character_encoding;
 
   std::string connect_string =
       "host=" + postgres_host + " port=" + std::to_string(postgres_port) + " user=" + postgres_user + " password=" +
@@ -229,10 +238,12 @@ int main(int argc, char **argv) {
 
   auto source0 = topology->create_processors<kspp::kafka_source<void, kspp::GenericAvro, void, kspp::avro_serdes>>(partition_list, topic, config->avro_serdes());
 
+  /*https://www.postgresql.org/docs/9.3/static/multibyte.html*/
+
   if (filename.size()) {
     topology->create_sink<kspp::avro_file_sink>(source0, "/tmp/" + table_prefix + topic + ".avro");
   } else {
-    topology->create_sink<kspp::postgres_generic_avro_sink>(source0, table_prefix + topic, connect_string, "id", config->get_schema_registry());
+    topology->create_sink<kspp::postgres_generic_avro_sink>(source0, table_prefix + topic, connect_string, "id", config->get_schema_registry(), character_encoding);
   }
 
   topology->init_metrics();
