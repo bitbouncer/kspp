@@ -10,7 +10,7 @@ It is intended to be run on mesos or kubernetes but works equally well standalon
 Platforms: Windows / Linux / Mac
 
 
-## Ubuntu 16 x64:
+## Ubuntu 18.04 x64:
 
 Install build tools
 ```
