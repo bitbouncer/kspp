@@ -20,7 +20,8 @@ namespace kspp {
                  std::string id_column,
                  std::string ts_column,
                  std::shared_ptr<kspp::avro_schema_registry>,
-                 std::chrono::seconds poll_intervall);
+                 std::chrono::seconds poll_intervall,
+                 size_t max_items_in_fetch=1000);
 
     ~tds_consumer();
 
@@ -108,6 +109,7 @@ namespace kspp {
 
     const std::string _id_column;
     const std::string _ts_column;
+    size_t _max_items_in_fetch;
 
     int ts_column_index_;
     int64_t last_ts_;

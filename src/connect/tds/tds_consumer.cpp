@@ -19,12 +19,31 @@ namespace kspp {
                              std::string id_column,
                              std::string ts_column,
                              std::shared_ptr<kspp::avro_schema_registry> schema_registry,
-                             std::chrono::seconds poll_intervall)
-      : _bg([this] { _thread(); }), _connection(std::make_shared<kspp_tds::connection>()), _table(table),
-        _partition(partition), _consumer_group(consumer_group), host_(host), user_(user), password_(password),
-        database_(database), _id_column(id_column), _ts_column(ts_column), ts_column_index_(0), last_ts_(0),  schema_registry_(schema_registry),
-        schema_id_(-1), poll_intervall_(poll_intervall), _msg_cnt(0), _good(true), _closed(false), _eof(false),
-        _start_running(false), _exit(false) {
+                             std::chrono::seconds poll_intervall,
+                             size_t max_items_in_fetch)
+      : _bg([this] { _thread(); })
+      , _connection(std::make_shared<kspp_tds::connection>())
+      , _table(table)
+      , _partition(partition)
+      , _consumer_group(consumer_group)
+      , host_(host)
+      , user_(user)
+      , password_(password)
+      , database_(database)
+      , _id_column(id_column)
+      , _ts_column(ts_column)
+      , ts_column_index_(0)
+      , last_ts_(0)
+      , schema_registry_(schema_registry)
+      , _max_items_in_fetch(max_items_in_fetch)
+      , schema_id_(-1)
+      , poll_intervall_(poll_intervall)
+      , _msg_cnt(0)
+      , _good(true)
+      , _closed(false)
+      , _eof(false)
+      , _start_running(false)
+      , _exit(false) {
   }
 
   tds_consumer::~tds_consumer() {
@@ -477,7 +496,7 @@ namespace kspp {
         //else
         //  where_clause = _id_column + " >= " + std::to_string(last_id_);
 
-      std::string statement = "SELECT " + fields + " FROM " + _table + where_clause + " ORDER BY " + order_by;
+      std::string statement = "SELECT TOP " + std::to_string(_max_items_in_fetch) + " " + fields + " FROM " + _table + where_clause + " ORDER BY " + order_by;
 
       // TODO where ts > ....
 
