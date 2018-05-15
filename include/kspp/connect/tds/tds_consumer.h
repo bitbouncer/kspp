@@ -21,7 +21,7 @@ namespace kspp {
                  std::string ts_column,
                  std::shared_ptr<kspp::avro_schema_registry>,
                  std::chrono::seconds poll_intervall,
-                 size_t max_items_in_fetch=10000);
+                 size_t max_items_in_fetch=30000);
 
     ~tds_consumer();
 
@@ -29,13 +29,7 @@ namespace kspp {
 
     void close();
 
-    //std::unique_ptr<RdKafka::Message> consume();
-    //std::shared_ptr<PGresult> consume();
-
     inline bool eof() const {
-      bool eof = (_incomming_msg.size() == 0) && _eof;
-      if (eof)
-        std::cerr << "eof()" << std::endl;
        return (_incomming_msg.size() == 0) && _eof;
     }
 

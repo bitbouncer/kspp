@@ -24,13 +24,6 @@ namespace kspp_tds {
 
     void disconnect();
 
-    //status (non blocking)
-    //std::string user_name() const;
-    //std::string password() const;
-    //std::string host_name() const;
-    //std::string port() const;
-    //std::string options() const;
-
     inline bool connected() const {
       return (dbproc_!=nullptr);
     }
