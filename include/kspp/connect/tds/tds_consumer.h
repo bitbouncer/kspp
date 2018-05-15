@@ -21,7 +21,7 @@ namespace kspp {
                  std::string ts_column,
                  std::shared_ptr<kspp::avro_schema_registry>,
                  std::chrono::seconds poll_intervall,
-                 size_t max_items_in_fetch=1000);
+                 size_t max_items_in_fetch=10000);
 
     ~tds_consumer();
 

@@ -525,12 +525,16 @@ namespace kspp {
       _eof = true;
       LOG(INFO) << "poll done - got: " << _msg_cnt - last_msg_count << " messages, total: " << _msg_cnt << ", last ts: " << last_ts_ << " duration " << ts1 -ts0 << " ms";
 
-      // if we sleep long we cannot be killed
-      int count= poll_intervall_.count();
-      for (int i=0; i!=count; ++i){
-        std::this_thread::sleep_for(1s);
-        if (_exit)
-          break;
+
+      // if we got a lot of messages back run again
+      if ((_msg_cnt - last_msg_count) < 10) {
+        // if we sleep long we cannot be killed
+        int count = poll_intervall_.count();
+        for (int i = 0; i != count; ++i) {
+          std::this_thread::sleep_for(1s);
+          if (_exit)
+            break;
+        }
       }
 
     }
