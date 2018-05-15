@@ -58,7 +58,7 @@ namespace kspp {
 
     void subscribe();
 
-    bool is_connected() const { return _connected; }
+    //bool is_connected() const { return _connected; }
 
     bool is_query_running() const { return !_eof; }
 
@@ -88,8 +88,8 @@ namespace kspp {
     void _thread();
 
     bool _exit;
+    bool _start_running;
     bool _good;
-    bool _connected;
     bool _eof;
     bool _closed;
     std::chrono::seconds poll_intervall_;

@@ -42,9 +42,9 @@ static int msg_handler(DBPROCESS * dbproc, DBINT msgno, int msgstate, int severi
   }
   LOG(INFO) << msgtext;
 
-  if (severity > 10) {
-    LOG(FATAL) << "severity " << severity << " > 10, exiting";
-  }
+  //if (severity > 10) {
+  //  LOG(FATAL) << "severity " << severity << " > 10, exiting";
+  //}
 
   return 0;
 }
@@ -85,40 +85,26 @@ namespace kspp_tds {
       auto uuid = boost::uuids::random_generator();
       _trace_id = to_string(uuid());
     }
-    LOG(INFO) << _trace_id << ", " << BOOST_CURRENT_FUNCTION;
+    //LOG(INFO) << _trace_id << ", " << BOOST_CURRENT_FUNCTION;
   }
 
   connection::~connection() {
-    LOG(INFO) << _trace_id << ", " << BOOST_CURRENT_FUNCTION;
-    //PQfinish(_pg_conn);
+    //LOG(INFO) << _trace_id << ", " << BOOST_CURRENT_FUNCTION;
+    if (dbproc_)
+      dbclose(dbproc_);
+    if (login_)
+      dbloginfree(login_);
     dbproc_ = nullptr;
+    login_ = nullptr;
   }
 
-  /*
-   * std::string connection::user_name() const { return PQuser(_pg_conn); }
-  std::string connection::password() const { return PQpass(_pg_conn); }
-  std::string connection::host_name() const { return PQhost(_pg_conn); }
-  std::string connection::port() const { return PQport(_pg_conn); }
-  std::string connection::options() const { return PQoptions(_pg_conn); }
-  bool        connection::good() const { return (PQstatus(_pg_conn) == CONNECTION_OK); }
-  std::string connection::last_error() const { return PQerrorMessage(_pg_conn); }
-  uint32_t    connection::backend_pid() const { return (uint32_t) PQbackendPID(_pg_conn); }
-  int         connection::socket() const { return PQsocket(_pg_conn); }
-  bool        connection::set_client_encoding(std::string s) { return (PQsetClientEncoding(_pg_conn, s.c_str()) == 0); }
-   */
-  std::string connection::trace_id() const { return _trace_id; }
-  void        connection::set_warning_timout(uint32_t ms) { _warn_timeout = ms; }
+  std::string connection::trace_id() const {
+    return _trace_id;
+  }
 
-  // connect is a blocking thing - pass this to bg thread pool
-  //void connection::connect(std::string connect_string, on_connect_callback cb) {
-  //  auto self(shared_from_this()); // keeps connection alive until cb is done
-  //  _bg_ios.post(boost::bind(&connection::_bg_connect, this, self, connect_string, cb));
-  //}
-
-  //void connection::connect(on_connect_callback cb) {
-  //  auto self(shared_from_this()); // keeps connection alive until cb is done
-  //  _bg_ios.post(boost::bind(&connection::_bg_connect, this, self, "", cb));
-  //}
+  void connection::set_warning_timeout(uint32_t ms) {
+    _warn_timeout = ms;
+  }
 
   int connection::connect(std::string host, std::string username, std::string password, std::string database) {
     DBSETLAPP(login_, "kspp-tds-connection");
@@ -128,16 +114,25 @@ namespace kspp_tds {
     DBSETLDBNAME(login_, database.c_str()); // maybe optional
 
     if ((dbproc_ = dbopen(login_,host.c_str())) == NULL)
-      LOG(FATAL) << " cannot connect to " << host;
-
-    LOG(INFO) << "connected to " << host <<  " user: " << username << ", database: " << database;
+      LOG(ERROR) << _trace_id << " cannot connect to " << host;
+    else
+      LOG(INFO) << _trace_id << " connected to " << host <<  " user: " << username << ", database: " << database;
   }
 
   void connection::close()
   {
-    LOG(WARNING) << _trace_id << " tbs::close - NOT IMPLEMENTED";
+    LOG(INFO) << _trace_id << " tbs::close";
+    if (dbproc_)
+      dbclose(dbproc_);
+    dbproc_ = nullptr;
   }
 
+  void connection::disconnect() {
+    LOG(INFO) << _trace_id << " disconnect";
+    if (dbproc_)
+      dbclose(dbproc_);
+    dbproc_ = nullptr;
+  }
 
   std::pair<int, DBPROCESS*> connection::exec(std::string statement){
     DLOG(INFO) << statement;
@@ -145,11 +140,11 @@ namespace kspp_tds {
 
     auto erc = dbcmd(dbproc_, statement.c_str());
     if (erc == FAIL) {
-     LOG(FATAL) << "dbcmd() failed - exiting";
+     LOG(FATAL) << _trace_id << " dbcmd() failed - exiting";
     }
 
     if (dbsqlexec(dbproc_) == FAIL) {
-      LOG(ERROR) << "dbsqlexec failed ,statement: " << statement;
+      LOG(ERROR) << _trace_id << " dbsqlexec failed ,statement: " << statement;
       return std::make_pair<int, DBPROCESS*>(-1, nullptr);
     }
     return std::make_pair(0, this->dbproc_);

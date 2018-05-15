@@ -24,7 +24,7 @@ namespace kspp {
         _partition(partition), _consumer_group(consumer_group), host_(host), user_(user), password_(password),
         database_(database), _id_column(id_column), _ts_column(ts_column), ts_column_index_(0), last_ts_(0),  schema_registry_(schema_registry),
         schema_id_(-1), poll_intervall_(poll_intervall), _msg_cnt(0), _good(true), _closed(false), _eof(false),
-        _connected(false), _exit(false) {
+        _start_running(false), _exit(false) {
   }
 
   tds_consumer::~tds_consumer() {
@@ -38,6 +38,7 @@ namespace kspp {
 
   void tds_consumer::close() {
     _exit = true;
+    _start_running = false;
 
     if (_closed)
       return;
@@ -47,13 +48,15 @@ namespace kspp {
       _connection->close();
       LOG(INFO) << "tds_consumer table:" << _table << ":" << _partition << ", closed - consumed " << _msg_cnt << " messages";
     }
-
-    _connected = false;
   }
 
   bool tds_consumer::initialize() {
-    _connection->connect(host_, user_, password_, database_);
-    _connected = true;
+    if (!_connection->connected())
+      _connection->connect(host_, user_, password_, database_);
+
+    // should we check more thing in database
+
+    _start_running = true;
   }
 
   void tds_consumer::start(int64_t offset) {
@@ -442,9 +445,18 @@ namespace kspp {
         break;
 
       // connected
-      if (!_connected) {
+      if (!_start_running) {
         std::this_thread::sleep_for(1s);
         continue;
+      }
+
+      // have we lost connection ?
+      if (!_connection->connected()) {
+        if (!_connection->connect(host_, user_, password_, database_))
+        {
+          std::this_thread::sleep_for(10s);
+          continue;
+        }
       }
 
       _eof = false;
@@ -472,18 +484,27 @@ namespace kspp {
       DLOG(INFO) << "exec(" + statement + ")";
 
 
+      auto ts0 = kspp::milliseconds_since_epoch();
       auto last_msg_count = _msg_cnt;
       auto res = _connection->exec(statement);
-      if (res.first)
-        LOG(FATAL) << "exec failed";
+      if (res.first) {
+        LOG(ERROR) << "exec failed - disconnecting and retrying";
+        _connection->disconnect();
+        std::this_thread::sleep_for(10s);
+        continue;
+      }
 
       int parse_result = parse_response(res.second);
-      if (parse_result)
-        LOG(FATAL) << "parse failed";
+      if (parse_result) {
+        LOG(ERROR) << "parse failed - disconnecting and retrying";
+        _connection->disconnect();
+        std::this_thread::sleep_for(10s);
+        continue;
+      }
+      auto ts1 = kspp::milliseconds_since_epoch();
 
       _eof = true;
-      LOG(INFO) << "poll done - got: " << _msg_cnt - last_msg_count << " messages, total: " << _msg_cnt << ", last ts: " << last_ts_;
-      //LOG(INFO) << "waiting for next poll - sleeping " << poll_intervall_.count() << " seconds";
+      LOG(INFO) << "poll done - got: " << _msg_cnt - last_msg_count << " messages, total: " << _msg_cnt << ", last ts: " << last_ts_ << " duration " << ts1 -ts0 << " ms";
 
       // if we sleep long we cannot be killed
       int count= poll_intervall_.count();
