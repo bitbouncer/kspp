@@ -244,14 +244,14 @@ namespace kspp {
     raw_kafka_sink(std::shared_ptr<cluster_config> config,
                    std::string topic,
                    std::shared_ptr<VAL_CODEC> val_codec = std::make_shared<VAL_CODEC>())
-        : raw_kafka_sink_base<void, V, void, VAL_CODEC>(config, topic, val_codec) {
+        : raw_kafka_sink_base<void, V, void, VAL_CODEC>(config, topic, nullptr, val_codec) {
     }
 
     ~raw_kafka_sink() override {
       this->close();
     }
 
-    inline void produce(std::shared_ptr<krecord<void, V>> r, std::function<void(int64_t offset, int32_t ec)> callback) {
+    inline void produce(std::shared_ptr<const krecord<void, V>> r, std::function<void(int64_t offset, int32_t ec)> callback) {
       auto am = std::make_shared<commit_chain::autocommit_marker>(callback);
       this->_queue.push_back(std::make_shared<kevent<void, V>>(r, am));
     }
