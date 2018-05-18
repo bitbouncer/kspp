@@ -3,18 +3,21 @@
 #include <glog/logging.h>
 
 namespace kspp {
-  static std::string get_env_and_log(const char *env, std::string default_value) {
+  std::string get_env_and_log(const char *env, std::string default_value) {
     const char *env_p = std::getenv(env);
     if (env_p) {
       LOG(INFO) << "env: " << env << " -> " << env_p;
       return std::string(env_p);
     } else {
-      LOG(INFO) << "env: " << env << " - not defined, using default: " << default_value;
+      if (default_value.size())
+        LOG(INFO) << "env: " << env << " - not defined, using default: " << default_value;
+      else
+        LOG(INFO) << "env: " << env << " - not defined";
       return default_value;
     }
   }
 
-  static std::string get_env_and_log_hidden(const char *env, std::string default_value) {
+  std::string get_env_and_log_hidden(const char *env, std::string default_value) {
     const char *env_p = std::getenv(env);
     if (env_p) {
       LOG(INFO) << "env: " << env << " -> [hidden]";

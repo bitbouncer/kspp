@@ -15,21 +15,13 @@
 #define SERVICE_NAME "kafka2postgres"
 
 using namespace std::chrono_literals;
+using namespace kspp;
 
 static bool run = true;
 
 static void sigterm(int sig) {
   run = false;
 }
-
-static std::string get_env(const char *env) {
-  std::cerr << env << std::endl;
-  const char *env_p = std::getenv(env);
-  if (env_p)
-    return std::string(env_p);
-  return "";
-}
-
 
 int main(int argc, char **argv) {
   FLAGS_logtostderr = 1;
@@ -38,29 +30,23 @@ int main(int argc, char **argv) {
   boost::program_options::options_description desc("options");
   desc.add_options()
       ("help", "produce help message")
-      ("broker", boost::program_options::value<std::string>()->default_value(kspp::default_kafka_broker_uri()),
-       "broker")
-      ("schema_registry",
-       boost::program_options::value<std::string>()->default_value(kspp::default_schema_registry_uri()),
-       "schema_registry")
-      ("partition_list", boost::program_options::value<std::string>()->default_value("[-1]"), "partition_list")
+      ("broker", boost::program_options::value<std::string>()->default_value(kspp::default_kafka_broker_uri()), "broker")
+      ("schema_registry", boost::program_options::value<std::string>()->default_value(kspp::default_schema_registry_uri()), "schema_registry")
+      ("app_realm", boost::program_options::value<std::string>()->default_value(get_env_and_log("APP_REALM", "DEV")), "app_realm")
       ("topic", boost::program_options::value<std::string>(), "topic")
-      ("postgres_host", boost::program_options::value<std::string>()->default_value(get_env("POSTGRES_HOST")),
-       "postgres_host")
+      ("partition_list", boost::program_options::value<std::string>()->default_value("[-1]"), "partition_list")
+      ("postgres_host", boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_HOST")), "postgres_host")
       ("postgres_port", boost::program_options::value<int32_t>()->default_value(5432), "postgres_port")
-      ("postgres_user", boost::program_options::value<std::string>()->default_value(get_env("POSTGRES_USER")),
-       "postgres_user")
-      ("postgres_password", boost::program_options::value<std::string>()->default_value(get_env("POSTGRES_PASSWORD")),
-       "postgres_password")
-      ("postgres_dbname", boost::program_options::value<std::string>()->default_value(get_env("POSTGRES_DBNAME")),
-       "postgres_dbname")
-      ("postgres_max_items_in_fetch", boost::program_options::value<int32_t>()->default_value(1000),
-       "postgres_max_items_in_fetch")
-      ("postgres_warning_timeout", boost::program_options::value<int32_t>()->default_value(1000),
-       "postgres_warning_timeout")
+      ("postgres_user", boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_USER")), "postgres_user")
+      ("postgres_password", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("POSTGRES_PASSWORD")), "postgres_password")
+      ("postgres_dbname", boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_DBNAME")), "postgres_dbname")
+      ("postgres_max_items_in_fetch", boost::program_options::value<int32_t>()->default_value(1000), "postgres_max_items_in_fetch")
+      ("postgres_warning_timeout", boost::program_options::value<int32_t>()->default_value(1000), "postgres_warning_timeout")
       ("table_prefix", boost::program_options::value<std::string>()->default_value("kafka_"), "table_prefix")
       ("character_encoding", boost::program_options::value<std::string>()->default_value("UTF8"), "character_encoding")
-      ("filename", boost::program_options::value<std::string>(), "filename");
+      ("table_name_override", boost::program_options::value<std::string>(), "table_name_override")
+      ("filename", boost::program_options::value<std::string>(), "filename")
+      ;
 
   boost::program_options::variables_map vm;
   boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
@@ -70,16 +56,6 @@ int main(int argc, char **argv) {
     std::cout << desc << std::endl;
     return 0;
   }
-
-
-  /*std::string metrics_tags;
-  if (vm.count("metrics_tags")) {
-    metrics_tags = vm["metrics_tags"].as<std::string>();
-  } else {
-    std::cout << "--metrics_tags must be specified" << std::endl;
-    return 0;
-  }
-   */
 
   std::string broker;
   if (vm.count("broker")) {
@@ -94,6 +70,14 @@ int main(int argc, char **argv) {
     schema_registry = vm["schema_registry"].as<std::string>();
   } else {
     std::cout << "--schema_registry must be specified" << std::endl;
+    return 0;
+  }
+
+  std::string app_realm;
+  if (vm.count("app_realm")) {
+    app_realm = vm["app_realm"].as<std::string>();
+  } else {
+    std::cout << "--app_realm must be specified" << std::endl;
     return 0;
   }
 
@@ -178,6 +162,12 @@ int main(int argc, char **argv) {
     return 0;
   }
 
+  std::string table_name_override;
+  if (vm.count("table_name_override")) {
+    table_name_override = vm["table_name_override"].as<std::string>();
+  } else {
+  }
+
   std::string character_encoding;
   if (vm.count("character_encoding")) {
     character_encoding = vm["character_encoding"].as<std::string>();
@@ -204,8 +194,13 @@ int main(int argc, char **argv) {
   config->log();
   auto s= config->avro_serdes();
 
-  LOG(INFO) << "topic                       : " << topic;
+  std::string table_name = table_prefix + topic;
 
+  if (table_name_override.size())
+    table_name=table_name_override;
+
+  LOG(INFO) << "app_realm                   : " << app_realm;
+  LOG(INFO) << "topic                       : " << topic;
   LOG(INFO) << "postgres_host               : " << postgres_host;
   LOG(INFO) << "postgres_port               : " << postgres_port;
   LOG(INFO) << "postgres_dbname             : " << postgres_dbname;
@@ -214,14 +209,17 @@ int main(int argc, char **argv) {
   LOG(INFO) << "postgres_max_items_in_fetch : " << postgres_max_items_in_fetch;
   LOG(INFO) << "postgres_warning_timeout    : " << postgres_warning_timeout;
   LOG(INFO) << "table_prefix                : " << table_prefix;
+  LOG(INFO) << "table_name_override         : " << table_name_override;
+  LOG(INFO) << "table_name                  : " << table_name;
   LOG(INFO) << "character_encoding          : " << character_encoding;
+
 
   std::string connect_string =
       "host=" + postgres_host + " port=" + std::to_string(postgres_port) + " user=" + postgres_user + " password=" +
       postgres_password + " dbname=" + postgres_dbname;
 
   if (filename.size()) {
-     LOG(INFO) << "using avro file..";
+    LOG(INFO) << "using avro file..";
     LOG(INFO) << "filename                   : " << filename;
   }
 
@@ -243,10 +241,17 @@ int main(int argc, char **argv) {
   if (filename.size()) {
     topology->create_sink<kspp::avro_file_sink>(source0, "/tmp/" + table_prefix + topic + ".avro");
   } else {
-    topology->create_sink<kspp::postgres_generic_avro_sink>(source0, table_prefix + topic, connect_string, "id", config->get_schema_registry(), character_encoding);
+    topology->create_sink<kspp::postgres_generic_avro_sink>(source0, table_name, connect_string, "id", config->get_schema_registry(), character_encoding);
   }
 
-  topology->init_metrics();
+  std::vector<metrics20::avro::metrics20_key_tags_t> tags;
+  tags.push_back(kspp::make_metrics_tag("app_name", SERVICE_NAME));
+  tags.push_back(kspp::make_metrics_tag("app_realm", app_realm));
+  tags.push_back(kspp::make_metrics_tag("hostname", default_hostname()));
+  tags.push_back(kspp::make_metrics_tag("db_host", postgres_host));
+  tags.push_back(kspp::make_metrics_tag("dst_table", table_name));
+
+  topology->init_metrics(tags);
   //topology->start(kspp::OFFSET_STORED);
   topology->start(kspp::OFFSET_BEGINNING);
 
