@@ -14,21 +14,13 @@
 #define SERVICE_NAME "postgres2kafka"
 
 using namespace std::chrono_literals;
+using namespace kspp;
 
 static bool run = true;
 
 static void sigterm(int sig) {
   run = false;
 }
-
-static std::string get_env(const char *env) {
-  std::cerr << env << std::endl;
-  const char *env_p = std::getenv(env);
-  if (env_p)
-    return std::string(env_p);
-  return "";
-}
-
 
 int main(int argc, char **argv) {
   FLAGS_logtostderr = 1;
@@ -37,27 +29,19 @@ int main(int argc, char **argv) {
   boost::program_options::options_description desc("options");
   desc.add_options()
       ("help", "produce help message")
-      ("broker", boost::program_options::value<std::string>()->default_value(kspp::default_kafka_broker_uri()),
-       "broker")
-      ("schema_registry",
-       boost::program_options::value<std::string>()->default_value(kspp::default_schema_registry_uri()),
-       "schema_registry")
-      ("postgres_host", boost::program_options::value<std::string>()->default_value(get_env("POSTGRES_HOST")),
-       "postgres_host")
+      ("broker", boost::program_options::value<std::string>()->default_value(kspp::default_kafka_broker_uri()), "broker")
+      ("schema_registry", boost::program_options::value<std::string>()->default_value(kspp::default_schema_registry_uri()), "schema_registry")
+      ("app_realm", boost::program_options::value<std::string>()->default_value(get_env_and_log("APP_REALM", "DEV")), "app_realm")
+      ("postgres_host", boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_HOST")), "postgres_host")
       ("postgres_port", boost::program_options::value<int32_t>()->default_value(5432), "postgres_port")
-      ("postgres_user", boost::program_options::value<std::string>()->default_value(get_env("POSTGRES_USER")),
-       "postgres_user")
-      ("postgres_password", boost::program_options::value<std::string>()->default_value(get_env("POSTGRES_PASSWORD")),
-       "postgres_password")
-      ("postgres_dbname", boost::program_options::value<std::string>()->default_value(get_env("POSTGRES_DBNAME")),
-       "postgres_dbname")
-      ("postgres_max_items_in_fetch", boost::program_options::value<int32_t>()->default_value(1000),
-       "postgres_max_items_in_fetch")
-      ("postgres_warning_timeout", boost::program_options::value<int32_t>()->default_value(1000),
-       "postgres_warning_timeout")
-      ("postgres_table", boost::program_options::value<std::string>()->default_value(get_env("POSTGRES_TABLE")),
-       "postgres_table")
-      ("topic_prefix", boost::program_options::value<std::string>()->default_value("postgres_"), "topic_prefix")
+      ("postgres_user", boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_USER")), "postgres_user")
+      ("postgres_password", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("POSTGRES_PASSWORD")), "postgres_password")
+      ("postgres_dbname", boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_DBNAME")), "postgres_dbname")
+      ("postgres_max_items_in_fetch", boost::program_options::value<int32_t>()->default_value(1000), "postgres_max_items_in_fetch")
+      ("postgres_warning_timeout", boost::program_options::value<int32_t>()->default_value(1000), "postgres_warning_timeout")
+      ("postgres_table", boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_TABLE")), "postgres_table")
+      ("topic_prefix", boost::program_options::value<std::string>()->default_value("JUNK_postgres_"), "topic_prefix")
+      ("topic_name_override", boost::program_options::value<std::string>(), "topic_name_override")
       ("filename", boost::program_options::value<std::string>(), "filename");
 
   boost::program_options::variables_map vm;
@@ -68,24 +52,6 @@ int main(int argc, char **argv) {
     std::cout << desc << std::endl;
     return 0;
   }
-
-  /*std::string metrics_topic;
-  if (vm.count("metrics_topic")) {
-    metrics_topic = vm["metrics_topic"].as<std::string>();
-  } else {
-    std::cout << "--metrics_topic must be specified" << std::endl;
-    return 0;
-  }
-*/
-
-  /*std::string metrics_tags;
-  if (vm.count("metrics_tags")) {
-    metrics_tags = vm["metrics_tags"].as<std::string>();
-  } else {
-    std::cout << "--metrics_tags must be specified" << std::endl;
-    return 0;
-  }
-   */
 
   std::string broker;
   if (vm.count("broker")) {
@@ -100,6 +66,14 @@ int main(int argc, char **argv) {
     schema_registry = vm["schema_registry"].as<std::string>();
   } else {
     std::cout << "--schema_registry must be specified" << std::endl;
+    return 0;
+  }
+
+  std::string app_realm;
+  if (vm.count("app_realm")) {
+    app_realm = vm["app_realm"].as<std::string>();
+  } else {
+    std::cout << "--app_realm must be specified" << std::endl;
     return 0;
   }
 
@@ -175,6 +149,12 @@ int main(int argc, char **argv) {
     return 0;
   }
 
+  std::string topic_name_override;
+  if (vm.count("topic_name_override")) {
+    topic_name_override = vm["topic_name_override"].as<std::string>();
+  } else {
+  }
+
   std::string filename;
   if (vm.count("filename")) {
     filename = vm["filename"].as<std::string>();
@@ -195,6 +175,10 @@ int main(int argc, char **argv) {
 
   std::string topic_name = topic_prefix + postgres_table;
 
+  if (topic_name_override.size())
+    topic_name=topic_name_override;
+
+  LOG(INFO) << "app_realm                   : " << app_realm;
   LOG(INFO) << "postgres_host               : " << postgres_host;
   LOG(INFO) << "postgres_port               : " << postgres_port;
   LOG(INFO) << "postgres_dbname             : " << postgres_dbname;
@@ -204,7 +188,8 @@ int main(int argc, char **argv) {
   LOG(INFO) << "postgres_max_items_in_fetch : " << postgres_max_items_in_fetch;
   LOG(INFO) << "postgres_warning_timeout    : " << postgres_warning_timeout;
   LOG(INFO) << "topic_prefix                : " << topic_prefix;
-  LOG(INFO) << "kafka_topic                 : " << topic_name;
+  LOG(INFO) << "topic_name_override         : " << topic_name_override;
+  LOG(INFO) << "topic_name                  : " << topic_name;
 
 
   std::string connect_string =
@@ -222,10 +207,18 @@ int main(int argc, char **argv) {
   auto topology = generic_builder.create_topology();
   auto source0 = topology->create_processors<kspp::postgres_generic_avro_source>({0}, postgres_table, connect_string, "id", "", config->get_schema_registry(), 60s);
   if (filename.size()) {
-    topology->create_sink<kspp::avro_file_sink>(source0, "/tmp/" + topic_prefix + postgres_table + ".avro");
+    topology->create_sink<kspp::avro_file_sink>(source0, "/tmp/" + topic_name + ".avro");
   } else {
     topology->create_sink<kspp::kafka_sink<void, kspp::GenericAvro, void, kspp::avro_serdes>>(source0, topic_name, config->avro_serdes());
   }
+
+
+  std::vector<metrics20::avro::metrics20_key_tags_t> tags;
+  tags.push_back(kspp::make_metrics_tag("app_name", SERVICE_NAME));
+  tags.push_back(kspp::make_metrics_tag("app_realm", app_realm));
+  tags.push_back(kspp::make_metrics_tag("hostname", default_hostname()));
+  tags.push_back(kspp::make_metrics_tag("db_host", postgres_host));
+  tags.push_back(kspp::make_metrics_tag("dst_topic", topic_name));
 
 
   //auto sink   = topology->create_sink<kspp::kafka_sink<void, kspp::GenericAvro, void, kspp::avro_serdes>>(source, topic_prefix + postgres_table, config->avro_serdes());

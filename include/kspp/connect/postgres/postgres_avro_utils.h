@@ -4,6 +4,8 @@
 #include <postgresql/libpq-fe.h>
 #pragma once
 
+//https://godoc.org/github.com/lib/pq/oid
+
 namespace kspp {
   enum PG_OIDS {
     BOOLOID = 16,
@@ -27,7 +29,8 @@ namespace kspp {
     TIMEOID = 1083,
     TIMESTAMPOID = 1114,
     TIMESTAMPZOID = 1184,
-    NUMERICOID = 1700
+    NUMERICOID = 1700,
+    UUIDOID=2950
   };
 
   boost::shared_ptr<avro::Schema> schema_for_oid(Oid typid);

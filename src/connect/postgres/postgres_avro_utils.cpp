@@ -60,7 +60,10 @@ namespace kspp {
           //    //value_schema = schema_for_time_tz(); NOT IMPEMENTED YET
           //    value_schema = boost::make_shared<avro::Node>(avro::AVRO_STRING);
           //    break;
-          //case TIMESTAMPOID:   /* timestamp without time zone: datetime, microseconds since epoch */
+          case TIMESTAMPOID:   /* timestamp without time zone: datetime, microseconds since epoch */
+            value_schema = boost::make_shared<avro::LongSchema>();
+          break;
+
           //    // return schema_for_timestamp(false);NOT IMPEMENTED YET
           //    value_schema = boost::make_shared<avro::Node>(avro::AVRO_STRING);
           //    break;
@@ -80,8 +83,9 @@ namespace kspp {
           break;
           //case BITOID:     /* fixed-length bit string */
           //case VARBITOID:  /* variable-length bit string */
-          //case UUIDOID:    /* UUID datatype */
-
+          case UUIDOID:    /* UUID datatype */
+            value_schema = boost::make_shared<avro::StringSchema>();
+          break;
           //case LSNOID:     /* PostgreSQL LSN datatype */
           //case MACADDROID: /* XX:XX:XX:XX:XX:XX, MAC address */
           //case INETOID:    /* IP address/netmask, host address, netmask optional */
