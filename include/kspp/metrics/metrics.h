@@ -10,14 +10,20 @@
 #define KSPP_PARTITION_TAG "partition"
 #define KSPP_TOPIC_TAG "topic"
 
-
-
 namespace kspp {
+
+  inline metrics20::avro::metrics20_key_tags_t make_metrics_tag(std::string k, std::string v){
+    metrics20::avro::metrics20_key_tags_t t;
+    t.key=k;
+    t.value=v;
+    return t;
+  }
+
   struct metric {
     enum mtype { RATE, COUNT, GAUGE, COUNTER, TIMESTAMP }; // http://metrics20.org/spec/
 
     metric(std::string what, mtype mt, std::string unit)
-            : _name("kspp." + what) {
+        : _name("kspp." + what) {
       add_tag("framework", "kspp");
       add_tag("what", what);
       switch (mt) {
@@ -76,8 +82,8 @@ namespace kspp {
 
   struct metric_counter : public metric {
     metric_counter(std::string what, std::string unit)
-            : metric(what, COUNTER, unit),
-              _value(0) {
+        : metric(what, COUNTER, unit),
+          _value(0) {
     }
 
     virtual int64_t value() const {
@@ -114,7 +120,7 @@ namespace kspp {
 
   struct metric_average : public metric {
     metric_average(std::string what, std::string unit)
-            : metric(what, GAUGE, unit), _sum(0), _count(0) {}
+        : metric(what, GAUGE, unit), _sum(0), _count(0) {}
 
     void add_measurement(int64_t v) {
       _sum += v;
@@ -136,7 +142,7 @@ namespace kspp {
 
   struct metric_lag : public metric {
     metric_lag()
-            : metric("streaming_lag", GAUGE, "ms"), _lag(-1) {}
+        : metric("streaming_lag", GAUGE, "ms"), _lag(-1) {}
 
     inline void add_event_time(int64_t tick, int64_t event_time) {
       if (event_time > 0)
@@ -157,7 +163,7 @@ namespace kspp {
     using evaluator = std::function<int64_t(void)>;
 
     metric_evaluator(std::string what,  mtype mt, std::string unit, evaluator f)
-            : metric(what, mt, unit), _f(f) {}
+        : metric(what, mt, unit), _f(f) {}
 
     virtual int64_t value() const {
       return _f();
