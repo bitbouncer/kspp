@@ -106,10 +106,11 @@ namespace kspp_tds {
     _warn_timeout = ms;
   }
 
-  int connection::connect(std::string host, std::string username, std::string password, std::string database) {
+  int connection::connect(std::string host, int port, std::string username, std::string password, std::string database) {
     DBSETLAPP(login_, "kspp-tds-connection");
     DBSETLUSER(login_, username.c_str());
     DBSETLHOST(login_, host.c_str());
+    // what about port??
     DBSETLPWD(login_, password.c_str());
     DBSETLDBNAME(login_, database.c_str()); // maybe optional
 

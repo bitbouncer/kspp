@@ -4,60 +4,62 @@
 #include <memory>
 #include <glog/logging.h>
 #include <boost/bind.hpp>
+#include  <kspp/connect/postgres/postgres_avro_utils.h>
 
 using namespace std::chrono_literals;
 
 namespace kspp {
-  postgres_consumer::postgres_consumer(int32_t partition, std::string table, std::string consumer_group, std::string connect_string, std::string id_column, std::string ts_column, std::chrono::seconds poll_intervall, size_t max_items_in_fetch)
-      : _exit(false)
-      , _good(true)
+  postgres_consumer::postgres_consumer(int32_t partition,
+                                         std::string table,
+                                         std::string consumer_group,
+                                         std::string host,
+                                         int port,
+                                         std::string user,
+                                         std::string password,
+                                         std::string database,
+                                         std::string id_column,
+                                         std::string ts_column,
+                                         std::shared_ptr<kspp::avro_schema_registry> schema_registry,
+                                         std::chrono::seconds poll_intervall,
+                                         size_t max_items_in_fetch)
+      : _good(true)
       , _closed(false)
       , _eof(false)
-      , _connected(false)
-      , _fg_work(new boost::asio::io_service::work(_fg_ios))
-      , _bg_work(new boost::asio::io_service::work(_bg_ios))
-      , _fg(boost::bind(&boost::asio::io_service::run, &_fg_ios))
-      , _bg(boost::bind(&boost::asio::io_service::run, &_bg_ios))
-      , _connection(std::make_shared<postgres_asio::connection>(_fg_ios, _bg_ios))
-      , _main_thread([this] { _thread(); })
+      , _start_running(false)
+      , _exit(false)
+      , _bg([this] { _thread(); })
+      , _connection(std::make_shared<kspp_postgres::connection>())
       , _table(table)
       , _partition(partition)
       , _consumer_group(consumer_group)
-      , _connect_string(connect_string)
+      , host_(host)
+      , port_(port)
+      , user_(user)
+      , password_(password)
+      , database_(database)
       , _id_column(id_column)
       , _ts_column(ts_column)
+      , id_column_index_(-1)
       , ts_column_index_(-1)
-      , last_ts_(0)
-      , poll_intervall_(poll_intervall)
+      , schema_registry_(schema_registry)
       , _max_items_in_fetch(max_items_in_fetch)
-      , _can_be_committed(0)
-      , _last_committed(-1)
-      , _max_pending_commits(0)
-      , _msg_cnt(0)
-      , _msg_bytes(0) {
+      , schema_id_(-1)
+      , poll_intervall_(poll_intervall)
+      , _msg_cnt(0) {
   }
 
-  postgres_consumer::~postgres_consumer(){
+  postgres_consumer::~postgres_consumer() {
     _exit = true;
-
     if (!_closed)
       close();
-
-    _main_thread.join();
-
-    _fg_work.reset();
-    _bg_work.reset();
-    //bg_ios.stop();
-    //fg_ios.stop();
     _bg.join();
-    _fg.join();
-
     _connection->close();
     _connection = nullptr;
   }
 
-  void postgres_consumer::close(){
+  void postgres_consumer::close() {
     _exit = true;
+    _start_running = false;
 
     if (_closed)
       return;
@@ -65,20 +67,28 @@ namespace kspp {
 
     if (_connection) {
       _connection->close();
-      LOG(INFO) << "postgres_consumer table:" << _table << ":" << _partition << ", closed - consumed " << _msg_cnt << " messages (" << _msg_bytes << " bytes)";
+      LOG(INFO) << "postgres_consumer table:" << _table << ":" << _partition << ", closed - consumed " << _msg_cnt << " messages";
+    }
+  }
+
+  bool postgres_consumer::initialize() {
+    if (_connection->connect(host_, port_, user_, password_, database_)){
+      LOG(ERROR) << "could not connect to " << host_;
+      return false;
     }
 
-    _connected = false;
+    if (_connection->set_client_encoding("UTF8")){
+      LOG(ERROR) << "could not set client encoding UTF8 ";
+      return false;
+    }
+
+    //should we check more thing in database
+    //maybe select a row and register the schema???
+
+    _start_running = true;
   }
 
-  std::shared_ptr<PGresult> postgres_consumer::consume(){
-    if (_queue.empty())
-      return nullptr;
-    auto p = _queue.pop_and_get();
-    return p;
-  }
-
-  void postgres_consumer::start(int64_t offset){
+  void postgres_consumer::start(int64_t offset) {
     if (offset == kspp::OFFSET_STORED) {
       //TODO not implemented yet
       /*
@@ -91,124 +101,162 @@ namespace kspp {
       }
        */
     } else if (offset == kspp::OFFSET_BEGINNING) {
-      DLOG(INFO) << "postgres_consumer::start table:" << _table << ":" << _partition  << " consumer group: " << _consumer_group << " starting from OFFSET_BEGINNING";
+      DLOG(INFO) << "postgres_consumer::start table:" << _table << ":" << _partition << " consumer group: "
+                 << _consumer_group << " starting from OFFSET_BEGINNING";
     } else if (offset == kspp::OFFSET_END) {
-      DLOG(INFO) << "postgres_consumer::start table:" << _table << ":" << _partition  << " consumer group: " << _consumer_group << " starting from OFFSET_END";
+      DLOG(INFO) << "postgres_consumer::start table:" << _table << ":" << _partition << " consumer group: "
+                 << _consumer_group << " starting from OFFSET_END";
     } else {
-      DLOG(INFO) << "postgres_consumer::start table:" << _table << ":" << _partition  << " consumer group: " << _consumer_group << " starting from fixed offset: " << offset;
+      DLOG(INFO) << "postgres_consumer::start table:" << _table << ":" << _partition << " consumer group: "
+                 << _consumer_group << " starting from fixed offset: " << offset;
     }
 
-    connect_async();
-    update_eof();
+    initialize();
   }
 
-  void postgres_consumer::stop(){
+  int postgres_consumer::parse_response(std::shared_ptr<PGresult> result){
+    if (!result)
+      return -1;
 
+    // first time?
+    if (!schema_) {
+      this->schema_ = std::make_shared<avro::ValidSchema>(*schema_for_table_row(_table, result.get()));
+
+      if (schema_registry_) {
+        // we should probably prepend the name with a prefix (like _my_db_table_name)
+        schema_id_ = schema_registry_->put_schema(_table, schema_);
+      }
+      // TODO this could be an array of columns
+      int id_column_index_ = PQfnumber(result.get(), _id_column.c_str());
+      int ts_column_index_ = PQfnumber(result.get(), _ts_column.c_str());
+    }
+
+    int nRows = PQntuples(result.get());
+
+    for (int i = 0; i < nRows; i++)
+    {
+      auto gd = std::make_shared<kspp::GenericAvro>(schema_, schema_id_);
+      assert(gd->type() == avro::AVRO_RECORD);
+      avro::GenericRecord& record(gd->generic_datum()->value<avro::GenericRecord>());
+      size_t nFields = record.fieldCount();
+      for (int j = 0; j < nFields; j++)
+      {
+        if (record.fieldAt(j).type() != avro::AVRO_UNION)
+        {
+          LOG(FATAL) << "unexpected schema - bailing out, type:" << record.fieldAt(j).type();
+          break;
+        }
+        avro::GenericUnion& au(record.fieldAt(j).value<avro::GenericUnion>());
+
+        const std::string& column_name = record.schema()->nameAt(j);
+
+        //which pg column has this value?
+        int column_index = PQfnumber(result.get(), column_name.c_str());
+        if (column_index < 0)
+        {
+          LOG(FATAL) << "unknown column - bailing out: " << column_name;
+          break;
+        }
+
+        if (PQgetisnull(result.get(), i, column_index) == 1)
+        {
+          au.selectBranch(0); // NULL branch - we hope..
+          assert(au.datum().type() == avro::AVRO_NULL);
+        }
+        else
+        {
+          au.selectBranch(1);
+          avro::GenericDatum& avro_item(au.datum());
+          const char* val = PQgetvalue(result.get(), i, j);
+
+          switch (avro_item.type())
+          {
+            case avro::AVRO_STRING:
+              avro_item.value<std::string>() = val;
+              break;
+            case avro::AVRO_BYTES:
+              avro_item.value<std::string>() = val;
+              break;
+            case avro::AVRO_INT:
+              avro_item.value<int32_t>() = atoi(val);
+              break;
+            case avro::AVRO_LONG:
+              avro_item.value<int64_t>() = std::stoull(val);
+              break;
+            case avro::AVRO_FLOAT:
+              avro_item.value<float>() = (float)atof(val);
+              break;
+            case avro::AVRO_DOUBLE:
+              avro_item.value<double>() = atof(val);
+              break;
+            case avro::AVRO_BOOL:
+              avro_item.value<bool>() = (strcmp(val, "True") == 0);
+              break;
+            case avro::AVRO_RECORD:
+            case avro::AVRO_ENUM:
+            case avro::AVRO_ARRAY:
+            case avro::AVRO_MAP:
+            case avro::AVRO_UNION:
+            case avro::AVRO_FIXED:
+            case avro::AVRO_NULL:
+            default:
+              LOG(FATAL) << "unexpected / non supported type e:" << avro_item.type();
+          }
+        }
+      }
+
+      //we need to store last timestamp and last key for next select clause
+      if (id_column_index_>=0)
+        last_id_ = PQgetvalue(result.get(), i, id_column_index_);
+      if (ts_column_index_>=0)
+        last_ts_ = PQgetvalue(result.get(), i, ts_column_index_);
+
+      // or should we use ts column instead of now();
+      auto r = std::make_shared<krecord<void, kspp::GenericAvro>>(gd, kspp::milliseconds_since_epoch());
+      auto e = std::make_shared<kevent<void, kspp::GenericAvro>>(r);
+      assert(e.get()!=nullptr);
+
+      //should we wait a bit if we fill incomming queue to much??
+      while(_incomming_msg.size()>10000 && !_exit) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        DLOG(INFO) << "c_incomming_msg.size() " << _incomming_msg.size();
+      }
+
+      _incomming_msg.push_back(e);
+      ++_msg_cnt;
+    }
+    return 0;
   }
 
-  int32_t postgres_consumer::commit(int64_t offset, bool flush){
-
-  }
-
-  int postgres_consumer::update_eof() {
-
-  }
-
-  void postgres_consumer::_thread(){
+  void postgres_consumer::_thread() {
     while (!_exit) {
       if (_closed)
         break;
 
       // connected
-      if (!_connected) {
+      if (!_start_running) {
         std::this_thread::sleep_for(1s);
         continue;
       }
 
+      // have we lost connection ?
+      if (!_connection->connected()) {
+        if (!_connection->connect(host_, port_, user_, password_, database_))
+        {
+          std::this_thread::sleep_for(10s);
+          continue;
+        }
+
+        //UTF8?
+        if (!_connection->set_client_encoding("UTF8")){
+          std::this_thread::sleep_for(10s);
+          continue;
+        }
+      }
+
       _eof = false;
-      auto last_msg_count = _msg_cnt;
-      _eof = true;
-      LOG(INFO) << "poll done - got: " << _msg_cnt - last_msg_count << " messages, total: " << _msg_cnt << ", last ts: " << last_ts_;
-      //LOG(INFO) << "waiting for next poll - sleeping " << poll_intervall_.count() << " seconds";
 
-      // if we sleep long we cannot be killed
-      int count= poll_intervall_.count();
-      for (int i=0; i!=count; ++i){
-        std::this_thread::sleep_for(1s);
-        if (_exit)
-          break;
-      }
-
-    }
-    DLOG(INFO) << "exiting thread";
-  }
-
-  void postgres_consumer::connect_async() {
-    DLOG(INFO) << "connecting : connect_string: " <<  _connect_string;
-    _connection->connect(_connect_string, [this](int ec) {
-      if (!ec) {
-        DLOG(INFO) << "connected";
-        bool r1 = _connection->set_client_encoding("UTF8");
-        _good = true;
-        _connected = true;
-        _eof = true;
-        select_async();
-      } else {
-        LOG(ERROR) << "connect failed";
-        _good = false;
-        _connected = false;
-        _eof = true;
-      }
-    });
-  }
-
-
-  void postgres_consumer::handle_fetch_cb(int ec, std::shared_ptr<PGresult> result) {
-    if (ec)
-      return;
-    int tuples_in_batch = PQntuples(result.get());
-    _msg_cnt += tuples_in_batch;
-
-    // should this be here?? it costs something
-    size_t nFields = PQnfields(result.get());
-    for (int i = 0; i < tuples_in_batch; i++)
-      for (int j = 0; j < nFields; j++)
-        _msg_bytes += PQgetlength(result.get(), i, j);
-
-    if (tuples_in_batch == 0) {
-      DLOG(INFO) << "query done, got total: " << _msg_cnt; // tbd remove this
-      _connection->exec("CLOSE MYCURSOR; COMMIT", [](int ec, std::shared_ptr<PGresult> res) {});
-      _eof = true;
-      return;
-    } else {
-      DLOG(INFO) << "query batch done, got total: " << _msg_cnt; // tbd remove this
-      _queue.push_back(result);
-      _connection->exec("FETCH " + std::to_string(_max_items_in_fetch) + " IN MYCURSOR",
-                        [this](int ec, std::shared_ptr<PGresult> res) {
-                          this->handle_fetch_cb(ec, std::move(res));
-                        });
-    }
-  }
-
-  void postgres_consumer::select_async()
-  {
-    // connected
-    if (!_connected)
-      return;
-
-    // already runnning
-    if (!_eof)
-      return;
-
-    DLOG(INFO) << "exec(BEGIN)";
-    _eof = false;
-    _connection->exec("BEGIN", [this](int ec, std::shared_ptr<PGresult> res) {
-      if (ec) {
-        LOG(FATAL) << "BEGIN failed ec:" << ec << " last_error: " << _connection->last_error();
-        return;
-      }
       std::string fields = "*";
-
       std::string order_by = "";
       if (_ts_column.size())
         order_by = _ts_column + " ASC, " + _id_column + " ASC";
@@ -217,53 +265,60 @@ namespace kspp {
 
       std::string where_clause;
 
-      if (_ts_column.size())
-        where_clause = _ts_column;
-      else
-        where_clause = _id_column;
+      // do we have a timestamp field
+      // we have to have either a interger id that is increasing or a timestamp that is increasing
+      // before we read anything the where clause will not be valid
+      if (last_id_.size()) {
+        if (_ts_column.size())
+          where_clause =
+              " WHERE (" + _ts_column + " = " + last_ts_ + " AND " + _id_column + " > " + last_id_ + ") OR (" +
+              _ts_column + " > " + last_ts_ + ")";
+        else
+          where_clause = " WHERE " + _id_column + " > " + last_id_;
+      }
 
-      std::string statement = "DECLARE MYCURSOR CURSOR FOR SELECT " + fields + " FROM "+ _table + " ORDER BY " + order_by;
+      //std::string statement = "SELECT TOP " + std::to_string(_max_items_in_fetch) + " " + fields + " FROM " + _table + where_clause + " ORDER BY " + order_by;
+      std::string statement = "SELECT " + fields + " FROM " + _table + where_clause + " ORDER BY " + order_by + " LIMIT " + std::to_string(_max_items_in_fetch);
+
       DLOG(INFO) << "exec(" + statement + ")";
-      _connection->exec(statement,
-                        [this](int ec, std::shared_ptr<PGresult> res) {
-                          if (ec) {
-                            LOG(FATAL) << "DECLARE MYCURSOR... failed ec:" << ec << " last_error: " << _connection->last_error();
-                            return;
-                          }
-                          _connection->exec("FETCH " + std::to_string(_max_items_in_fetch) +" IN MYCURSOR",
-                                            [this](int ec, std::shared_ptr<PGresult> res) {
-                                              try {
-                                                /*
-                                                boost::shared_ptr<avro::ValidSchema> schema(
-                                                    valid_schema_for_table_row(_table  + ".value", res));
-                                                boost::shared_ptr<avro::ValidSchema> key_schema(
-                                                    valid_schema_for_table_key(_table + ".key", {"id"}, res));
 
-                                                std::cerr << "key schema" << std::endl;
-                                                key_schema->toJson(std::cerr);
-                                                std::cerr << std::endl;
+      auto ts0 = kspp::milliseconds_since_epoch();
+      auto last_msg_count = _msg_cnt;
+      auto res = _connection->exec(statement);
+      if (res.first) {
+        LOG(ERROR) << "exec failed - disconnecting and retrying e: " << _connection->last_error();
+        _connection->disconnect();
+        std::this_thread::sleep_for(10s);
+        continue;
+      }
 
-                                                std::cerr << "value schema" << std::endl;
-                                                std::cerr << std::endl;
-                                                schema->toJson(std::cerr);
-                                                std::cerr << std::endl;
-  */
-                                                handle_fetch_cb(ec, std::move(res));
-                                              }
-                                              catch (std::exception &e) {
-                                                LOG(FATAL) << "exception: " << e.what();
-                                              };
-                                              /*
-                                              int nFields = PQnfields(res.get());
-                                              for (int i = 0; i < nFields; i++)
-                                                  printf("%-15s", PQfname(res.get(), i));
-                                              */
-                                            });
-                        });
-    });
+      int parse_result = parse_response(res.second);
+      if (parse_result) {
+        LOG(ERROR) << "parse failed - disconnecting and retrying";
+        _connection->disconnect();
+        std::this_thread::sleep_for(10s);
+        continue;
+      }
+      auto ts1 = kspp::milliseconds_since_epoch();
+
+      if ((_msg_cnt - last_msg_count) != _max_items_in_fetch)
+        _eof = true;
+
+      LOG(INFO) << "poll done - got: " << _msg_cnt - last_msg_count << " messages, total: " << _msg_cnt << ", last ts: " << last_ts_ << " duration " << ts1 -ts0 << " ms";
+
+
+      if (_eof) {
+        // what is sleeping cannot bne killed...
+        int count = poll_intervall_.count();
+        for (int i = 0; i != count; ++i) {
+          std::this_thread::sleep_for(1s);
+          if (_exit)
+            break;
+        }
+      }
+
+    }
+    DLOG(INFO) << "exiting thread";
   }
-
-
-
 }
 

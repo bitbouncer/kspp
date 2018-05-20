@@ -14,6 +14,7 @@ namespace kspp {
                  std::string table,
                  std::string consumer_group,
                  std::string host,
+                 int port,
                  std::string user,
                  std::string password,
                  std::string database,
@@ -97,6 +98,7 @@ namespace kspp {
     const std::string _consumer_group;
 
     const std::string host_;
+    const int port_;
     const std::string user_;
     const std::string password_;
     const std::string database_;

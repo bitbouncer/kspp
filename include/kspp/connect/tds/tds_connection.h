@@ -1,8 +1,6 @@
 #include <memory>
 #include <utility>
 #include <functional>
-#include <deque>
-#include <boost/asio.hpp>
 #include <sybfront.h>
 #include <sybdb.h>
 #pragma once
@@ -13,14 +11,12 @@
 namespace kspp_tds {
   class connection : public std::enable_shared_from_this<connection> {
   public:
-    typedef std::function<void(int ec, DBPROCESS*)> on_query_callback;
-
     connection(std::string trace_id = "");
     ~connection();
 
     void close();
 
-    int connect(std::string host, std::string username, std::string password, std::string database);
+    int connect(std::string host, int port, std::string username, std::string password, std::string database);
 
     void disconnect();
 

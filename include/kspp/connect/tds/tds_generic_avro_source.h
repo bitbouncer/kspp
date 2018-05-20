@@ -17,6 +17,7 @@ namespace kspp {
                             int32_t partition,
                             std::string table,
                             std::string host,
+                            int port,
                             std::string user,
                             std::string password,
                             std::string database,

@@ -13,6 +13,7 @@ namespace kspp {
                              std::string table,
                              std::string consumer_group,
                              std::string host,
+                             int port,
                              std::string user,
                              std::string password,
                              std::string database,
@@ -27,6 +28,7 @@ namespace kspp {
       , _partition(partition)
       , _consumer_group(consumer_group)
       , host_(host)
+      , port_(port)
       , user_(user)
       , password_(password)
       , database_(database)
@@ -71,7 +73,7 @@ namespace kspp {
 
   bool tds_consumer::initialize() {
     if (!_connection->connected())
-      _connection->connect(host_, user_, password_, database_);
+      _connection->connect(host_, port_, user_, password_, database_);
 
     // should we check more thing in database
 
@@ -471,7 +473,7 @@ namespace kspp {
 
       // have we lost connection ?
       if (!_connection->connected()) {
-        if (!_connection->connect(host_, user_, password_, database_))
+        if (!_connection->connect(host_, port_, user_, password_, database_))
         {
           std::this_thread::sleep_for(10s);
           continue;

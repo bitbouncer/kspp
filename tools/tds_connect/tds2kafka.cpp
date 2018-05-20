@@ -218,7 +218,7 @@ int main(int argc, char **argv) {
   kspp::topology_builder generic_builder("kspp", SERVICE_NAME + db_dbname, config);
   auto topology = generic_builder.create_topology();
 
-  auto source0 = topology->create_processors<kspp::tds_generic_avro_source>({0}, db_table, db_host, db_user, db_password, db_dbname, "id", "ts", config->get_schema_registry(),  std::chrono::seconds(db_polltime));
+  auto source0 = topology->create_processors<kspp::tds_generic_avro_source>({0}, db_table, db_host, 1433, db_user, db_password, db_dbname, "id", "ts", config->get_schema_registry(),  std::chrono::seconds(db_polltime));
 
 
    if (filename.size()) {

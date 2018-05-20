@@ -9,6 +9,7 @@ namespace kspp {
                                                    int32_t partition,
                                                    std::string table,
                                                    std::string host,
+                                                   int port,
                                                    std::string user,
                                                    std::string password,
                                                    std::string database,
@@ -17,7 +18,7 @@ namespace kspp {
                                                    std::shared_ptr<kspp::avro_schema_registry> registry,
                                                    std::chrono::seconds poll_intervall)
       : partition_source<void, kspp::GenericAvro>(nullptr, partition), _started(false), _exit(false),
-        _impl(partition, table, t.consumer_group(), host, user, password, database, id_column, ts_column, registry, poll_intervall), _schema_registry(registry),
+        _impl(partition, table, t.consumer_group(), host, port, user, password, database, id_column, ts_column, registry, poll_intervall), _schema_registry(registry),
         _schema_id(-1), _commit_chain(table, partition), _parse_errors("parse_errors", "err"),
         _commit_chain_size("commit_chain_size", metric::GAUGE, "msg", [this]() { return _commit_chain.size(); }) {
     this->add_metric(&_commit_chain_size);

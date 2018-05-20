@@ -192,9 +192,9 @@ int main(int argc, char **argv) {
   LOG(INFO) << "topic_name                  : " << topic_name;
 
 
-  std::string connect_string =
-      "host=" + postgres_host + " port=" + std::to_string(postgres_port) + " user=" + postgres_user + " password=" +
-      postgres_password + " dbname=" + postgres_dbname;
+  //std::string connect_string =
+  //    "host=" + postgres_host + " port=" + std::to_string(postgres_port) + " user=" + postgres_user + " password=" +
+  //    postgres_password + " dbname=" + postgres_dbname;
 
   if (filename.size()) {
      LOG(INFO) << "using avro file..";
@@ -205,13 +205,14 @@ int main(int argc, char **argv) {
 
   kspp::topology_builder generic_builder("kspp", SERVICE_NAME, config);
   auto topology = generic_builder.create_topology();
-  auto source0 = topology->create_processors<kspp::postgres_generic_avro_source>({0}, postgres_table, connect_string, "id", "", config->get_schema_registry(), 60s);
+  auto source0 = topology->create_processors<kspp::postgres_generic_avro_source>({0}, postgres_table, postgres_host, postgres_port, postgres_user, postgres_password, postgres_dbname, "id", "", config->get_schema_registry(), 60s, 1000);
+  //auto source0 = topology->create_processors<kspp::tds_generic_avro_source>({0}, db_table, db_host, 1433, db_user, db_password, db_dbname, "id", "ts", config->get_schema_registry(),  std::chrono::seconds(db_polltime));
+
   if (filename.size()) {
     topology->create_sink<kspp::avro_file_sink>(source0, "/tmp/" + topic_name + ".avro");
   } else {
     topology->create_sink<kspp::kafka_sink<void, kspp::GenericAvro, void, kspp::avro_serdes>>(source0, topic_name, config->avro_serdes());
   }
-
 
   std::vector<metrics20::avro::metrics20_key_tags_t> tags;
   tags.push_back(kspp::make_metrics_tag("app_name", SERVICE_NAME));
