@@ -213,10 +213,13 @@ int main(int argc, char **argv) {
   LOG(INFO) << "table_name                  : " << table_name;
   LOG(INFO) << "character_encoding          : " << character_encoding;
 
+  kspp::connect::connection_params connection_params;
+  connection_params.host = postgres_host;
+  connection_params.port = postgres_port;
+  connection_params.user = postgres_user;
+  connection_params.password = postgres_password;
+  connection_params.database = postgres_dbname;
 
-  //std::string connect_string =
-  //    "host=" + postgres_host + " port=" + std::to_string(postgres_port) + " user=" + postgres_user + " password=" +
-  //    postgres_password + " dbname=" + postgres_dbname;
 
   if (filename.size()) {
     LOG(INFO) << "using avro file..";
@@ -241,7 +244,7 @@ int main(int argc, char **argv) {
   if (filename.size()) {
     topology->create_sink<kspp::avro_file_sink>(source0, "/tmp/" + table_prefix + topic + ".avro");
   } else {
-    topology->create_sink<kspp::postgres_generic_avro_sink>(source0, table_name, postgres_host, postgres_port, postgres_user, postgres_password, postgres_dbname, "id", config->get_schema_registry(), character_encoding);
+    topology->create_sink<kspp::postgres_generic_avro_sink>(source0, table_name, connection_params, "id", config->get_schema_registry(), character_encoding);
   }
 
   std::vector<metrics20::avro::metrics20_key_tags_t> tags;

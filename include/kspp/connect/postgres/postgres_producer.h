@@ -11,11 +11,7 @@ namespace kspp {
   {
   public:
     postgres_producer(std::string table,
-                      std::string host,
-                      int port,
-                      std::string user,
-                      std::string password,
-                      std::string database,
+                      const kspp::connect::connection_params& cp,
                       std::string id_column,
                       std::string client_encoding,
                       size_t max_items_in_fetch=1000);
@@ -59,11 +55,7 @@ namespace kspp {
     std::shared_ptr<kspp_postgres::connection> _connection;
 
     const std::string _table;
-    const std::string host_;
-    const std::string user_;
-    const int port_;
-    const std::string password_;
-    const std::string database_;
+    const kspp::connect::connection_params cp_;
 
     const std::string _id_column;
     const std::string _client_encoding;

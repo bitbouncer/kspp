@@ -2,6 +2,7 @@
 #include <utility>
 #include <functional>
 #include <postgresql/libpq-fe.h>
+#include <kspp/connect/connection_params.h>
 #pragma once
 
 //inspiration
@@ -15,7 +16,7 @@ namespace kspp_postgres {
 
     void close();
 
-    int connect(std::string host, int port, std::string username, std::string password, std::string database);
+    int connect(const kspp::connect::connection_params& cp);
 
     void disconnect();
 

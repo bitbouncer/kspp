@@ -10,11 +10,7 @@ using namespace std::chrono_literals;
 
 namespace kspp {
   postgres_producer::postgres_producer(std::string table,
-                                       std::string host,
-                                       int port,
-                                       std::string user,
-                                       std::string password,
-                                       std::string database,
+                                       const kspp::connect::connection_params& cp,
                                        std::string id_column,
                                        std::string client_encoding,
                                        size_t max_items_in_fetch )
@@ -22,11 +18,7 @@ namespace kspp {
       _bg([this] { _thread(); })
       , _connection(std::make_shared<kspp_postgres::connection>())
       , _table(table)
-      , host_(host)
-      , port_(port)
-      , user_(user)
-      , password_(password)
-      , database_(database)
+      , cp_(cp)
       , _id_column(id_column)
       , _client_encoding(client_encoding)
       , _max_items_in_fetch(max_items_in_fetch)
@@ -67,8 +59,8 @@ namespace kspp {
   }
 
   bool postgres_producer::initialize() {
-    if (_connection->connect(host_, port_, user_, password_, database_)){
-      LOG(ERROR) << "could not connect to " << host_;
+    if (_connection->connect(cp_)){
+      LOG(ERROR) << "could not connect to " << cp_.host;
       return false;
     }
 
@@ -152,7 +144,7 @@ namespace kspp {
 
       // have we lost connection ?
       if (!_connection->connected()) {
-        if (!_connection->connect(host_, port_, user_, password_, database_))
+        if (!_connection->connect(cp_))
         {
           std::this_thread::sleep_for(10s);
           continue;

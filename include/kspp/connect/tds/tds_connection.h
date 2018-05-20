@@ -3,6 +3,7 @@
 #include <functional>
 #include <sybfront.h>
 #include <sybdb.h>
+#include <kspp/connect/connection_params.h>
 #pragma once
 
 //inspiration
@@ -16,7 +17,7 @@ namespace kspp_tds {
 
     void close();
 
-    int connect(std::string host, int port, std::string username, std::string password, std::string database);
+    int connect(const kspp::connect::connection_params& cp);
 
     void disconnect();
 

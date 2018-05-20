@@ -12,11 +12,7 @@ namespace kspp {
     postgres_consumer(int32_t partition,
                        std::string table,
                        std::string consumer_group,
-                       std::string host,
-                       int port,
-                       std::string user,
-                       std::string password,
-                       std::string database,
+                       const kspp::connect::connection_params& cp,
                        std::string id_column,
                        std::string ts_column,
                        std::shared_ptr<kspp::avro_schema_registry>,
@@ -77,11 +73,7 @@ namespace kspp {
     const int32_t _partition;
     const std::string _consumer_group;
 
-    const std::string host_;
-    const std::string user_;
-    const int port_;
-    const std::string password_;
-    const std::string database_;
+    const kspp::connect::connection_params cp_;
 
     const std::string _id_column;
     const std::string _ts_column;

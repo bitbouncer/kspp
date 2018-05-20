@@ -17,15 +17,11 @@ namespace kspp {
   public:
     postgres_generic_avro_sink(topology &t,
                                std::string table,
-                               std::string host,
-                               int port,
-                               std::string user,
-                               std::string password,
-                               std::string database,
+                               const kspp::connect::connection_params& cp,
                                std::string id_column,
                                std::shared_ptr<kspp::avro_schema_registry> schema_registry,
                                std::string client_encoding="UTF8")
-        : generic_avro_sink(t, std::make_shared<kspp::postgres_producer>(table, host, port, user, password, database, id_column, client_encoding), schema_registry){
+        : generic_avro_sink(t, std::make_shared<kspp::postgres_producer>(table, cp, id_column, client_encoding), schema_registry){
       this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
       this->add_metrics_tag(KSPP_TOPIC_TAG, table);
     }

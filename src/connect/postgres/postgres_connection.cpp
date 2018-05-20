@@ -31,19 +31,19 @@ namespace kspp_postgres {
     disconnect();
   }
 
-  int connection::connect(std::string host, int port, std::string username, std::string password, std::string database) {
-    static_assert(CONNECTION_OK==0); // no surprises
+  int connection::connect(const kspp::connect::connection_params& cp) {
+    static_assert(CONNECTION_OK==0, "OK must be 0"); // no surprises
 
     // make sure we start clean
     disconnect();
 
     auto t0 = kspp::milliseconds_since_epoch();
 
-    std::string connect_string = "host=" + host +
-                                 " port=" + std::to_string(port) +
-                                 " user=" + username +
-                                 " password=" + password +
-                                 " dbname=" + database;
+    std::string connect_string = "host=" + cp.host +
+                                 " port=" + std::to_string(cp.port) +
+                                 " user=" + cp.user +
+                                 " password=" + cp.password +
+                                 " dbname=" + cp.database;
     _pg_conn = PQconnectdb(connect_string.c_str());
     auto status = PQstatus(_pg_conn); //
     int32_t duration = (int32_t) (kspp::milliseconds_since_epoch() - t0);

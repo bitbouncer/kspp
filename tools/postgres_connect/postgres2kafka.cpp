@@ -179,22 +179,24 @@ int main(int argc, char **argv) {
     topic_name=topic_name_override;
 
   LOG(INFO) << "app_realm                   : " << app_realm;
+  LOG(INFO) << "postgres_table              : " << postgres_table;
   LOG(INFO) << "postgres_host               : " << postgres_host;
   LOG(INFO) << "postgres_port               : " << postgres_port;
-  LOG(INFO) << "postgres_dbname             : " << postgres_dbname;
-  LOG(INFO) << "postgres_table              : " << postgres_table;
   LOG(INFO) << "postgres_user               : " << postgres_user;
   LOG(INFO) << "postgres_password           : " << "[hidden]";
+  LOG(INFO) << "postgres_dbname             : " << postgres_dbname;
   LOG(INFO) << "postgres_max_items_in_fetch : " << postgres_max_items_in_fetch;
   LOG(INFO) << "postgres_warning_timeout    : " << postgres_warning_timeout;
   LOG(INFO) << "topic_prefix                : " << topic_prefix;
   LOG(INFO) << "topic_name_override         : " << topic_name_override;
   LOG(INFO) << "topic_name                  : " << topic_name;
 
-
-  //std::string connect_string =
-  //    "host=" + postgres_host + " port=" + std::to_string(postgres_port) + " user=" + postgres_user + " password=" +
-  //    postgres_password + " dbname=" + postgres_dbname;
+  kspp::connect::connection_params connection_params;
+  connection_params.host = postgres_host;
+  connection_params.port = postgres_port;
+  connection_params.user = postgres_user;
+  connection_params.password = postgres_password;
+  connection_params.database = postgres_dbname;
 
   if (filename.size()) {
      LOG(INFO) << "using avro file..";
@@ -205,7 +207,7 @@ int main(int argc, char **argv) {
 
   kspp::topology_builder generic_builder("kspp", SERVICE_NAME, config);
   auto topology = generic_builder.create_topology();
-  auto source0 = topology->create_processors<kspp::postgres_generic_avro_source>({0}, postgres_table, postgres_host, postgres_port, postgres_user, postgres_password, postgres_dbname, "id", "", config->get_schema_registry(), 60s, 1000);
+  auto source0 = topology->create_processors<kspp::postgres_generic_avro_source>({0}, postgres_table, connection_params, "id", "", config->get_schema_registry(), 60s, 1000);
   //auto source0 = topology->create_processors<kspp::tds_generic_avro_source>({0}, db_table, db_host, 1433, db_user, db_password, db_dbname, "id", "ts", config->get_schema_registry(),  std::chrono::seconds(db_polltime));
 
   if (filename.size()) {

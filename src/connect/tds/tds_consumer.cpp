@@ -12,11 +12,7 @@ namespace kspp {
   tds_consumer::tds_consumer(int32_t partition,
                              std::string table,
                              std::string consumer_group,
-                             std::string host,
-                             int port,
-                             std::string user,
-                             std::string password,
-                             std::string database,
+                             const kspp::connect::connection_params& cp,
                              std::string id_column,
                              std::string ts_column,
                              std::shared_ptr<kspp::avro_schema_registry> schema_registry,
@@ -27,11 +23,7 @@ namespace kspp {
       , _table(table)
       , _partition(partition)
       , _consumer_group(consumer_group)
-      , host_(host)
-      , port_(port)
-      , user_(user)
-      , password_(password)
-      , database_(database)
+      , cp_(cp)
       , _id_column(id_column)
       , _ts_column(ts_column)
       , ts_column_index_(0)
@@ -73,7 +65,7 @@ namespace kspp {
 
   bool tds_consumer::initialize() {
     if (!_connection->connected())
-      _connection->connect(host_, port_, user_, password_, database_);
+      _connection->connect(cp_);
 
     // should we check more thing in database
 
@@ -181,11 +173,10 @@ namespace kspp {
     // first time?
     if (!this->schema_) {
       //std::string schema_name =  host_ + "_" +  database_ + "_" + _table;
-      std::string schema_name = "tds_" + database_ + "_" + _table;
+      std::string schema_name = "tds_" + cp_.database + "_" + _table;
       this->schema_ = std::make_shared<avro::ValidSchema>(*tds::schema_for_table_row(schema_name, stream));
       if (schema_registry_) {
-        schema_id_ = schema_registry_->put_schema(schema_name,
-                                                  schema_); // we should probably prepend the name with a prefix (like _my_db_table_name)
+        schema_id_ = schema_registry_->put_schema(schema_name, schema_); // we should probably prepend the name with a prefix (like _my_db_table_name)
       }
 
       // find ts field
@@ -473,7 +464,7 @@ namespace kspp {
 
       // have we lost connection ?
       if (!_connection->connected()) {
-        if (!_connection->connect(host_, port_, user_, password_, database_))
+        if (!_connection->connect(cp_))
         {
           std::this_thread::sleep_for(10s);
           continue;

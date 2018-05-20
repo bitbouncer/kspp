@@ -202,9 +202,12 @@ int main(int argc, char **argv) {
   LOG(INFO) << "topic_prefix          : " << topic_prefix;
   LOG(INFO) << "kafka_topic           : " << topic_name;
 
-  std::string connect_string =
-      "host=" + db_host + " port=" + std::to_string(db_port) + " user=" + db_user + " password=" +
-          db_password + " dbname=" + db_dbname;
+  kspp::connect::connection_params connection_params;
+  connection_params.host = db_host;
+  connection_params.port = db_port;
+  connection_params.user = db_user;
+  connection_params.password = db_password;
+  connection_params.database = db_dbname;
 
   if (filename.size()) {
      LOG(INFO) << "using avro file..";
@@ -218,7 +221,7 @@ int main(int argc, char **argv) {
   kspp::topology_builder generic_builder("kspp", SERVICE_NAME + db_dbname, config);
   auto topology = generic_builder.create_topology();
 
-  auto source0 = topology->create_processors<kspp::tds_generic_avro_source>({0}, db_table, db_host, 1433, db_user, db_password, db_dbname, "id", "ts", config->get_schema_registry(),  std::chrono::seconds(db_polltime));
+  auto source0 = topology->create_processors<kspp::tds_generic_avro_source>({0}, db_table, connection_params, "id", "ts", config->get_schema_registry(),  std::chrono::seconds(db_polltime));
 
 
    if (filename.size()) {

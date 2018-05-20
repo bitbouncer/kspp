@@ -12,11 +12,7 @@ namespace kspp {
   postgres_consumer::postgres_consumer(int32_t partition,
                                          std::string table,
                                          std::string consumer_group,
-                                         std::string host,
-                                         int port,
-                                         std::string user,
-                                         std::string password,
-                                         std::string database,
+                                         const kspp::connect::connection_params& cp,
                                          std::string id_column,
                                          std::string ts_column,
                                          std::shared_ptr<kspp::avro_schema_registry> schema_registry,
@@ -32,11 +28,7 @@ namespace kspp {
       , _table(table)
       , _partition(partition)
       , _consumer_group(consumer_group)
-      , host_(host)
-      , port_(port)
-      , user_(user)
-      , password_(password)
-      , database_(database)
+      , cp_(cp)
       , _id_column(id_column)
       , _ts_column(ts_column)
       , id_column_index_(-1)
@@ -72,8 +64,8 @@ namespace kspp {
   }
 
   bool postgres_consumer::initialize() {
-    if (_connection->connect(host_, port_, user_, password_, database_)){
-      LOG(ERROR) << "could not connect to " << host_;
+    if (_connection->connect(cp_)){
+      LOG(ERROR) << "could not connect to " << cp_.host;
       return false;
     }
 
@@ -241,7 +233,7 @@ namespace kspp {
 
       // have we lost connection ?
       if (!_connection->connected()) {
-        if (!_connection->connect(host_, port_, user_, password_, database_))
+        if (!_connection->connect(cp_))
         {
           std::this_thread::sleep_for(10s);
           continue;

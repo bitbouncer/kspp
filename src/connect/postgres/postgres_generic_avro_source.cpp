@@ -7,11 +7,7 @@ namespace kspp {
   postgres_generic_avro_source::postgres_generic_avro_source(topology &t,
                                                                int32_t partition,
                                                                std::string table,
-                                                               std::string host,
-                                                               int port,
-                                                               std::string user,
-                                                               std::string password,
-                                                               std::string database,
+                                                               const kspp::connect::connection_params& cp,
                                                                std::string id_column,
                                                                std::string ts_column,
                                                                std::shared_ptr<kspp::avro_schema_registry> registry,
@@ -20,7 +16,7 @@ namespace kspp {
       : partition_source<void, kspp::GenericAvro>(nullptr, partition)
       , _started(false)
       , _exit(false)
-      , _impl(partition, table, t.consumer_group(), host, port, user, password, database, id_column, ts_column, registry, poll_intervall, max_items_in_fetch)
+      , _impl(partition, table, t.consumer_group(), cp, id_column, ts_column, registry, poll_intervall, max_items_in_fetch)
       , _schema_registry(registry)
       , _schema_id(-1)
       , _commit_chain(table, partition)
