@@ -7,8 +7,7 @@ namespace kspp {
 
   elasticsearch_producer::elasticsearch_producer(std::string index_name,
                                                  std::string base_url,
-                                                 std::string user,
-                                                 std::string password,
+                                                 std::string http_header,
                                                  std::string id_column,
                                                  size_t batch_size)
       : _work(new boost::asio::io_service::work(_ios))
@@ -17,8 +16,7 @@ namespace kspp {
       , _http_handler(_ios, batch_size)
       , _index_name(index_name)
       , _base_url(base_url)
-      , _user(user)
-      , _password(password)
+      , _http_header(http_header)
       , _id_column(id_column)
       , _batch_size(batch_size)
       , _http_timeout(std::chrono::seconds(2))
@@ -112,7 +110,7 @@ namespace kspp {
     //std::cerr << body << std::endl;
 
     kspp::async::work<work_result_t>::async_function f = [this, body, url](std::function<void(work_result_t)> cb) {
-      std::vector<std::string> headers({ "Content-Type: application/json" });
+      std::vector<std::string> headers({ "Content-Type: application/json", _http_header });
       auto request = std::make_shared<kspp::http::request>(kspp::http::PUT, url, headers, _http_timeout);
       // add a body
       //std::string dummy_body = "{ \"user\" : \"kimchy\", \"post_date\" : \"2009-11-15T14:12:12\", \"message\" : \"trying out Elasticsearch\" }";

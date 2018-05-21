@@ -44,20 +44,10 @@ int main(int argc, char **argv) {
        "schema_registry")
       ("partition_list", boost::program_options::value<std::string>()->default_value("[-1]"), "partition_list")
       ("topic", boost::program_options::value<std::string>(), "topic")
-      ("elasticsearch_host", boost::program_options::value<std::string>()->default_value(get_env("ELASTICSEARCH_HOST")),
-       "elasticsearch_host")
-      ("elasticsearch_port", boost::program_options::value<int32_t>()->default_value(9200), "elasticsearch_port")
-      ("elasticsearch_user", boost::program_options::value<std::string>()->default_value(get_env("ELASTICSEARCH_USER")),
-       "elasticsearch_user")
-      ("elasticsearch_password", boost::program_options::value<std::string>()->default_value(get_env("ELASTICSEARCH_PASSWORD")),
-       "elasticsearch_password")
-      ("elasticsearch_dbname", boost::program_options::value<std::string>()->default_value(get_env("ELASTICSEARCH_DBNAME")),
-       "elasticsearch_dbname")
-      ("postgres_max_items_in_fetch", boost::program_options::value<int32_t>()->default_value(1000),
-       "postgres_max_items_in_fetch")
-      ("postgres_warning_timeout", boost::program_options::value<int32_t>()->default_value(1000),
-       "postgres_warning_timeout")
-      ("table_prefix", boost::program_options::value<std::string>()->default_value("kafka_"), "table_prefix");
+      ("es_url", boost::program_options::value<std::string>()->default_value(get_env("ES_URL")), "es_url")
+      ("es_index", boost::program_options::value<std::string>()->default_value(get_env("ES_USER")), "elasticsearch_user")
+      ("es_http_header", boost::program_options::value<std::string>()->default_value(get_env("ES_HTTP_HEADER")),"es_http_header")
+      ;
 
   boost::program_options::variables_map vm;
   boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
@@ -67,16 +57,6 @@ int main(int argc, char **argv) {
     std::cout << desc << std::endl;
     return 0;
   }
-
-
-  /*std::string metrics_tags;
-  if (vm.count("metrics_tags")) {
-    metrics_tags = vm["metrics_tags"].as<std::string>();
-  } else {
-    std::cout << "--metrics_tags must be specified" << std::endl;
-    return 0;
-  }
-   */
 
   std::string broker;
   if (vm.count("broker")) {
@@ -111,68 +91,27 @@ int main(int argc, char **argv) {
     return 0;
   }
 
-  std::string elasticsearch_host;
-  if (vm.count("elasticsearch_host")) {
-    elasticsearch_host = vm["elasticsearch_host"].as<std::string>();
+  std::string es_url;
+  if (vm.count("es_url")) {
+    es_url = vm["es_url"].as<std::string>();
   } else {
-    std::cout << "--elasticsearch_host must be specified" << std::endl;
+    std::cout << "--es_url must be specified" << std::endl;
     return 0;
   }
 
-  int elasticsearch_port;
-  if (vm.count("elasticsearch_port")) {
-    elasticsearch_port = vm["elasticsearch_port"].as<int>();
+  std::string es_http_header;
+  if (vm.count("es_http_header")) {
+    es_http_header = vm["es_http_header"].as<std::string>();
   } else {
-    std::cout << "--elasticsearch_port must be specified" << std::endl;
+    std::cout << "--es_http_header must be specified" << std::endl;
     return 0;
   }
 
-  std::string elasticsearch_dbname;
-  if (vm.count("elasticsearch_dbname")) {
-    elasticsearch_dbname = vm["elasticsearch_dbname"].as<std::string>();
-  } else {
-    std::cout << "--elasticsearch_dbname must be specified" << std::endl;
-    return 0;
-  }
-
-  std::string elasticsearch_user;
-  if (vm.count("elasticsearch_user")) {
-    elasticsearch_user = vm["elasticsearch_user"].as<std::string>();
-  } else {
-    std::cout << "--elasticsearch_user must be specified" << std::endl;
-    return 0;
-  }
-
-  std::string elasticsearch_password;
-  if (vm.count("elasticsearch_password")) {
-    elasticsearch_password = vm["elasticsearch_password"].as<std::string>();
-  } else {
-    std::cout << "--elasticsearch_password must be specified" << std::endl;
-    return 0;
-  }
-
-  int postgres_max_items_in_fetch;
-  if (vm.count("postgres_max_items_in_fetch")) {
-    postgres_max_items_in_fetch = vm["postgres_max_items_in_fetch"].as<int>();
-  } else {
-    std::cout << "--postgres_max_items_in_fetch must be specified" << std::endl;
-    return 0;
-  }
-
-  int postgres_warning_timeout;
-  if (vm.count("postgres_warning_timeout")) {
-    postgres_warning_timeout = vm["postgres_warning_timeout"].as<int>();
-  } else {
-    std::cout << "--postgres_warning_timeout must be specified" << std::endl;
-    return 0;
-  }
-
-  std::string table_prefix;
-  if (vm.count("table_prefix")) {
-    table_prefix = vm["table_prefix"].as<std::string>();
-  } else {
-    std::cout << "--table_prefix must be specified" << std::endl;
-    return 0;
+  std::string es_index;
+  if (vm.count("es_index")) {
+    es_index = vm["es_index"].as<std::string>();
+  }  else {
+    es_index = "kafka_" + topic;
   }
 
   auto config = std::make_shared<kspp::cluster_config>();
@@ -188,17 +127,10 @@ int main(int argc, char **argv) {
   config->log();
   auto s= config->avro_serdes();
 
-  LOG(INFO) << "topic                       : " << topic;
-
-  LOG(INFO) << "elasticsearch_host               : " << elasticsearch_host;
-  LOG(INFO) << "elasticsearch_port               : " << elasticsearch_port;
-
-  //LOG(INFO) << "postgres_table              : " << elasticsearch_table;
-  LOG(INFO) << "elasticsearch_user               : " << elasticsearch_user;
-  LOG(INFO) << "elasticsearch_password           : " << "[hidden]";
-  LOG(INFO) << "postgres_max_items_in_fetch      : " << postgres_max_items_in_fetch;
-  LOG(INFO) << "postgres_warning_timeout         : " << postgres_warning_timeout;
-  LOG(INFO) << "table_prefix                     : " << table_prefix;
+  LOG(INFO) << "topic           : " << topic;
+  LOG(INFO) << "es_url          : " << es_url;
+  LOG(INFO) << "es_http_header  : " << es_http_header;
+  LOG(INFO) << "es_index        : " << es_index;
 
   /*
    *
@@ -206,8 +138,7 @@ int main(int argc, char **argv) {
       "host=" + postgres_host + " port=" + std::to_string(postgres_port) + " user=" + postgres_user + " password=" +
       postgres_password + " dbname=" + postgres_dbname;
 */
-  std::string base_url= "http://" + elasticsearch_host + ":" + std::to_string(elasticsearch_port);
-  std::string es_index = table_prefix + topic;
+  //std::string base_url= "http://" + elasticsearch_host + ":" + std::to_string(elasticsearch_port);
 
   /*
   curl -X PUT "localhost:9200/twitter/_doc/1" -H 'Content-Type: application/json' -d'
@@ -218,10 +149,6 @@ int main(int argc, char **argv) {
   }
   '
    */
-
-
-
-
 
   LOG(INFO) << "discovering facts...";
 
@@ -236,7 +163,7 @@ int main(int argc, char **argv) {
 
   auto source0 = topology->create_processors<kspp::kafka_source<void, kspp::GenericAvro, void, kspp::avro_serdes>>(partition_list, topic, config->avro_serdes());
 
-  topology->create_sink<kspp::elasticsearch_generic_avro_sink>(source0, es_index, base_url, elasticsearch_user, elasticsearch_password, "id", config->get_schema_registry());
+  topology->create_sink<kspp::elasticsearch_generic_avro_sink>(source0, es_index, es_url, es_http_header, "id", config->get_schema_registry());
 
 
   topology->init_metrics();

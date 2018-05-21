@@ -18,8 +18,7 @@ namespace kspp {
 
     elasticsearch_producer(std::string index_name,
                       std::string base_url,
-                      std::string user,
-                      std::string password,
+                      std::string http_header,
                       std::string id_column,
                       size_t http_batch_size);
 
@@ -72,8 +71,7 @@ namespace kspp {
 
     const std::string _index_name;
     const std::string _base_url;
-    const std::string _user;
-    const std::string _password;
+    const std::string _http_header;
     const std::string _id_column;
 
     event_queue<void, kspp::GenericAvro> _incomming_msg;

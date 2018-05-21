@@ -11,11 +11,8 @@
 namespace kspp {
   class generic_avro_sink : public topic_sink<void, kspp::GenericAvro> {
   public:
-    generic_avro_sink(topology &t,
-                      std::shared_ptr<generic_producer<void, kspp::GenericAvro>> impl,
-                      std::shared_ptr<kspp::avro_schema_registry> schema_registry)
-    : _impl(impl)
-    , _schema_registry(schema_registry) {
+    generic_avro_sink(topology &t, std::shared_ptr<generic_producer<void, kspp::GenericAvro>> impl)
+    : _impl(impl) {
     }
 
     virtual ~generic_avro_sink() {
@@ -85,9 +82,6 @@ namespace kspp {
     bool _started;
     bool _exit;
     std::shared_ptr<generic_producer<void, kspp::GenericAvro>> _impl;
-    std::shared_ptr<kspp::avro_schema_registry> _schema_registry;
-    //std::shared_ptr<avro::ValidSchema> _schema;
-    //int32_t _schema_id;
   };
 }
 
