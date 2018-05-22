@@ -114,6 +114,10 @@ namespace kspp_tds {
     DBSETLPWD(login_, cp.password.c_str());
     DBSETLDBNAME(login_, cp.database.c_str()); // maybe optional
 
+    /* use UTF-8 as our coding */
+    DBSETLCHARSET(login_, "UTF-8");
+    //tds_set_client_charset(login_,"UTF-8");
+
     if ((dbproc_ = dbopen(login_, cp.host.c_str())) == NULL)
       LOG(ERROR) << _trace_id << " cannot connect to " << cp.host;
     else

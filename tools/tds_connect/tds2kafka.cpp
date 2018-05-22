@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
       ("db_table", boost::program_options::value<std::string>()->default_value(get_env("DB_TABLE")),
        "db_table")
       ("db_polltime", boost::program_options::value<int32_t>()->default_value(60), "db_polltime")
-      ("topic_prefix", boost::program_options::value<std::string>()->default_value(get_env_with_default("TOPIC_PREFIX", "sqlserver_")), "topic_prefix")
+      ("topic_prefix", boost::program_options::value<std::string>()->default_value(get_env_with_default("TOPIC_PREFIX", "DEV_sqlserver_")), "topic_prefix")
       ("filename", boost::program_options::value<std::string>(), "filename");
 
   boost::program_options::variables_map vm;
