@@ -5,7 +5,7 @@
 #include <glog/logging.h>
 #include <kspp/kspp.h>
 
-#define STATEMENT_LOG_BYTES 64
+#define STATEMENT_LOG_BYTES 128
 
 namespace kspp_postgres {
 

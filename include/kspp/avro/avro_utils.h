@@ -5,7 +5,6 @@ namespace kspp
 {
   std::string to_string(avro::Type t);
 
-
 // not implemented for
 // AVRO_NULL (not relevant)
 // AVRO_RECORD

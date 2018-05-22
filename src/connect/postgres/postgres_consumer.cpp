@@ -118,9 +118,19 @@ namespace kspp {
         // we should probably prepend the name with a prefix (like _my_db_table_name)
         schema_id_ = schema_registry_->put_schema(_table, schema_);
       }
+
+      // print schema first time...
+      std::stringstream ss;
+      this->schema_->toJson(ss);
+      LOG(INFO) << "schema: " << ss.str();
+
       // TODO this could be an array of columns
-      int id_column_index_ = PQfnumber(result.get(), _id_column.c_str());
-      int ts_column_index_ = PQfnumber(result.get(), _ts_column.c_str());
+      id_column_index_ = PQfnumber(result.get(), _id_column.c_str());
+      ts_column_index_ = PQfnumber(result.get(), _ts_column.c_str());
+
+
+
+
     }
 
     int nRows = PQntuples(result.get());
@@ -250,10 +260,14 @@ namespace kspp {
 
       std::string fields = "*";
       std::string order_by = "";
-      if (_ts_column.size())
-        order_by = _ts_column + " ASC, " + _id_column + " ASC";
-      else
-        order_by = _id_column + " ASC";
+      if (_ts_column.size()) {
+        if (_id_column.size())
+          order_by = " ORDER BY " + _ts_column + " ASC, " + _id_column + " ASC";
+        else
+          order_by = " ORDER BY " + _ts_column + " ASC";
+      } else {
+        order_by = " ORDER BY " + _id_column + " ASC";
+      }
 
       std::string where_clause;
 
@@ -263,14 +277,17 @@ namespace kspp {
       if (last_id_.size()) {
         if (_ts_column.size())
           where_clause =
-              " WHERE (" + _ts_column + " = " + last_ts_ + " AND " + _id_column + " > " + last_id_ + ") OR (" +
-              _ts_column + " > " + last_ts_ + ")";
+              " WHERE (" + _ts_column + " = '" + last_ts_ + "' AND " + _id_column + " > '" + last_id_ + "') OR (" +
+              _ts_column + " > '" + last_ts_ + "')";
         else
-          where_clause = " WHERE " + _id_column + " > " + last_id_;
+          where_clause = " WHERE " + _id_column + " > '" + last_id_ + "'";
+      } else {
+        if (last_ts_.size())
+          where_clause = " WHERE " + _ts_column + " >= '" + last_ts_ + "'";
       }
 
       //std::string statement = "SELECT TOP " + std::to_string(_max_items_in_fetch) + " " + fields + " FROM " + _table + where_clause + " ORDER BY " + order_by;
-      std::string statement = "SELECT " + fields + " FROM " + _table + where_clause + " ORDER BY " + order_by + " LIMIT " + std::to_string(_max_items_in_fetch);
+      std::string statement = "SELECT " + fields + " FROM " + _table + where_clause + order_by + " LIMIT " + std::to_string(_max_items_in_fetch);
 
       DLOG(INFO) << "exec(" + statement + ")";
 
@@ -296,7 +313,7 @@ namespace kspp {
       if ((_msg_cnt - last_msg_count) != _max_items_in_fetch)
         _eof = true;
 
-      LOG(INFO) << "poll done - got: " << _msg_cnt - last_msg_count << " messages, total: " << _msg_cnt << ", last ts: " << last_ts_ << " duration " << ts1 -ts0 << " ms";
+      LOG(INFO) << "poll done, table: " << _table << " retrieved: " << _msg_cnt - last_msg_count << " messages, total: " << _msg_cnt << ", last ts: " << last_ts_ << " duration " << ts1 -ts0 << " ms";
 
 
       if (_eof) {

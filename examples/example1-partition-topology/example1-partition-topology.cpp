@@ -226,7 +226,7 @@ int main(int argc, char **argv) {
     auto table_source = topology->create_processor<kspp::kafka_source<int64_t, user_profile_data, kspp::binary_serdes, kspp::binary_serdes>>(
         PARTITION, "kspp_UserProfile");
 
-    auto table = topology->create_processor<kspp::ktable<int64_t, user_profile_data, kspp::mem_store>>(table_source);
+    auto table = topology->create_processor<kspp::ktable<int64_t, user_profile_data, kspp::mem_store>>(table_source, "user_profile_data1");
 
     auto join = topology->create_processor<kspp::kstream_left_join<int64_t, page_view_data, user_profile_data>>(stream, table);
 
@@ -266,9 +266,9 @@ int main(int argc, char **argv) {
         PARTITION,
         "kspp_UserProfile");
     auto table1 = topology->create_processor<kspp::ktable<int64_t, user_profile_data, kspp::mem_store>>(
-        table_source);
+        table_source, "user_profile_data_mem_store");
     auto table2 = topology->create_processor<kspp::ktable<int64_t, user_profile_data, kspp::mem_windowed_store>>(
-        table_source, 1000ms, 10); // 500ms slots and 10 of them...
+        table_source, "user_profile_data_mem_windowed_store", 1000ms, 10); // 500ms slots and 10 of them...
     topology->start(kspp::OFFSET_STORED);
     topology->flush();
 

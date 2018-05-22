@@ -7,6 +7,7 @@
 #define KSPP_KEY_TYPE_TAG "key_type"
 #define KSPP_VALUE_TYPE_TAG "value_type"
 #define KSPP_PROCESSOR_TYPE_TAG "processor_type"
+#define KSPP_PROCESSOR_INSTANCE_NAME_TAG "processor_instance_name"
 #define KSPP_PARTITION_TAG "partition"
 #define KSPP_TOPIC_TAG "topic"
 
