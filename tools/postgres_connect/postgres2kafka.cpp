@@ -32,16 +32,16 @@ int main(int argc, char **argv) {
       ("broker", boost::program_options::value<std::string>()->default_value(kspp::default_kafka_broker_uri()), "broker")
       ("schema_registry", boost::program_options::value<std::string>()->default_value(kspp::default_schema_registry_uri()), "schema_registry")
       ("app_realm", boost::program_options::value<std::string>()->default_value(get_env_and_log("APP_REALM", "DEV")), "app_realm")
-      ("postgres_host", boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_HOST")), "postgres_host")
-      ("postgres_port", boost::program_options::value<int32_t>()->default_value(5432), "postgres_port")
-      ("postgres_user", boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_USER")), "postgres_user")
-      ("postgres_password", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("POSTGRES_PASSWORD")), "postgres_password")
-      ("postgres_dbname", boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_DBNAME")), "postgres_dbname")
-      ("postgres_max_items_in_fetch", boost::program_options::value<int32_t>()->default_value(1000), "postgres_max_items_in_fetch")
-      ("postgres_warning_timeout", boost::program_options::value<int32_t>()->default_value(1000), "postgres_warning_timeout")
-      ("postgres_table", boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_TABLE")), "postgres_table")
-      ("topic_prefix", boost::program_options::value<std::string>()->default_value("JUNK_postgres_"), "topic_prefix")
-      ("topic_name_override", boost::program_options::value<std::string>(), "topic_name_override")
+      ("db_host", boost::program_options::value<std::string>()->default_value(get_env_and_log("DB_HOST")), "db_host")
+      ("db_port", boost::program_options::value<int32_t>()->default_value(5432), "db_port")
+      ("db_user", boost::program_options::value<std::string>()->default_value(get_env_and_log("DB_USER")), "db_user")
+      ("db_password", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("DB_PASSWORD")), "db_password")
+      ("db_dbname", boost::program_options::value<std::string>()->default_value(get_env_and_log("DB_DBNAME")), "db_dbname")
+      ("max_items_in_fetch", boost::program_options::value<int32_t>()->default_value(1000), "max_items_in_fetch")
+      ("warning_timeout", boost::program_options::value<int32_t>()->default_value(1000), "warning_timeout")
+      ("table", boost::program_options::value<std::string>()->default_value(get_env_and_log("TABLE")), "table")
+      ("topic_prefix", boost::program_options::value<std::string>()->default_value("DEV_postgres_"), "topic_prefix")
+      ("topic", boost::program_options::value<std::string>(), "topic")
       ("filename", boost::program_options::value<std::string>(), "filename");
 
   boost::program_options::variables_map vm;
@@ -72,87 +72,57 @@ int main(int argc, char **argv) {
   std::string app_realm;
   if (vm.count("app_realm")) {
     app_realm = vm["app_realm"].as<std::string>();
-  } else {
-    std::cout << "--app_realm must be specified" << std::endl;
-    return 0;
   }
 
-  std::string postgres_host;
-  if (vm.count("postgres_host")) {
-    postgres_host = vm["postgres_host"].as<std::string>();
-  } else {
-    std::cout << "--postgres_host must be specified" << std::endl;
-    return 0;
+  std::string db_host;
+  if (vm.count("db_host")) {
+    db_host = vm["db_host"].as<std::string>();
   }
 
-  int postgres_port;
-  if (vm.count("postgres_port")) {
-    postgres_port = vm["postgres_port"].as<int>();
-  } else {
-    std::cout << "--postgres_port must be specified" << std::endl;
-    return 0;
+  int db_port;
+  if (vm.count("db_port")) {
+    db_port = vm["db_port"].as<int>();
   }
 
-  std::string postgres_dbname;
-  if (vm.count("postgres_dbname")) {
-    postgres_dbname = vm["postgres_dbname"].as<std::string>();
-  } else {
-    std::cout << "--postgres_dbname must be specified" << std::endl;
-    return 0;
+  std::string db_dbname;
+  if (vm.count("db_dbname")) {
+    db_dbname = vm["db_dbname"].as<std::string>();
   }
 
-  std::string postgres_table;
-  if (vm.count("postgres_table")) {
-    postgres_table = vm["postgres_table"].as<std::string>();
-  } else {
-    std::cout << "--postgres_table must be specified" << std::endl;
-    return 0;
+  std::string db_user;
+  if (vm.count("db_user")) {
+    db_user = vm["db_user"].as<std::string>();
   }
 
-  std::string postgres_user;
-  if (vm.count("postgres_user")) {
-    postgres_user = vm["postgres_user"].as<std::string>();
-  } else {
-    std::cout << "--postgres_user must be specified" << std::endl;
-    return 0;
+  std::string db_password;
+  if (vm.count("db_password")) {
+    db_password = vm["db_password"].as<std::string>();
   }
 
-  std::string postgres_password;
-  if (vm.count("postgres_password")) {
-    postgres_password = vm["postgres_password"].as<std::string>();
-  } else {
-    std::cout << "--postgres_password must be specified" << std::endl;
-    return 0;
+  int max_items_in_fetch;
+  if (vm.count("max_items_in_fetch")) {
+    max_items_in_fetch = vm["max_items_in_fetch"].as<int>();
+  }
+  int warning_timeout;
+  if (vm.count("warning_timeout")) {
+    warning_timeout = vm["warning_timeout"].as<int>();
   }
 
-  int postgres_max_items_in_fetch;
-  if (vm.count("postgres_max_items_in_fetch")) {
-    postgres_max_items_in_fetch = vm["postgres_max_items_in_fetch"].as<int>();
-  } else {
-    std::cout << "--postgres_max_items_in_fetch must be specified" << std::endl;
-    return 0;
-  }
-
-  int postgres_warning_timeout;
-  if (vm.count("postgres_warning_timeout")) {
-    postgres_warning_timeout = vm["postgres_warning_timeout"].as<int>();
-  } else {
-    std::cout << "--postgres_warning_timeout must be specified" << std::endl;
-    return 0;
+  std::string table;
+  if (vm.count("table")) {
+    table = vm["table"].as<std::string>();
   }
 
   std::string topic_prefix;
   if (vm.count("topic_prefix")) {
     topic_prefix = vm["topic_prefix"].as<std::string>();
-  } else {
-    std::cout << "--topic_prefix must be specified" << std::endl;
-    return 0;
   }
 
-  std::string topic_name_override;
-  if (vm.count("topic_name_override")) {
-    topic_name_override = vm["topic_name_override"].as<std::string>();
+  std::string topic;
+  if (vm.count("topic")) {
+    topic = vm["topic"].as<std::string>();
   } else {
+    topic = topic_prefix + table;
   }
 
   std::string filename;
@@ -173,30 +143,24 @@ int main(int argc, char **argv) {
   config->log();
   auto s= config->avro_serdes();
 
-  std::string topic_name = topic_prefix + postgres_table;
-
-  if (topic_name_override.size())
-    topic_name=topic_name_override;
-
-  LOG(INFO) << "app_realm                   : " << app_realm;
-  LOG(INFO) << "postgres_table              : " << postgres_table;
-  LOG(INFO) << "postgres_host               : " << postgres_host;
-  LOG(INFO) << "postgres_port               : " << postgres_port;
-  LOG(INFO) << "postgres_user               : " << postgres_user;
-  LOG(INFO) << "postgres_password           : " << "[hidden]";
-  LOG(INFO) << "postgres_dbname             : " << postgres_dbname;
-  LOG(INFO) << "postgres_max_items_in_fetch : " << postgres_max_items_in_fetch;
-  LOG(INFO) << "postgres_warning_timeout    : " << postgres_warning_timeout;
-  LOG(INFO) << "topic_prefix                : " << topic_prefix;
-  LOG(INFO) << "topic_name_override         : " << topic_name_override;
-  LOG(INFO) << "topic_name                  : " << topic_name;
+  LOG(INFO) << "app_realm          : " << app_realm;
+  LOG(INFO) << "table              : " << table;
+  LOG(INFO) << "db_host            : " << db_host;
+  LOG(INFO) << "db_port            : " << db_port;
+  LOG(INFO) << "db_user            : " << db_user;
+  LOG(INFO) << "db_password        : " << "[hidden]";
+  LOG(INFO) << "db_dbname          : " << db_dbname;
+  LOG(INFO) << "max_items_in_fetch : " << max_items_in_fetch;
+  LOG(INFO) << "warning_timeout    : " << warning_timeout;
+  LOG(INFO) << "topic_prefix       : " << topic_prefix;
+  LOG(INFO) << "topic              : " << topic;
 
   kspp::connect::connection_params connection_params;
-  connection_params.host = postgres_host;
-  connection_params.port = postgres_port;
-  connection_params.user = postgres_user;
-  connection_params.password = postgres_password;
-  connection_params.database = postgres_dbname;
+  connection_params.host = db_host;
+  connection_params.port = db_port;
+  connection_params.user = db_user;
+  connection_params.password = db_password;
+  connection_params.database = db_dbname;
 
   if (filename.size()) {
      LOG(INFO) << "using avro file..";
@@ -207,47 +171,42 @@ int main(int argc, char **argv) {
 
   kspp::topology_builder generic_builder("kspp", SERVICE_NAME, config);
   auto topology = generic_builder.create_topology();
-  auto source0 = topology->create_processors<kspp::postgres_generic_avro_source>({0}, postgres_table, connection_params, "id", "", config->get_schema_registry(), 60s, 1000);
+  auto source0 = topology->create_processors<kspp::postgres_generic_avro_source>({0}, table, connection_params, "", "updated_at", config->get_schema_registry(), 10s, 1000);
   //auto source0 = topology->create_processors<kspp::tds_generic_avro_source>({0}, db_table, db_host, 1433, db_user, db_password, db_dbname, "id", "ts", config->get_schema_registry(),  std::chrono::seconds(db_polltime));
 
   if (filename.size()) {
-    topology->create_sink<kspp::avro_file_sink>(source0, "/tmp/" + topic_name + ".avro");
+    topology->create_sink<kspp::avro_file_sink>(source0, "/tmp/" + topic + ".avro");
   } else {
-    topology->create_sink<kspp::kafka_sink<void, kspp::GenericAvro, void, kspp::avro_serdes>>(source0, topic_name, config->avro_serdes());
+    topology->create_sink<kspp::kafka_sink<void, kspp::GenericAvro, void, kspp::avro_serdes>>(source0, topic, config->avro_serdes());
   }
 
   std::vector<metrics20::avro::metrics20_key_tags_t> tags;
   tags.push_back(kspp::make_metrics_tag("app_name", SERVICE_NAME));
   tags.push_back(kspp::make_metrics_tag("app_realm", app_realm));
   tags.push_back(kspp::make_metrics_tag("hostname", default_hostname()));
-  tags.push_back(kspp::make_metrics_tag("db_host", postgres_host));
-  tags.push_back(kspp::make_metrics_tag("dst_topic", topic_name));
+  tags.push_back(kspp::make_metrics_tag("db_host", db_host));
+  tags.push_back(kspp::make_metrics_tag("dst_topic", topic));
 
 
-  //auto sink   = topology->create_sink<kspp::kafka_sink<void, kspp::GenericAvro, void, kspp::avro_serdes>>(source, topic_prefix + postgres_table, config->avro_serdes());
-
-  //topology->init_metrics();
+  topology->init_metrics(tags);
   //topology->start(kspp::OFFSET_STORED);
-  //topology->init();
+  topology->start(kspp::OFFSET_BEGINNING);
 
+  std::signal(SIGINT, sigterm);
+  std::signal(SIGTERM, sigterm);
+  std::signal(SIGPIPE, SIG_IGN);
 
-  //signal(SIGINT, sigterm);
-  //signal(SIGTERM, sigterm);
+  LOG(INFO) << "status is up";
 
-  // output metrics and run...
   {
-    //auto metrics_reporter = std::make_shared<kspp::influx_metrics_reporter>(generic_builder, metrics_topic, "kspp", "") << topology;
-    /*while (run) {
-      if (topology->process_one() == 0) {
+    auto metrics_reporter = std::make_shared<kspp::influx_metrics_reporter>(generic_builder, "kspp_metrics", "kspp", "") << topology;
+    while (run) {
+      if (topology->process(kspp::milliseconds_since_epoch()) == 0) {
         std::this_thread::sleep_for(10ms);
         topology->commit(false);
       }
     }
-     */
   }
-
-  topology->start(kspp::OFFSET_BEGINNING);
-  topology->flush();
 
   topology->commit(true);
   topology->close();
