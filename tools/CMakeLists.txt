@@ -1,12 +1,17 @@
 add_subdirectory(kspp_avrogencpp)
-#add_subdirectory(metrics2influx)
-if (ENABLE_POSTGRES)
+
+IF (ENABLE_INFLUXDB)
+	add_subdirectory(metrics2influx)
+ENDIF()
+
+IF (ENABLE_POSTGRES)
 add_subdirectory(postgres_connect)
-endif()
+ENDIF()
 
-if (ENABLE_ELASTICSEARCH)
-    add_subdirectory(elasticsearch_sink)
-endif()
+IF (ENABLE_ELASTICSEARCH)
+    add_subdirectory(kafka2es)
+ENDIF()
 
-
+IF (ENABLE_TDS)
 add_subdirectory(tds_connect)
+ENDIF()

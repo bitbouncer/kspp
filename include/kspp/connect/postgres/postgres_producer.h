@@ -40,8 +40,6 @@ namespace kspp {
   private:
     bool initialize();
     bool check_table_exists();
-
-    void write_some_async();
     void _thread();
 
     bool _exit;

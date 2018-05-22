@@ -38,15 +38,21 @@ namespace kspp {
         //time for report
         if (next_time_to_send <= kspp::milliseconds_since_epoch()) {
           uint64_t measurement_time = milliseconds_since_epoch();
-          std::string measurement_time_str = std::to_string(milliseconds_since_epoch()) + "000000";
+          std::string measurement_time_str = std::to_string(measurement_time) + "000000";
 
           for (auto i : _reported_t_topologys) {
             i->for_each_metrics([this, &base_string, &measurement_time_str, &measurement_time](kspp::metric &m) {
               std::string measurement_tags = m.tags();
               // influxdb line format
               std::string value =
-                      base_string + (measurement_tags.size() ? "," + measurement_tags : "") + " " + m.name() + "=" +
-                      std::to_string(m.value()) + "i " + measurement_time_str;
+                      base_string +
+                      (measurement_tags.size() ? "," + measurement_tags : "") +
+                      " " +
+                      m.name() +
+                      "=" +
+                      std::to_string(m.value()) +
+                      "i " +
+                      measurement_time_str;
               _sink->push_back(_hostname, value, measurement_time);
             });
           }

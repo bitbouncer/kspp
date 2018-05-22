@@ -14,8 +14,12 @@ namespace kspp {
                                        std::string id_column,
                                        std::string client_encoding,
                                        size_t max_items_in_fetch )
-      :
-      _bg([this] { _thread(); })
+      : _good(true)
+      , _closed(false)
+      , _start_running(false)
+      , _connected(false)
+      , _exit(false)
+      , _bg([this] { _thread(); })
       , _connection(std::make_shared<kspp_postgres::connection>())
       , _table(table)
       , cp_(cp)
@@ -24,9 +28,6 @@ namespace kspp {
       , _max_items_in_fetch(max_items_in_fetch)
       , _msg_cnt(0)
       , _msg_bytes(0)
-      , _good(true)
-      , _closed(false)
-      , _connected(false)
       , _table_checked(false)
       , _table_exists(false) {
     initialize();
@@ -74,28 +75,6 @@ namespace kspp {
     _start_running = true;
   }
 
-
-//  void postgres_producer::connect_async() {
-//    DLOG(INFO) << "connecting : connect_string: " <<  _connect_string;
-//    _connection->connect(_connect_string, [this](int ec) {
-//      if (!ec) {
-//        if (_client_encoding.size()) {
-//          if (!_connection->set_client_encoding(_client_encoding))
-//            LOG(ERROR) << "failed to set client encoding : " << _connection->last_error();
-//        }
-//
-//        LOG(INFO) << "postgres connected, client_encoding: " << _connection->get_client_encoding();
-//
-//        _good = true;
-//        _connected = true;
-//        check_table_exists_async();
-//      } else {
-//        LOG(ERROR) << "connect failed";
-//        _good = false;
-//        _connected = false;
-//      }
-//    });
-//  }
 
   /*
   SELECT EXISTS (
@@ -217,7 +196,10 @@ namespace kspp {
       bytes_in_batch += statement.size();
       //std::cerr << statement << std::endl;
 
+      auto ts0 = kspp::milliseconds_since_epoch();
       auto res = _connection->exec(statement);
+      auto ts1 = kspp::milliseconds_since_epoch();
+
 
       /*
        * if (ec) {
