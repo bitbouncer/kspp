@@ -6,8 +6,7 @@ namespace kspp {
   using namespace std::chrono_literals;
 
   elasticsearch_producer::elasticsearch_producer(std::string index_name,
-                                                 std::string base_url,
-                                                 std::string http_header,
+                                                 const kspp::connect::connection_params& cp,
                                                  std::string id_column,
                                                  size_t batch_size)
       : _work(new boost::asio::io_service::work(_ios))
@@ -15,8 +14,7 @@ namespace kspp {
       , _bg(boost::bind(&boost::asio::io_service::run, &_ios))
       , _http_handler(_ios, batch_size)
       , _index_name(index_name)
-      , _base_url(base_url)
-      , _http_header(http_header)
+      , _cp(cp)
       , _id_column(id_column)
       , _batch_size(batch_size)
       , _http_timeout(std::chrono::seconds(2))
@@ -105,12 +103,12 @@ namespace kspp {
   kspp::async::work<elasticsearch_producer::work_result_t>::async_function  elasticsearch_producer::create_one_http_work(const kspp::GenericAvro& doc) {
     auto key_string = avro2elastic_key_values(*doc.valid_schema(), _id_column, *doc.generic_datum());
 
-    std::string url = _base_url + "/" + _index_name + "/" + "_doc" + "/" + key_string;
+    std::string url = _cp.url + "/" + _index_name + "/" + "_doc" + "/" + key_string;
     std::string body = avro2elastic_to_json(*doc.valid_schema(), *doc.generic_datum());
     //std::cerr << body << std::endl;
 
     kspp::async::work<work_result_t>::async_function f = [this, body, url](std::function<void(work_result_t)> cb) {
-      std::vector<std::string> headers({ "Content-Type: application/json", _http_header });
+      std::vector<std::string> headers({ "Content-Type: application/json" });
       auto request = std::make_shared<kspp::http::request>(kspp::http::PUT, url, headers, _http_timeout);
       // add a body
       //std::string dummy_body = "{ \"user\" : \"kimchy\", \"post_date\" : \"2009-11-15T14:12:12\", \"message\" : \"trying out Elasticsearch\" }";

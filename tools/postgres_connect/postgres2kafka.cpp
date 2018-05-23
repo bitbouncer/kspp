@@ -210,6 +210,6 @@ int main(int argc, char **argv) {
 
   topology->commit(true);
   topology->close();
-
+  LOG(INFO) << "status is down";
   return 0;
 }

@@ -14,21 +14,13 @@
 #define SERVICE_NAME "elasticsearch_sink"
 
 using namespace std::chrono_literals;
+using namespace kspp;
 
 static bool run = true;
 
 static void sigterm(int sig) {
   run = false;
 }
-
-static std::string get_env(const char *env) {
-  std::cerr << env << std::endl;
-  const char *env_p = std::getenv(env);
-  if (env_p)
-    return std::string(env_p);
-  return "";
-}
-
 
 int main(int argc, char **argv) {
   FLAGS_logtostderr = 1;
@@ -37,16 +29,16 @@ int main(int argc, char **argv) {
   boost::program_options::options_description desc("options");
   desc.add_options()
       ("help", "produce help message")
-      ("broker", boost::program_options::value<std::string>()->default_value(kspp::default_kafka_broker_uri()),
-       "broker")
-      ("schema_registry",
-       boost::program_options::value<std::string>()->default_value(kspp::default_schema_registry_uri()),
-       "schema_registry")
+      ("app_realm", boost::program_options::value<std::string>()->default_value(get_env_and_log("APP_REALM", "DEV")), "app_realm")
+      ("broker", boost::program_options::value<std::string>()->default_value(kspp::default_kafka_broker_uri()), "broker")
+      ("schema_registry", boost::program_options::value<std::string>()->default_value(kspp::default_schema_registry_uri()), "schema_registry")
       ("partition_list", boost::program_options::value<std::string>()->default_value("[-1]"), "partition_list")
       ("topic", boost::program_options::value<std::string>(), "topic")
-      ("es_url", boost::program_options::value<std::string>()->default_value(get_env("ES_URL")), "es_url")
-      ("es_index", boost::program_options::value<std::string>()->default_value(get_env("ES_USER")), "elasticsearch_user")
-      ("es_http_header", boost::program_options::value<std::string>()->default_value(get_env("ES_HTTP_HEADER")),"es_http_header")
+      ("es_url", boost::program_options::value<std::string>()->default_value(get_env_and_log("ES_URL")), "es_url")
+      ("es_user", boost::program_options::value<std::string>()->default_value(get_env_and_log("ES_USER")), "es_user")
+      ("es_password", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("ES_PASSWORD")), "es_password")
+      ("es_index", boost::program_options::value<std::string>(), "es_index")
+      ("es_http_header", boost::program_options::value<std::string>()->default_value(get_env_and_log("ES_HTTP_HEADER")),"es_http_header")
       ;
 
   boost::program_options::variables_map vm;
@@ -58,20 +50,19 @@ int main(int argc, char **argv) {
     return 0;
   }
 
+  std::string app_realm;
+  if (vm.count("app_realm")) {
+    app_realm = vm["app_realm"].as<std::string>();
+  }
+
   std::string broker;
   if (vm.count("broker")) {
     broker = vm["broker"].as<std::string>();
-  } else {
-    std::cout << "--broker must be specified" << std::endl;
-    return 0;
   }
 
   std::string schema_registry;
   if (vm.count("schema_registry")) {
     schema_registry = vm["schema_registry"].as<std::string>();
-  } else {
-    std::cout << "--schema_registry must be specified" << std::endl;
-    return 0;
   }
 
   std::string topic;
@@ -86,25 +77,26 @@ int main(int argc, char **argv) {
   if (vm.count("partition_list")) {
     auto s = vm["partition_list"].as<std::string>();
     partition_list = kspp::parse_partition_list(s);
-  } else {
-    std::cout << "--partition_list must be specified" << std::endl;
-    return 0;
   }
 
   std::string es_url;
   if (vm.count("es_url")) {
     es_url = vm["es_url"].as<std::string>();
-  } else {
-    std::cout << "--es_url must be specified" << std::endl;
-    return 0;
+  }
+
+  std::string es_user;
+  if (vm.count("es_user")) {
+    es_user = vm["es_user"].as<std::string>();
+  }
+
+  std::string es_password;
+  if (vm.count("es_password")) {
+    es_password = vm["es_password"].as<std::string>();
   }
 
   std::string es_http_header;
   if (vm.count("es_http_header")) {
     es_http_header = vm["es_http_header"].as<std::string>();
-  } else {
-    std::cout << "--es_http_header must be specified" << std::endl;
-    return 0;
   }
 
   std::string es_index;
@@ -127,8 +119,11 @@ int main(int argc, char **argv) {
   config->log();
   auto s= config->avro_serdes();
 
+  LOG(INFO) << "app_realm       : " << app_realm;
   LOG(INFO) << "topic           : " << topic;
   LOG(INFO) << "es_url          : " << es_url;
+  LOG(INFO) << "es_user         : " << es_user;
+  LOG(INFO) << "es_password     : " << "[hidden]";
   LOG(INFO) << "es_http_header  : " << es_http_header;
   LOG(INFO) << "es_index        : " << es_index;
 
@@ -152,6 +147,10 @@ int main(int argc, char **argv) {
 
   LOG(INFO) << "discovering facts...";
 
+  kspp::connect::connection_params connection_params;
+  connection_params.url = es_url;
+  connection_params.user = es_user;
+  connection_params.password = es_password;
 
   auto nr_of_partitions = kspp::kafka::get_number_partitions(config, topic);
   if (partition_list.size() == 0 || partition_list[0] == -1)
@@ -163,10 +162,18 @@ int main(int argc, char **argv) {
 
   auto source0 = topology->create_processors<kspp::kafka_source<void, kspp::GenericAvro, void, kspp::avro_serdes>>(partition_list, topic, config->avro_serdes());
 
-  topology->create_sink<kspp::elasticsearch_generic_avro_sink>(source0, es_index, es_url, es_http_header, "id", config->get_schema_registry());
+  topology->create_sink<kspp::elasticsearch_generic_avro_sink>(source0, es_index, connection_params, "id", config->get_schema_registry());
 
 
-  topology->init_metrics();
+  std::vector<metrics20::avro::metrics20_key_tags_t> tags;
+  tags.push_back(kspp::make_metrics_tag("app_name", SERVICE_NAME));
+  tags.push_back(kspp::make_metrics_tag("app_realm", app_realm));
+  tags.push_back(kspp::make_metrics_tag("hostname", default_hostname()));
+  tags.push_back(kspp::make_metrics_tag("es_url", es_url));
+  tags.push_back(kspp::make_metrics_tag("es_index", es_index));
+
+  topology->init_metrics(tags);
+
   //topology->start(kspp::OFFSET_STORED);
   topology->start(kspp::OFFSET_BEGINNING);
 
@@ -188,6 +195,7 @@ int main(int argc, char **argv) {
 
   topology->commit(true);
   topology->close();
+  LOG(INFO) << "status is down";
 
   return 0;
 }

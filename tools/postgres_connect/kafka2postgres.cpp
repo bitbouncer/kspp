@@ -60,25 +60,16 @@ int main(int argc, char **argv) {
   std::string broker;
   if (vm.count("broker")) {
     broker = vm["broker"].as<std::string>();
-  } else {
-    std::cout << "--broker must be specified" << std::endl;
-    return 0;
   }
 
   std::string schema_registry;
   if (vm.count("schema_registry")) {
     schema_registry = vm["schema_registry"].as<std::string>();
-  } else {
-    std::cout << "--schema_registry must be specified" << std::endl;
-    return 0;
   }
 
   std::string app_realm;
   if (vm.count("app_realm")) {
     app_realm = vm["app_realm"].as<std::string>();
-  } else {
-    std::cout << "--app_realm must be specified" << std::endl;
-    return 0;
   }
 
   std::string topic;
@@ -93,79 +84,51 @@ int main(int argc, char **argv) {
   if (vm.count("partition_list")) {
     auto s = vm["partition_list"].as<std::string>();
     partition_list = kspp::parse_partition_list(s);
-  } else {
-    std::cout << "--partition_list must be specified" << std::endl;
-    return 0;
   }
 
   std::string postgres_host;
   if (vm.count("postgres_host")) {
     postgres_host = vm["postgres_host"].as<std::string>();
-  } else {
-    std::cout << "--postgres_host must be specified" << std::endl;
-    return 0;
   }
 
   int postgres_port;
   if (vm.count("postgres_port")) {
     postgres_port = vm["postgres_port"].as<int>();
-  } else {
-    std::cout << "--postgres_port must be specified" << std::endl;
-    return 0;
   }
 
   std::string postgres_dbname;
   if (vm.count("postgres_dbname")) {
     postgres_dbname = vm["postgres_dbname"].as<std::string>();
-  } else {
-    std::cout << "--postgres_dbname must be specified" << std::endl;
-    return 0;
   }
 
   std::string postgres_user;
   if (vm.count("postgres_user")) {
     postgres_user = vm["postgres_user"].as<std::string>();
-  } else {
-    std::cout << "--postgres_user must be specified" << std::endl;
-    return 0;
   }
 
   std::string postgres_password;
   if (vm.count("postgres_password")) {
     postgres_password = vm["postgres_password"].as<std::string>();
-  } else {
-    std::cout << "--postgres_password must be specified" << std::endl;
-    return 0;
   }
 
   int postgres_max_items_in_fetch;
   if (vm.count("postgres_max_items_in_fetch")) {
     postgres_max_items_in_fetch = vm["postgres_max_items_in_fetch"].as<int>();
-  } else {
-    std::cout << "--postgres_max_items_in_fetch must be specified" << std::endl;
-    return 0;
   }
 
   int postgres_warning_timeout;
   if (vm.count("postgres_warning_timeout")) {
     postgres_warning_timeout = vm["postgres_warning_timeout"].as<int>();
-  } else {
-    std::cout << "--postgres_warning_timeout must be specified" << std::endl;
-    return 0;
   }
 
   std::string table_prefix;
   if (vm.count("table_prefix")) {
     table_prefix = vm["table_prefix"].as<std::string>();
-  } else {
-    std::cout << "--table_prefix must be specified" << std::endl;
-    return 0;
   }
 
   std::string table_name_override;
   if (vm.count("table_name_override")) {
     table_name_override = vm["table_name_override"].as<std::string>();
-  } else {
   }
 
   std::string character_encoding;
@@ -276,6 +239,6 @@ int main(int argc, char **argv) {
 
   topology->commit(true);
   topology->close();
-
+  LOG(INFO) << "status is down";
   return 0;
 }

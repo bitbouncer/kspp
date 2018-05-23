@@ -7,6 +7,7 @@
 #include <kspp/impl/event_queue.h>
 #include <kspp/kevent.h>
 #include <kspp/connect/generic_producer.h>
+#include <kspp/connect/connection_params.h>
 
 #pragma once
 
@@ -17,10 +18,9 @@ namespace kspp {
     enum work_result_t { SUCCESS = 0, TIMEOUT = -1, HTTP_ERROR = -2, PARSE_ERROR = -3 };
 
     elasticsearch_producer(std::string index_name,
-                      std::string base_url,
-                      std::string http_header,
-                      std::string id_column,
-                      size_t http_batch_size);
+                           const kspp::connect::connection_params& cp,
+                           std::string id_column,
+                           size_t http_batch_size);
 
     ~elasticsearch_producer();
 
@@ -57,10 +57,6 @@ namespace kspp {
 
     kspp::async::work<elasticsearch_producer::work_result_t>::async_function create_one_http_work(const kspp::GenericAvro& doc);
 
-
-      //void select_async();
-    //void handle_fetch_cb(int ec, std::shared_ptr<PGresult> res);
-
     boost::asio::io_service _ios;
     std::shared_ptr<boost::asio::io_service::work> _work;
 
@@ -70,8 +66,7 @@ namespace kspp {
     std::chrono::milliseconds _http_timeout;
 
     const std::string _index_name;
-    const std::string _base_url;
-    const std::string _http_header;
+    const kspp::connect::connection_params _cp;
     const std::string _id_column;
 
     event_queue<void, kspp::GenericAvro> _incomming_msg;
