@@ -152,10 +152,12 @@ namespace kspp {
       std::deque<kspp::async::work<work_result_t>::async_function> work;
       while(!_incomming_msg.empty() && msg_in_batch<100) {
         auto msg = _incomming_msg.front();
-        ++msg_in_batch;
-        auto f = create_one_http_work(*msg->record()->value());
-        if (f)
-          work.push_back(f);
+        if (msg->record()->value()) {
+          ++msg_in_batch;
+          auto f = create_one_http_work(*msg->record()->value());
+          if (f)
+            work.push_back(f);
+        }
         _pending_for_delete.push_back(msg);
         _incomming_msg.pop_front();
       }
