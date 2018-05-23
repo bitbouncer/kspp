@@ -41,8 +41,7 @@ int main(int argc, char **argv) {
         partition_list, "kspp_test0_eventstream");
     auto table_sources = topology->create_processors<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_serdes, kspp::binary_serdes>>(
         partition_list, "kspp_test0_table");
-    auto tables = topology->create_processors<kspp::ktable<boost::uuids::uuid, int64_t, kspp::mem_store>>(
-        table_sources, "test0");
+    auto tables = topology->create_processors<kspp::ktable<boost::uuids::uuid, int64_t, kspp::mem_store>>(table_sources);
     auto joins = topology->create_processors<kspp::kstream_left_join<boost::uuids::uuid, int64_t, int64_t>>(
         streams,
         tables);

@@ -56,7 +56,7 @@ int main(int argc, char **argv) {
     auto streamA = topology->create_processor<kspp::generic_stream<int32_t, std::string>>(0);
 
     auto streamB = topology->create_processor<kspp::generic_stream<int32_t, std::string>>(0);
-    auto ktableB = topology->create_processor<kspp::ktable<int32_t, std::string, kspp::mem_store>>(streamB, "streamB");
+    auto ktableB = topology->create_processor<kspp::ktable<int32_t, std::string, kspp::mem_store>>(streamB);
 
     auto left_join = topology->create_processor<kspp::kstream_left_join<int32_t, std::string, std::string>>(streamA, ktableB);
 
@@ -93,7 +93,7 @@ int main(int argc, char **argv) {
     auto streamA = topology->create_processor<kspp::generic_stream<int32_t, std::string>>(0);
 
     auto streamB = topology->create_processor<kspp::generic_stream<int32_t, std::string>>(0);
-    auto ktableB = topology->create_processor<kspp::ktable<int32_t, std::string, kspp::mem_store>>(streamB, "streamB");
+    auto ktableB = topology->create_processor<kspp::ktable<int32_t, std::string, kspp::mem_store>>(streamB);
 
     auto left_join = topology->create_processor<kspp::kstream_inner_join<int32_t, std::string, std::string>>(streamA, ktableB);
 
@@ -125,10 +125,10 @@ int main(int argc, char **argv) {
     auto topology = builder.create_topology();
 
     auto streamA = topology->create_processor<kspp::generic_stream<int32_t, std::string>>(0);
-    auto ktableA = topology->create_processor<kspp::ktable<int32_t, std::string, kspp::mem_store>>(streamA, "streamA");
+    auto ktableA = topology->create_processor<kspp::ktable<int32_t, std::string, kspp::mem_store>>(streamA);
 
     auto streamB = topology->create_processor<kspp::generic_stream<int32_t, std::string>>(0);
-    auto ktableB = topology->create_processor<kspp::ktable<int32_t, std::string, kspp::mem_store>>(streamB, "streamB");
+    auto ktableB = topology->create_processor<kspp::ktable<int32_t, std::string, kspp::mem_store>>(streamB);
 
     auto left_join = topology->create_processor<kspp::ktable_left_join<int32_t, std::string, std::string>>(ktableA, ktableB);
 
@@ -173,10 +173,10 @@ int main(int argc, char **argv) {
     auto topology = builder.create_topology();
 
     auto streamA = topology->create_processor<kspp::generic_stream<int32_t, std::string>>(0);
-    auto ktableA = topology->create_processor<kspp::ktable<int32_t, std::string, kspp::mem_store>>(streamA, "streamA");
+    auto ktableA = topology->create_processor<kspp::ktable<int32_t, std::string, kspp::mem_store>>(streamA);
 
     auto streamB = topology->create_processor<kspp::generic_stream<int32_t, std::string>>(0);
-    auto ktableB = topology->create_processor<kspp::ktable<int32_t, std::string, kspp::mem_store>>(streamB, "streamB");
+    auto ktableB = topology->create_processor<kspp::ktable<int32_t, std::string, kspp::mem_store>>(streamB);
 
     auto left_join = topology->create_processor<kspp::ktable_inner_join<int32_t, std::string, std::string>>(ktableA, ktableB);
 
@@ -221,10 +221,10 @@ int main(int argc, char **argv) {
     auto topology = builder.create_topology();
 
     auto streamA = topology->create_processor<kspp::generic_stream<int32_t, std::string>>(0);
-    auto ktableA = topology->create_processor<kspp::ktable<int32_t, std::string, kspp::mem_store>>(streamA, "streamA");
+    auto ktableA = topology->create_processor<kspp::ktable<int32_t, std::string, kspp::mem_store>>(streamA);
 
     auto streamB = topology->create_processor<kspp::generic_stream<int32_t, std::string>>(0);
-    auto ktableB = topology->create_processor<kspp::ktable<int32_t, std::string, kspp::mem_store>>(streamB, "streamB");
+    auto ktableB = topology->create_processor<kspp::ktable<int32_t, std::string, kspp::mem_store>>(streamB);
 
     auto left_join = topology->create_processor<kspp::ktable_outer_join<int32_t, std::string, std::string>>(ktableA, ktableB);
 

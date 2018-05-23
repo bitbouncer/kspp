@@ -52,7 +52,7 @@ int main(int argc, char **argv) {
         LOG(ERROR) << "not my kind of avro" << e.what();
       }
   });
-  auto stored_parsed = topology->create_processors<kspp::ktable<int, std::string, kspp::mem_store>>(parsed, "parsed");
+  auto stored_parsed = topology->create_processors<kspp::ktable<int, std::string, kspp::mem_store>>(parsed);
 
   topology->start(kspp::OFFSET_BEGINNING);
   topology->flush();

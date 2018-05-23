@@ -10,13 +10,10 @@ namespace kspp {
     static constexpr const char* PROCESSOR_NAME = "ktable";
   public:
     template<typename... Args>
-    ktable(topology &t, std::shared_ptr<kspp::partition_source<K, V>> source, const std::string& instance_name, Args... args)
+    ktable(topology &t, std::shared_ptr<kspp::partition_source<K, V>> source, Args... args)
             : event_consumer<K, V>(), materialized_source<K, V>(source.get(), source->partition()), _source(source),
               _state_store(this->get_storage_path(t.get_storage_path()), args...),
               _state_store_count("state_store", metric::GAUGE, "msg", [this]() { return _state_store.aprox_size(); }) {
-      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
-      this->add_metrics_tag(KSPP_PROCESSOR_INSTANCE_NAME_TAG, instance_name);
-      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(source->partition()));
       _source->add_sink([this](auto ev) {
         this->_lag.add_event_time(kspp::milliseconds_since_epoch(), ev->event_time());
         ++(this->_processed_count);
@@ -28,6 +25,8 @@ namespace kspp {
         this->send_to_sinks(ev);
       });
       this->add_metric(&_state_store_count);
+      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
+      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(source->partition()));
     }
 
     ~ktable() override {
