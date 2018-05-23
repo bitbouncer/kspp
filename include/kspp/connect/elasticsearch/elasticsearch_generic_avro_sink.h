@@ -11,7 +11,7 @@ namespace kspp {
                                     const kspp::connect::connection_params& cp,
                                     std::string id_column,
                                     std::shared_ptr<kspp::avro_schema_registry> schema_registry)
-        : generic_avro_sink(t, std::make_shared<kspp::elasticsearch_producer>(table, cp, id_column, 20)) {
+        : generic_avro_sink(t, std::make_shared<kspp::elasticsearch_producer>(table, cp, id_column, 100)) {
       this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
       this->add_metrics_tag(KSPP_TOPIC_TAG, table);
     }

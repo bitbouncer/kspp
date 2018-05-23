@@ -4,7 +4,7 @@ using namespace std::chrono_literals;
 
 namespace kspp {
   influx_sink::influx_sink(kspp::topology &,
-                           std::string base_url,
+                           const kspp::connect::connection_params& cp,
                            int32_t http_batch_size,
                            std::chrono::milliseconds http_timeout)
       : kspp::topic_sink<void, std::string>()
@@ -13,9 +13,9 @@ namespace kspp {
       , _start_running(false)
       , _exit(false)
       , _work(std::make_unique<boost::asio::io_service::work>(_ios))
-      , _asio_thread([this] { LOG(INFO) << "XXX STARTING"; _ios.run(); LOG(INFO) << "XXX EXITING"; })
+      , _asio_thread([this] { _ios.run(); })
       , _bg([this] { _thread(); })
-      , _base_url(base_url)
+      , _cp(cp)
       , _http_handler(_ios, http_batch_size)
       , _batch_size(http_batch_size)
       , _next_time_to_send(kspp::milliseconds_since_epoch() + 100)
@@ -56,7 +56,7 @@ namespace kspp {
   }
 
   bool influx_sink::eof() const {
-    return (this->_queue.size() == 0);
+    return ((this->_queue.size() == 0) && (_pending_for_delete.size()==0));
   }
 
   size_t influx_sink::process(int64_t tick) {
@@ -93,7 +93,9 @@ namespace kspp {
       }
 
       size_t items_to_copy = std::min<size_t>(this->_queue.size(), _batch_size);
-      std::string url = _base_url + "/write?db=telegraf";
+
+      //std::string url = _base_url + "/write?db=telegraf";
+      std::string url = _cp.url + "/write?db=" + _cp.database;
       std::shared_ptr<kspp::http::request> request(new kspp::http::request(kspp::http::POST, url, {}, _http_timeout));
 
       size_t msg_in_batch = 0;

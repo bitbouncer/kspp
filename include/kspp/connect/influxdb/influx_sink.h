@@ -2,6 +2,7 @@
 #include <kspp/kspp.h>
 #include <kspp/utils/async.h>
 #include <kspp/utils/http_client.h>
+#include <kspp/connect/connection_params.h>
 #pragma once
 
 namespace kspp {
@@ -9,17 +10,10 @@ namespace kspp {
       public kspp::topic_sink<void, std::string>
   {
   public:
-    enum work_result_t {
-      SUCCESS = 0, TIMEOUT = -1, HTTP_ERROR = -2
-    };
-
-    influx_sink(kspp::topology & ,
-                std::string
-                base_url,
-                int32_t
-                http_batch_size,
-                std::chrono::milliseconds
-                http_timeout);
+    influx_sink(kspp::topology &,
+                const kspp::connect::connection_params& cp,
+                int32_t http_batch_size,
+                std::chrono::milliseconds http_timeout);
     ~influx_sink() override;
     std::string log_name() const override;
     bool eof() const override;
@@ -27,14 +21,7 @@ namespace kspp {
     void close() override;
     void flush() override;
   private:
-    kspp::async::work<work_result_t>::async_function create_work(std::shared_ptr<kspp::kevent<void, std::string>> record);
-    void send();
-
     void _thread();
-
-
-  private:
-    void run_work(std::deque<kspp::async::work<influx_sink::work_result_t>::async_function> &work, size_t batch_size);
 
     bool _exit;
     bool _start_running;
@@ -49,7 +36,7 @@ namespace kspp {
 
     event_queue<void, std::string> _pending_for_delete;
 
-    std::string _base_url;
+    const kspp::connect::connection_params _cp;
     kspp::http::client _http_handler;
     size_t _batch_size;
     int64_t _next_time_to_send;

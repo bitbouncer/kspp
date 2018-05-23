@@ -8,6 +8,7 @@
 #include <boost/bind.hpp>
 #include <boost/make_shared.hpp>
 #include <kspp/connect/elasticsearch/elasticsearch_generic_avro_sink.h>
+#include <kspp/connect/elasticsearch/elasticsearch_sink.h>
 #include <kspp/processors/transform.h>
 #include <kspp/processors/flat_map.h>
 
@@ -127,24 +128,6 @@ int main(int argc, char **argv) {
   LOG(INFO) << "es_http_header  : " << es_http_header;
   LOG(INFO) << "es_index        : " << es_index;
 
-  /*
-   *
-   * std::string connect_string =
-      "host=" + postgres_host + " port=" + std::to_string(postgres_port) + " user=" + postgres_user + " password=" +
-      postgres_password + " dbname=" + postgres_dbname;
-*/
-  //std::string base_url= "http://" + elasticsearch_host + ":" + std::to_string(elasticsearch_port);
-
-  /*
-  curl -X PUT "localhost:9200/twitter/_doc/1" -H 'Content-Type: application/json' -d'
-  {
-    "user" : "kimchy",
-        "post_date" : "2009-11-15T14:12:12",
-        "message" : "trying out Elasticsearch"
-  }
-  '
-   */
-
   LOG(INFO) << "discovering facts...";
 
   kspp::connect::connection_params connection_params;
@@ -164,6 +147,8 @@ int main(int argc, char **argv) {
 
   topology->create_sink<kspp::elasticsearch_generic_avro_sink>(source0, es_index, connection_params, "id", config->get_schema_registry());
 
+  //topology->create_sink<kspp::elasticsearch_sink>(source0, es_index, connection_params, "id", 3, 30s);
+  //topology->create_sink<kspp::elasticsearch_sink>(source0, es_index, connection_params, "id",10, 1s);
 
   std::vector<metrics20::avro::metrics20_key_tags_t> tags;
   tags.push_back(kspp::make_metrics_tag("app_name", SERVICE_NAME));

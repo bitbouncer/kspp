@@ -34,6 +34,10 @@ namespace kspp {
       return this->_queue.size();
     }
 
+    size_t outbound_queue_len() const override {
+      return this->_queue.size();
+    }
+
     int64_t next_event_time() const override {
       return this->_queue.next_event_time();
     }

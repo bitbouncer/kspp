@@ -103,12 +103,15 @@ int main(int argc, char** argv) {
 
   LOG(INFO) << "src_topic        : " << src_topic;
   LOG(INFO) << "dst_uri          : " << dst_uri;
+  LOG(INFO) << "dst_database     : " << "telegraf (hardcoded)";
   LOG(INFO) << "http_batch_size  : " << http_batch_size;
   LOG(INFO) << "http_timeout_ms  : " << http_timeout.count();
   LOG(INFO) << "discovering facts...";
 
-  //auto avro_schema_registry = std::make_shared<kspp::avro_schema_registry>(config);
-  //auto avro_serdes = std::make_shared<kspp::avro_serdes>(avro_schema_registry);
+  kspp::connect::connection_params connection_params;
+  connection_params.url = dst_uri;
+  connection_params.database = "telegraf";
+
 
   auto nr_of_partitions = kspp::kafka::get_number_partitions(config, src_topic);
   if (partition_list.size() == 0 || partition_list[0] == -1)
@@ -118,7 +121,7 @@ int main(int argc, char** argv) {
   kspp::topology_builder generic_builder("kspp", SERVICE_NAME, config);
   auto topology = generic_builder.create_topology();
   auto sources = topology->create_processors<kafka_source<void, std::string, void, text_serdes>>(partition_list, src_topic);
-  auto sink   = topology->create_sink<influx_sink>(sources, dst_uri, http_batch_size, http_timeout);
+  auto sink   = topology->create_sink<influx_sink>(sources, connection_params, http_batch_size, http_timeout);
 
   std::signal(SIGINT, sigterm);
   std::signal(SIGTERM, sigterm);
