@@ -172,6 +172,12 @@ namespace kspp {
       _request_id = user_defined;
     }
 
+    void request::set_basic_auth(const std::string& user, const std::string& password){
+      curl_easy_setopt(_curl_easy, CURLOPT_HTTPAUTH, (long)CURLAUTH_BASIC);
+      curl_easy_setopt(_curl_easy, CURLOPT_USERNAME, user.c_str());
+      curl_easy_setopt(_curl_easy, CURLOPT_PASSWORD, password.c_str());
+    }
+
     void request::set_ca_cert_path(std::string path)
     {
       _ca_cert = path;
@@ -325,7 +331,7 @@ namespace kspp {
       if (request->_ca_cert.size()==0) {
         res = curl_easy_setopt(request->_curl_easy, CURLOPT_SSL_VERIFYPEER, 0L);   // unsafe
         res = curl_easy_setopt(request->_curl_easy, CURLOPT_SSL_VERIFYHOST, 0L);  // unsafe
-        res = curl_easy_setopt(request->_curl_easy, CURLOPT_VERBOSE, 1L);
+        //res = curl_easy_setopt(request->_curl_easy, CURLOPT_VERBOSE, 1L);
       } else {
         res = curl_easy_setopt(request->_curl_easy, CURLOPT_SSL_VERIFYPEER, 1L);
         if (request->_verify_host)

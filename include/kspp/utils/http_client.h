@@ -182,6 +182,10 @@ namespace kspp {
       void set_request_id(std::string user_define_id);
 
       /*
+       * enable basic auth
+       */
+      void set_basic_auth(const std::string& user, const std::string& password);
+      /*
        * turns on detailed logging
        */
       void set_verbose(bool state);

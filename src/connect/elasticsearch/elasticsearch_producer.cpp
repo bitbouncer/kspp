@@ -110,11 +110,12 @@ namespace kspp {
     kspp::async::work<work_result_t>::async_function f = [this, body, url](std::function<void(work_result_t)> cb) {
       std::vector<std::string> headers({ "Content-Type: application/json" });
       auto request = std::make_shared<kspp::http::request>(kspp::http::PUT, url, headers, _http_timeout);
-      // add a body
-      //std::string dummy_body = "{ \"user\" : \"kimchy\", \"post_date\" : \"2009-11-15T14:12:12\", \"message\" : \"trying out Elasticsearch\" }";
+
+      if (_cp.user.size() && _cp.password.size())
+        request->set_basic_auth(_cp.user, _cp.password);
 
       request->append(body);
-      //request->set_verbose(true);
+      request->set_verbose(false);
       _http_handler.perform_async(
           request,
           [this, cb](std::shared_ptr<kspp::http::request> h) {
