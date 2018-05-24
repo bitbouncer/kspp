@@ -150,7 +150,7 @@ namespace kspp {
     while (!_closed) {
       size_t msg_in_batch = 0 ;
       std::deque<kspp::async::work<work_result_t>::async_function> work;
-      while(!_incomming_msg.empty() && msg_in_batch<100) {
+      while(!_incomming_msg.empty() && msg_in_batch<10000) {
         auto msg = _incomming_msg.front();
         if (msg->record()->value()) {
           ++msg_in_batch;
@@ -165,11 +165,11 @@ namespace kspp {
       if (work.size()) {
         auto start = kspp::milliseconds_since_epoch();
         auto ws = work.size();
-        LOG(INFO) << "run_work...: ";
+        //LOG(INFO) << "run_work...: ";
 
         run_work(work, _batch_size);
         auto end = kspp::milliseconds_since_epoch();
-        LOG(INFO) << "worksize: " << ws << ", batch_size: " << _batch_size << ", duration: " << end - start << " ms";
+        LOG(INFO) << _cp.url << ", worksize: " << ws << ", batch_size: " << _batch_size << ", duration: " << end - start << " ms";
         while(!_pending_for_delete.empty()) {
           _pending_for_delete.pop_front();
         }
