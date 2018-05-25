@@ -110,6 +110,9 @@ namespace kspp_tds {
     DBSETLAPP(login_, "kspp-tds-connection");
     DBSETLUSER(login_, cp.user.c_str());
     DBSETLHOST(login_, cp.host.c_str());
+
+    //tds_set_port((TDSLOGIN*) login_, 1433);
+    //login_->port = 1433;
     // what about port??
     DBSETLPWD(login_, cp.password.c_str());
     DBSETLDBNAME(login_, cp.database.c_str()); // maybe optional

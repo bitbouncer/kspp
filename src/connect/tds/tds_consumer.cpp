@@ -191,6 +191,13 @@ namespace kspp {
           LOG(FATAL) << "could not find ts column: " <<  _ts_column;
         }
       }
+
+
+      // print schema first time...
+      std::stringstream ss;
+      this->schema_->toJson(ss);
+      LOG(INFO) << "schema:";
+      LOG(INFO) << ss.str();
     }
 
     // this requires the avro and the result set must have the fields in the same order
