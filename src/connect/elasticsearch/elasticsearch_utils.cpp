@@ -5,21 +5,6 @@
 #include <avro/Encoder.hh>
 #include <avro/Decoder.hh>
 
-class avro2elastic_IsChars {
-public:
-  avro2elastic_IsChars(const char *charsToRemove) : chars(charsToRemove) {};
-
-  bool operator()(char c) {
-    for (const char *testChar = chars; *testChar != 0; ++testChar) {
-      if (*testChar == c) { return true; }
-    }
-    return false;
-  }
-
-private:
-  const char *chars;
-};
-
 
 static std::string avro2elastic_escapeString(std::string src) {
   //we should escape the sql string instead of doing this... - for now this removes ' characters in string

@@ -9,24 +9,24 @@ namespace kspp {
                                                  const kspp::connect::connection_params& cp,
                                                  std::string id_column,
                                                  size_t batch_size)
-      : _work(new boost::asio::io_service::work(_ios))
-      , _fg([this] { _process_work(); })
-      , _bg(boost::bind(&boost::asio::io_service::run, &_ios))
-      , _http_handler(_ios, batch_size)
-      , _index_name(index_name)
-      , _cp(cp)
-      , _id_column(id_column)
-      , _batch_size(batch_size)
-      , _http_timeout(std::chrono::seconds(2))
-      , _msg_cnt(0)
-      , _msg_bytes(0)
-      , _good(true)
-      , _closed(false)
-      , _connected(false)
-      , _table_checked(false)
-      , _table_exists(false)
-      , _table_create_pending(false)
-      , _insert_in_progress(false) {
+    : _work(new boost::asio::io_service::work(_ios))
+    , _fg([this] { _process_work(); })
+    , _bg(boost::bind(&boost::asio::io_service::run, &_ios))
+    , _http_handler(_ios, batch_size)
+    , _index_name(index_name)
+    , _cp(cp)
+    , _id_column(id_column)
+    , _batch_size(batch_size)
+    , _http_timeout(std::chrono::seconds(2))
+    , _msg_cnt(0)
+    , _msg_bytes(0)
+    , _good(true)
+    , _closed(false)
+    , _connected(false)
+    , _table_checked(false)
+    , _table_exists(false)
+    , _table_create_pending(false)
+    , _insert_in_progress(false) {
     curl_global_init(CURL_GLOBAL_NOTHING); /* minimal */
     _http_handler.set_user_agent("Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36");
     connect_async();
@@ -102,6 +102,7 @@ namespace kspp {
 
   kspp::async::work<elasticsearch_producer::work_result_t>::async_function  elasticsearch_producer::create_one_http_work(const kspp::GenericAvro& doc) {
     auto key_string = avro2elastic_key_values(*doc.valid_schema(), _id_column, *doc.generic_datum());
+    key_string.erase(std::remove_if(key_string.begin(), key_string.end(), avro2elastic_IsChars("'")), key_string.end()); // TODO there should be a key extractor that does not add '' around strings...
 
     std::string url = _cp.url + "/" + _index_name + "/" + "_doc" + "/" + key_string;
     std::string body = avro2elastic_to_json(*doc.valid_schema(), *doc.generic_datum());
@@ -117,31 +118,31 @@ namespace kspp {
       request->append(body);
       request->set_verbose(false);
       _http_handler.perform_async(
-          request,
-          [this, cb](std::shared_ptr<kspp::http::request> h) {
-            //++_http_requests;
-            if (!h->ok()) {
-              if (!h->transport_result()) {
-                //++_http_timeouts;
-                DLOG(INFO) << "http transport failed - retrying";
-                cb(TIMEOUT);
-                return;
-              } else {
-                //++_http_error;
-                LOG(WARNING) << "http get: " << h->uri() << " HTTPRES = " << h->http_result() << " - retrying";
-                cb(HTTP_ERROR);
-                return;
-              }
+        request,
+        [this, cb](std::shared_ptr<kspp::http::request> h) {
+          //++_http_requests;
+          if (!h->ok()) {
+            if (!h->transport_result()) {
+              //++_http_timeouts;
+              DLOG(INFO) << "http transport failed - retrying";
+              cb(TIMEOUT);
+              return;
+            } else {
+              //++_http_error;
+              LOG(WARNING) << "http get: " << h->uri() << " HTTPRES = " << h->http_result() << " - retrying";
+              cb(HTTP_ERROR);
+              return;
             }
+          }
 
-            DLOG_EVERY_N(INFO, 100) << "http PUT: " << h->uri() << " got " << h->rx_content_length() << " bytes, time="
-                                    << h->milliseconds() << " ms (" << h->rx_kb_per_sec() << " KB/s), #"
-                                    << google::COUNTER;
-            ++_msg_cnt;
-            _msg_bytes += h->tx_content_length();
-            cb(SUCCESS);
-            // TBD store metrics on request time
-          }); // perform_async
+          DLOG_EVERY_N(INFO, 100) << "http PUT: " << h->uri() << " got " << h->rx_content_length() << " bytes, time="
+                                  << h->milliseconds() << " ms (" << h->rx_kb_per_sec() << " KB/s), #"
+                                  << google::COUNTER;
+          ++_msg_cnt;
+          _msg_bytes += h->tx_content_length();
+          cb(SUCCESS);
+          // TBD store metrics on request time
+        }); // perform_async
     }; // work
     return f;
   }
