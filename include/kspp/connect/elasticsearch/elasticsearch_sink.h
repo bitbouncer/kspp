@@ -146,7 +146,7 @@ namespace kspp {
           if (value) {
             //{ "index" : { "_index" : "test", "_type" : "_doc", "_id" : "1" } }
             auto key_string = avro2elastic_key_values(*value->valid_schema(), _id_column, *value->generic_datum());
-            key_string.erase(std::remove_if(key_string.begin(), key_string.end(), avro2elastic_IsChars("'")), key_string.end()); // TODO there should be a key extractor that does not add '' around strings...
+            key_string.erase(std::remove_if(key_string.begin(), key_string.end(), avro2elastic_IsChars("\"'")), key_string.end()); // TODO there should be a key extractor that does not add '' around strings...
 
             std::string row0 = "{ \"index\" : { \"_index\" : \"" +  _index_name + "\", \"_type\" : \"_doc\", \"_id\" : \"" +  key_string + "\"  } }\n";
             //LOG(INFO) << row0;

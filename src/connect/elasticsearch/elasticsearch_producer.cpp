@@ -102,11 +102,11 @@ namespace kspp {
 
   kspp::async::work<elasticsearch_producer::work_result_t>::async_function  elasticsearch_producer::create_one_http_work(const kspp::GenericAvro& doc) {
     auto key_string = avro2elastic_key_values(*doc.valid_schema(), _id_column, *doc.generic_datum());
-    key_string.erase(std::remove_if(key_string.begin(), key_string.end(), avro2elastic_IsChars("'")), key_string.end()); // TODO there should be a key extractor that does not add '' around strings...
+    key_string.erase(std::remove_if(key_string.begin(), key_string.end(), avro2elastic_IsChars("\"")), key_string.end()); // TODO there should be a key extractor that does not add '' around strings...
 
     std::string url = _cp.url + "/" + _index_name + "/" + "_doc" + "/" + key_string;
     std::string body = avro2elastic_json(*doc.valid_schema(), *doc.generic_datum());
-    //std::cerr << body << std::endl;
+    std::cerr << body << std::endl;
 
     kspp::async::work<work_result_t>::async_function f = [this, body, url](std::function<void(work_result_t)> cb) {
       std::vector<std::string> headers({ "Content-Type: application/json" });
@@ -116,7 +116,7 @@ namespace kspp {
         request->set_basic_auth(_cp.user, _cp.password);
 
       request->append(body);
-      request->set_verbose(false);
+      request->set_verbose(true);
       _http_handler.perform_async(
         request,
         [this, cb](std::shared_ptr<kspp::http::request> h) {

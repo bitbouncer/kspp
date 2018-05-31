@@ -108,8 +108,8 @@ std::string avro2elastic_json(const avro::ValidSchema& schema, const avro::Gener
     // null columns should nbot be exported to elastic search
     if (record.fieldAt(i).type()!=avro::AVRO_NULL){
       if (has_previous)
-        result += ",";
-      result += "\"" + r->nameAt(i) + "\":" + avro2elastic_simple_column_value(record.fieldAt(i));
+        result += ", ";
+      result += "\"" + r->nameAt(i) + "\": " + avro2elastic_simple_column_value(record.fieldAt(i));
       has_previous=true;
     }
   }
