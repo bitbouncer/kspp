@@ -7,9 +7,10 @@
 
 
 static std::string avro2elastic_escapeString(std::string src) {
-  //we should escape the sql string instead of doing this... - for now this removes ' characters in string
-  src.erase(std::remove_if(src.begin(), src.end(), avro2elastic_IsChars("'")), src.end());
-  return std::string("'" + src + "'"); // we have to do real escaping here to prevent injection attacks  TBD
+  //we should escape the sql string instead of doing this... - for now this removes ' and " characters in string
+  src.erase(std::remove_if(src.begin(), src.end(), avro2elastic_IsChars("'\"")), src.end());
+  return src;
+  //return std::string("\"" + src + "\""); // we have to do real escaping here to prevent injection attacks  TBD
 }
 
 // only maps simple types to value
@@ -26,10 +27,10 @@ static std::string avro2elastic_simple_column_value(const avro::GenericDatum &co
       return "NULL";
       break;
     case avro::AVRO_STRING:
-      return avro2elastic_escapeString(column.value<std::string>());
+      return std::string("\"" + avro2elastic_escapeString(column.value<std::string>()) +  "\"");
       break;
     case avro::AVRO_BYTES:
-      return avro2elastic_escapeString(column.value<std::string>());
+      return std::string("\"" + avro2elastic_escapeString(column.value<std::string>()) +  "\"");
       break;
     case avro::AVRO_INT:
       return std::to_string(column.value<int32_t>());
@@ -55,7 +56,6 @@ static std::string avro2elastic_simple_column_value(const avro::GenericDatum &co
     default:
       LOG(FATAL) << "unexpected / non supported type e:" << column.type();
   }
-
 }
 
 // handles both nullable and non nullable columns
