@@ -106,7 +106,7 @@ namespace kspp {
 
     std::string url = _cp.url + "/" + _index_name + "/" + "_doc" + "/" + key_string;
     std::string body = avro2elastic_json(*doc.valid_schema(), *doc.generic_datum());
-    std::cerr << body << std::endl;
+    //std::cerr << body << std::endl;
 
     kspp::async::work<work_result_t>::async_function f = [this, body, url](std::function<void(work_result_t)> cb) {
       std::vector<std::string> headers({ "Content-Type: application/json" });
@@ -129,7 +129,8 @@ namespace kspp {
               return;
             } else {
               //++_http_error;
-              LOG(WARNING) << "http put: " << h->uri() << " HTTPRES = " << h->http_result() << " - retrying";
+              //LOG(WARNING) << "http put: " << h->uri() << " HTTPRES = " << h->http_result() << " - retrying, request:" << h->tx_content();
+              LOG(WARNING) << "http put: " << h->uri() << " HTTPRES = " << h->http_result() << " - retrying, reponse:" << h->rx_content();
               cb(HTTP_ERROR);
               return;
             }

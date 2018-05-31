@@ -1,17 +1,43 @@
 #include <kspp/connect/elasticsearch/elasticsearch_utils.h>
+#include <sstream>
+#include <iomanip>
 #include <glog/logging.h>
-
 #include <avro/Specific.hh>
 #include <avro/Encoder.hh>
 #include <avro/Decoder.hh>
 
+// see  //https://stackoverflow.com/questions/7724448/simple-json-string-escape-for-c/33799784#33799784
+static std::string escape_json(const std::string &s) {
+  std::ostringstream o;
+  for (auto c = s.cbegin(); c != s.cend(); c++) {
+    switch (*c) {
+      case '"': o << "\\\""; break;
+      case '\\': o << "\\\\"; break;
+      case '\b': o << "\\b"; break;
+      case '\f': o << "\\f"; break;
+      case '\n': o << "\\n"; break;
+      case '\r': o << "\\r"; break;
+      case '\t': o << "\\t"; break;
+      default:
+        if ('\x00' <= *c && *c <= '\x1f') {
+          o << "\\u"
+            << std::hex << std::setw(4) << std::setfill('0') << (int)*c;
+        } else {
+          o << *c;
+        }
+    }
+  }
+  return o.str();
+}
 
-static std::string avro2elastic_escapeString(std::string src) {
+/*
+ * static std::string avro2elastic_escapeString(std::string src) {
   //we should escape the sql string instead of doing this... - for now this removes ' and " characters in string
   src.erase(std::remove_if(src.begin(), src.end(), avro2elastic_IsChars("'\"")), src.end());
   return src;
   //return std::string("\"" + src + "\""); // we have to do real escaping here to prevent injection attacks  TBD
 }
+*/
 
 // only maps simple types to value
 static std::string avro2elastic_simple_column_value(const avro::GenericDatum &column) {
@@ -27,10 +53,10 @@ static std::string avro2elastic_simple_column_value(const avro::GenericDatum &co
       return "NULL";
       break;
     case avro::AVRO_STRING:
-      return std::string("\"" + avro2elastic_escapeString(column.value<std::string>()) +  "\"");
+      return std::string("\"" + escape_json(column.value<std::string>()) +  "\"");
       break;
     case avro::AVRO_BYTES:
-      return std::string("\"" + avro2elastic_escapeString(column.value<std::string>()) +  "\"");
+      return std::string("\"" + escape_json(column.value<std::string>()) +  "\"");
       break;
     case avro::AVRO_INT:
       return std::to_string(column.value<int32_t>());
