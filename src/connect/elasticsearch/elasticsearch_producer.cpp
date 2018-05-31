@@ -105,7 +105,7 @@ namespace kspp {
     key_string.erase(std::remove_if(key_string.begin(), key_string.end(), avro2elastic_IsChars("'")), key_string.end()); // TODO there should be a key extractor that does not add '' around strings...
 
     std::string url = _cp.url + "/" + _index_name + "/" + "_doc" + "/" + key_string;
-    std::string body = avro2elastic_to_json(*doc.valid_schema(), *doc.generic_datum());
+    std::string body = avro2elastic_json(*doc.valid_schema(), *doc.generic_datum());
     //std::cerr << body << std::endl;
 
     kspp::async::work<work_result_t>::async_function f = [this, body, url](std::function<void(work_result_t)> cb) {
@@ -129,7 +129,7 @@ namespace kspp {
               return;
             } else {
               //++_http_error;
-              LOG(WARNING) << "http get: " << h->uri() << " HTTPRES = " << h->http_result() << " - retrying";
+              LOG(WARNING) << "http put: " << h->uri() << " HTTPRES = " << h->http_result() << " - retrying";
               cb(HTTP_ERROR);
               return;
             }

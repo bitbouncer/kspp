@@ -150,7 +150,7 @@ namespace kspp {
 
             std::string row0 = "{ \"index\" : { \"_index\" : \"" +  _index_name + "\", \"_type\" : \"_doc\", \"_id\" : \"" +  key_string + "\"  } }\n";
             //LOG(INFO) << row0;
-            std::string row1 = avro2elastic_to_json(*value->valid_schema(), *value->generic_datum()) + "\n";
+            std::string row1 = avro2elastic_json(*value->valid_schema(), *value->generic_datum()) + "\n";
             //LOG(INFO) << row1;
             request->append(row0);
             request->append(row1);

@@ -29,7 +29,7 @@ static std::string avro2elastic_simple_column_value(const avro::GenericDatum &co
       return avro2elastic_escapeString(column.value<std::string>());
       break;
     case avro::AVRO_BYTES:
-      return column.value<std::string>();
+      return avro2elastic_escapeString(column.value<std::string>());
       break;
     case avro::AVRO_INT:
       return std::to_string(column.value<int32_t>());
@@ -44,7 +44,7 @@ static std::string avro2elastic_simple_column_value(const avro::GenericDatum &co
       return std::to_string(column.value<double>());
       break;
     case avro::AVRO_BOOL:
-      return column.value<bool>() ? "True" : "False";
+      return column.value<bool>() ? "true" : "false";
       break;
     case avro::AVRO_RECORD:
     case avro::AVRO_ENUM:
@@ -59,7 +59,8 @@ static std::string avro2elastic_simple_column_value(const avro::GenericDatum &co
 }
 
 // handles both nullable and non nullable columns
-std::string avro2elastic_to_json(const avro::ValidSchema& schema, const avro::GenericDatum &datum) {
+/*
+ * std::string avro2elastic_to_json(const avro::ValidSchema& schema, const avro::GenericDatum &datum) {
   auto os = avro::memoryOutputStream();
 
   avro::EncoderPtr encoder = avro::jsonEncoder(schema);
@@ -75,6 +76,7 @@ std::string avro2elastic_to_json(const avro::ValidSchema& schema, const avro::Ge
 
   return res;
 }
+ */
 
 /*
 
@@ -92,6 +94,28 @@ std::string avro2elastic_to_json(const avro::ValidSchema& schema, const avro::Ge
   return result;
   */
 
+
+// handles both nullable and non nullable columns
+std::string avro2elastic_json(const avro::ValidSchema& schema, const avro::GenericDatum &datum) {
+  auto r = schema.root();
+  std::string result = "{";
+  assert(datum.type() == avro::AVRO_RECORD);
+  const avro::GenericRecord& record(datum.value<avro::GenericRecord>());
+  size_t nFields = record.fieldCount();
+
+  bool has_previous=false;
+  for (int i = 0; i < nFields; i++) {
+    // null columns should nbot be exported to elastic search
+    if (record.fieldAt(i).type()!=avro::AVRO_NULL){
+      if (has_previous)
+        result += ",";
+      result += "\"" + r->nameAt(i) + "\":" + avro2elastic_simple_column_value(record.fieldAt(i));
+      has_previous=true;
+    }
+  }
+  result +="}";
+  return result;
+}
 
 // TODO mutiple keys
 std::string avro2elastic_key_values(const avro::ValidSchema& schema, const std::string& key, const avro::GenericDatum &datum){
