@@ -26,8 +26,10 @@ namespace kspp {
       , cp_(cp)
       , _id_column(id_column)
       , _ts_column(ts_column)
+      , id_column_index_(0)
       , ts_column_index_(0)
-      , last_ts_(0)
+      , last_ts_(INT_MIN)
+      , last_id_(INT_MIN)
       , schema_registry_(schema_registry)
       , _max_items_in_fetch(max_items_in_fetch)
       , schema_id_(-1)
@@ -166,6 +168,70 @@ namespace kspp {
     }
   }
 
+  int64_t tds_consumer::parse_id(DBPROCESS *stream){
+    assert(id_column_index_>0);
+
+    switch (dbcoltype(stream, id_column_index_)){
+      /*
+       * case tds::SYBINT2: {
+        int16_t v;
+        assert(sizeof(v) == dbdatlen(stream, ts_column_index_));
+        memcpy(&v, dbdata(stream, i + 1), sizeof(v));
+        avro_item.value<int32_t>() = v;
+      }
+        break;
+      */
+
+      case tds::SYBINT4: {
+        int32_t v;
+        assert(sizeof(v) == dbdatlen(stream, id_column_index_));
+        memcpy(&v, dbdata(stream, id_column_index_), sizeof(v));
+        return v;
+      }
+        break;
+
+      case tds::SYBINT8: {
+        int64_t v;
+        assert(sizeof(v) == dbdatlen(stream, id_column_index_));
+        memcpy(&v, dbdata(stream, id_column_index_), sizeof(v));
+        return v;
+      }
+        break;
+
+        /*
+         * case SYBDATETIME:
+        case SYBDATETIME4:
+        case SYBMSTIME:
+        case SYBMSDATE:
+        case SYBMSDATETIMEOFFSET:
+        case SYBTIME:
+        case SYBDATE:
+        case SYB5BIGTIME:
+        case SYB5BIGDATETIME:
+         */
+/*
+        case tds::SYBMSDATETIME2: {
+        std::string s;
+        */
+/*
+         * int sz = dbdatlen(stream, i + 1);
+         * s.reserve(sz);
+         * s.assign((const char *) dbdata(stream, i + 1), sz);
+         *//*
+
+        s = pcol->buffer;
+        avro_item.value<std::string>() = s;
+      }
+
+      break;
+*/
+
+      default:
+        LOG(FATAL) << "unexpected / non supported id type e:" << dbcoltype(stream, id_column_index_);
+    }
+  }
+
+
   int tds_consumer::parse_avro(DBPROCESS *stream, COL *columns, size_t ncols) {
     //TODO what name should we segister this under.. source/database/table ? table seems to week
 
@@ -192,6 +258,17 @@ namespace kspp {
         }
       }
 
+      if (_id_column.size()){
+        for (int i = 0; i < ncols; i++) {
+          const char *col_name = dbcolname(stream, i + 1);
+          if (strcmp(col_name, _ts_column.c_str()) == 0) {
+            id_column_index_ = i + 1;
+          }
+        }
+        if (ts_column_index_<1){
+          LOG(FATAL) << "could not find id column: " <<  _id_column;
+        }
+      }
 
       // print schema first time...
       std::stringstream ss;
@@ -213,6 +290,10 @@ namespace kspp {
 
     if (ts_column_index_>0) {
       last_ts_ = parse_ts(stream);
+    }
+
+    if (id_column_index_>0){
+      last_id_ = parse_id(stream);
     }
 
     for (int i = 0; i != ncols; i++, pcol++) {
@@ -480,23 +561,55 @@ namespace kspp {
 
       _eof = false;
 
-      std::string fields = "*";
+      /*
+       * std::string fields = "*";
       std::string order_by = "";
       if (_ts_column.size())
         order_by = _ts_column + " ASC, " + _id_column + " ASC";
       else
         order_by = _id_column + " ASC";
+      */
+
+      std::string fields = "*";
+      std::string order_by = "";
+      if (_ts_column.size()) {
+        if (_id_column.size())
+          order_by = " ORDER BY " + _ts_column + " ASC, " + _id_column + " ASC";
+        else
+          order_by = " ORDER BY " + _ts_column + " ASC";
+      } else {
+        order_by = " ORDER BY " + _id_column + " ASC";
+      }
+
 
       std::string where_clause;
 
+
+      // do we have a timestamp field
+      // we have to have either a interger id that is increasing or a timestamp that is increasing
+      // before we read anything the where clause will not be valid
+      if (last_id_>INT_MIN) {
+        if (_ts_column.size())
+          where_clause =
+            " WHERE (" + _ts_column + " = '" + std::to_string(last_ts_) + "' AND " + _id_column + " > '" + std::to_string(last_id_) + "') OR (" +
+            _ts_column + " > '" + std::to_string(last_ts_) + "')";
+        else
+          where_clause = " WHERE " + _id_column + " > '" + std::to_string(last_id_) + "'";
+      } else {
+        if (last_ts_> INT_MIN)
+          where_clause = " WHERE " + _ts_column + " >= '" + std::to_string(last_ts_) + "'";
+      }
+
+      /*
       // do we have a timestamp field
       // we have to have either a interger id that is increasing or a timestamp that is increasing
      if (_ts_column.size())
           where_clause = " WHERE " + _ts_column + " >= " + std::to_string(last_ts_);
         //else
         //  where_clause = _id_column + " >= " + std::to_string(last_id_);
+        */
 
-      std::string statement = "SELECT TOP " + std::to_string(_max_items_in_fetch) + " " + fields + " FROM " + _table + where_clause + " ORDER BY " + order_by;
+      std::string statement = "SELECT TOP " + std::to_string(_max_items_in_fetch) + " " + fields + " FROM " + _table + where_clause + order_by;
 
       // TODO where ts > ....
 

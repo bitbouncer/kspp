@@ -75,6 +75,7 @@ namespace kspp {
 
     void connect_async();
     int64_t parse_ts(DBPROCESS *stream);
+    int64_t parse_id(DBPROCESS *stream);
     int parse_avro(DBPROCESS* stream, COL* columns, size_t ncols);
     int parse_response(DBPROCESS* stream);
     void _thread();
@@ -100,7 +101,9 @@ namespace kspp {
     size_t _max_items_in_fetch;
 
     int ts_column_index_;
+    int id_column_index_;
     int64_t last_ts_;
+    int64_t last_id_;
 
     std::shared_ptr<kspp::avro_schema_registry> schema_registry_;
     std::shared_ptr<avro::ValidSchema> schema_;
