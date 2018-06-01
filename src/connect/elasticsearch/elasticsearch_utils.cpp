@@ -84,6 +84,18 @@ static std::string avro2elastic_simple_column_value(const avro::GenericDatum &co
   }
 }
 
+static avro::Type avro2elastic_simple_column_type(const avro::GenericDatum &column) {
+  auto t = column.type();
+  // nullable columns are represented as union of NULL and value
+  // parse those recursive
+  if (t==avro::AVRO_UNION) {
+      const avro::GenericUnion& au(column.value<avro::GenericUnion>());
+      return avro2elastic_simple_column_type(au.datum());
+    } else {
+    return t;
+  }
+}
+
 // handles both nullable and non nullable columns
 /*
  * std::string avro2elastic_to_json(const avro::ValidSchema& schema, const avro::GenericDatum &datum) {
@@ -132,7 +144,7 @@ std::string avro2elastic_json(const avro::ValidSchema& schema, const avro::Gener
   bool has_previous=false;
   for (int i = 0; i < nFields; i++) {
     // null columns should nbot be exported to elastic search
-    if (record.fieldAt(i).type()!=avro::AVRO_NULL){
+    if (avro2elastic_simple_column_type(record.fieldAt(i))!=avro::AVRO_NULL){
       if (has_previous)
         result += ", ";
       result += "\"" + r->nameAt(i) + "\": " + avro2elastic_simple_column_value(record.fieldAt(i));
