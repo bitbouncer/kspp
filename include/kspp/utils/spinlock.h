@@ -9,8 +9,7 @@ class spinlock
   public:
   using scoped_lock = std::unique_lock<spinlock>;
 
-  inline spinlock() {
-    _lock.clear();
+  inline spinlock() : _lock(ATOMIC_FLAG_INIT) {
   }
 
   inline void lock() {

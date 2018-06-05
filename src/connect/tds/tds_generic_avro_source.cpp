@@ -1,5 +1,4 @@
 #include <kspp/connect/tds/tds_generic_avro_source.h>
-//#include <kspp/connect/tds/tds_avro_utils.h>
 #include <glog/logging.h>
 
 using namespace std::chrono_literals;
@@ -13,7 +12,7 @@ namespace kspp {
                                                    std::string ts_column,
                                                    std::shared_ptr<kspp::avro_schema_registry> registry,
                                                    std::chrono::seconds poll_intervall)
-      : partition_source<void, kspp::GenericAvro>(nullptr, partition), _started(false), _exit(false),
+      : partition_source<void, kspp::generic_avro>(nullptr, partition), _started(false), _exit(false),
         _impl(partition, table, t.consumer_group(), cp, id_column, ts_column, registry, poll_intervall), _schema_registry(registry),
         _schema_id(-1), _commit_chain(table, partition), _parse_errors("parse_errors", "err"),
         _commit_chain_size("commit_chain_size", metric::GAUGE, "msg", [this]() { return _commit_chain.size(); }) {

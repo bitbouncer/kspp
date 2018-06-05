@@ -3,12 +3,12 @@
 #include <istream>
 #include <sstream>
 #include <avro/Encoder.hh>
-#include <kspp/avro/avro_generic.h>
+#include <kspp/avro/generic_avro.h>
 #include <glog/logging.h>
 #pragma once
 
 namespace kspp {
-template<> inline size_t text_serdes::encode(const GenericAvro& src, std::ostream& dst) {
+template<> inline size_t text_serdes::encode(const generic_avro& src, std::ostream& dst) {
   if (src.valid_schema() == nullptr)
     return 0;
 

@@ -281,7 +281,7 @@ namespace kspp {
     // since we create the schema on first read this should hold
     // it could be stronger if we generated the select from schema instead of relying on select *
     // for now this should be ok if the schema is not changed between queries...
-    auto gd = std::make_shared<kspp::GenericAvro>(schema_, schema_id_);
+    auto gd = std::make_shared<kspp::generic_avro>(schema_, schema_id_);
     assert(gd->type() == avro::AVRO_RECORD);
     avro::GenericRecord &record(gd->generic_datum()->value<avro::GenericRecord>());
     assert(ncols = record.fieldCount());
@@ -433,8 +433,8 @@ namespace kspp {
       }
     }
     int64_t ts = 0; // TODO get the timestamp column
-    auto r = std::make_shared<krecord<void, kspp::GenericAvro>>(gd, ts);
-    auto e = std::make_shared<kevent<void, kspp::GenericAvro>>(r);
+    auto r = std::make_shared<krecord<void, kspp::generic_avro>>(gd, ts);
+    auto e = std::make_shared<kevent<void, kspp::generic_avro>>(r);
     assert(e.get() != nullptr);
     ++_msg_cnt;
 

@@ -12,7 +12,7 @@
 #include <avro/Generic.hh>
 #include <avro/Specific.hh>
 #include <glog/logging.h>
-#include <kspp/avro/avro_generic.h>
+#include <kspp/avro/generic_avro.h>
 #include <kspp/avro/avro_schema_registry.h>
 #pragma once
 
@@ -434,7 +434,7 @@ namespace kspp {
     }
   }
 
-  template<> inline size_t avro_serdes::decode(const char* payload, size_t size, kspp::GenericAvro& dst) {
+  template<> inline size_t avro_serdes::decode(const char* payload, size_t size, kspp::generic_avro& dst) {
     if (size < 5 || payload[0])
       return 0;
 
@@ -470,11 +470,11 @@ namespace kspp {
     return 0; // should never get here
   }
 
-  template<> inline  int32_t avro_serdes::register_schema(std::string name, const kspp::GenericAvro& dummy) {
+  template<> inline  int32_t avro_serdes::register_schema(std::string name, const kspp::generic_avro& dummy) {
     return _registry->put_schema(name, dummy.valid_schema());
   }
 
-  template<> inline size_t avro_serdes::encode(const kspp::GenericAvro& src, std::ostream& dst) {
+  template<> inline size_t avro_serdes::encode(const kspp::generic_avro& src, std::ostream& dst) {
     assert(src.schema_id()>=0);
     return encode(src.schema_id(), *src.generic_datum(), dst);
   }

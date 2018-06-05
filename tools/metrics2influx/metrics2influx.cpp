@@ -112,7 +112,6 @@ int main(int argc, char** argv) {
   connection_params.url = dst_uri;
   connection_params.database = "telegraf";
 
-
   auto nr_of_partitions = kspp::kafka::get_number_partitions(config, src_topic);
   if (partition_list.size() == 0 || partition_list[0] == -1)
     partition_list = kspp::get_partition_list(nr_of_partitions);

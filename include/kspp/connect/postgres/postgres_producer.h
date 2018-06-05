@@ -7,7 +7,7 @@
 #pragma once
 
 namespace kspp {
-  class postgres_producer : public generic_producer<void, kspp::GenericAvro>
+  class postgres_producer : public generic_producer<void, kspp::generic_avro>
   {
   public:
     postgres_producer(std::string table,
@@ -31,7 +31,7 @@ namespace kspp {
 
     bool is_connected() const { return _connected; }
 
-    void insert(std::shared_ptr<kevent<void, kspp::GenericAvro>> p) override {
+    void insert(std::shared_ptr<kevent<void, kspp::generic_avro>> p) override {
       _incomming_msg.push_back(p);
     }
 
@@ -58,8 +58,8 @@ namespace kspp {
     const std::string _id_column;
     const std::string _client_encoding;
 
-    event_queue<void, kspp::GenericAvro> _incomming_msg;
-    event_queue<void, kspp::GenericAvro> _pending_for_delete;
+    event_queue<void, kspp::generic_avro> _incomming_msg;
+    event_queue<void, kspp::generic_avro> _pending_for_delete;
     size_t _max_items_in_fetch;
     uint64_t _msg_cnt;
     uint64_t _msg_bytes;

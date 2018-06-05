@@ -4,11 +4,9 @@
 #include <glog/logging.h>
 #include <kspp/kspp.h>
 #include <kspp/topology.h>
-
 #include <kspp/connect/generic_avro_sink.h>
 #include <kspp/connect/postgres/postgres_producer.h>
-
-#include <kspp/avro/avro_generic.h>
+//#include <kspp/avro/generic_avro.h>
 #pragma once
 
 namespace kspp {

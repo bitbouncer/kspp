@@ -1,6 +1,6 @@
 #include <avro/Generic.hh>
 #include <avro/Schema.hh>
-#include <kspp/avro/avro_generic.h>
+//#include <kspp/avro/generic_avro.h>
 #include <sybdb.h>
 #pragma once
 namespace kspp {

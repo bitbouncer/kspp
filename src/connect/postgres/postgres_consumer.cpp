@@ -137,7 +137,7 @@ namespace kspp {
 
     for (int i = 0; i < nRows; i++)
     {
-      auto gd = std::make_shared<kspp::GenericAvro>(schema_, schema_id_);
+      auto gd = std::make_shared<kspp::generic_avro>(schema_, schema_id_);
       assert(gd->type() == avro::AVRO_RECORD);
       avro::GenericRecord& record(gd->generic_datum()->value<avro::GenericRecord>());
       size_t nFields = record.fieldCount();
@@ -214,8 +214,8 @@ namespace kspp {
         last_ts_ = PQgetvalue(result.get(), i, ts_column_index_);
 
       // or should we use ts column instead of now();
-      auto r = std::make_shared<krecord<void, kspp::GenericAvro>>(gd, kspp::milliseconds_since_epoch());
-      auto e = std::make_shared<kevent<void, kspp::GenericAvro>>(r);
+      auto r = std::make_shared<krecord<void, kspp::generic_avro>>(gd, kspp::milliseconds_since_epoch());
+      auto e = std::make_shared<kevent<void, kspp::generic_avro>>(r);
       assert(e.get()!=nullptr);
 
       //should we wait a bit if we fill incomming queue to much??

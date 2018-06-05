@@ -100,7 +100,7 @@ namespace kspp {
       LOG(WARNING) << "timeouts threshold exceeded, skipped " << timeouts - max_timeouts_per_batch << " items";
   }
 
-  kspp::async::work<elasticsearch_producer::work_result_t>::async_function  elasticsearch_producer::create_one_http_work(const kspp::GenericAvro& doc) {
+  kspp::async::work<elasticsearch_producer::work_result_t>::async_function  elasticsearch_producer::create_one_http_work(const kspp::generic_avro& doc) {
     auto key_string = avro2elastic_key_values(*doc.valid_schema(), _id_column, *doc.generic_datum());
     key_string.erase(std::remove_if(key_string.begin(), key_string.end(), avro2elastic_IsChars("\"")), key_string.end()); // TODO there should be a key extractor that does not add '' around strings...
 

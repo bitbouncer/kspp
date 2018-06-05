@@ -8,7 +8,7 @@
 
 namespace kspp {
   class elasticsearch_sink :
-      public kspp::topic_sink<void, kspp::GenericAvro>
+      public kspp::topic_sink<void, kspp::generic_avro>
   {
     static constexpr const char* PROCESSOR_NAME = "elasticsearch_sink";
 
@@ -19,7 +19,7 @@ namespace kspp {
                               std::string id_column,
                               int32_t  http_batch_size,
                               std::chrono::milliseconds http_timeout) :
-        kspp::topic_sink<void, kspp::GenericAvro>()
+        kspp::topic_sink<void, kspp::generic_avro>()
         , _good(true)
         , _closed(false)
         , _start_running(false)
@@ -138,7 +138,7 @@ namespace kspp {
 
         size_t msg_in_batch = 0;
         size_t bytes_in_batch = 0;
-        event_queue<void, kspp::GenericAvro> in_batch;
+        event_queue<void, kspp::generic_avro> in_batch;
         while (!this->_queue.empty() && msg_in_batch < _batch_size) {
           auto msg = this->_queue.pop_and_get(); // this will loose messages at retry... TODO
           //make sure no nulls gets to us
@@ -212,7 +212,7 @@ namespace kspp {
 
     std::thread _bg; // performs the send loop
 
-    event_queue<void, kspp::GenericAvro> _pending_for_delete;
+    event_queue<void, kspp::generic_avro> _pending_for_delete;
 
     const kspp::connect::connection_params _cp;
     std::string _index_name;

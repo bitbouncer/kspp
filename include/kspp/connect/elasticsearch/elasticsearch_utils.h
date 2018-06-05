@@ -1,6 +1,6 @@
 #include <avro/Generic.hh>
 #include <avro/Schema.hh>
-#include <kspp/avro/avro_generic.h>
+#include <kspp/avro/generic_avro.h>
 #pragma once
 
 //std::string avro2elastic_to_json(const avro::ValidSchema& schema, const avro::GenericDatum &datum);

@@ -167,7 +167,7 @@ namespace kspp {
       size_t msg_in_batch = 0;
       size_t bytes_in_batch = 0;
       std::set<std::string> unique_keys_in_batch;
-      event_queue<void, kspp::GenericAvro> in_batch;
+      event_queue<void, kspp::generic_avro> in_batch;
       while (!_incomming_msg.empty() && msg_in_batch < _max_items_in_fetch) {
         auto msg = _incomming_msg.front();
 
@@ -185,8 +185,7 @@ namespace kspp {
 
         if (msg_in_batch > 0)
           statement += ", \n";
-        statement += avro2sql_values(*msg->record()->value()->valid_schema(),
-                                     *msg->record()->value()->generic_datum());;
+        statement += avro2sql_values(*msg->record()->value()->valid_schema(), *msg->record()->value()->generic_datum());
         ++msg_in_batch;
         in_batch.push_back(msg);
         _incomming_msg.pop_front();

@@ -200,7 +200,7 @@ int main(int argc, char **argv) {
   kspp::topology_builder generic_builder("kspp", SERVICE_NAME, config);
   auto topology = generic_builder.create_topology();
 
-  auto source0 = topology->create_processors<kspp::kafka_source<void, kspp::GenericAvro, void, kspp::avro_serdes>>(partition_list, topic, config->avro_serdes());
+  auto source0 = topology->create_processors<kspp::kafka_source<void, kspp::generic_avro, void, kspp::avro_serdes>>(partition_list, topic, config->avro_serdes());
 
   /*https://www.postgresql.org/docs/9.3/static/multibyte.html*/
 

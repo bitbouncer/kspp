@@ -5,12 +5,12 @@
 #include <kspp/kspp.h>
 #include <kspp/topology.h>
 #include <kspp/connect/tds/tds_consumer.h>
-#include <kspp/avro/avro_generic.h>
+//#include <kspp/avro/generic_avro.h>
 
 #pragma once
 
 namespace kspp {
-  class tds_generic_avro_source : public partition_source<void, kspp::GenericAvro> {
+  class tds_generic_avro_source : public partition_source<void, kspp::generic_avro> {
     static constexpr const char *PROCESSOR_NAME = "tds_avro_source";
   public:
     tds_generic_avro_source(topology &t,

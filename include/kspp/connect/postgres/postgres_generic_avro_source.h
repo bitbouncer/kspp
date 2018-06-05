@@ -5,12 +5,12 @@
 #include <kspp/kspp.h>
 #include <kspp/topology.h>
 #include <kspp/connect/postgres/postgres_consumer.h>
-#include <kspp/avro/avro_generic.h>
+//#include <kspp/avro/generic_avro.h>
 
 #pragma once
 
 namespace kspp {
-  class postgres_generic_avro_source : public partition_source<void, kspp::GenericAvro> {
+  class postgres_generic_avro_source : public partition_source<void, kspp::generic_avro> {
     static constexpr const char *PROCESSOR_NAME = "postgres_avro_source";
   public:
     postgres_generic_avro_source(topology &t,

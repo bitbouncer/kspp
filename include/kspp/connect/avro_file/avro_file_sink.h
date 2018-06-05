@@ -5,11 +5,11 @@
 #pragma once
 
 namespace kspp {
-  class avro_file_sink : public topic_sink<void, kspp::GenericAvro> {
+  class avro_file_sink : public topic_sink<void, kspp::generic_avro> {
     static constexpr const char* PROCESSOR_NAME = "avro_file_sink";
   public:
     avro_file_sink(topology &t, std::string path)
-        : topic_sink<void, kspp::GenericAvro>()
+        : topic_sink<void, kspp::generic_avro>()
         , _path(path) {
       this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
     }
@@ -33,7 +33,7 @@ namespace kspp {
     }
 
     size_t queue_size() const override {
-      return event_consumer<void, kspp::GenericAvro>::queue_size();
+      return event_consumer<void, kspp::generic_avro>::queue_size();
     }
 
     void flush() override {

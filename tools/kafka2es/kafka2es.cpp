@@ -143,7 +143,7 @@ int main(int argc, char **argv) {
   kspp::topology_builder generic_builder("kspp", SERVICE_NAME, config);
   auto topology = generic_builder.create_topology();
 
-  auto source0 = topology->create_processors<kspp::kafka_source<void, kspp::GenericAvro, void, kspp::avro_serdes>>(partition_list, topic, config->avro_serdes());
+  auto source0 = topology->create_processors<kspp::kafka_source<void, kspp::generic_avro, void, kspp::avro_serdes>>(partition_list, topic, config->avro_serdes());
 
   topology->create_sink<kspp::elasticsearch_generic_avro_sink>(source0, es_index, connection_params, "id", config->get_schema_registry());
 

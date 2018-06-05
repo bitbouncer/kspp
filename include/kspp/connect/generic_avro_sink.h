@@ -4,14 +4,14 @@
 #include <glog/logging.h>
 #include <kspp/kspp.h>
 #include <kspp/topology.h>
-#include <kspp/avro/avro_generic.h>
+#include <kspp/avro/generic_avro.h>
 #include <kspp/connect/generic_producer.h>
 #pragma once
 
 namespace kspp {
-  class generic_avro_sink : public topic_sink<void, kspp::GenericAvro> {
+  class generic_avro_sink : public topic_sink<void, kspp::generic_avro> {
   public:
-    generic_avro_sink(topology &t, std::shared_ptr<generic_producer<void, kspp::GenericAvro>> impl)
+    generic_avro_sink(topology &t, std::shared_ptr<generic_producer<void, kspp::generic_avro>> impl)
     : _impl(impl) {
     }
 
@@ -85,7 +85,7 @@ namespace kspp {
   protected:
     bool _started;
     bool _exit;
-    std::shared_ptr<generic_producer<void, kspp::GenericAvro>> _impl;
+    std::shared_ptr<generic_producer<void, kspp::generic_avro>> _impl;
   };
 }
 

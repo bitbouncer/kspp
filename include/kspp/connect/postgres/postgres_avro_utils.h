@@ -1,6 +1,6 @@
 #include <avro/Generic.hh>
 #include <avro/Schema.hh>
-#include <kspp/avro/avro_generic.h>
+#include <kspp/avro/generic_avro.h>
 #include <postgresql/libpq-fe.h>
 #pragma once
 
@@ -56,7 +56,7 @@ namespace kspp {
 
 
   //by name - the names in schema must match those in res, used for extraction of key's
-  std::vector<std::shared_ptr<kspp::GenericAvro>>
+  std::vector<std::shared_ptr<kspp::generic_avro>>
   to_avro3(boost::shared_ptr<avro::ValidSchema> schema, const PGresult* res);
 
 

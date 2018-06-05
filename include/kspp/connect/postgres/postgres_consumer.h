@@ -2,7 +2,7 @@
 #include <memory>
 #include <kspp/impl/queue.h>
 #include <kspp/topology.h>
-#include <kspp/avro/avro_generic.h>
+#include <kspp/avro/generic_avro.h>
 #include <kspp/connect/postgres/postgres_connection.h>
 #pragma once
 
@@ -43,11 +43,11 @@ namespace kspp {
 
     bool is_query_running() const { return !_eof; }
 
-    inline event_queue<void, kspp::GenericAvro>& queue(){
+    inline event_queue<void, kspp::generic_avro>& queue(){
       return _incomming_msg;
     };
 
-    inline const event_queue<void, kspp::GenericAvro>& queue() const {
+    inline const event_queue<void, kspp::generic_avro>& queue() const {
       return _incomming_msg;
     };
 
@@ -88,7 +88,7 @@ namespace kspp {
     std::shared_ptr<kspp::avro_schema_registry> schema_registry_;
     std::shared_ptr<avro::ValidSchema> schema_;
     int32_t schema_id_;
-    event_queue<void, kspp::GenericAvro> _incomming_msg;
+    event_queue<void, kspp::generic_avro> _incomming_msg;
 
     uint64_t _msg_cnt;
   };

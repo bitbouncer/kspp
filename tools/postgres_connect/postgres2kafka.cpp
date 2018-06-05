@@ -177,7 +177,7 @@ int main(int argc, char **argv) {
   if (filename.size()) {
     topology->create_sink<kspp::avro_file_sink>(source0, "/tmp/" + topic + ".avro");
   } else {
-    topology->create_sink<kspp::kafka_sink<void, kspp::GenericAvro, void, kspp::avro_serdes>>(source0, topic, config->avro_serdes());
+    topology->create_sink<kspp::kafka_sink<void, kspp::generic_avro, void, kspp::avro_serdes>>(source0, topic, config->avro_serdes());
   }
 
   std::vector<metrics20::avro::metrics20_key_tags_t> tags;
