@@ -1,7 +1,7 @@
 #include <memory>
 #include <utility>
 #include <functional>
-#include <postgresql/libpq-fe.h>
+#include <libpq-fe.h>
 #include <kspp/connect/connection_params.h>
 #pragma once
 

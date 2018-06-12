@@ -117,10 +117,17 @@ elseif (APPLE)
     SET(CSI_LIBS_STATIC kspp_s ${EXT_LIBS_STATIC})
     #END APPLE
 else () #LINUX
-   IF (ALPINE)  
-   add_definitions(-DALPINE=1)
-   endif()
 
+    #   IF (ALPINE)
+    #   add_definitions(-DALPINE=1)
+    #   endif()
+
+    if (ENABLE_POSTGRES)
+        find_package(PostgreSQL REQUIRED)
+        include_directories($PostgreSQL_INCLUDE_DIRS)
+        #PostgreSQL_LIBRARIES
+        #PostgreSQL_VERSION_STRING
+    endif () #POSTGRES
 
     find_package(Boost COMPONENTS program_options filesystem system REQUIRED)
     set(BOOST_LIBS
@@ -163,9 +170,7 @@ else () #LINUX
         SET(LIBZK_LIBS csi-zk)
     endif () #ZK
 
-    if (ENABLE_POSTGRES)
-        SET(POSTGRES_LIBS pq)
-    endif () #POSTGRES
+
 
     SET(LIBRDKAFKA_LIBS rdkafka++ rdkafka)
 
@@ -174,8 +179,8 @@ else () #LINUX
     add_definitions(-g -D_FILE_OFFSET_BITS=64 -D_REENTRANT -DEXTERNAL_LOCKS -DMULTITHREAD)
     add_definitions(-fPIC)
     add_definitions(-Wno-deprecated)
-    SET(EXT_LIBS ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${BOOST_LIBS} ${POSTGRES_LIBS} glog crypto ssl)
-    SET(EXT_LIBS_STATIC ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${BOOST_LIBS} ${POSTGRES_LIBS} glog crypto ssl)
+    SET(EXT_LIBS ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${BOOST_LIBS} ${PostgreSQL_LIBRARIES} glog crypto ssl)
+    SET(EXT_LIBS_STATIC ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${BOOST_LIBS} ${PostgreSQL_LIBRARIES} glog crypto ssl)
 
     SET(CSI_LIBS kspp ${EXT_LIBS})
     SET(CSI_LIBS_STATIC kspp_s ${EXT_LIBS_STATIC})

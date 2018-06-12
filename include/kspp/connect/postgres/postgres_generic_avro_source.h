@@ -5,8 +5,6 @@
 #include <kspp/kspp.h>
 #include <kspp/topology.h>
 #include <kspp/connect/postgres/postgres_consumer.h>
-//#include <kspp/avro/generic_avro.h>
-
 #pragma once
 
 namespace kspp {

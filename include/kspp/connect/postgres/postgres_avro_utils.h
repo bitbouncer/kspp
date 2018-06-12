@@ -1,8 +1,4 @@
-#ifdef ALPINE
 #include <libpq-fe.h>
-#else
-#include <postgresql/libpq-fe.h>
-#endif
 #include <avro/Generic.hh>
 #include <avro/Schema.hh>
 #include <kspp/avro/generic_avro.h>

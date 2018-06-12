@@ -4,7 +4,7 @@
 #include <memory>
 #include <glog/logging.h>
 #include <boost/bind.hpp>
-#include  <kspp/connect/postgres/postgres_avro_utils.h>
+#include <kspp/connect/postgres/postgres_avro_utils.h>
 
 using namespace std::chrono_literals;
 
