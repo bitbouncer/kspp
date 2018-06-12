@@ -117,6 +117,11 @@ elseif (APPLE)
     SET(CSI_LIBS_STATIC kspp_s ${EXT_LIBS_STATIC})
     #END APPLE
 else () #LINUX
+   IF (ALPINE)  
+   add_definitions(-DALPINE=1)
+   endif()
+
+
     find_package(Boost COMPONENTS program_options filesystem system REQUIRED)
     set(BOOST_LIBS
             ${Boost_PROGRAM_OPTIONS_LIBRARY}

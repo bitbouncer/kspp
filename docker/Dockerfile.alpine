@@ -140,8 +140,8 @@ BUILD_DIR="$(mktemp -d)" && \
    cd "$BUILD_DIR/kspp" && \
    mkdir build && \
    cd build && \
-   cmake  -DCMAKE_BUILD_TYPE=Release -DENABLE_ROCKSDB=ON -DBUILD_SAMPLES=ON .. && \
-   make -j -DALPINE "$(getconf _NPROCESSORS_ONLN)" && \
+   cmake  -DCMAKE_BUILD_TYPE=Release -DALPINE=1 -DENABLE_ROCKSDB=ON -DBUILD_SAMPLES=ON .. && \
+   make -j "$(getconf _NPROCESSORS_ONLN)" && \
    make install && \
    cd .. && \
    cp -r bin/* /usr/local/bin/ && \ 
