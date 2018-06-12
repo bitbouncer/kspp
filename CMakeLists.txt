@@ -11,6 +11,7 @@ option(ENABLE_ELASTICSEARCH "enable elastic search support" ON)
 option(BUILD_TOOLS "build tools" ON)
 option(BUILD_SAMPLES "build examples" ON)
 option(BUILD_TESTS "build tests" ON)
+option(LINK_SHARED "link shared" OFF)
 
 set(KSPP_VERSION_MAJOR 1)
 set(KSPP_VERSION_MINOR 0)
