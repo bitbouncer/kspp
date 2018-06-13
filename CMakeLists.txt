@@ -118,14 +118,9 @@ elseif (APPLE)
     SET(CSI_LIBS_STATIC kspp_s ${EXT_LIBS_STATIC})
     #END APPLE
 else () #LINUX
-
-    #   IF (ALPINE)
-    #   add_definitions(-DALPINE=1)
-    #   endif()
-
     if (ENABLE_POSTGRES)
         find_package(PostgreSQL REQUIRED)
-        include_directories($PostgreSQL_INCLUDE_DIRS)
+        include_directories(${PostgreSQL_INCLUDE_DIRS})
         #PostgreSQL_LIBRARIES
         #PostgreSQL_VERSION_STRING
     endif () #POSTGRES
