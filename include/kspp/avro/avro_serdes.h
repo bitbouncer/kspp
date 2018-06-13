@@ -44,7 +44,7 @@ namespace kspp {
     size_t encode(const T& src, std::ostream& dst) {
       static int32_t schema_id = -1;
       if (schema_id < 0) {
-        int32_t res = _registry->put_schema(src.name(), src.valid_schema());
+        int32_t res = _registry->put_schema(src.avro_schema_name(), src.valid_schema());
         if (res >= 0)
           schema_id = res;
         else
@@ -61,7 +61,7 @@ namespace kspp {
     * avro encoded payload
     */
     template<class T>
-    size_t encode(std::string name, const T& src, std::ostream& dst) {
+    size_t encode(const std::string& name, const T& src, std::ostream& dst) {
       static int32_t schema_id = -1;
       if (schema_id < 0) {
         int32_t res = _registry->put_schema(name, src.valid_schema());
@@ -115,7 +115,7 @@ namespace kspp {
     size_t decode(const char* payload, size_t size, T& dst) {
       static int32_t schema_id = -1;
       if (schema_id < 0) {
-        int32_t res = _registry->put_schema(dst.name(), dst.valid_schema());
+        int32_t res = _registry->put_schema(dst.avro_schema_name(), dst.valid_schema());
         if (res >= 0)
           schema_id = res;
         else

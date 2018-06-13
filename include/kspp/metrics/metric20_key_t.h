@@ -36,7 +36,7 @@ struct metrics20_key_t {
   }
 
   //returns the (type)name of self (avro extension for kspp avro serdes)
-  static std::string name(){
+  static std::string avro_schema_name(){
     return "metrics20.avro.metrics20_key_t";
   }
 };

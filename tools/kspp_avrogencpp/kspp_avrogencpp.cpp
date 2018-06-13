@@ -355,7 +355,7 @@ string CodeGen::generateRecordType(const NodePtr &n) {
     os_ << "    return _validSchema;\n";
     os_ << "  }\n\n";
     os_ << "  //returns the (type)name of self (avro extension for kspp avro serdes)\n";
-    os_ << "  static std::string name(){\n";
+    os_ << "  static std::string avro_schema_name(){\n";
     os_ << "    return \"" << n->name().fullname() << "\";\n";
     os_ << "  }\n";
   }
