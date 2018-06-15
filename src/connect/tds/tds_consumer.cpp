@@ -261,7 +261,7 @@ namespace kspp {
       if (_id_column.size()){
         for (int i = 0; i < ncols; i++) {
           const char *col_name = dbcolname(stream, i + 1);
-          if (strcmp(col_name, _ts_column.c_str()) == 0) {
+          if (strcmp(col_name, _id_column.c_str()) == 0) {
             id_column_index_ = i + 1;
           }
         }
