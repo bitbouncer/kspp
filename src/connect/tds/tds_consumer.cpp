@@ -603,6 +603,8 @@ namespace kspp {
             where_clause = " WHERE " + _ts_column + " >= '" + std::to_string(last_ts_) + "'";
       }
 
+      LOG(INFO) << "WHERE_CLAUSE " << where_clause;
+
       /*
       // do we have a timestamp field
       // we have to have either a interger id that is increasing or a timestamp that is increasing
