@@ -282,8 +282,14 @@ namespace kspp {
         else
           where_clause = " WHERE " + _id_column + " > '" + last_id_ + "'";
       } else {
-        if (last_ts_.size())
-          where_clause = " WHERE " + _ts_column + " >= '" + last_ts_ + "'";
+        if (last_ts_.size()) {
+          if (cp_.connect_ts_policy == kspp::connect::GREATER) // this leads to potential data loss
+            where_clause = " WHERE " + _ts_column + " > '" + last_ts_ + "'";
+          else if (cp_.connect_ts_policy == kspp::connect::GREATER_OR_EQUAL) // this leads to duplicates since last is repeated
+            where_clause = " WHERE " + _ts_column + " >= '" + last_ts_ + "'";
+          else
+            LOG(FATAL) << "unknown cp_.connect_ts_policy: " << cp_.connect_ts_policy;
+        }
       }
 
       //std::string statement = "SELECT TOP " + std::to_string(_max_items_in_fetch) + " " + fields + " FROM " + _table + where_clause + " ORDER BY " + order_by;
@@ -313,8 +319,15 @@ namespace kspp {
       if ((_msg_cnt - last_msg_count) != _max_items_in_fetch)
         _eof = true;
 
-      LOG(INFO) << "poll done, table: " << _table << " retrieved: " << _msg_cnt - last_msg_count << " messages, total: " << _msg_cnt << ", last ts: " << last_ts_ << " duration " << ts1 -ts0 << " ms";
+      size_t messages_in_batch = _msg_cnt - last_msg_count;
 
+      if (messages_in_batch==0) {
+        LOG_EVERY_N(INFO, 100) << "empty poll done, table: " << _table << " total: " << _msg_cnt << ", last ts: "
+                               << last_ts_ << " duration " << ts1 - ts0 << " ms";
+      }  else {
+        LOG(INFO) << "poll done, table: " << _table << " retrieved: " << messages_in_batch << " messages, total: "
+                  << _msg_cnt << ", last ts: " << last_ts_ << " duration " << ts1 - ts0 << " ms";
+      }
 
       if (_eof) {
         // what is sleeping cannot bne killed...

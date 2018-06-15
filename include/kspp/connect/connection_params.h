@@ -3,6 +3,9 @@
 
 namespace kspp {
   namespace connect {
+
+    enum connect_ts_policy_t { GREATER_OR_EQUAL, GREATER };
+
     struct connection_params {
 
       std::string url;   // where relevant
@@ -18,6 +21,8 @@ namespace kspp {
       std::string database;
 
       std::string http_header; // where relevant;
+
+      connect_ts_policy_t connect_ts_policy = GREATER_OR_EQUAL;
     };
   }
 }

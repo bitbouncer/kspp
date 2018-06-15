@@ -85,6 +85,7 @@ namespace kspp {
     std::string last_id_;
     std::string last_ts_;
 
+
     std::shared_ptr<kspp::avro_schema_registry> schema_registry_;
     std::shared_ptr<avro::ValidSchema> schema_;
     int32_t schema_id_;
