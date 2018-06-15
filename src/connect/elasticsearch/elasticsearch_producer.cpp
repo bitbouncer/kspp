@@ -62,10 +62,10 @@ namespace kspp {
 
   static void run_work(std::deque<kspp::async::work<elasticsearch_producer::work_result_t>::async_function>& work, size_t batch_size) {
     size_t parse_errors = 0;
-    size_t timeouts = 0;
+    //size_t timeouts = 0;
 
     const size_t max_parse_error_per_batch = std::max<size_t>(5, work.size() / 10); // if we get more that 10% per batch there is something seriously wrong (just guessing figures)
-    const size_t max_timeouts_per_batch = std::max<size_t>(5, work.size() / 3);    // if we get more that 30% per batch there is something seriously wrong (just guessing figures)
+    //const size_t max_timeouts_per_batch = std::max<size_t>(5, work.size() / 3);    // if we get more that 30% per batch there is something seriously wrong (just guessing figures)
 
     while (work.size()) {
       kspp::async::work<elasticsearch_producer::work_result_t> batch(kspp::async::PARALLEL, kspp::async::ALL);
@@ -80,7 +80,7 @@ namespace kspp {
           case elasticsearch_producer::SUCCESS:
             break;
           case elasticsearch_producer::TIMEOUT:
-            if (++timeouts < max_timeouts_per_batch)
+            //if (++timeouts < max_timeouts_per_batch)
               work.push_front(batch.get_function(i));
             break;
           case elasticsearch_producer::HTTP_ERROR:
@@ -96,8 +96,8 @@ namespace kspp {
 
     if (parse_errors > max_parse_error_per_batch)
       LOG(WARNING) << "parse error threshold exceeded, skipped " << parse_errors - max_parse_error_per_batch << " items";
-    if (timeouts > max_timeouts_per_batch)
-      LOG(WARNING) << "timeouts threshold exceeded, skipped " << timeouts - max_timeouts_per_batch << " items";
+    //if (timeouts > max_timeouts_per_batch)
+    //  LOG(WARNING) << "timeouts threshold exceeded, skipped " << timeouts - max_timeouts_per_batch << " items";
   }
 
   kspp::async::work<elasticsearch_producer::work_result_t>::async_function  elasticsearch_producer::create_one_http_work(const kspp::generic_avro& doc) {
