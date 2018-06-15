@@ -127,10 +127,6 @@ namespace kspp {
       // TODO this could be an array of columns
       id_column_index_ = PQfnumber(result.get(), _id_column.c_str());
       ts_column_index_ = PQfnumber(result.get(), _ts_column.c_str());
-
-
-
-
     }
 
     int nRows = PQntuples(result.get());
