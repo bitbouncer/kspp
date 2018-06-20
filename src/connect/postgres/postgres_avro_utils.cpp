@@ -218,7 +218,7 @@ namespace kspp {
                           avro_item.value<double>() = atof(val);
                       break;
                       case avro::AVRO_BOOL:
-                        avro_item.value<bool>() = (strcasecmp(val, "true") == 0);
+                        avro_item.value<bool>() = (val[0]=='t' || val[0]=='T' || val[0]=='1');
                       break;
                       case avro::AVRO_RECORD:
                       case avro::AVRO_ENUM:
@@ -300,7 +300,7 @@ namespace kspp {
                           avro_item.value<double>() = atof(val);
                       break;
                       case avro::AVRO_BOOL:
-                          avro_item.value<bool>() = (strcmp(val, "True") == 0);
+                        avro_item.value<bool>() = (val[0]=='t' || val[0]=='T' || val[0]=='1');
                       break;
                       case avro::AVRO_RECORD:
                       case avro::AVRO_ENUM:
