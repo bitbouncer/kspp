@@ -22,7 +22,22 @@ RUN wget -O rocksdb.tar.gz "https://github.com/facebook/rocksdb/archive/$ROCKSDB
   make install-shared && \
   cd .. && \
   rm rocksdb.tar.gz && \
-  rm -rf rocksdb
+  rm -rf rocksdb 
+
+RUN wget -O freetds-patched.tar.gz "ftp://ftp.freetds.org/pub/freetds/stable/freetds-patched.tar.gz" && \
+  mkdir -p freetds && \
+  tar \
+    --extract \
+    --file freetds-patched.tar.gz \
+    --directory freetds \
+    --strip-components 1 && \
+  cd freetds && \
+  ./configure --prefix=/usr/local && \
+  make -j "$(getconf _NPROCESSORS_ONLN)" && \
+  make install && \
+  cd .. && \
+  rm freetds-patched.tar.gz && \
+  rm -rf freetds
 
 RUN wget -O rapidjson.tar.gz "https://github.com/miloyip/rapidjson/archive/$RAPIDJSON_TAG.tar.gz" && \
 mkdir -p rapidjson && \
