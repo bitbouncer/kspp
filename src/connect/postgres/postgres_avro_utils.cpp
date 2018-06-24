@@ -168,164 +168,167 @@ namespace kspp {
 
   boost::shared_ptr<avro::ValidSchema>
   valid_schema_for_table_key(std::string schema_name, const std::vector<std::string> &keys, const PGresult* res) {
+    if (keys.size()==0)
+      return boost::make_shared<avro::ValidSchema>(avro::NullSchema());
+    else
       return boost::make_shared<avro::ValidSchema>(*schema_for_table_key(schema_name, keys, res));
   }
 
-// this is done by assuming all fields are in the same order... ???
-  std::vector<boost::shared_ptr<avro::GenericDatum>>
-  to_avro(boost::shared_ptr<avro::ValidSchema> schema, const PGresult* res) {
-      size_t nFields = PQnfields(res);
-      int nRows = PQntuples(res);
-      std::vector<boost::shared_ptr<avro::GenericDatum>> result;
-      result.reserve(nRows);
-      for (int i = 0; i < nRows; i++) {
-          boost::shared_ptr<avro::GenericDatum> gd = boost::make_shared<avro::GenericDatum>(*schema);
-          assert(gd->type() == avro::AVRO_RECORD);
-          avro::GenericRecord &record(gd->value<avro::GenericRecord>());
-          for (int j = 0; j < nFields; j++) {
-              if (record.fieldAt(j).type() != avro::AVRO_UNION) {
-                  LOG(FATAL) << "unexpected schema - bailing out";
-                  break;
-              }
-
-              avro::GenericUnion &au(record.fieldAt(j).value<avro::GenericUnion>());
-
-              if (PQgetisnull(res, i, j) == 1) {
-                  au.selectBranch(0); // NULL branch - we hope..
-                  assert(au.datum().type() == avro::AVRO_NULL);
-              } else {
-                  au.selectBranch(1);
-                  avro::GenericDatum &avro_item(au.datum());
-                  const char *val = PQgetvalue(res, i, j);
-
-                  switch (avro_item.type()) {
-                      case avro::AVRO_STRING:
-                          avro_item.value<std::string>() = val;
-                      break;
-                      case avro::AVRO_BYTES:
-                          avro_item.value<std::string>() = val;
-                      break;
-                      case avro::AVRO_INT:
-                          avro_item.value<int32_t>() = atoi(val);
-                      break;
-                      case avro::AVRO_LONG:
-                          avro_item.value<int64_t>() = std::stoull(val);
-                      break;
-                      case avro::AVRO_FLOAT:
-                          avro_item.value<float>() = (float) atof(val);
-                      break;
-                      case avro::AVRO_DOUBLE:
-                          avro_item.value<double>() = atof(val);
-                      break;
-                      case avro::AVRO_BOOL:
-                        avro_item.value<bool>() = (val[0]=='t' || val[0]=='T' || val[0]=='1');
-                      break;
-                      case avro::AVRO_RECORD:
-                      case avro::AVRO_ENUM:
-                      case avro::AVRO_ARRAY:
-                      case avro::AVRO_MAP:
-                      case avro::AVRO_UNION:
-                      case avro::AVRO_FIXED:
-                      case avro::AVRO_NULL:
-                      default:
-                          LOG(FATAL)  << "unexpected / non supported type e:" << avro_item.type();
-                  }
-              }
-          }
-          result.push_back(gd);
-
-          //std::cerr << std::endl;
-
-          //avro::encode(*encoder, *gd);
-          // I create a DataFileWriter and i write my pair of ValidSchema and GenericValue
-          //avro::DataFileWriter<Pair> dataFileWriter("test.bin", schema);
-          //dataFileWriter.write(p);
-          //dataFileWriter.close();
-      }
-      return result;
-  }
-
-// this is done by mapping schema field names to result columns...
-  std::vector<boost::shared_ptr<avro::GenericDatum>>
-  to_avro2(boost::shared_ptr<avro::ValidSchema> schema, const PGresult* res) {
-      int nRows = PQntuples(res);
-      std::vector<boost::shared_ptr<avro::GenericDatum>> result;
-      result.reserve(nRows);
-      for (int i = 0; i < nRows; i++) {
-          boost::shared_ptr<avro::GenericDatum> gd = boost::make_shared<avro::GenericDatum>(*schema);
-          assert(gd->type() == avro::AVRO_RECORD);
-          avro::GenericRecord &record(gd->value<avro::GenericRecord>());
-          size_t nFields = record.fieldCount();
-          for (int j = 0; j < nFields; j++) {
-              if (record.fieldAt(j).type() != avro::AVRO_UNION) {
-                  LOG(FATAL) << "unexpected schema - bailing out, type:" << record.fieldAt(j).type();
-                  break;
-              }
-              avro::GenericUnion &au(record.fieldAt(j).value<avro::GenericUnion>());
-
-              const std::string &column_name = record.schema()->nameAt(j);
-
-              //which pg column has this value?
-              int column_index = PQfnumber(res, column_name.c_str());
-              if (column_index < 0) {
-                  LOG(FATAL) << "unknown column - bailing out: " << column_name;
-                  break;
-              }
-
-              if (PQgetisnull(res, i, column_index) == 1) {
-                  au.selectBranch(0); // NULL branch - we hope..
-                  assert(au.datum().type() == avro::AVRO_NULL);
-              } else {
-                  au.selectBranch(1);
-                  avro::GenericDatum &avro_item(au.datum());
-                  const char *val = PQgetvalue(res, i, j);
-
-                  switch (avro_item.type()) {
-                      case avro::AVRO_STRING:
-                          avro_item.value<std::string>() = val;
-                      break;
-                      case avro::AVRO_BYTES:
-                          avro_item.value<std::string>() = val;
-                      break;
-                      case avro::AVRO_INT:
-                          avro_item.value<int32_t>() = atoi(val);
-                      break;
-                      case avro::AVRO_LONG:
-                          avro_item.value<int64_t>() = std::stoull(val);
-                      break;
-                      case avro::AVRO_FLOAT:
-                          avro_item.value<float>() = (float) atof(val);
-                      break;
-                      case avro::AVRO_DOUBLE:
-                          avro_item.value<double>() = atof(val);
-                      break;
-                      case avro::AVRO_BOOL:
-                        avro_item.value<bool>() = (val[0]=='t' || val[0]=='T' || val[0]=='1');
-                      break;
-                      case avro::AVRO_RECORD:
-                      case avro::AVRO_ENUM:
-                      case avro::AVRO_ARRAY:
-                      case avro::AVRO_MAP:
-                      case avro::AVRO_UNION:
-                      case avro::AVRO_FIXED:
-                      case avro::AVRO_NULL:
-                      default:
-                         LOG(FATAL) << "unexpected / non supported type e:" << avro_item.type();
-                  }
-              }
-          }
-          result.push_back(gd);
-
-          //std::cerr << std::endl;
-
-          //avro::encode(*encoder, *gd);
-          // I create a DataFileWriter and i write my pair of ValidSchema and GenericValue
-          //avro::DataFileWriter<Pair> dataFileWriter("test.bin", schema);
-          //dataFileWriter.write(p);
-          //dataFileWriter.close();
-      }
-      return result;
-  }
+//// this is done by assuming all fields are in the same order... ???
+//  std::vector<boost::shared_ptr<avro::GenericDatum>>
+//  to_avro(boost::shared_ptr<avro::ValidSchema> schema, const PGresult* res) {
+//      size_t nFields = PQnfields(res);
+//      int nRows = PQntuples(res);
+//      std::vector<boost::shared_ptr<avro::GenericDatum>> result;
+//      result.reserve(nRows);
+//      for (int i = 0; i < nRows; i++) {
+//          boost::shared_ptr<avro::GenericDatum> gd = boost::make_shared<avro::GenericDatum>(*schema);
+//          assert(gd->type() == avro::AVRO_RECORD);
+//          avro::GenericRecord &record(gd->value<avro::GenericRecord>());
+//          for (int j = 0; j < nFields; j++) {
+//              if (record.fieldAt(j).type() != avro::AVRO_UNION) {
+//                  LOG(FATAL) << "unexpected schema - bailing out";
+//                  break;
+//              }
+//
+//              avro::GenericUnion &au(record.fieldAt(j).value<avro::GenericUnion>());
+//
+//              if (PQgetisnull(res, i, j) == 1) {
+//                  au.selectBranch(0); // NULL branch - we hope..
+//                  assert(au.datum().type() == avro::AVRO_NULL);
+//              } else {
+//                  au.selectBranch(1);
+//                  avro::GenericDatum &avro_item(au.datum());
+//                  const char *val = PQgetvalue(res, i, j);
+//
+//                  switch (avro_item.type()) {
+//                      case avro::AVRO_STRING:
+//                          avro_item.value<std::string>() = val;
+//                      break;
+//                      case avro::AVRO_BYTES:
+//                          avro_item.value<std::string>() = val;
+//                      break;
+//                      case avro::AVRO_INT:
+//                          avro_item.value<int32_t>() = atoi(val);
+//                      break;
+//                      case avro::AVRO_LONG:
+//                          avro_item.value<int64_t>() = std::stoull(val);
+//                      break;
+//                      case avro::AVRO_FLOAT:
+//                          avro_item.value<float>() = (float) atof(val);
+//                      break;
+//                      case avro::AVRO_DOUBLE:
+//                          avro_item.value<double>() = atof(val);
+//                      break;
+//                      case avro::AVRO_BOOL:
+//                        avro_item.value<bool>() = (val[0]=='t' || val[0]=='T' || val[0]=='1');
+//                      break;
+//                      case avro::AVRO_RECORD:
+//                      case avro::AVRO_ENUM:
+//                      case avro::AVRO_ARRAY:
+//                      case avro::AVRO_MAP:
+//                      case avro::AVRO_UNION:
+//                      case avro::AVRO_FIXED:
+//                      case avro::AVRO_NULL:
+//                      default:
+//                          LOG(FATAL)  << "unexpected / non supported type e:" << avro_item.type();
+//                  }
+//              }
+//          }
+//          result.push_back(gd);
+//
+//          //std::cerr << std::endl;
+//
+//          //avro::encode(*encoder, *gd);
+//          // I create a DataFileWriter and i write my pair of ValidSchema and GenericValue
+//          //avro::DataFileWriter<Pair> dataFileWriter("test.bin", schema);
+//          //dataFileWriter.write(p);
+//          //dataFileWriter.close();
+//      }
+//      return result;
+//  }
+//
+//// this is done by mapping schema field names to result columns...
+//  std::vector<boost::shared_ptr<avro::GenericDatum>>
+//  to_avro2(boost::shared_ptr<avro::ValidSchema> schema, const PGresult* res) {
+//      int nRows = PQntuples(res);
+//      std::vector<boost::shared_ptr<avro::GenericDatum>> result;
+//      result.reserve(nRows);
+//      for (int i = 0; i < nRows; i++) {
+//          boost::shared_ptr<avro::GenericDatum> gd = boost::make_shared<avro::GenericDatum>(*schema);
+//          assert(gd->type() == avro::AVRO_RECORD);
+//          avro::GenericRecord &record(gd->value<avro::GenericRecord>());
+//          size_t nFields = record.fieldCount();
+//          for (int j = 0; j < nFields; j++) {
+//              if (record.fieldAt(j).type() != avro::AVRO_UNION) {
+//                  LOG(FATAL) << "unexpected schema - bailing out, type:" << record.fieldAt(j).type();
+//                  break;
+//              }
+//              avro::GenericUnion &au(record.fieldAt(j).value<avro::GenericUnion>());
+//
+//              const std::string &column_name = record.schema()->nameAt(j);
+//
+//              //which pg column has this value?
+//              int column_index = PQfnumber(res, column_name.c_str());
+//              if (column_index < 0) {
+//                  LOG(FATAL) << "unknown column - bailing out: " << column_name;
+//                  break;
+//              }
+//
+//              if (PQgetisnull(res, i, column_index) == 1) {
+//                  au.selectBranch(0); // NULL branch - we hope..
+//                  assert(au.datum().type() == avro::AVRO_NULL);
+//              } else {
+//                  au.selectBranch(1);
+//                  avro::GenericDatum &avro_item(au.datum());
+//                  const char *val = PQgetvalue(res, i, j);
+//
+//                  switch (avro_item.type()) {
+//                      case avro::AVRO_STRING:
+//                          avro_item.value<std::string>() = val;
+//                      break;
+//                      case avro::AVRO_BYTES:
+//                          avro_item.value<std::string>() = val;
+//                      break;
+//                      case avro::AVRO_INT:
+//                          avro_item.value<int32_t>() = atoi(val);
+//                      break;
+//                      case avro::AVRO_LONG:
+//                          avro_item.value<int64_t>() = std::stoull(val);
+//                      break;
+//                      case avro::AVRO_FLOAT:
+//                          avro_item.value<float>() = (float) atof(val);
+//                      break;
+//                      case avro::AVRO_DOUBLE:
+//                          avro_item.value<double>() = atof(val);
+//                      break;
+//                      case avro::AVRO_BOOL:
+//                        avro_item.value<bool>() = (val[0]=='t' || val[0]=='T' || val[0]=='1');
+//                      break;
+//                      case avro::AVRO_RECORD:
+//                      case avro::AVRO_ENUM:
+//                      case avro::AVRO_ARRAY:
+//                      case avro::AVRO_MAP:
+//                      case avro::AVRO_UNION:
+//                      case avro::AVRO_FIXED:
+//                      case avro::AVRO_NULL:
+//                      default:
+//                         LOG(FATAL) << "unexpected / non supported type e:" << avro_item.type();
+//                  }
+//              }
+//          }
+//          result.push_back(gd);
+//
+//          //std::cerr << std::endl;
+//
+//          //avro::encode(*encoder, *gd);
+//          // I create a DataFileWriter and i write my pair of ValidSchema and GenericValue
+//          //avro::DataFileWriter<Pair> dataFileWriter("test.bin", schema);
+//          //dataFileWriter.write(p);
+//          //dataFileWriter.close();
+//      }
+//      return result;
+//  }
 
 
 /*
@@ -654,7 +657,25 @@ std::string escapeSQL(SQLConnection & connection, const std::string & dataIn)
     return result;
   }
 
-
-
+  std::string avro2sql_delete_key_values(const avro::ValidSchema& schema, const std::string& key, const avro::GenericDatum &datum){
+    if (datum.type() == avro::AVRO_RECORD) {
+      auto root = schema.root();
+      assert(root->type() == avro::AVRO_RECORD);
+      std::string result = "(";
+      const avro::GenericRecord &record(datum.value<avro::GenericRecord>());
+      size_t nFields = record.fieldCount();
+      for (int i = 0; i < nFields; i++) {
+        result += root->nameAt(i) + "=";
+        std::string val = avro2sql_simple_column_value(record.fieldAt(i));
+        if (i < (nFields - 1))
+          result += "=" + val + " AND ";
+        else
+          result += "=" + val + ")";
+      }
+      return result;
+    } else {
+      return key + "=" + avro2sql_simple_column_value(datum);
+    }
+  }
 
 } // namespace

@@ -43,11 +43,11 @@ namespace kspp {
 
     bool is_query_running() const { return !_eof; }
 
-    inline event_queue<void, kspp::generic_avro>& queue(){
+    inline event_queue<kspp::generic_avro, kspp::generic_avro>& queue(){
       return _incomming_msg;
     };
 
-    inline const event_queue<void, kspp::generic_avro>& queue() const {
+    inline const event_queue<kspp::generic_avro, kspp::generic_avro>& queue() const {
       return _incomming_msg;
     };
 
@@ -87,9 +87,12 @@ namespace kspp {
 
 
     std::shared_ptr<kspp::avro_schema_registry> schema_registry_;
-    std::shared_ptr<avro::ValidSchema> schema_;
-    int32_t schema_id_;
-    event_queue<void, kspp::generic_avro> _incomming_msg;
+    std::shared_ptr<avro::ValidSchema> key_schema_;
+    std::unique_ptr<kspp::generic_avro> last_key_;
+    std::shared_ptr<avro::ValidSchema> value_schema_;
+    int32_t key_schema_id_;
+    int32_t value_schema_id_;
+    event_queue<kspp::generic_avro, kspp::generic_avro> _incomming_msg;
 
     uint64_t _msg_cnt;
   };

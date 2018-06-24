@@ -53,11 +53,6 @@ namespace kspp {
   void elasticsearch_producer::check_table_exists_async(){
     _table_exists = true;
     _table_create_pending = false;
-
-  }
-
-  void elasticsearch_producer::write_some_async(){
-
   }
 
   static void run_work(std::deque<kspp::async::work<elasticsearch_producer::work_result_t>::async_function>& work, size_t batch_size) {
@@ -100,23 +95,34 @@ namespace kspp {
     //  LOG(WARNING) << "timeouts threshold exceeded, skipped " << timeouts - max_timeouts_per_batch << " items";
   }
 
-  kspp::async::work<elasticsearch_producer::work_result_t>::async_function  elasticsearch_producer::create_one_http_work(const kspp::generic_avro& doc) {
-    auto key_string = avro2elastic_key_values(*doc.valid_schema(), _id_column, *doc.generic_datum());
-    key_string.erase(std::remove_if(key_string.begin(), key_string.end(), avro2elastic_IsChars("\"")), key_string.end()); // TODO there should be a key extractor that does not add '' around strings...
-
+  kspp::async::work<elasticsearch_producer::work_result_t>::async_function  elasticsearch_producer::create_one_http_work(const kspp::generic_avro& key, const kspp::generic_avro* value) {
+    auto key_string = avro_simple_column_value(*key.generic_datum());
     std::string url = _cp.url + "/" + _index_name + "/" + "_doc" + "/" + key_string;
-    std::string body = avro2elastic_json(*doc.valid_schema(), *doc.generic_datum());
+
+    kspp::http::method_t request_type = (value) ? kspp::http::PUT : kspp::http::DELETE_;
+
+    std::string body;
+
+    if (value) {
+      //auto key_string = avro2elastic_key_values(*value->valid_schema(), _id_column, *value->generic_datum());
+      //key_string.erase(std::remove_if(key_string.begin(), key_string.end(), avro2elastic_IsChars("\"")), key_string.end()); // TODO there should be a key extractor that does not add '' around strings...
+      body = avro2elastic_json(*value->valid_schema(), *value->generic_datum());
+      //std::string url = _cp.url + "/" + _index_name + "/" + "_doc" + "/" + key_string;
+    }
+
+
+
     //std::cerr << body << std::endl;
 
-    kspp::async::work<work_result_t>::async_function f = [this, body, url](std::function<void(work_result_t)> cb) {
+    kspp::async::work<work_result_t>::async_function f = [this, request_type, body, url](std::function<void(work_result_t)> cb) {
       std::vector<std::string> headers({ "Content-Type: application/json" });
-      auto request = std::make_shared<kspp::http::request>(kspp::http::PUT, url, headers, _http_timeout);
+      auto request = std::make_shared<kspp::http::request>(request_type, url, headers, _http_timeout);
 
       if (_cp.user.size() && _cp.password.size())
         request->set_basic_auth(_cp.user, _cp.password);
 
       request->append(body);
-      request->set_verbose(true);
+      request->set_verbose(false);
       _http_handler.perform_async(
         request,
         [this, cb](std::shared_ptr<kspp::http::request> h) {
@@ -128,9 +134,13 @@ namespace kspp {
               cb(TIMEOUT);
               return;
             } else {
+              // if we are deleteing and the document does not exist we do not consideer this as a failure
+              if (h->method()==kspp::http::DELETE_ && h->http_result()==kspp::http::not_found){
+                cb(SUCCESS);
+                return;
+              }
               //++_http_error;
-              //LOG(WARNING) << "http put: " << h->uri() << " HTTPRES = " << h->http_result() << " - retrying, request:" << h->tx_content();
-              LOG(WARNING) << "http put: " << h->uri() << " HTTPRES = " << h->http_result() << " - retrying, reponse:" << h->rx_content();
+              LOG(WARNING) << "http " << kspp::http::to_string(h->method()) << ", "  << h->uri() << " HTTPRES = " << h->http_result() << " - retrying, reponse:" << h->rx_content();
               cb(HTTP_ERROR);
               return;
             }
@@ -139,7 +149,6 @@ namespace kspp {
           DLOG_EVERY_N(INFO, 100) << "http PUT: " << h->uri() << " got " << h->rx_content_length() << " bytes, time="
                                   << h->milliseconds() << " ms (" << h->rx_kb_per_sec() << " KB/s), #"
                                   << google::COUNTER;
-          ++_msg_cnt;
           _msg_bytes += h->tx_content_length();
           cb(SUCCESS);
           // TBD store metrics on request time
@@ -151,16 +160,13 @@ namespace kspp {
   void elasticsearch_producer::_process_work() {
     while (!_closed) {
       size_t msg_in_batch = 0 ;
+      event_queue<kspp::generic_avro, kspp::generic_avro> in_batch;
       std::deque<kspp::async::work<work_result_t>::async_function> work;
       while(!_incomming_msg.empty() && msg_in_batch<10000) {
         auto msg = _incomming_msg.front();
-        if (msg->record()->value()) {
-          ++msg_in_batch;
-          auto f = create_one_http_work(*msg->record()->value());
-          if (f)
-            work.push_back(f);
-        }
-        _pending_for_delete.push_back(msg);
+        if (auto p = create_one_http_work(msg->record()->key(), msg->record()->value()))
+          work.push_back(p);
+        in_batch.push_back(msg);
         _incomming_msg.pop_front();
       }
 
@@ -172,9 +178,11 @@ namespace kspp {
         run_work(work, _batch_size);
         auto end = kspp::milliseconds_since_epoch();
         LOG(INFO) << _cp.url << ", worksize: " << ws << ", batch_size: " << _batch_size << ", duration: " << end - start << " ms";
-        while(!_pending_for_delete.empty()) {
-          _pending_for_delete.pop_front();
+
+        while (!in_batch.empty()) {
+          _done.push_back(in_batch.pop_and_get());
         }
+        _msg_cnt += msg_in_batch;
       } else {
         std::this_thread::sleep_for(2s);
       }
@@ -182,10 +190,9 @@ namespace kspp {
     LOG(INFO) << "worker thread exiting";
   }
 
-
   void elasticsearch_producer::poll() {
-    if (_insert_in_progress)
-      return;
-    write_some_async();
+    while (!_done.empty()) {
+      _done.pop_front();
+    }
   }
 }

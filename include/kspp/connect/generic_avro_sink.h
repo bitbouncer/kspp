@@ -9,9 +9,9 @@
 #pragma once
 
 namespace kspp {
-  class generic_avro_sink : public topic_sink<void, kspp::generic_avro> {
+  class generic_avro_sink : public topic_sink<kspp::generic_avro, kspp::generic_avro> {
   public:
-    generic_avro_sink(topology &t, std::shared_ptr<generic_producer<void, kspp::generic_avro>> impl)
+    generic_avro_sink(topology &t, std::shared_ptr<generic_producer<kspp::generic_avro, kspp::generic_avro>> impl)
     : _impl(impl) {
     }
 
@@ -85,7 +85,7 @@ namespace kspp {
   protected:
     bool _started;
     bool _exit;
-    std::shared_ptr<generic_producer<void, kspp::generic_avro>> _impl;
+    std::shared_ptr<generic_producer<kspp::generic_avro, kspp::generic_avro>> _impl;
   };
 }
 

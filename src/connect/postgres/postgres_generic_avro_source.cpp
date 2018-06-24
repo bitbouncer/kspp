@@ -13,7 +13,7 @@ namespace kspp {
                                                                std::shared_ptr<kspp::avro_schema_registry> registry,
                                                                std::chrono::seconds poll_intervall,
                                                                size_t max_items_in_fetch)
-      : partition_source<void, kspp::generic_avro>(nullptr, partition)
+      : partition_source<kspp::generic_avro, kspp::generic_avro>(nullptr, partition)
       , _started(false)
       , _exit(false)
       , _impl(partition, table, t.consumer_group(), cp, id_column, ts_column, registry, poll_intervall, max_items_in_fetch)

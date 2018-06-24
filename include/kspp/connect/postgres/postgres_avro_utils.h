@@ -70,6 +70,8 @@ namespace kspp {
   std::string avro2sql_values(const avro::ValidSchema& schema, const avro::GenericDatum &datum);
   std::string avro2sql_key_values(const avro::ValidSchema& schema, const std::string& key, const avro::GenericDatum &datum);
 
+  std::string avro2sql_delete_key_values(const avro::ValidSchema& schema, const std::string& key, const avro::GenericDatum &datum);
+  //std::string avro2sql_build_delete_statement(const std::string& tablename, std::string keys, const avro::ValidSchema& schema);
 
 }
 

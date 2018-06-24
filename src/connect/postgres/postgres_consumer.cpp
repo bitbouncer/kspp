@@ -9,15 +9,92 @@
 using namespace std::chrono_literals;
 
 namespace kspp {
+
+  static void load_avro_by_name(kspp::generic_avro* avro, PGresult* pgres, size_t row)
+  {
+    // key tupe is null if there is no key
+    if (avro->type() == avro::AVRO_NULL)
+      return;
+
+    assert(avro->type() == avro::AVRO_RECORD);
+    avro::GenericRecord& record(avro->generic_datum()->value<avro::GenericRecord>());
+    size_t nFields = record.fieldCount();
+    for (int j = 0; j < nFields; j++)
+    {
+      if (record.fieldAt(j).type() != avro::AVRO_UNION) // this should not hold - but we fail to create correct schemas for not null columns
+      {
+        LOG(FATAL) << "unexpected schema - bailing out, type:" << record.fieldAt(j).type();
+        break;
+      }
+      avro::GenericUnion& au(record.fieldAt(j).value<avro::GenericUnion>());
+
+      const std::string& column_name = record.schema()->nameAt(j);
+
+      //which pg column has this value?
+      int column_index = PQfnumber(pgres, column_name.c_str());
+      if (column_index < 0)
+      {
+        LOG(FATAL) << "unknown column - bailing out: " << column_name;
+        break;
+      }
+
+      if (PQgetisnull(pgres, row, column_index) == 1)
+      {
+        au.selectBranch(0); // NULL branch - we hope..
+        assert(au.datum().type() == avro::AVRO_NULL);
+      }
+      else
+      {
+        au.selectBranch(1);
+        avro::GenericDatum& avro_item(au.datum());
+        const char* val = PQgetvalue(pgres, row, j);
+
+        switch (avro_item.type())
+        {
+          case avro::AVRO_STRING:
+            avro_item.value<std::string>() = val;
+            break;
+          case avro::AVRO_BYTES:
+            avro_item.value<std::string>() = val;
+            break;
+          case avro::AVRO_INT:
+            avro_item.value<int32_t>() = atoi(val);
+            break;
+          case avro::AVRO_LONG:
+            avro_item.value<int64_t>() = std::stoull(val);
+            break;
+          case avro::AVRO_FLOAT:
+            avro_item.value<float>() = (float)atof(val);
+            break;
+          case avro::AVRO_DOUBLE:
+            avro_item.value<double>() = atof(val);
+            break;
+          case avro::AVRO_BOOL:
+            avro_item.value<bool>() = (val[0]=='t' || val[0]=='T' || val[0]=='1');
+            break;
+          case avro::AVRO_RECORD:
+          case avro::AVRO_ENUM:
+          case avro::AVRO_ARRAY:
+          case avro::AVRO_MAP:
+          case avro::AVRO_UNION:
+          case avro::AVRO_FIXED:
+          case avro::AVRO_NULL:
+          default:
+            LOG(FATAL) << "unexpected / non supported type e:" << avro_item.type();
+        }
+      }
+    }
+  }
+
   postgres_consumer::postgres_consumer(int32_t partition,
-                                         std::string table,
-                                         std::string consumer_group,
-                                         const kspp::connect::connection_params& cp,
-                                         std::string id_column,
-                                         std::string ts_column,
-                                         std::shared_ptr<kspp::avro_schema_registry> schema_registry,
-                                         std::chrono::seconds poll_intervall,
-                                         size_t max_items_in_fetch)
+                                       std::string table,
+                                       std::string consumer_group,
+                                       const kspp::connect::connection_params& cp,
+                                       std::string id_column,
+                                       std::string ts_column,
+                                       std::shared_ptr<kspp::avro_schema_registry> schema_registry,
+                                       std::chrono::seconds poll_intervall,
+                                       size_t max_items_in_fetch)
       : _good(true)
       , _closed(false)
       , _eof(false)
@@ -35,7 +112,8 @@ namespace kspp {
       , ts_column_index_(-1)
       , schema_registry_(schema_registry)
       , _max_items_in_fetch(max_items_in_fetch)
-      , schema_id_(-1)
+      , key_schema_id_(-1)
+      , value_schema_id_(-1)
       , poll_intervall_(poll_intervall)
       , _msg_cnt(0) {
   }
@@ -111,107 +189,71 @@ namespace kspp {
       return -1;
 
     // first time?
-    if (!schema_) {
-      this->schema_ = std::make_shared<avro::ValidSchema>(*schema_for_table_row(_table, result.get()));
+    if (!value_schema_) {
 
-      if (schema_registry_) {
-        // we should probably prepend the name with a prefix (like _my_db_table_name)
-        schema_id_ = schema_registry_->put_schema(_table, schema_);
+      if (!key_schema_) {
+
+        if (_id_column.size() == 0) {
+          key_schema_ = std::make_shared<avro::ValidSchema>(avro::NullSchema());
+        } else {
+          key_schema_ = std::make_shared<avro::ValidSchema>(*schema_for_table_key(_table, {_id_column}, result.get()));
+          id_column_index_ = PQfnumber(result.get(), _id_column.c_str());
+        }
+
+        if (schema_registry_) {
+          key_schema_id_ = schema_registry_->put_schema(_table + "_key", key_schema_);
+        }
+
+
+        std::stringstream ss0;
+        key_schema_->toJson(ss0);
+        LOG(INFO) << "key_schema: \n" << ss0.str();
       }
 
-      // print schema first time...
-      std::stringstream ss;
-      this->schema_->toJson(ss);
-      LOG(INFO) << "schema: " << ss.str();
+      value_schema_ = std::make_shared<avro::ValidSchema>(*schema_for_table_row(_table, result.get()));
+      if (schema_registry_) {
+        // we should probably prepend the name with a prefix (like _my_db_table_name)
+        value_schema_id_ = schema_registry_->put_schema(_table + "_value", value_schema_);
+      }
+
+      std::stringstream ss1;
+      value_schema_->toJson(ss1);
+      LOG(INFO) << "value_schema: \n" << ss1.str();
 
       // TODO this could be an array of columns
-      id_column_index_ = PQfnumber(result.get(), _id_column.c_str());
       ts_column_index_ = PQfnumber(result.get(), _ts_column.c_str());
     }
 
     int nRows = PQntuples(result.get());
 
-    for (int i = 0; i < nRows; i++)
-    {
-      auto gd = std::make_shared<kspp::generic_avro>(schema_, schema_id_);
-      assert(gd->type() == avro::AVRO_RECORD);
-      avro::GenericRecord& record(gd->generic_datum()->value<avro::GenericRecord>());
-      size_t nFields = record.fieldCount();
-      for (int j = 0; j < nFields; j++)
-      {
-        if (record.fieldAt(j).type() != avro::AVRO_UNION)
-        {
-          LOG(FATAL) << "unexpected schema - bailing out, type:" << record.fieldAt(j).type();
-          break;
-        }
-        avro::GenericUnion& au(record.fieldAt(j).value<avro::GenericUnion>());
+    for (int i = 0; i < nRows; i++) {
+      std::shared_ptr<kspp::generic_avro> key;
 
-        const std::string& column_name = record.schema()->nameAt(j);
+      key = std::make_shared<kspp::generic_avro>(key_schema_, key_schema_id_);
+      load_avro_by_name(key.get(), result.get(), i);
 
-        //which pg column has this value?
-        int column_index = PQfnumber(result.get(), column_name.c_str());
-        if (column_index < 0)
-        {
-          LOG(FATAL) << "unknown column - bailing out: " << column_name;
-          break;
-        }
+      auto value = std::make_shared<kspp::generic_avro>(value_schema_, value_schema_id_);
 
-        if (PQgetisnull(result.get(), i, column_index) == 1)
-        {
-          au.selectBranch(0); // NULL branch - we hope..
-          assert(au.datum().type() == avro::AVRO_NULL);
-        }
-        else
-        {
-          au.selectBranch(1);
-          avro::GenericDatum& avro_item(au.datum());
-          const char* val = PQgetvalue(result.get(), i, j);
-
-          switch (avro_item.type())
-          {
-            case avro::AVRO_STRING:
-              avro_item.value<std::string>() = val;
-              break;
-            case avro::AVRO_BYTES:
-              avro_item.value<std::string>() = val;
-              break;
-            case avro::AVRO_INT:
-              avro_item.value<int32_t>() = atoi(val);
-              break;
-            case avro::AVRO_LONG:
-              avro_item.value<int64_t>() = std::stoull(val);
-              break;
-            case avro::AVRO_FLOAT:
-              avro_item.value<float>() = (float)atof(val);
-              break;
-            case avro::AVRO_DOUBLE:
-              avro_item.value<double>() = atof(val);
-              break;
-            case avro::AVRO_BOOL:
-              avro_item.value<bool>() = (val[0]=='t' || val[0]=='T' || val[0]=='1');
-              break;
-            case avro::AVRO_RECORD:
-            case avro::AVRO_ENUM:
-            case avro::AVRO_ARRAY:
-            case avro::AVRO_MAP:
-            case avro::AVRO_UNION:
-            case avro::AVRO_FIXED:
-            case avro::AVRO_NULL:
-            default:
-              LOG(FATAL) << "unexpected / non supported type e:" << avro_item.type();
-          }
-        }
-      }
-
-      //we need to store last timestamp and last key for next select clause
-      if (id_column_index_>=0)
-        last_id_ = PQgetvalue(result.get(), i, id_column_index_);
-      if (ts_column_index_>=0)
-        last_ts_ = PQgetvalue(result.get(), i, ts_column_index_);
+      load_avro_by_name(value.get(), result.get(), i);
 
       // or should we use ts column instead of now();
-      auto r = std::make_shared<krecord<void, kspp::generic_avro>>(gd, kspp::milliseconds_since_epoch());
-      auto e = std::make_shared<kevent<void, kspp::generic_avro>>(r);
+
+
+
+      if (i == (nRows-1)) {
+        //we need to store last timestamp and last key for next select clause
+        if (id_column_index_ >= 0)
+          last_id_ = PQgetvalue(result.get(), nRows - 1, id_column_index_);
+        if (ts_column_index_ >= 0)
+          last_ts_ = PQgetvalue(result.get(), nRows - 1, ts_column_index_);
+
+        if (!last_key_)
+          last_key_ = std::make_unique<kspp::generic_avro>(key_schema_, key_schema_id_);
+        load_avro_by_name(last_key_.get(), result.get(), i);
+      }
+
+      auto record = std::make_shared<krecord<kspp::generic_avro, kspp::generic_avro>>(*key, value, kspp::milliseconds_since_epoch());
+      auto e = std::make_shared<kevent<kspp::generic_avro, kspp::generic_avro>>(record);
       assert(e.get()!=nullptr);
 
       //should we wait a bit if we fill incomming queue to much??
@@ -223,6 +265,7 @@ namespace kspp {
       _incomming_msg.push_back(e);
       ++_msg_cnt;
     }
+
     return 0;
   }
 

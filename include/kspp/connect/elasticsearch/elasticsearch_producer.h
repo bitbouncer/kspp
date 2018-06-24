@@ -12,7 +12,7 @@
 #pragma once
 
 namespace kspp {
-  class elasticsearch_producer : public generic_producer<void, kspp::generic_avro>
+  class elasticsearch_producer : public generic_producer<kspp::generic_avro, kspp::generic_avro>
   {
   public:
     enum work_result_t { SUCCESS = 0, TIMEOUT = -1, HTTP_ERROR = -2, PARSE_ERROR = -3 };
@@ -26,9 +26,8 @@ namespace kspp {
 
     void close() override;
 
-
     bool eof() const override {
-      return (_incomming_msg.empty() && _pending_for_delete.empty());
+      return (_incomming_msg.empty() && _done.empty());
     }
 
     std::string topic() const override {
@@ -42,7 +41,7 @@ namespace kspp {
     bool is_connected() const { return _connected; }
     //bool is_query_running() const { return !_eof; }
 
-    void insert(std::shared_ptr<kevent<void, kspp::generic_avro>> p) override{
+    void insert(std::shared_ptr<kevent<kspp::generic_avro, kspp::generic_avro>> p) override{
       _incomming_msg.push_back(p);
     }
 
@@ -51,11 +50,9 @@ namespace kspp {
   private:
     void connect_async();
     void check_table_exists_async();
-    void write_some_async();
-
     void _process_work(); // thread function;
 
-    kspp::async::work<elasticsearch_producer::work_result_t>::async_function create_one_http_work(const kspp::generic_avro& doc);
+    kspp::async::work<elasticsearch_producer::work_result_t>::async_function create_one_http_work(const kspp::generic_avro& key, const kspp::generic_avro* value);
 
     boost::asio::io_service _ios;
     std::shared_ptr<boost::asio::io_service::work> _work;
@@ -69,8 +66,8 @@ namespace kspp {
     const kspp::connect::connection_params _cp;
     const std::string _id_column;
 
-    event_queue<void, kspp::generic_avro> _incomming_msg;
-    event_queue<void, kspp::generic_avro> _pending_for_delete;
+    event_queue<kspp::generic_avro, kspp::generic_avro> _incomming_msg;
+    event_queue<kspp::generic_avro, kspp::generic_avro> _done;
     uint64_t _msg_cnt;
     uint64_t _msg_bytes;
     bool _good;

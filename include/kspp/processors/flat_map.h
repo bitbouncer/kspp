@@ -71,14 +71,14 @@ namespace kspp {
     /**
     * use from from extractor callback
     */
-    inline void push_back(std::shared_ptr<krecord<RK, RV>>record) {
+    inline void push_back(std::shared_ptr<const krecord<RK, RV>>record) {
       this->send_to_sinks(std::make_shared<kevent<RK, RV>>(record, _currrent_id));
     }
 
     /**
     * use from from extractor callback to force a custom partition hash
     */
-    inline void push_back(std::shared_ptr<krecord<RK, RV>> record, uint32_t partition_hash) {
+    inline void push_back(std::shared_ptr<const krecord<RK, RV>> record, uint32_t partition_hash) {
       this->send_to_sinks(std::make_shared<kevent<RK, RV>>(record, _currrent_id, partition_hash));
     }
 

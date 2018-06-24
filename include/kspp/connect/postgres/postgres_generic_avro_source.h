@@ -8,7 +8,7 @@
 #pragma once
 
 namespace kspp {
-  class postgres_generic_avro_source : public partition_source<void, kspp::generic_avro> {
+  class postgres_generic_avro_source : public partition_source<kspp::generic_avro, kspp::generic_avro> {
     static constexpr const char *PROCESSOR_NAME = "postgres_avro_source";
   public:
     postgres_generic_avro_source(topology &t,

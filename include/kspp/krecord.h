@@ -15,7 +15,7 @@ namespace kspp {
             : _event_time(ts), _key(k), _value(std::make_shared<V>(v)) {
     }
 
-    krecord(const K &k, std::shared_ptr<V> v, int64_t ts = milliseconds_since_epoch())
+    krecord(const K &k, std::shared_ptr<const V> v, int64_t ts = milliseconds_since_epoch())
             : _event_time(ts), _key(k), _value(v) {
     }
 
@@ -70,7 +70,7 @@ namespace kspp {
             : _event_time(ts), _value(std::make_shared<V>(v)) {
     }
 
-    krecord(std::shared_ptr<V> v, int64_t ts = milliseconds_since_epoch())
+    krecord(std::shared_ptr<const V> v, int64_t ts = milliseconds_since_epoch())
             : _event_time(ts), _value(v) {
     }
 

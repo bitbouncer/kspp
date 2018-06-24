@@ -7,7 +7,7 @@
 #pragma once
 
 namespace kspp {
-  class postgres_producer : public generic_producer<void, kspp::generic_avro>
+  class postgres_producer : public generic_producer<kspp::generic_avro, kspp::generic_avro>
   {
   public:
     postgres_producer(std::string table,
@@ -20,7 +20,7 @@ namespace kspp {
     void close() override;
 
     bool eof() const override {
-      return (_incomming_msg.empty() && _pending_for_delete.empty());
+      return (_incomming_msg.empty() && _done.empty());
     }
 
     std::string topic() const override {
@@ -31,7 +31,7 @@ namespace kspp {
 
     bool is_connected() const { return _connected; }
 
-    void insert(std::shared_ptr<kevent<void, kspp::generic_avro>> p) override {
+    void insert(std::shared_ptr<kevent<kspp::generic_avro, kspp::generic_avro>> p) override {
       _incomming_msg.push_back(p);
     }
 
@@ -58,8 +58,8 @@ namespace kspp {
     const std::string _id_column;
     const std::string _client_encoding;
 
-    event_queue<void, kspp::generic_avro> _incomming_msg;
-    event_queue<void, kspp::generic_avro> _pending_for_delete;
+    event_queue<kspp::generic_avro, kspp::generic_avro> _incomming_msg;
+    event_queue<kspp::generic_avro, kspp::generic_avro> _done;  // waiting to be deleted in poll();
     size_t _max_items_in_fetch;
     uint64_t _msg_cnt;
     uint64_t _msg_bytes;

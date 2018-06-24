@@ -371,6 +371,10 @@ namespace kspp {
           res = curl_easy_setopt(request->_curl_easy, CURLOPT_POSTFIELDSIZE_LARGE, (curl_off_t) request->tx_content_length());
           break;
 
+        case kspp::http::DELETE_:
+          res = curl_easy_setopt(request->_curl_easy, CURLOPT_CUSTOMREQUEST, "DELETE");
+          break;
+
         default:
           LOG(FATAL) << "unsupported method: " << request->_method;
       };

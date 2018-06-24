@@ -108,7 +108,7 @@ namespace kspp {
       PURGE = 25
     };
 
-    const std::string &to_string(kspp::http::method_t e);
+    const std::string& to_string(kspp::http::method_t e);
 
     struct header_t {
       header_t() {}
@@ -251,6 +251,8 @@ namespace kspp {
 
       std::string get_rx_header(const std::string &header) const;
 
+      inline kspp::http::method_t method() const { return _method; }
+
     private:
 
       void curl_start(std::shared_ptr<request> self);
@@ -259,7 +261,7 @@ namespace kspp {
 
       static std::shared_ptr<request> lookup(CURL *e);
 
-      kspp::http::method_t _method;
+      const kspp::http::method_t _method;
       std::string _uri;
       std::vector<std::string> _tx_headers;
       std::vector<kspp::http::header_t> _rx_headers;

@@ -200,14 +200,28 @@ int main(int argc, char **argv) {
   kspp::topology_builder generic_builder("kspp", SERVICE_NAME, config);
   auto topology = generic_builder.create_topology();
 
-  auto source0 = topology->create_processors<kspp::kafka_source<void, kspp::generic_avro, void, kspp::avro_serdes>>(partition_list, topic, config->avro_serdes());
-
+  auto source0 = topology->create_processors<kspp::kafka_source<kspp::generic_avro, kspp::generic_avro, kspp::avro_serdes, kspp::avro_serdes>>(partition_list, topic, config->avro_serdes(), config->avro_serdes());
   /*https://www.postgresql.org/docs/9.3/static/multibyte.html*/
 
+
+  // if file we have to drop the key
   if (filename.size()) {
-    topology->create_sink<kspp::avro_file_sink>(source0, "/tmp/" + table_prefix + topic + ".avro");
+    auto transform = topology->create_processors<kspp::flat_map<kspp::generic_avro, kspp::generic_avro, void, kspp::generic_avro>>(
+        source0, [](std::shared_ptr<const kspp::krecord<kspp::generic_avro, kspp::generic_avro>> in, auto self) {
+          if (in->value()) {
+            auto krecord = std::make_shared<kspp::krecord<void, kspp::generic_avro>>(*in->value(), in->event_time());
+            self->push_back(krecord);
+          }
+        });
+    topology->create_sink<kspp::avro_file_sink>(transform, "/tmp/" + table_prefix + topic + ".avro");
   } else {
-    topology->create_sink<kspp::postgres_generic_avro_sink>(source0, table_name, connection_params, "id", config->get_schema_registry(), character_encoding);
+    auto transform = topology->create_processors<kspp::flat_map<kspp::generic_avro, kspp::generic_avro, kspp::generic_avro, kspp::generic_avro>>(
+        source0, [](std::shared_ptr<const kspp::krecord<kspp::generic_avro, kspp::generic_avro>> in, auto self) {
+          //auto krecord = std::make_shared<const kspp::krecord<kspp::generic_avro, kspp::generic_avro>>(in->key(), nullptr, in->event_time());
+          //self->push_back(krecord);
+          self->push_back(in);
+        });
+    topology->create_sink<kspp::postgres_generic_avro_sink>(transform, table_name, connection_params, "id", config->get_schema_registry(), character_encoding);
   }
 
   std::vector<metrics20::avro::metrics20_key_tags_t> tags;
