@@ -146,7 +146,7 @@ namespace kspp {
 
     for (auto &&i : _base_urls) {
       std::string uri = i.str() + "/subjects/" + schema_name + "/versions";
-      work->push_back([this, uri, encoded_string, shared_result](kspp::async::work<int>::callback cb) {
+      work->push_back([this, uri, encoded_string, shared_result, schema_name](kspp::async::work<int>::callback cb) {
         std::vector<std::string> headers = {"Content-Type: application/vnd.schemaregistry.v1+json"};
         auto request = std::make_shared<kspp::http::request>(
             kspp::http::POST,
@@ -159,7 +159,7 @@ namespace kspp {
                                         _private_key_path,
                                         _private_key_passphrase);
         request->append(encoded_string);
-        _http.perform_async(request, [cb, shared_result](std::shared_ptr<kspp::http::request> request) {
+        _http.perform_async(request, [cb, schema_name, shared_result](std::shared_ptr<kspp::http::request> request) {
           if (request->http_result() >= 200 && request->http_result() < 300) {
 #ifdef KSPP_DEBUG
             // the json parser overwrites the internal buffer so copy the response
@@ -178,8 +178,7 @@ namespace kspp {
               LOG(ERROR) << "confluent_http_proxy cannot parse response";
 #endif
           }
-          LOG(ERROR) << "confluent_http_proxy http_response_code: " <<  request->http_result() << ", " << std::string(request->rx_content(), request->rx_content_length());
-
+          LOG(ERROR) << "confluent_http_proxy http_response_code: " <<  request->http_result() << ", schema_name: " << schema_name << ", response: " << std::string(request->rx_content(), request->rx_content_length());
           cb(-1);
         });
       });
