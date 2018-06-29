@@ -39,7 +39,7 @@ int main(int argc, char **argv) {
       ("db_dbname", boost::program_options::value<std::string>()->default_value(get_env_and_log("DB_DBNAME")), "db_dbname")
       ("id_column", boost::program_options::value<std::string>()->default_value(""), "id_column")
       ("timestamp_column", boost::program_options::value<std::string>()->default_value("updated_at"), "timestamp_column")
-      ("poll_intervall", boost::program_options::value<int32_t>()->default_value(10), "poll_intervall")
+      ("poll_intervall", boost::program_options::value<int32_t>()->default_value(60), "poll_intervall")
       ("max_items_in_fetch", boost::program_options::value<int32_t>()->default_value(1000), "max_items_in_fetch")
       ("warning_timeout", boost::program_options::value<int32_t>()->default_value(1000), "warning_timeout")
       ("table", boost::program_options::value<std::string>()->default_value(get_env_and_log("TABLE")), "table")

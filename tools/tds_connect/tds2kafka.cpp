@@ -40,8 +40,10 @@ int main(int argc, char **argv) {
       ("db_user", boost::program_options::value<std::string>()->default_value(get_env_and_log("DB_USER")), "db_user")
       ("db_password", boost::program_options::value<std::string>()->default_value(get_env_and_log("DB_PASSWORD")), "db_password")
       ("db_dbname", boost::program_options::value<std::string>()->default_value(get_env_and_log("DB_DBNAME")), "db_dbname")
+      ("id_column", boost::program_options::value<std::string>()->default_value(""), "id_column")
+      ("timestamp_column", boost::program_options::value<std::string>()->default_value("ts"), "timestamp_column")
       ("table", boost::program_options::value<std::string>(), "table")
-      ("polltime", boost::program_options::value<int32_t>()->default_value(60), "polltime")
+      ("poll_intervall", boost::program_options::value<int32_t>()->default_value(60), "poll_intervall")
       ("topic_prefix", boost::program_options::value<std::string>()->default_value(get_env_and_log("TOPIC_PREFIX", "DEV_sqlserver_")), "topic_prefix")
       ("topic", boost::program_options::value<std::string>(), "topic")
       ("filename", boost::program_options::value<std::string>(), "filename");
@@ -80,14 +82,24 @@ int main(int argc, char **argv) {
     db_port = vm["db_port"].as<int>();
   }
 
-  int polltime;
-  if (vm.count("polltime")) {
-    polltime = vm["polltime"].as<int>();
+  int poll_intervall;
+  if (vm.count("poll_intervall")) {
+    poll_intervall = vm["poll_intervall"].as<int>();
   }
 
   std::string db_dbname;
   if (vm.count("db_dbname")) {
     db_dbname = vm["db_dbname"].as<std::string>();
+  }
+
+  std::string id_column;
+  if (vm.count("id_column")) {
+    id_column = vm["id_column"].as<std::string>();
+  }
+
+  std::string timestamp_column;
+  if (vm.count("timestamp_column")) {
+    timestamp_column = vm["timestamp_column"].as<std::string>();
   }
 
   std::string table;
@@ -145,7 +157,9 @@ int main(int argc, char **argv) {
   LOG(INFO) << "db_user           : " << db_user;
   LOG(INFO) << "db_password       : " << "[hidden]";
   LOG(INFO) << "table             : " << table;
-  LOG(INFO) << "polltime          : " << polltime;
+  LOG(INFO) << "id_column         : " << id_column;
+  LOG(INFO) << "timestamp_column  : " << timestamp_column;
+  LOG(INFO) << "poll_intervall    : " << poll_intervall;
   LOG(INFO) << "topic_prefix      : " << topic_prefix;
   LOG(INFO) << "topic             : " << topic;
 
@@ -168,7 +182,7 @@ int main(int argc, char **argv) {
   kspp::topology_builder generic_builder("kspp", SERVICE_NAME + db_dbname, config);
   auto topology = generic_builder.create_topology();
 
-  auto source0 = topology->create_processors<kspp::tds_generic_avro_source>({0}, table, connection_params, "id", "ts", config->get_schema_registry(),  std::chrono::seconds(polltime));
+  auto source0 = topology->create_processors<kspp::tds_generic_avro_source>({0}, table, connection_params, id_column, timestamp_column, config->get_schema_registry(),  std::chrono::seconds(poll_intervall));
 
 
    if (filename.size()) {
