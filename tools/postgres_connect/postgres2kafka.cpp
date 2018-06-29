@@ -37,6 +37,9 @@ int main(int argc, char **argv) {
       ("db_user", boost::program_options::value<std::string>()->default_value(get_env_and_log("DB_USER")), "db_user")
       ("db_password", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("DB_PASSWORD")), "db_password")
       ("db_dbname", boost::program_options::value<std::string>()->default_value(get_env_and_log("DB_DBNAME")), "db_dbname")
+      ("id_column", boost::program_options::value<std::string>()->default_value(""), "id_column")
+      ("timestamp_column", boost::program_options::value<std::string>()->default_value("updated_at"), "timestamp_column")
+      ("poll_intervall", boost::program_options::value<int32_t>()->default_value(10), "poll_intervall")
       ("max_items_in_fetch", boost::program_options::value<int32_t>()->default_value(1000), "max_items_in_fetch")
       ("warning_timeout", boost::program_options::value<int32_t>()->default_value(1000), "warning_timeout")
       ("table", boost::program_options::value<std::string>()->default_value(get_env_and_log("TABLE")), "table")
@@ -99,13 +102,29 @@ int main(int argc, char **argv) {
     db_password = vm["db_password"].as<std::string>();
   }
 
+  std::string id_column;
+  if (vm.count("id_column")) {
+    id_column = vm["id_column"].as<std::string>();
+  }
+
+  std::string timestamp_column;
+  if (vm.count("timestamp_column")) {
+    timestamp_column = vm["timestamp_column"].as<std::string>();
+  }
+
   int max_items_in_fetch;
   if (vm.count("max_items_in_fetch")) {
     max_items_in_fetch = vm["max_items_in_fetch"].as<int>();
   }
+
   int warning_timeout;
   if (vm.count("warning_timeout")) {
     warning_timeout = vm["warning_timeout"].as<int>();
+  }
+
+  int poll_intervall;
+  if (vm.count("poll_intervall")) {
+    poll_intervall = vm["poll_intervall"].as<int>();
   }
 
   std::string table;
@@ -154,6 +173,9 @@ int main(int argc, char **argv) {
   LOG(INFO) << "warning_timeout    : " << warning_timeout;
   LOG(INFO) << "topic_prefix       : " << topic_prefix;
   LOG(INFO) << "topic              : " << topic;
+  LOG(INFO) << "id_column          : " << id_column;
+  LOG(INFO) << "timestamp_column   : " << timestamp_column;
+  LOG(INFO) << "poll_intervall     : " << poll_intervall;
 
   kspp::connect::connection_params connection_params;
   connection_params.host = db_host;
@@ -171,8 +193,7 @@ int main(int argc, char **argv) {
 
   kspp::topology_builder generic_builder("kspp", SERVICE_NAME, config);
   auto topology = generic_builder.create_topology();
-  auto source0 = topology->create_processors<kspp::postgres_generic_avro_source>({0}, table, connection_params, "", "updated_at", config->get_schema_registry(), 10s, 1000);
-  //auto source0 = topology->create_processors<kspp::tds_generic_avro_source>({0}, db_table, db_host, 1433, db_user, db_password, db_dbname, "id", "ts", config->get_schema_registry(),  std::chrono::seconds(db_polltime));
+  auto source0 = topology->create_processors<kspp::postgres_generic_avro_source>({0}, table, connection_params, id_column, timestamp_column, config->get_schema_registry(), std::chrono::seconds(poll_intervall), max_items_in_fetch);
 
   if (filename.size()) {
     //topology->create_sink<kspp::avro_file_sink>(source0, "/tmp/" + topic + ".avro");
