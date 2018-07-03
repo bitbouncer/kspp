@@ -15,8 +15,9 @@ namespace kspp {
   public:
     tds_generic_avro_source(topology &t,
                             int32_t partition,
-                            std::string table,
+                            std::string logical_name,
                             const kspp::connect::connection_params& cp,
+                            std::string query,
                             std::string id_column,
                             std::string ts_column,
                             std::shared_ptr<kspp::avro_schema_registry>,
@@ -81,7 +82,7 @@ namespace kspp {
     }
 
     std::string topic() const override {
-      return _impl.table();
+      return _impl.logcal_name();
     }
 
   protected:

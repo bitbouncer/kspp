@@ -10,9 +10,10 @@ using namespace std::chrono_literals;
 
 namespace kspp {
   tds_consumer::tds_consumer(int32_t partition,
-                             std::string table,
+                             std::string logical_name,
                              std::string consumer_group,
                              const kspp::connect::connection_params& cp,
+                             std::string query,
                              std::string id_column,
                              std::string ts_column,
                              std::shared_ptr<kspp::avro_schema_registry> schema_registry,
@@ -20,7 +21,8 @@ namespace kspp {
                              size_t max_items_in_fetch)
       : _bg([this] { _thread(); })
       , _connection(std::make_shared<kspp_tds::connection>())
-      , _table(table)
+      , _logical_name(logical_name)
+      , _query(query)
       , _partition(partition)
       , _consumer_group(consumer_group)
       , cp_(cp)
@@ -40,6 +42,10 @@ namespace kspp {
       , _eof(false)
       , _start_running(false)
       , _exit(false) {
+        std::string top_part(" TOP " + std::to_string(_max_items_in_fetch));
+        // assumed to start with "SELECT"
+        _query.insert(6,top_part);
+        LOG(INFO) << " REAL QUERY: "  << _query;
   }
 
   tds_consumer::~tds_consumer() {
@@ -61,7 +67,7 @@ namespace kspp {
 
     if (_connection) {
       _connection->close();
-      LOG(INFO) << "tds_consumer table:" << _table << ":" << _partition << ", closed - consumed " << _msg_cnt << " messages";
+      LOG(INFO) << "tds_consumer table:" << _logical_name << ":" << _partition << ", closed - consumed " << _msg_cnt << " messages";
     }
   }
 
@@ -87,13 +93,13 @@ namespace kspp {
       }
        */
     } else if (offset == kspp::OFFSET_BEGINNING) {
-      DLOG(INFO) << "tds_consumer::start table:" << _table << ":" << _partition << " consumer group: "
+      DLOG(INFO) << "tds_consumer::start table:" << _logical_name << ":" << _partition << " consumer group: "
                  << _consumer_group << " starting from OFFSET_BEGINNING";
     } else if (offset == kspp::OFFSET_END) {
-      DLOG(INFO) << "tds_consumer::start table:" << _table << ":" << _partition << " consumer group: "
+      DLOG(INFO) << "tds_consumer::start table:" << _logical_name << ":" << _partition << " consumer group: "
                  << _consumer_group << " starting from OFFSET_END";
     } else {
-      DLOG(INFO) << "tds_consumer::start table:" << _table << ":" << _partition << " consumer group: "
+      DLOG(INFO) << "tds_consumer::start table:" << _logical_name << ":" << _partition << " consumer group: "
                  << _consumer_group << " starting from fixed offset: " << offset;
     }
 
@@ -239,7 +245,7 @@ namespace kspp {
     // first time?
     if (!this->schema_) {
       //std::string schema_name =  host_ + "_" +  database_ + "_" + _table;
-      std::string schema_name = "tds_" + cp_.database + "_" + _table;
+      std::string schema_name = "tds_" + cp_.database + "_" + _logical_name;
       this->schema_ = std::make_shared<avro::ValidSchema>(*tds::schema_for_table_row(schema_name, stream));
       if (schema_registry_) {
         schema_id_ = schema_registry_->put_schema(schema_name, schema_); // we should probably prepend the name with a prefix (like _my_db_table_name)
@@ -614,10 +620,8 @@ namespace kspp {
         //  where_clause = _id_column + " >= " + std::to_string(last_id_);
         */
 
-      std::string statement = "SELECT TOP " + std::to_string(_max_items_in_fetch) + " " + fields + " FROM " + _table + where_clause + order_by;
-
-      // TODO where ts > ....
-
+      //std::string statement = "SELECT TOP " + std::to_string(_max_items_in_fetch) + " " + fields + " FROM " + _table + where_clause + order_by;
+      std::string statement = _query + where_clause + order_by;
       DLOG(INFO) << "exec(" + statement + ")";
 
 
@@ -645,11 +649,11 @@ namespace kspp {
       size_t messages_in_batch = _msg_cnt - last_msg_count;
 
       if (messages_in_batch==0) {
-        LOG_EVERY_N(INFO, 100) << "empty poll done, table: " << _table << " total: " << _msg_cnt << ", last ts: "
+        LOG_EVERY_N(INFO, 100) << "empty poll done, table: " << _logical_name << " total: " << _msg_cnt << ", last ts: "
                                << last_ts_ << " duration " << ts1 - ts0 << " ms";
       }
       else {
-        LOG(INFO) << "poll done, table: " << _table << " retrieved: " << messages_in_batch
+        LOG(INFO) << "poll done, table: " << _logical_name << " retrieved: " << messages_in_batch
                   << " messages, total: " << _msg_cnt << ", last ts: " << last_ts_ << " duration " << ts1 - ts0
                   << " ms";
       }

@@ -40,6 +40,8 @@ namespace kspp {
   boost::shared_ptr<avro::ValidSchema>
   valid_schema_for_table_row(std::string schema_name, const PGresult* res);
 
+  std::string simple_column_name(std::string column_name);
+
   boost::shared_ptr<avro::RecordSchema>
   schema_for_table_key(std::string schema_name, const std::vector<std::string>& keys, const PGresult* res);
 

@@ -145,17 +145,28 @@ namespace kspp {
       return record_schema;
   }
 
+  std::string simple_column_name(std::string column_name) {
+    std::string simple=column_name;
+    size_t found = simple.find_last_of('.');
+    if (found!=std::string::npos)
+      simple = simple.substr(found+1);
+    return simple;
+  }
+
+  // if we have a freeform select statement we might need to specify id and ts columns as a.id and b.ts if the fields occur in several tables
+  // strip this away
   boost::shared_ptr<avro::RecordSchema>
   schema_for_table_key(std::string schema_name, const std::vector<std::string> &keys, const PGresult* res) {
       boost::shared_ptr<avro::RecordSchema> record_schema = boost::make_shared<avro::RecordSchema>(schema_name);
       for (std::vector<std::string>::const_iterator i = keys.begin(); i != keys.end(); i++) {
-          int column_index = PQfnumber(res, i->c_str());
+        std::string simple_key = simple_column_name(*i);
+        int column_index = PQfnumber(res, simple_key.c_str());
           assert(column_index >= 0);
           if (column_index >= 0) {
               Oid col_type = PQftype(res, column_index);
               boost::shared_ptr<avro::Schema> col_schema = schema_for_oid(col_type);
               /* TODO ensure that names abide by Avro's requirements */
-              record_schema->addField(*i, *col_schema);
+              record_schema->addField(simple_key, *col_schema);
           }
       }
       return record_schema;

@@ -11,9 +11,10 @@ namespace kspp {
   class tds_consumer {
   public:
     tds_consumer(int32_t partition,
-                 std::string table,
+                 std::string logical_name,
                  std::string consumer_group,
                  const kspp::connect::connection_params& cp,
+                 std::string query,
                  std::string id_column,
                  std::string ts_column,
                  std::shared_ptr<kspp::avro_schema_registry>,
@@ -30,8 +31,8 @@ namespace kspp {
        return (_incomming_msg.size() == 0) && _eof;
     }
 
-    inline std::string table() const {
-      return _table;
+    inline std::string logcal_name() const {
+      return _logical_name;
     }
 
     inline int32_t partition() const {
@@ -90,12 +91,13 @@ namespace kspp {
     std::thread _bg;
     std::shared_ptr<kspp_tds::connection> _connection;
 
-    const std::string _table;
+    const std::string _logical_name;
     const int32_t _partition;
     const std::string _consumer_group;
 
     const kspp::connect::connection_params cp_;
 
+    std::string _query;
     const std::string _id_column;
     const std::string _ts_column;
     size_t _max_items_in_fetch;

@@ -42,7 +42,9 @@ int main(int argc, char **argv) {
       ("poll_intervall", boost::program_options::value<int32_t>()->default_value(60), "poll_intervall")
       ("max_items_in_fetch", boost::program_options::value<int32_t>()->default_value(1000), "max_items_in_fetch")
       ("warning_timeout", boost::program_options::value<int32_t>()->default_value(1000), "warning_timeout")
-      ("table", boost::program_options::value<std::string>()->default_value(get_env_and_log("TABLE")), "table")
+      ("table", boost::program_options::value<std::string>(), "table")
+      ("query", boost::program_options::value<std::string>(), "query")
+      //("query_name", boost::program_options::value<std::string>(), "query_name")
       ("topic_prefix", boost::program_options::value<std::string>()->default_value("DEV_postgres_"), "topic_prefix")
       ("topic", boost::program_options::value<std::string>(), "topic")
       ("filename", boost::program_options::value<std::string>(), "filename");
@@ -132,6 +134,28 @@ int main(int argc, char **argv) {
     table = vm["table"].as<std::string>();
   }
 
+  std::string query;
+  if (vm.count("query")) {
+    query = vm["query"].as<std::string>();
+  }
+
+  /*
+   * std::string query_name;
+  if (vm.count("query_name")) {
+    query_name = vm["query_name"].as<std::string>();
+  }
+   */
+
+  if (table.size()==0 && query.size()==0){
+    std::cerr << "--table or --query must be specified";
+    return -1;
+  }
+
+  if (query.size()==0){
+    query = "SELECT * FROM " + table;
+  } else {
+  }
+
   std::string topic_prefix;
   if (vm.count("topic_prefix")) {
     topic_prefix = vm["topic_prefix"].as<std::string>();
@@ -163,7 +187,6 @@ int main(int argc, char **argv) {
   auto s= config->avro_serdes();
 
   LOG(INFO) << "app_realm          : " << app_realm;
-  LOG(INFO) << "table              : " << table;
   LOG(INFO) << "db_host            : " << db_host;
   LOG(INFO) << "db_port            : " << db_port;
   LOG(INFO) << "db_user            : " << db_user;
@@ -171,11 +194,13 @@ int main(int argc, char **argv) {
   LOG(INFO) << "db_dbname          : " << db_dbname;
   LOG(INFO) << "max_items_in_fetch : " << max_items_in_fetch;
   LOG(INFO) << "warning_timeout    : " << warning_timeout;
-  LOG(INFO) << "topic_prefix       : " << topic_prefix;
-  LOG(INFO) << "topic              : " << topic;
+  LOG(INFO) << "table              : " << table;
+  LOG(INFO) << "query              : " << query;
   LOG(INFO) << "id_column          : " << id_column;
   LOG(INFO) << "timestamp_column   : " << timestamp_column;
   LOG(INFO) << "poll_intervall     : " << poll_intervall;
+  LOG(INFO) << "topic_prefix       : " << topic_prefix;
+  LOG(INFO) << "topic              : " << topic;
 
   kspp::connect::connection_params connection_params;
   connection_params.host = db_host;
@@ -191,9 +216,12 @@ int main(int argc, char **argv) {
 
   LOG(INFO) << "discovering facts...";
 
+
+
   kspp::topology_builder generic_builder("kspp", SERVICE_NAME, config);
   auto topology = generic_builder.create_topology();
-  auto source0 = topology->create_processors<kspp::postgres_generic_avro_source>({0}, table, connection_params, id_column, timestamp_column, config->get_schema_registry(), std::chrono::seconds(poll_intervall), max_items_in_fetch);
+  std::string query_name = topic;
+  auto source0 = topology->create_processors<kspp::postgres_generic_avro_source>({0}, query_name, connection_params, query, id_column, timestamp_column, config->get_schema_registry(), std::chrono::seconds(poll_intervall), max_items_in_fetch);
 
   if (filename.size()) {
     //topology->create_sink<kspp::avro_file_sink>(source0, "/tmp/" + topic + ".avro");

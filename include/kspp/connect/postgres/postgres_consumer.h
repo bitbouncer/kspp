@@ -10,9 +10,10 @@ namespace kspp {
   class postgres_consumer {
   public:
     postgres_consumer(int32_t partition,
-                       std::string table,
+                       std::string locical_name,
                        std::string consumer_group,
                        const kspp::connect::connection_params& cp,
+                       std::string query,
                        std::string id_column,
                        std::string ts_column,
                        std::shared_ptr<kspp::avro_schema_registry>,
@@ -29,8 +30,8 @@ namespace kspp {
       return (_incomming_msg.size() == 0) && _eof;
     }
 
-    inline std::string table() const {
-      return _table;
+    inline std::string logical_name() const {
+      return _logical_name;
     }
 
     inline int32_t partition() const {
@@ -69,7 +70,9 @@ namespace kspp {
     std::thread _bg;
     std::shared_ptr<kspp_postgres::connection> _connection;
 
-    const std::string _table;
+    //const std::string _table;
+    const std::string _logical_name;
+    const std::string _query;
     const int32_t _partition;
     const std::string _consumer_group;
 

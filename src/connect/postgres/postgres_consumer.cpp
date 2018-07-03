@@ -87,9 +87,10 @@ namespace kspp {
   }
 
   postgres_consumer::postgres_consumer(int32_t partition,
-                                       std::string table,
+                                       std::string logical_name,
                                        std::string consumer_group,
                                        const kspp::connect::connection_params& cp,
+                                       std::string query,
                                        std::string id_column,
                                        std::string ts_column,
                                        std::shared_ptr<kspp::avro_schema_registry> schema_registry,
@@ -102,10 +103,11 @@ namespace kspp {
       , _exit(false)
       , _bg([this] { _thread(); })
       , _connection(std::make_shared<kspp_postgres::connection>())
-      , _table(table)
+      , _logical_name(logical_name)
       , _partition(partition)
       , _consumer_group(consumer_group)
       , cp_(cp)
+      , _query(query)
       , _id_column(id_column)
       , _ts_column(ts_column)
       , id_column_index_(-1)
@@ -137,7 +139,7 @@ namespace kspp {
 
     if (_connection) {
       _connection->close();
-      LOG(INFO) << "postgres_consumer table:" << _table << ":" << _partition << ", closed - consumed " << _msg_cnt << " messages";
+      LOG(INFO) << "postgres_consumer table:" << _logical_name << ":" << _partition << ", closed - consumed " << _msg_cnt << " messages";
     }
   }
 
@@ -171,13 +173,13 @@ namespace kspp {
       }
        */
     } else if (offset == kspp::OFFSET_BEGINNING) {
-      DLOG(INFO) << "postgres_consumer::start table:" << _table << ":" << _partition << " consumer group: "
+      DLOG(INFO) << "postgres_consumer::start table:" << _logical_name << ":" << _partition << " consumer group: "
                  << _consumer_group << " starting from OFFSET_BEGINNING";
     } else if (offset == kspp::OFFSET_END) {
-      DLOG(INFO) << "postgres_consumer::start table:" << _table << ":" << _partition << " consumer group: "
+      DLOG(INFO) << "postgres_consumer::start table:" << _logical_name << ":" << _partition << " consumer group: "
                  << _consumer_group << " starting from OFFSET_END";
     } else {
-      DLOG(INFO) << "postgres_consumer::start table:" << _table << ":" << _partition << " consumer group: "
+      DLOG(INFO) << "postgres_consumer::start table:" << _logical_name << ":" << _partition << " consumer group: "
                  << _consumer_group << " starting from fixed offset: " << offset;
     }
 
@@ -196,32 +198,33 @@ namespace kspp {
         if (_id_column.size() == 0) {
           key_schema_ = std::make_shared<avro::ValidSchema>(avro::NullSchema());
         } else {
-          key_schema_ = std::make_shared<avro::ValidSchema>(*schema_for_table_key(_table, {_id_column}, result.get()));
-          id_column_index_ = PQfnumber(result.get(), _id_column.c_str());
+          key_schema_ = std::make_shared<avro::ValidSchema>(*schema_for_table_key(_logical_name, {_id_column}, result.get()));
+          std::string simple_name = simple_column_name(_id_column);
+          id_column_index_ = PQfnumber(result.get(), simple_name.c_str());
         }
 
         if (schema_registry_) {
-          key_schema_id_ = schema_registry_->put_schema(_table + "_key", key_schema_);
+          key_schema_id_ = schema_registry_->put_schema(_logical_name + "_key", key_schema_);
         }
-
 
         std::stringstream ss0;
         key_schema_->toJson(ss0);
         LOG(INFO) << "key_schema: \n" << ss0.str();
       }
 
-      value_schema_ = std::make_shared<avro::ValidSchema>(*schema_for_table_row(_table, result.get()));
+      value_schema_ = std::make_shared<avro::ValidSchema>(*schema_for_table_row(_logical_name, result.get()));
       if (schema_registry_) {
         // we should probably prepend the name with a prefix (like _my_db_table_name)
-        value_schema_id_ = schema_registry_->put_schema(_table + "_value", value_schema_);
+        value_schema_id_ = schema_registry_->put_schema(_logical_name + "_value", value_schema_);
       }
 
       std::stringstream ss1;
       value_schema_->toJson(ss1);
       LOG(INFO) << "value_schema: \n" << ss1.str();
 
-      // TODO this could be an array of columns
-      ts_column_index_ = PQfnumber(result.get(), _ts_column.c_str());
+      // might be in form a.ts (get rid of a.)
+      std::string simple_name = simple_column_name(_ts_column);
+      ts_column_index_ = PQfnumber(result.get(), simple_name.c_str());
     }
 
     int nRows = PQntuples(result.get());
@@ -297,7 +300,6 @@ namespace kspp {
 
       _eof = false;
 
-      std::string fields = "*";
       std::string order_by = "";
       if (_ts_column.size()) {
         if (_id_column.size())
@@ -330,9 +332,7 @@ namespace kspp {
             LOG(FATAL) << "unknown cp_.connect_ts_policy: " << cp_.connect_ts_policy;
         }
       }
-
-      //std::string statement = "SELECT TOP " + std::to_string(_max_items_in_fetch) + " " + fields + " FROM " + _table + where_clause + " ORDER BY " + order_by;
-      std::string statement = "SELECT " + fields + " FROM " + _table + where_clause + order_by + " LIMIT " + std::to_string(_max_items_in_fetch);
+      std::string statement = _query + where_clause + order_by + " LIMIT " + std::to_string(_max_items_in_fetch);
 
       DLOG(INFO) << "exec(" + statement + ")";
 
@@ -361,10 +361,10 @@ namespace kspp {
       size_t messages_in_batch = _msg_cnt - last_msg_count;
 
       if (messages_in_batch==0) {
-        LOG_EVERY_N(INFO, 100) << "empty poll done, table: " << _table << " total: " << _msg_cnt << ", last ts: "
+        LOG_EVERY_N(INFO, 100) << "empty poll done, table: " << _logical_name << " total: " << _msg_cnt << ", last ts: "
                                << last_ts_ << " duration " << ts1 - ts0 << " ms";
       }  else {
-        LOG(INFO) << "poll done, table: " << _table << " retrieved: " << messages_in_batch << " messages, total: "
+        LOG(INFO) << "poll done, table: " << _logical_name << " retrieved: " << messages_in_batch << " messages, total: "
                   << _msg_cnt << ", last ts: " << last_ts_ << " duration " << ts1 - ts0 << " ms";
       }
 

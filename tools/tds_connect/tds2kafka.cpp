@@ -43,6 +43,7 @@ int main(int argc, char **argv) {
       ("id_column", boost::program_options::value<std::string>()->default_value(""), "id_column")
       ("timestamp_column", boost::program_options::value<std::string>()->default_value("ts"), "timestamp_column")
       ("table", boost::program_options::value<std::string>(), "table")
+      ("query", boost::program_options::value<std::string>(), "query")
       ("poll_intervall", boost::program_options::value<int32_t>()->default_value(60), "poll_intervall")
       ("topic_prefix", boost::program_options::value<std::string>()->default_value(get_env_and_log("TOPIC_PREFIX", "DEV_sqlserver_")), "topic_prefix")
       ("topic", boost::program_options::value<std::string>(), "topic")
@@ -105,9 +106,21 @@ int main(int argc, char **argv) {
   std::string table;
   if (vm.count("table")) {
     table = vm["table"].as<std::string>();
-  } else {
-    std::cerr << "--table must be specified";
+  }
+
+  std::string query;
+  if (vm.count("query")) {
+    query = vm["query"].as<std::string>();
+  }
+
+  if (table.size()==0 && query.size()==0){
+    std::cerr << "--table or --query must be specified";
     return -1;
+  }
+
+  if (query.size()==0){
+    query = "SELECT * FROM " + table;
+  } else {
   }
 
   std::string db_user;
@@ -156,7 +169,8 @@ int main(int argc, char **argv) {
   LOG(INFO) << "db_dbname         : " << db_dbname;
   LOG(INFO) << "db_user           : " << db_user;
   LOG(INFO) << "db_password       : " << "[hidden]";
-  LOG(INFO) << "table             : " << table;
+  LOG(INFO) << "table              : " << table;
+  LOG(INFO) << "query              : " << query;
   LOG(INFO) << "id_column         : " << id_column;
   LOG(INFO) << "timestamp_column  : " << timestamp_column;
   LOG(INFO) << "poll_intervall    : " << poll_intervall;
@@ -182,8 +196,8 @@ int main(int argc, char **argv) {
   kspp::topology_builder generic_builder("kspp", SERVICE_NAME + db_dbname, config);
   auto topology = generic_builder.create_topology();
 
-  auto source0 = topology->create_processors<kspp::tds_generic_avro_source>({0}, table, connection_params, id_column, timestamp_column, config->get_schema_registry(),  std::chrono::seconds(poll_intervall));
-
+  std::string query_name = topic;
+  auto source0 = topology->create_processors<kspp::tds_generic_avro_source>({0}, query_name, connection_params, query, id_column, timestamp_column, config->get_schema_registry(),  std::chrono::seconds(poll_intervall));
 
    if (filename.size()) {
     topology->create_sink<kspp::avro_file_sink>(source0, "/tmp/" + topic + ".avro");
