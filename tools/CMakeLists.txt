@@ -1,7 +1,7 @@
 add_subdirectory(kspp_avrogencpp)
 
 IF (ENABLE_INFLUXDB)
-	add_subdirectory(metrics2influx)
+	add_subdirectory(kafka2influxdb)
 ENDIF()
 
 IF (ENABLE_POSTGRES)
