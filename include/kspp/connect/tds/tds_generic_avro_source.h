@@ -10,7 +10,7 @@
 #pragma once
 
 namespace kspp {
-  class tds_generic_avro_source : public partition_source<void, kspp::generic_avro> {
+  class tds_generic_avro_source : public partition_source<kspp::generic_avro, kspp::generic_avro> {
     static constexpr const char *PROCESSOR_NAME = "tds_avro_source";
   public:
     tds_generic_avro_source(topology &t,
@@ -86,7 +86,6 @@ namespace kspp {
     }
 
   protected:
-    //void thread_f();
     bool _started;
     bool _exit;
     tds_consumer _impl;

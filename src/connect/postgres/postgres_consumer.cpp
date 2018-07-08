@@ -204,7 +204,7 @@ namespace kspp {
         }
 
         if (schema_registry_) {
-          key_schema_id_ = schema_registry_->put_schema(_logical_name + "_key", key_schema_);
+          key_schema_id_ = schema_registry_->put_schema(_logical_name + "-key", key_schema_);
         }
 
         std::stringstream ss0;
@@ -215,7 +215,7 @@ namespace kspp {
       value_schema_ = std::make_shared<avro::ValidSchema>(*schema_for_table_row(_logical_name, result.get()));
       if (schema_registry_) {
         // we should probably prepend the name with a prefix (like _my_db_table_name)
-        value_schema_id_ = schema_registry_->put_schema(_logical_name + "_value", value_schema_);
+        value_schema_id_ = schema_registry_->put_schema(_logical_name + "-value", value_schema_);
       }
 
       std::stringstream ss1;
@@ -230,17 +230,11 @@ namespace kspp {
     int nRows = PQntuples(result.get());
 
     for (int i = 0; i < nRows; i++) {
-      std::shared_ptr<kspp::generic_avro> key;
-
-      key = std::make_shared<kspp::generic_avro>(key_schema_, key_schema_id_);
+      auto key = std::make_shared<kspp::generic_avro>(key_schema_, key_schema_id_);
       load_avro_by_name(key.get(), result.get(), i);
-
       auto value = std::make_shared<kspp::generic_avro>(value_schema_, value_schema_id_);
-
       load_avro_by_name(value.get(), result.get(), i);
-
       // or should we use ts column instead of now();
-
 
 
       if (i == (nRows-1)) {

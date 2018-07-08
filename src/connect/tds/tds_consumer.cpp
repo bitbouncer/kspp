@@ -34,7 +34,8 @@ namespace kspp {
       , last_id_(INT_MIN)
       , schema_registry_(schema_registry)
       , _max_items_in_fetch(max_items_in_fetch)
-      , schema_id_(-1)
+      , key_schema_id_(-1)
+      , val_schema_id_(-1)
       , poll_intervall_(poll_intervall)
       , _msg_cnt(0)
       , _good(true)
@@ -241,14 +242,35 @@ namespace kspp {
   int tds_consumer::parse_avro(DBPROCESS *stream, COL *columns, size_t ncols) {
     //TODO what name should we segister this under.. source/database/table ? table seems to week
 
-
     // first time?
-    if (!this->schema_) {
-      //std::string schema_name =  host_ + "_" +  database_ + "_" + _table;
-      std::string schema_name = "tds_" + cp_.database + "_" + _logical_name;
-      this->schema_ = std::make_shared<avro::ValidSchema>(*tds::schema_for_table_row(schema_name, stream));
+    if (!this->val_schema_) {
+      if (!key_schema_) {
+        if (_id_column.size() == 0) {
+          key_schema_ = std::make_shared<avro::ValidSchema>(avro::NullSchema());
+        } else {
+          key_schema_ = std::make_shared<avro::ValidSchema>(*tds::schema_for_table_key(_logical_name + "-key", {_id_column}, result.get()));
+          std::string simple_name = tds::simple_column_name(_id_column);
+
+          for (int i = 0; i < ncols; i++) {
+            const char *col_name = dbcolname(stream, i + 1);
+            if (strcmp(col_name, simple_name.c_str()) == 0) {
+              id_column_index_ = i + 1;
+            }
+          }
+        }
+
+        if (schema_registry_) {
+          key_schema_id_ = schema_registry_->put_schema(_logical_name + "-key", key_schema_);
+        }
+
+        std::stringstream ss0;
+        key_schema_->toJson(ss0);
+        LOG(INFO) << "key_schema: \n" << ss0.str();
+      }
+
+      this->val_schema_ = std::make_shared<avro::ValidSchema>(*tds::schema_for_table_row(_logical_name + "-value", stream));
       if (schema_registry_) {
-        schema_id_ = schema_registry_->put_schema(schema_name, schema_); // we should probably prepend the name with a prefix (like _my_db_table_name)
+        val_schema_id_ = schema_registry_->put_schema(_logical_name + "-value", val_schema_); // we should probably prepend the name with a prefix (like _my_db_table_name)
       }
 
       // find ts field
@@ -264,21 +286,9 @@ namespace kspp {
         }
       }
 
-      if (_id_column.size()){
-        for (int i = 0; i < ncols; i++) {
-          const char *col_name = dbcolname(stream, i + 1);
-          if (strcmp(col_name, _id_column.c_str()) == 0) {
-            id_column_index_ = i + 1;
-          }
-        }
-        if (ts_column_index_<1){
-          LOG(FATAL) << "could not find id column: " <<  _id_column;
-        }
-      }
-
       // print schema first time...
       std::stringstream ss;
-      this->schema_->toJson(ss);
+      this->val_schema_->toJson(ss);
       LOG(INFO) << "schema:";
       LOG(INFO) << ss.str();
     }
