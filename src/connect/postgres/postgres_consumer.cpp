@@ -232,8 +232,8 @@ namespace kspp {
     for (int i = 0; i < nRows; i++) {
       auto key = std::make_shared<kspp::generic_avro>(key_schema_, key_schema_id_);
       load_avro_by_name(key.get(), result.get(), i);
-      auto value = std::make_shared<kspp::generic_avro>(value_schema_, value_schema_id_);
-      load_avro_by_name(value.get(), result.get(), i);
+      auto val = std::make_shared<kspp::generic_avro>(value_schema_, value_schema_id_);
+      load_avro_by_name(val.get(), result.get(), i);
       // or should we use ts column instead of now();
 
 
@@ -249,7 +249,7 @@ namespace kspp {
         load_avro_by_name(last_key_.get(), result.get(), i);
       }
 
-      auto record = std::make_shared<krecord<kspp::generic_avro, kspp::generic_avro>>(*key, value, kspp::milliseconds_since_epoch());
+      auto record = std::make_shared<krecord<kspp::generic_avro, kspp::generic_avro>>(*key, val, kspp::milliseconds_since_epoch());
       auto e = std::make_shared<kevent<kspp::generic_avro, kspp::generic_avro>>(record);
       assert(e.get()!=nullptr);
 

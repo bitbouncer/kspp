@@ -9,6 +9,170 @@
 using namespace std::chrono_literals;
 
 namespace kspp {
+  int find_column_by_name(DBPROCESS *stream, const std::string& name){
+    auto ncols = dbnumcols(stream);
+    for(int i=0; i!=ncols; ++i){
+      if (name == dbcolname(stream, i+1))
+        return i;
+    }
+    return -1;
+  }
+
+  void tds_consumer::load_avro_by_name(kspp::generic_avro* avro, DBPROCESS *stream, COL *columns){
+    // key type is null if there is no key
+    if (avro->type() == avro::AVRO_NULL)
+      return;
+
+    assert(avro->type() == avro::AVRO_RECORD);
+    avro::GenericRecord &record(avro->generic_datum()->value<avro::GenericRecord>());
+    size_t nFields = record.fieldCount();
+
+    // this checks the requested fields - should only be done once
+    for (int i = 0; i < nFields; i++)
+    {
+      if (record.fieldAt(i).type() != avro::AVRO_UNION) // TODO this should not hold - but we fail to create correct schemas for not null columns
+      {
+        LOG(FATAL) << "unexpected schema - bailing out, type:" << record.fieldAt(i).type();
+        break;
+      }
+    }
+
+    for (int i = 0; i < nFields; i++) {
+      auto src_column = find_column_by_name(stream, record.schema()->nameAt(i));
+      if (src_column < 0)
+        LOG(FATAL) << "cannot find column, name: " << record.schema()->nameAt(i);
+
+      avro::GenericUnion &au(record.fieldAt(i).value<avro::GenericUnion>());
+
+      if (dbdata(stream, src_column + 1) == nullptr) {
+        au.selectBranch(0); // NULL branch - we hope..
+        assert(au.datum().type() == avro::AVRO_NULL);
+        continue;
+      }
+
+      // is this a patched column - ie timeanddate2
+      COL *pcol = &columns[src_column];
+      if (pcol->buffer) {
+        if (pcol->status == -1) {
+          au.selectBranch(0); // NULL branch - we hope..
+          assert(au.datum().type() == avro::AVRO_NULL);
+        } else {
+          au.selectBranch(1);
+          avro::GenericDatum &avro_item(au.datum());
+          std::string s = pcol->buffer;
+          avro_item.value<std::string>() = s;
+        }
+        continue;
+      }
+
+      // normal parsing and not null
+      au.selectBranch(1);
+      avro::GenericDatum &avro_item(au.datum());
+
+      switch (dbcoltype(stream, i + 1)){
+        case tds::SYBINT2: {
+          int16_t v;
+          assert(sizeof(v) == dbdatlen(stream, i + 1));
+          memcpy(&v, dbdata(stream, i + 1), sizeof(v));
+          avro_item.value<int32_t>() = v;
+        }
+          break;
+
+        case tds::SYBINT4: {
+          int32_t v;
+          assert(sizeof(v) == dbdatlen(stream, i + 1));
+          memcpy(&v, dbdata(stream, i + 1), sizeof(v));
+          avro_item.value<int32_t>() = v;
+        }
+          break;
+
+        case tds::SYBINT8: {
+          int64_t v;
+          assert(sizeof(v) == dbdatlen(stream, i + 1));
+          memcpy(&v, dbdata(stream, i + 1), sizeof(v));
+          avro_item.value<int64_t>() = v;
+        }
+          break;
+
+        case tds::SYBFLT8: {
+          double v;
+          assert(sizeof(v) == dbdatlen(stream, i + 1));
+          memcpy(&v, dbdata(stream, i + 1), sizeof(v));
+          avro_item.value<double>() = v;
+        }
+          break;
+
+        case tds::SYBCHAR: {
+          std::string s;
+          int sz = dbdatlen(stream, i + 1);
+          s.reserve(sz);
+          s.assign((const char *) dbdata(stream, i + 1), sz);
+          avro_item.value<std::string>() = s;
+        }
+          break;
+
+        case tds::SYBMSUDT: {
+          //std::string s;
+          //int sz = dbdatlen(stream, i + 1);
+          //s.reserve(sz);
+          //s.assign((const char *) dbdata(stream, i + 1), sz);
+          //avro_item.value<std::string>() = s;
+          avro_item.value<std::string>() = "cannot parse" + std::to_string(dbcoltype(stream, i + 1));
+        }
+          break;
+
+        case tds::SYBBIT: {
+          bool v=false;
+          int sz = dbdatlen(stream, i + 1);
+          BYTE* data = dbdata(stream, i + 1);
+
+          if (*data==0)
+            v = false;
+          else
+            v=true;
+
+          avro_item.value<bool>() = v;
+        }
+          break;
+
+
+          /*
+           * case SYBDATETIME:
+          case SYBDATETIME4:
+          case SYBMSTIME:
+          case SYBMSDATE:
+          case SYBMSDATETIMEOFFSET:
+          case SYBTIME:
+          case SYBDATE:
+          case SYB5BIGTIME:
+          case SYB5BIGDATETIME:
+           */
+        case tds::SYBMSDATETIME2: {
+          //std::string s;
+          /*
+           * int sz = dbdatlen(stream, i + 1);
+           * s.reserve(sz);
+           * s.assign((const char *) dbdata(stream, i + 1), sz);
+           */
+          //s = pcol->buffer;
+          //avro_item.value<std::string>() = s;
+        }
+          break;
+
+        default:{
+          const char* cname = dbcolname(stream, i + 1);
+          int ctype = dbcoltype(stream, i + 1);
+          au.selectBranch(0); // NULL branch - we hope..
+          assert(au.datum().type() == avro::AVRO_NULL);
+          //avro_item.value<std::string>() = "cannot_parse:" + std::to_string(dbcoltype(stream, i + 1));
+          LOG(ERROR) << "unexpected / non supported type, column: " << cname << ", type:" << ctype;
+        }
+      } // switch sql type
+
+    } // for dst-column
+  }
+
+
   tds_consumer::tds_consumer(int32_t partition,
                              std::string logical_name,
                              std::string consumer_group,
@@ -43,10 +207,10 @@ namespace kspp {
       , _eof(false)
       , _start_running(false)
       , _exit(false) {
-        std::string top_part(" TOP " + std::to_string(_max_items_in_fetch));
-        // assumed to start with "SELECT"
-        _query.insert(6,top_part);
-        LOG(INFO) << " REAL QUERY: "  << _query;
+    std::string top_part(" TOP " + std::to_string(_max_items_in_fetch));
+    // assumed to start with "SELECT"
+    _query.insert(6,top_part);
+    LOG(INFO) << " REAL QUERY: "  << _query;
   }
 
   tds_consumer::~tds_consumer() {
@@ -239,16 +403,17 @@ namespace kspp {
   }
 
 
-  int tds_consumer::parse_avro(DBPROCESS *stream, COL *columns, size_t ncols) {
+  int tds_consumer::parse_row(DBPROCESS *stream, COL *columns) {
     //TODO what name should we segister this under.. source/database/table ? table seems to week
 
     // first time?
     if (!this->val_schema_) {
+      auto ncols = dbnumcols(stream);
       if (!key_schema_) {
         if (_id_column.size() == 0) {
           key_schema_ = std::make_shared<avro::ValidSchema>(avro::NullSchema());
         } else {
-          key_schema_ = std::make_shared<avro::ValidSchema>(*tds::schema_for_table_key(_logical_name + "-key", {_id_column}, result.get()));
+          key_schema_ = std::make_shared<avro::ValidSchema>(*tds::schema_for_table_key(_logical_name + "-key", {_id_column}, stream));
           std::string simple_name = tds::simple_column_name(_id_column);
 
           for (int i = 0; i < ncols; i++) {
@@ -297,12 +462,16 @@ namespace kspp {
     // since we create the schema on first read this should hold
     // it could be stronger if we generated the select from schema instead of relying on select *
     // for now this should be ok if the schema is not changed between queries...
-    auto gd = std::make_shared<kspp::generic_avro>(schema_, schema_id_);
-    assert(gd->type() == avro::AVRO_RECORD);
-    avro::GenericRecord &record(gd->generic_datum()->value<avro::GenericRecord>());
-    assert(ncols = record.fieldCount());
 
-    COL *pcol = columns;
+    auto key = std::make_shared<kspp::generic_avro>(key_schema_, key_schema_id_);
+    load_avro_by_name(key.get(), stream, columns);
+    auto val = std::make_shared<kspp::generic_avro>(val_schema_, val_schema_id_);
+    load_avro_by_name(val.get(), stream, columns);
+
+    // could be done from the shared_ptr key?
+    if (!last_key_)
+      last_key_ = std::make_unique<kspp::generic_avro>(key_schema_, key_schema_id_);
+    load_avro_by_name(last_key_.get(), stream, columns);
 
     if (ts_column_index_>0) {
       last_ts_ = parse_ts(stream);
@@ -312,146 +481,10 @@ namespace kspp {
       last_id_ = parse_id(stream);
     }
 
-    for (int i = 0; i != ncols; i++, pcol++) {
-      if (record.fieldAt(i).type() != avro::AVRO_UNION) {
-        LOG(ERROR) << "unexpected schema - bailing out, type:" << record.fieldAt(i).type();
-        assert(false);
-        break;
-      }
-      avro::GenericUnion &au(record.fieldAt(i).value<avro::GenericUnion>());
+    auto record = std::make_shared<krecord<kspp::generic_avro, kspp::generic_avro>>(*key, val, kspp::milliseconds_since_epoch());
+    auto e = std::make_shared<kevent<kspp::generic_avro, kspp::generic_avro>>(record);
+    assert(e.get()!=nullptr);
 
-      bool is_null = false;
-      bool is_patched = false;
-      // check if null - the pcol->buffer is for the patched conversion thing we dont know how to convert ourselves
-      if (pcol->buffer) {
-        is_patched = true;
-        if (pcol->status == -1)
-          is_null = true;
-      } else {
-        if (dbdata(stream, i + 1) == nullptr)
-          is_null = true;
-      }
-
-      /*
-        const char *buffer = (pcol->status == -1) ? "NULL" : pcol->buffer;
-        std::cerr << dbcolname(stream, i + 1) << ": " << buffer << std::endl;
-
-      } else {
-        print_data(dbcolname(stream, i + 1), dbcoltype(stream, i + 1), dbdata(stream, i + 1),
-                   dbdatlen(stream, i + 1));
-      }
-      */
-
-      if (is_null) {
-        au.selectBranch(0); // NULL branch - we hope..
-        assert(au.datum().type() == avro::AVRO_NULL);
-      } else {
-        au.selectBranch(1);
-        avro::GenericDatum &avro_item(au.datum());
-
-        switch (dbcoltype(stream, i + 1)){
-          case tds::SYBINT2: {
-            int16_t v;
-            assert(sizeof(v) == dbdatlen(stream, i + 1));
-            memcpy(&v, dbdata(stream, i + 1), sizeof(v));
-            avro_item.value<int32_t>() = v;
-          }
-            break;
-
-          case tds::SYBINT4: {
-            int32_t v;
-            assert(sizeof(v) == dbdatlen(stream, i + 1));
-            memcpy(&v, dbdata(stream, i + 1), sizeof(v));
-            avro_item.value<int32_t>() = v;
-          }
-            break;
-
-          case tds::SYBINT8: {
-            int64_t v;
-            assert(sizeof(v) == dbdatlen(stream, i + 1));
-            memcpy(&v, dbdata(stream, i + 1), sizeof(v));
-            avro_item.value<int64_t>() = v;
-          }
-            break;
-
-          case tds::SYBFLT8: {
-            double v;
-            assert(sizeof(v) == dbdatlen(stream, i + 1));
-            memcpy(&v, dbdata(stream, i + 1), sizeof(v));
-            avro_item.value<double>() = v;
-          }
-            break;
-
-          case tds::SYBCHAR: {
-            std::string s;
-            int sz = dbdatlen(stream, i + 1);
-            s.reserve(sz);
-            s.assign((const char *) dbdata(stream, i + 1), sz);
-            avro_item.value<std::string>() = s;
-          }
-            break;
-
-          case tds::SYBMSUDT: {
-            //std::string s;
-            //int sz = dbdatlen(stream, i + 1);
-            //s.reserve(sz);
-            //s.assign((const char *) dbdata(stream, i + 1), sz);
-            //avro_item.value<std::string>() = s;
-            avro_item.value<std::string>() = "cannot parse" + std::to_string(dbcoltype(stream, i + 1));
-          }
-          break;
-
-          case tds::SYBBIT: {
-            bool v=false;
-            int sz = dbdatlen(stream, i + 1);
-            BYTE* data = dbdata(stream, i + 1);
-
-            if (*data==0)
-              v = false;
-            else
-              v=true;
-
-            avro_item.value<bool>() = v;
-          }
-          break;
-
-
-            /*
-             * case SYBDATETIME:
-            case SYBDATETIME4:
-            case SYBMSTIME:
-            case SYBMSDATE:
-            case SYBMSDATETIMEOFFSET:
-            case SYBTIME:
-            case SYBDATE:
-            case SYB5BIGTIME:
-            case SYB5BIGDATETIME:
-             */
-          case tds::SYBMSDATETIME2: {
-            std::string s;
-            /*
-             * int sz = dbdatlen(stream, i + 1);
-             * s.reserve(sz);
-             * s.assign((const char *) dbdata(stream, i + 1), sz);
-             */
-            s = pcol->buffer;
-            avro_item.value<std::string>() = s;
-          }
-            break;
-
-          default:{
-                   int ctype = dbcoltype(stream, i + 1);
-                   char* cname = dbcolname(stream, i + 1);
-                   avro_item.value<std::string>() = "cannot_parse:" + std::to_string(dbcoltype(stream, i + 1));
-          }
-            //LOG(FATAL) << "unexpected / non supported type e:" << dbcoltype(stream, i + 1);
-        }
-      }
-    }
-    int64_t ts = 0; // TODO get the timestamp column
-    auto r = std::make_shared<krecord<void, kspp::generic_avro>>(gd, ts);
-    auto e = std::make_shared<kevent<void, kspp::generic_avro>>(r);
-    assert(e.get() != nullptr);
     ++_msg_cnt;
 
     while(_incomming_msg.size()>10000 && !_exit) {
@@ -530,7 +563,7 @@ namespace kspp {
       while ((row_code = dbnextrow(stream)) != NO_MORE_ROWS) {
         switch (row_code) {
           case REG_ROW:
-            parse_avro(stream, columns, ncols);
+            parse_row(stream, columns);
             break;
 
           case BUF_FULL:
@@ -607,8 +640,8 @@ namespace kspp {
       if (last_id_>INT_MIN) {
         if (_ts_column.size())
           where_clause =
-            " WHERE (" + _ts_column + " = '" + std::to_string(last_ts_) + "' AND " + _id_column + " > '" + std::to_string(last_id_) + "') OR (" +
-            _ts_column + " > '" + std::to_string(last_ts_) + "')";
+              " WHERE (" + _ts_column + " = '" + std::to_string(last_ts_) + "' AND " + _id_column + " > '" + std::to_string(last_id_) + "') OR (" +
+              _ts_column + " > '" + std::to_string(last_ts_) + "')";
         else
           where_clause = " WHERE " + _id_column + " > '" + std::to_string(last_id_) + "'";
       } else {

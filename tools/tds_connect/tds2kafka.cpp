@@ -200,9 +200,9 @@ int main(int argc, char **argv) {
   auto source0 = topology->create_processors<kspp::tds_generic_avro_source>({0}, query_name, connection_params, query, id_column, timestamp_column, config->get_schema_registry(),  std::chrono::seconds(poll_intervall));
 
    if (filename.size()) {
-    topology->create_sink<kspp::avro_file_sink>(source0, "/tmp/" + topic + ".avro");
+    //topology->create_sink<kspp::avro_file_sink>(source0, "/tmp/" + topic + ".avro");
   } else {
-    topology->create_sink<kspp::kafka_sink<void, kspp::generic_avro, void, kspp::avro_serdes>>(source0, topic, config->avro_serdes());
+    topology->create_sink<kspp::kafka_sink<kspp::generic_avro, kspp::generic_avro, kspp::avro_serdes, kspp::avro_serdes>>(source0, topic, config->avro_serdes(), config->avro_serdes());
   }
 
   std::vector<metrics20::avro::metrics20_key_tags_t> tags;
