@@ -108,8 +108,12 @@ namespace kspp {
           //s.reserve(sz);
           //s.assign((const char *) dbdata(stream, i + 1), sz);
           //avro_item.value<std::string>() = s;
-          avro_item.value<std::string>() = "cannot parse" + std::to_string(dbcoltype(stream, i + 1));
+          avro_item.value<std::string>() = "cannot parse, type:" + std::to_string(dbcoltype(stream, i + 1));
         }
+          break;
+
+        case tds::SYBUNIQUE:
+          avro_item.value<std::string>() = "cannot parse, type: " + std::to_string(dbcoltype(stream, i + 1));
           break;
 
         case tds::SYBBIT: {

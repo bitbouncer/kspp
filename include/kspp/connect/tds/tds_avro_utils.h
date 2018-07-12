@@ -12,10 +12,13 @@ namespace kspp {
       SYBINT4 = 56,
       SYBFLT8 = 62,
 
+
+
  // MS only types
+      SYBUNIQUE = 36,
+      SYBMSDATETIME2 = 42,
       SYBINT8 = 127,
-      SYBMSUDT = 240,
-      SYBMSDATETIME2 = 42
+      SYBMSUDT = 240
     };
 
     boost::shared_ptr<avro::Schema> schema_for_oid(TDS_OIDS typid);

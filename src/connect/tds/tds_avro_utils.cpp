@@ -32,11 +32,16 @@ namespace kspp{
           value_schema = boost::make_shared<avro::StringSchema>();
           break;
 
+        case SYBUNIQUE:
+          value_schema = boost::make_shared<avro::StringSchema>();
+          break;
+
           /* String-like types: fall through to the default, which is to create a string representation */
         case SYBCHAR:
         default:
           value_schema = boost::make_shared<avro::StringSchema>();
           break;
+        case SYBMSUDT:break;
       }
       /* Make a union of value_schema with null. Some types are already a union,
     * in which case they must include null as the first branch of the union,
