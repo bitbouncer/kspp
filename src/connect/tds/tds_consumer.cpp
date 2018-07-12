@@ -28,12 +28,12 @@ namespace kspp {
       }
     }
 
-    for (int i = 0; i < nFields; i++) {
-      auto src_column = tds::find_column_by_name(stream, record.schema()->nameAt(i));
+    for (int dst_column = 0; dst_column < nFields; dst_column++) {
+      auto src_column = tds::find_column_by_name(stream, record.schema()->nameAt(dst_column));
       if (src_column < 0)
-        LOG(FATAL) << "cannot find column, name: " << record.schema()->nameAt(i);
+        LOG(FATAL) << "cannot find column, name: " << record.schema()->nameAt(dst_column);
 
-      avro::GenericUnion &au(record.fieldAt(i).value<avro::GenericUnion>());
+      avro::GenericUnion &au(record.fieldAt(dst_column).value<avro::GenericUnion>());
 
       if (dbdata(stream, src_column + 1) == nullptr) {
         au.selectBranch(0); // NULL branch - we hope..
@@ -60,44 +60,44 @@ namespace kspp {
       au.selectBranch(1);
       avro::GenericDatum &avro_item(au.datum());
 
-      switch (dbcoltype(stream, i + 1)){
+      switch (dbcoltype(stream, src_column + 1)){
         case tds::SYBINT2: {
           int16_t v;
-          assert(sizeof(v) == dbdatlen(stream, i + 1));
-          memcpy(&v, dbdata(stream, i + 1), sizeof(v));
+          assert(sizeof(v) == dbdatlen(stream, src_column + 1));
+          memcpy(&v, dbdata(stream, src_column + 1), sizeof(v));
           avro_item.value<int32_t>() = v;
         }
           break;
 
         case tds::SYBINT4: {
           int32_t v;
-          assert(sizeof(v) == dbdatlen(stream, i + 1));
-          memcpy(&v, dbdata(stream, i + 1), sizeof(v));
+          assert(sizeof(v) == dbdatlen(stream, src_column + 1));
+          memcpy(&v, dbdata(stream, src_column + 1), sizeof(v));
           avro_item.value<int32_t>() = v;
         }
           break;
 
         case tds::SYBINT8: {
           int64_t v;
-          assert(sizeof(v) == dbdatlen(stream, i + 1));
-          memcpy(&v, dbdata(stream, i + 1), sizeof(v));
+          assert(sizeof(v) == dbdatlen(stream, src_column + 1));
+          memcpy(&v, dbdata(stream, src_column + 1), sizeof(v));
           avro_item.value<int64_t>() = v;
         }
           break;
 
         case tds::SYBFLT8: {
           double v;
-          assert(sizeof(v) == dbdatlen(stream, i + 1));
-          memcpy(&v, dbdata(stream, i + 1), sizeof(v));
+          assert(sizeof(v) == dbdatlen(stream, src_column + 1));
+          memcpy(&v, dbdata(stream, src_column + 1), sizeof(v));
           avro_item.value<double>() = v;
         }
           break;
 
         case tds::SYBCHAR: {
           std::string s;
-          int sz = dbdatlen(stream, i + 1);
+          int sz = dbdatlen(stream, src_column + 1);
           s.reserve(sz);
-          s.assign((const char *) dbdata(stream, i + 1), sz);
+          s.assign((const char *) dbdata(stream, src_column + 1), sz);
           avro_item.value<std::string>() = s;
         }
           break;
@@ -108,18 +108,18 @@ namespace kspp {
           //s.reserve(sz);
           //s.assign((const char *) dbdata(stream, i + 1), sz);
           //avro_item.value<std::string>() = s;
-          avro_item.value<std::string>() = "cannot parse, type:" + std::to_string(dbcoltype(stream, i + 1));
+          avro_item.value<std::string>() = "cannot parse, type:" + std::to_string(dbcoltype(stream, src_column + 1));
         }
           break;
 
         case tds::SYBUNIQUE:
-          avro_item.value<std::string>() = "cannot parse, type: " + std::to_string(dbcoltype(stream, i + 1));
+          avro_item.value<std::string>() = "cannot parse, type: " + std::to_string(dbcoltype(stream, src_column + 1));
           break;
 
         case tds::SYBBIT: {
           bool v=false;
-          int sz = dbdatlen(stream, i + 1);
-          BYTE* data = dbdata(stream, i + 1);
+          int sz = dbdatlen(stream, src_column + 1);
+          BYTE* data = dbdata(stream, src_column + 1);
 
           if (*data==0)
             v = false;
@@ -155,8 +155,8 @@ namespace kspp {
           break;
 
         default:{
-          const char* cname = dbcolname(stream, i + 1);
-          int ctype = dbcoltype(stream, i + 1);
+          const char* cname = dbcolname(stream, src_column + 1);
+          int ctype = dbcoltype(stream, src_column + 1);
           au.selectBranch(0); // NULL branch - we hope..
           assert(au.datum().type() == avro::AVRO_NULL);
           //avro_item.value<std::string>() = "cannot_parse:" + std::to_string(dbcoltype(stream, i + 1));
