@@ -145,7 +145,7 @@ namespace kspp {
         // do not do this if this is a delete message
         if (msg->record()->value()) {
           //TODO verify that the data actually has the _id_column(s)
-          std::string statement = avro2sql_create_table_statement(_table, _id_column,
+          std::string statement = pq::avro2sql_create_table_statement(_table, _id_column,
                                                                   *msg->record()->value()->valid_schema());
           LOG(INFO) << "exec(" + statement + ")";
           auto res = _connection->exec(statement);
@@ -165,8 +165,8 @@ namespace kspp {
       auto msg = _incomming_msg.front();
       // upsert?
       if (msg->record()->value()) {
-        std::string statement = avro2sql_build_insert_1(_table, *msg->record()->value()->valid_schema());
-        std::string upsert_part = avro2sql_build_upsert_2(_table, _id_column, *msg->record()->value()->valid_schema());
+        std::string statement = pq::avro2sql_build_insert_1(_table, *msg->record()->value()->valid_schema());
+        std::string upsert_part = pq::avro2sql_build_upsert_2(_table, _id_column, *msg->record()->value()->valid_schema());
 
         size_t msg_in_batch = 0;
         size_t bytes_in_batch = 0;
@@ -181,7 +181,7 @@ namespace kspp {
 
           // we cannot have the id columns of this update more than once
           // postgres::exec failed ERROR:  ON CONFLICT DO UPDATE command cannot affect row a second time
-          auto key_string = avro2sql_key_values(*msg->record()->value()->valid_schema(), _id_column,
+          auto key_string = pq::avro2sql_key_values(*msg->record()->value()->valid_schema(), _id_column,
                                                 *msg->record()->value()->generic_datum());
           auto res = unique_keys_in_batch.insert(key_string);
           if (res.second == false) {
@@ -193,7 +193,7 @@ namespace kspp {
 
           if (msg_in_batch > 0)
             statement += ", \n";
-          statement += avro2sql_values(*msg->record()->value()->valid_schema(),
+          statement += pq::avro2sql_values(*msg->record()->value()->valid_schema(),
                                        *msg->record()->value()->generic_datum());
           ++msg_in_batch;
           in_batch.push_back(msg);
@@ -237,7 +237,7 @@ namespace kspp {
           }
           if (msg_in_batch > 0)
             statement += "OR \n ";
-          statement += avro2sql_delete_key_values(*msg->record()->key().valid_schema(), _id_column, *msg->record()->key().generic_datum());
+          statement += pq::avro2sql_delete_key_values(*msg->record()->key().valid_schema(), _id_column, *msg->record()->key().generic_datum());
           ++msg_in_batch;
           in_batch.push_back(msg);
           _incomming_msg.pop_front();

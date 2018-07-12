@@ -19,9 +19,10 @@ namespace kspp {
     };
 
     boost::shared_ptr<avro::Schema> schema_for_oid(TDS_OIDS typid);
-    boost::shared_ptr<avro::RecordSchema> schema_for_table_row(std::string schema_name, DBPROCESS *context);
-    boost::shared_ptr<avro::RecordSchema> schema_for_table_key(std::string schema_name, const std::vector<std::string>& keys, DBPROCESS *context);
+    std::shared_ptr<avro::ValidSchema> schema_for_table_row(std::string schema_name, DBPROCESS *context);
+
+    std::shared_ptr<avro::ValidSchema> schema_for_table_key(std::string schema_name, const std::vector<std::string>& keys, DBPROCESS *context);
     std::string simple_column_name(std::string column_name);
-    //boost::shared_ptr<avro::Schema> schema_for_table_ts(std::string ts_field, DBPROCESS *context);
+    int find_column_by_name(DBPROCESS *stream, const std::string& name);
   }
 }

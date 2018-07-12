@@ -9,7 +9,6 @@
 using namespace std::chrono_literals;
 
 namespace kspp {
-
   static void load_avro_by_name(kspp::generic_avro* avro, PGresult* pgres, size_t row)
   {
     // key tupe is null if there is no key
@@ -198,8 +197,8 @@ namespace kspp {
         if (_id_column.size() == 0) {
           key_schema_ = std::make_shared<avro::ValidSchema>(avro::NullSchema());
         } else {
-          key_schema_ = std::make_shared<avro::ValidSchema>(*schema_for_table_key(_logical_name + "_key", {_id_column}, result.get()));
-          std::string simple_name = simple_column_name(_id_column);
+          key_schema_ = pq::schema_for_table_key(_logical_name + "_key", {_id_column}, result.get());
+          std::string simple_name = pq::simple_column_name(_id_column);
           id_column_index_ = PQfnumber(result.get(), simple_name.c_str());
         }
 
@@ -212,7 +211,7 @@ namespace kspp {
         LOG(INFO) << "key_schema: \n" << ss0.str();
       }
 
-      value_schema_ = std::make_shared<avro::ValidSchema>(*schema_for_table_row(_logical_name + "_value", result.get()));
+      value_schema_ = pq::schema_for_table_row(_logical_name + "_value", result.get());
       if (schema_registry_) {
         // we should probably prepend the name with a prefix (like _my_db_table_name)
         value_schema_id_ = schema_registry_->put_schema(_logical_name + "-value", value_schema_);
@@ -223,7 +222,7 @@ namespace kspp {
       LOG(INFO) << "value_schema: \n" << ss1.str();
 
       // might be in form a.ts (get rid of a.)
-      std::string simple_name = simple_column_name(_ts_column);
+      std::string simple_name = pq::simple_column_name(_ts_column);
       ts_column_index_ = PQfnumber(result.get(), simple_name.c_str());
     }
 

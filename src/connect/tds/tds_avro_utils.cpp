@@ -49,20 +49,6 @@ namespace kspp{
       return union_schema;
     }
 
-    boost::shared_ptr<avro::RecordSchema> schema_for_table_row(std::string schema_name, DBPROCESS *context) {
-      boost::shared_ptr<avro::RecordSchema> record_schema = boost::make_shared<avro::RecordSchema>(schema_name);
-
-      int ncols = dbnumcols(context);
-      for (int i = 0; i < ncols; i++) {
-        const char *col_name = dbcolname(context, i + 1);
-        int col_type = dbcoltype(context, i + 1);
-        boost::shared_ptr<avro::Schema> col_schema = schema_for_oid((TDS_OIDS) col_type);
-        /* TODO ensure that names abide by Avro's requirements */
-        record_schema->addField(col_name, *col_schema);
-      }
-      return record_schema;
-    }
-
     std::string simple_column_name(std::string column_name) {
       std::string simple=column_name;
       size_t found = simple.find_last_of('.');
@@ -71,10 +57,33 @@ namespace kspp{
       return simple;
     }
 
+    int find_column_by_name(DBPROCESS *stream, const std::string& name){
+      auto ncols = dbnumcols(stream);
+      for(int i=0; i!=ncols; ++i){
+        if (name == dbcolname(stream, i+1))
+          return i;
+      }
+      return -1;
+    }
+
+    std::shared_ptr<avro::ValidSchema> schema_for_table_row(std::string schema_name, DBPROCESS *context) {
+      avro::RecordSchema record_schema(schema_name);
+      int ncols = dbnumcols(context);
+      for (int i = 0; i < ncols; i++) {
+        const char *col_name = dbcolname(context, i + 1);
+        int col_type = dbcoltype(context, i + 1);
+        boost::shared_ptr<avro::Schema> col_schema = schema_for_oid((TDS_OIDS) col_type);
+        /* TODO ensure that names abide by Avro's requirements */
+        record_schema.addField(col_name, *col_schema);
+      }
+      auto result = std::make_shared<avro::ValidSchema>(record_schema);
+      return result;
+    }
+
     // if we have a freeform select statement we might need to specify id and ts columns as a.id and b.ts if the fields occur in several tables
     // strip this away
-    boost::shared_ptr<avro::RecordSchema> schema_for_table_key(std::string schema_name, const std::vector<std::string>& keys, DBPROCESS *context) {
-      boost::shared_ptr<avro::RecordSchema> record_schema = boost::make_shared<avro::RecordSchema>(schema_name);
+    std::shared_ptr<avro::ValidSchema> schema_for_table_key(std::string schema_name, const std::vector<std::string>& keys, DBPROCESS *context) {
+      avro::RecordSchema record_schema(schema_name);
       int ncols = dbnumcols(context);
       for (std::vector<std::string>::const_iterator key = keys.begin(); key != keys.end(); key++) {
         std::string simple_key = simple_column_name(*key);
@@ -84,12 +93,13 @@ namespace kspp{
             int col_type = dbcoltype(context, i + 1);
             boost::shared_ptr<avro::Schema> col_schema = schema_for_oid((TDS_OIDS) col_type);
             /* TODO ensure that names abide by Avro's requirements */
-            record_schema->addField(col_name, *col_schema);
+            record_schema.addField(col_name, *col_schema);
             break;
           }
         }
       }
-      return record_schema;
+      auto result = std::make_shared<avro::ValidSchema>(record_schema);
+      return result;
     }
   }
 }
