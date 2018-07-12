@@ -198,7 +198,7 @@ namespace kspp {
         if (_id_column.size() == 0) {
           key_schema_ = std::make_shared<avro::ValidSchema>(avro::NullSchema());
         } else {
-          key_schema_ = std::make_shared<avro::ValidSchema>(*schema_for_table_key(_logical_name, {_id_column}, result.get()));
+          key_schema_ = std::make_shared<avro::ValidSchema>(*schema_for_table_key(_logical_name + "_key", {_id_column}, result.get()));
           std::string simple_name = simple_column_name(_id_column);
           id_column_index_ = PQfnumber(result.get(), simple_name.c_str());
         }
@@ -212,7 +212,7 @@ namespace kspp {
         LOG(INFO) << "key_schema: \n" << ss0.str();
       }
 
-      value_schema_ = std::make_shared<avro::ValidSchema>(*schema_for_table_row(_logical_name, result.get()));
+      value_schema_ = std::make_shared<avro::ValidSchema>(*schema_for_table_row(_logical_name + "_value", result.get()));
       if (schema_registry_) {
         // we should probably prepend the name with a prefix (like _my_db_table_name)
         value_schema_id_ = schema_registry_->put_schema(_logical_name + "-value", value_schema_);

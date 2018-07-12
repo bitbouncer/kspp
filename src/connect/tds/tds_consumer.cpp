@@ -413,15 +413,14 @@ namespace kspp {
         if (_id_column.size() == 0) {
           key_schema_ = std::make_shared<avro::ValidSchema>(avro::NullSchema());
         } else {
-          key_schema_ = std::make_shared<avro::ValidSchema>(*tds::schema_for_table_key(_logical_name + "-key", {_id_column}, stream));
+          //auto rs = std::make_shared<avro::RecordSchema>(_logical_name + "_key"); //debug code
+          boost::shared_ptr<avro::RecordSchema> schema = tds::schema_for_table_key(_logical_name + "_key", {_id_column}, stream);
+          key_schema_ = std::make_shared<avro::ValidSchema>(*schema);
           std::string simple_name = tds::simple_column_name(_id_column);
 
-          for (int i = 0; i < ncols; i++) {
-            const char *col_name = dbcolname(stream, i + 1);
-            if (strcmp(col_name, simple_name.c_str()) == 0) {
-              id_column_index_ = i + 1;
-            }
-          }
+          int ix = find_column_by_name(stream, simple_name);
+          if (ix>=0)
+            id_column_index_ =  ix + 1;
         }
 
         if (schema_registry_) {
@@ -433,21 +432,19 @@ namespace kspp {
         LOG(INFO) << "key_schema: \n" << ss0.str();
       }
 
-      this->val_schema_ = std::make_shared<avro::ValidSchema>(*tds::schema_for_table_row(_logical_name + "-value", stream));
+      this->val_schema_ = std::make_shared<avro::ValidSchema>(*tds::schema_for_table_row(_logical_name + "_value", stream));
       if (schema_registry_) {
         val_schema_id_ = schema_registry_->put_schema(_logical_name + "-value", val_schema_); // we should probably prepend the name with a prefix (like _my_db_table_name)
       }
 
       // find ts field
       if (_ts_column.size()){
-        for (int i = 0; i < ncols; i++) {
-          const char *col_name = dbcolname(stream, i + 1);
-          if (strcmp(col_name, _ts_column.c_str()) == 0) {
-            ts_column_index_ = i + 1;
-          }
-        }
-        if (ts_column_index_<1){
-          LOG(FATAL) << "could not find ts column: " <<  _ts_column;
+        std::string simple_name = tds::simple_column_name(_ts_column);
+        int ix = find_column_by_name(stream, simple_name);
+        if (ix>=0) {
+          ts_column_index_ = ix + 1;
+        } else {
+          LOG(FATAL) << "could not find ts column: " << _ts_column;
         }
       }
 

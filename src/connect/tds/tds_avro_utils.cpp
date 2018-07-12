@@ -85,6 +85,7 @@ namespace kspp{
             boost::shared_ptr<avro::Schema> col_schema = schema_for_oid((TDS_OIDS) col_type);
             /* TODO ensure that names abide by Avro's requirements */
             record_schema->addField(col_name, *col_schema);
+            break;
           }
         }
       }
