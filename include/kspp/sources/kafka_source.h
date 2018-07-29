@@ -310,18 +310,18 @@ namespace kspp {
         int64_t timestamp = (ref->timestamp().timestamp >= 0) ? ref->timestamp().timestamp : milliseconds_since_epoch();
         std::shared_ptr<V> tmp_value = std::make_shared<V>();
         size_t consumed = this->_val_codec->decode((const char *) ref->payload(), sz, *tmp_value);
-        if (consumed == sz) {
-          auto record = std::make_shared<krecord<void, V>>(tmp_value, timestamp);
-          return std::make_shared<kevent<void, V>>(record, this->_commit_chain.create(ref->offset()));
-        }
 
         if (consumed == 0) {
           LOG(ERROR) << this->log_name() << ", decode value failed, size:" << sz;
           return nullptr;
         }
-
-        LOG(ERROR) << this->log_name() << ", decode value failed, consumed: " << consumed << ", actual: " << sz;
+        else if (sz - consumed > 1) { // patch for 0 terminated string or not... if text encoding
+          LOG(ERROR) << this->log_name() << ", decode value failed, consumed: " << consumed << ", actual: " << sz;
         return nullptr;
+        }
+
+        auto record = std::make_shared<krecord<void, V>>(tmp_value, timestamp);
+        return std::make_shared<kevent<void, V>>(record, this->_commit_chain.create(ref->offset()));
       }
       return nullptr; // just parsed an empty message???
     }

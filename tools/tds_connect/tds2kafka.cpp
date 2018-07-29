@@ -210,7 +210,11 @@ int main(int argc, char **argv) {
   tags.push_back(kspp::make_metrics_tag("app_realm", app_realm));
   tags.push_back(kspp::make_metrics_tag("hostname", default_hostname()));
   tags.push_back(kspp::make_metrics_tag("db_host", db_host));
-  tags.push_back(kspp::make_metrics_tag("dst_table", table));
+
+  if (query.size()>0)
+    tags.push_back(kspp::make_metrics_tag("source", "query"));
+  else
+    tags.push_back(kspp::make_metrics_tag("source", table));
 
   topology->init_metrics(tags);
   //topology->start(kspp::OFFSET_STORED);
