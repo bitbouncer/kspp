@@ -21,14 +21,11 @@ int main(int argc, char **argv) {
   config->load_config_from_env();
   config->validate(); // optional
 
-  // maybe we should add http:// here...
-  auto schema_registry = std::make_shared<kspp::avro_schema_registry>(*config);
-  auto avro_serdes = std::make_shared<kspp::avro_serdes>(schema_registry);
   auto avro_stream = std::make_shared<kspp::raw_kafka_sink<boost::uuids::uuid, int64_t, kspp::avro_serdes, kspp::avro_serdes>>(
       config,
       "kspp_test14_raw",
-      avro_serdes,
-      avro_serdes);
+      config->avro_serdes(),
+      config->avro_serdes());
 
   std::vector<boost::uuids::uuid> ids;
   for (int i = 0; i != 10; ++i)
