@@ -127,9 +127,11 @@ namespace kspp {
             std::this_thread::sleep_for(10s);
             continue;
           }
-          LOG(ERROR) << "HTTP error: " << res->rx_content();
-          std::this_thread::sleep_for(10s);
-          continue;
+          LOG(ERROR) << "HTTP error (skipping) : " << res->rx_content();
+          // we have a partial write that is evil - if we have a pare error int kafka the we will stoip forever here if we don't skip that.
+          // for now skip the error and contine as if it worked
+          //std::this_thread::sleep_for(10s);
+          //continue;
           }
 
           // OK...

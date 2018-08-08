@@ -11,7 +11,7 @@
 
 #define SERVICE_NAME "metrics2influx"
 
-#define DEFAULT_METRICS_TOPIC "kspp_metric"
+#define DEFAULT_METRICS_TOPIC "kspp_metrics"
 #define DEFAULT_URI           "http://10.1.46.22:8086"
 
 using namespace std::chrono_literals;
