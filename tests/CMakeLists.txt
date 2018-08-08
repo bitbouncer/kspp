@@ -58,6 +58,8 @@ add_executable(test8_join test8_join.cpp)
 target_link_libraries(test8_join ${CSI_LIBS_STATIC})
 add_test(NAME test8_join COMMAND $<TARGET_FILE:test8_join>)
 
-
+#add_executable(test9_kafka_rest test9_kafka_rest.cpp)
+#target_link_libraries(test9_kafka_rest ${CSI_LIBS_STATIC})
+#add_test(NAME test9_kafka_rest COMMAND $<TARGET_FILE:test9_kafka_rest>)
 
 

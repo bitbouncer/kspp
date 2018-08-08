@@ -32,6 +32,10 @@ namespace kspp {
     return get_env_and_log("KSPP_KAFKA_BROKER_URL", "plaintext://localhost:9092");
   }
 
+  std::string default_kafka_rest_uri() {
+    return get_env_and_log("KSPP_KAFKA_REST_URL", "http://localhost:8082");
+  }
+
   std::string default_schema_registry_uri() {
     return get_env_and_log("KSPP_SCHEMA_REGISTRY_URL", "http://localhost:8081");
   }

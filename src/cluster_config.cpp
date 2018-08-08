@@ -31,6 +31,7 @@ namespace kspp {
                          default_client_key_path(),
                          default_client_key_passphrase());
     set_schema_registry_uri(default_schema_registry_uri());
+    set_kafka_rest_uri(default_kafka_rest_uri());
     //set_schema_registry_timeout()
     //set_fail_fast()
   }
@@ -115,6 +116,16 @@ namespace kspp {
 
   std::string cluster_config::get_schema_registry_uri() const {
     return schema_registry_uri_;
+  }
+
+  void cluster_config::set_kafka_rest_uri(std::string urls) {
+    auto v = kspp::split_url_list(urls, "http");
+    LOG_IF(FATAL, v.size() == 0) << "cluster_config, bad kafka_rest urls: " << urls;
+    kafka_rest_uri_ = urls;
+  }
+
+  std::string cluster_config::get_kafka_rest_uri() const {
+    return kafka_rest_uri_;
   }
 
   void cluster_config::set_schema_registry_timeout(std::chrono::milliseconds timeout) {

@@ -4,6 +4,8 @@
 namespace kspp {
   std::string default_kafka_broker_uri();
 
+  std::string default_kafka_rest_uri();
+
   std::string default_schema_registry_uri();
 
   std::string default_statestore_directory();

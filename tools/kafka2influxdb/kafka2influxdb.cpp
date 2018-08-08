@@ -31,9 +31,10 @@ int main(int argc, char** argv) {
       ("help", "produce help message")
       ("app_realm", boost::program_options::value<std::string>()->default_value(get_env_and_log("APP_REALM", "DEV")), "app_realm")
       ("broker", boost::program_options::value<std::string>()->default_value(default_kafka_broker_uri()), "broker")
-      ("src_topic", boost::program_options::value<std::string>()->default_value(DEFAULT_METRICS_TOPIC), "src_topic")
+      ("src_topic", boost::program_options::value<std::string>()->default_value(get_env_and_log("SRC_TOPIC", DEFAULT_METRICS_TOPIC)), "src_topic")
       ("partition_list", boost::program_options::value<std::string>()->default_value("[-1]"), "partition_list")
-      ("dst_uri", boost::program_options::value<std::string>()->default_value(DEFAULT_URI), "dst_uri")
+      ("dst_uri", boost::program_options::value<std::string>()->default_value(get_env_and_log("DST_URI", DEFAULT_URI)), "dst_uri")
+      ("dst_database", boost::program_options::value<std::string>()->default_value(get_env_and_log("DST_DATABASE", "telegraf")), "dst_database")
       ("schema_registry", boost::program_options::value<std::string>()->default_value(default_schema_registry_uri()), "schema_registry")
       ("http_batch_size", boost::program_options::value<int32_t>()->default_value(500), "http_batch_size")
       ("http_timeout_ms", boost::program_options::value<int32_t>()->default_value(1000), "http_timeout_ms")
@@ -61,6 +62,11 @@ int main(int argc, char** argv) {
   std::string dst_uri;
   if (vm.count("dst_uri")) {
     dst_uri = vm["dst_uri"].as<std::string>();
+  }
+
+  std::string dst_database;
+  if (vm.count("dst_database")) {
+    dst_database = vm["dst_database"].as<std::string>();
   }
 
   int32_t http_batch_size;
@@ -103,14 +109,14 @@ int main(int argc, char** argv) {
 
   LOG(INFO) << "src_topic        : " << src_topic;
   LOG(INFO) << "dst_uri          : " << dst_uri;
-  LOG(INFO) << "dst_database     : " << "telegraf (hardcoded)";
+  LOG(INFO) << "dst_database     : " << dst_database;
   LOG(INFO) << "http_batch_size  : " << http_batch_size;
   LOG(INFO) << "http_timeout_ms  : " << http_timeout.count();
   LOG(INFO) << "discovering facts...";
 
   kspp::connect::connection_params connection_params;
   connection_params.url = dst_uri;
-  connection_params.database = "telegraf";
+  connection_params.database = dst_database;
 
   auto nr_of_partitions = kspp::kafka::get_number_partitions(config, src_topic);
   if (partition_list.size() == 0 || partition_list[0] == -1)
@@ -132,9 +138,11 @@ int main(int argc, char** argv) {
   tags.push_back(kspp::make_metrics_tag("hostname",  default_hostname()));
   tags.push_back(kspp::make_metrics_tag("src_topic", src_topic));
   tags.push_back(kspp::make_metrics_tag("dst_uri",   dst_uri));
+  tags.push_back(kspp::make_metrics_tag("dst_database",  dst_database));
   topology->init_metrics(tags);
 
-  topology->start(kspp::OFFSET_STORED);
+  //topology->start(kspp::OFFSET_STORED);
+  topology->start(kspp::OFFSET_END);
 
   LOG(INFO) << "status is up";
 

@@ -44,6 +44,9 @@ namespace kspp {
     void set_schema_registry_uri(std::string);
     std::string get_schema_registry_uri() const;
 
+    void set_kafka_rest_uri(std::string);
+    std::string get_kafka_rest_uri() const;
+
     void set_schema_registry_timeout(std::chrono::milliseconds timeout);
     std::chrono::milliseconds get_schema_registry_timeout() const;
 
@@ -83,6 +86,7 @@ namespace kspp {
     size_t max_pending_sink_messages_;
     std::string root_path_;
     std::string schema_registry_uri_;
+    std::string kafka_rest_uri_;
     bool fail_fast_;
     mutable std::shared_ptr<cluster_metadata> meta_data_;
     mutable std::shared_ptr<kspp::avro_schema_registry> avro_schema_registry_;
