@@ -60,7 +60,7 @@ namespace kspp {
   }
 
   size_t influx_sink::process(int64_t tick) {
-    size_t sz;
+    size_t sz=0;
     while (!_pending_for_delete.empty()) {
       ++sz;
       _pending_for_delete.pop_front();
@@ -93,8 +93,6 @@ namespace kspp {
       }
 
       size_t items_to_copy = std::min<size_t>(this->_queue.size(), _batch_size);
-
-      //std::string url = _base_url + "/write?db=telegraf";
       std::string url = _cp.url + "/write?db=" + _cp.database;
       std::shared_ptr<kspp::http::request> request(new kspp::http::request(kspp::http::POST, url, {}, _http_timeout));
 

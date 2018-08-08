@@ -78,7 +78,7 @@ namespace kspp {
     }
 
     inline size_t process(int64_t tick) override{
-      size_t sz;
+      size_t sz=0;
       while (!_pending_for_delete.empty()) {
         ++sz;
         _pending_for_delete.pop_front();
