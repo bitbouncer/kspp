@@ -47,7 +47,7 @@ namespace kspp {
     }
 
     void poll(int timeout) {
-      return _impl.poll(timeout);
+      _impl.poll(timeout);
     }
 
     void flush() {

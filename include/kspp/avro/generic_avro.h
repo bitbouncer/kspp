@@ -57,6 +57,52 @@ namespace kspp {
          }
        }
 
+      boost::optional<std::string> get_optional_as_string(const std::string& name) const{
+         if (!record_.hasField(name))
+           throw std::invalid_argument("no such member: " + name);
+
+         const avro::GenericDatum &field = record_.field(name);
+
+         if (field.isUnion()) {
+           const avro::GenericUnion &generic_union(field.value<avro::GenericUnion>());
+           switch (generic_union.datum().type()) {
+             case avro::AVRO_NULL:
+               return boost::none;
+             case avro::AVRO_STRING :
+               return convert<std::string>(generic_union.datum());
+             case avro::AVRO_INT:
+               return std::to_string(convert<int32_t>(generic_union.datum()));
+             case avro::AVRO_LONG:
+               return std::to_string(convert<int64_t>(generic_union.datum()));
+             case avro::AVRO_FLOAT:
+               return std::to_string(convert<float>(generic_union.datum()));
+             case avro::AVRO_DOUBLE:
+               return std::to_string(convert<double>(generic_union.datum()));
+             case avro::AVRO_BOOL:
+               return std::to_string(convert<bool>(generic_union.datum()));
+           }
+         } else {
+           switch (field.type()) {
+             case avro::AVRO_NULL:
+               return boost::none;
+             case avro::AVRO_STRING :
+               return convert<std::string>(field);
+             case avro::AVRO_INT:
+               return std::to_string(convert<int32_t>(field));
+             case avro::AVRO_LONG:
+               return std::to_string(convert<int64_t>(field));
+             case avro::AVRO_FLOAT:
+               return std::to_string(convert<float>(field));
+             case avro::AVRO_DOUBLE:
+               return std::to_string(convert<double>(field));
+             case avro::AVRO_BOOL:
+               return std::to_string(convert<bool>(field));
+           }
+         }
+        return boost::none; // TODO not a good default - throw exception
+       }
+
+
        template<class T>
        T get(std::string name, const T& default_value) const {
          if (!record_.hasField(name))

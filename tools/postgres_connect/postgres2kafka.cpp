@@ -44,7 +44,8 @@ int main(int argc, char **argv) {
       ("warning_timeout", boost::program_options::value<int32_t>()->default_value(1000), "warning_timeout")
       ("table", boost::program_options::value<std::string>(), "table")
       ("query", boost::program_options::value<std::string>(), "query")
-      //("query_name", boost::program_options::value<std::string>(), "query_name")
+      ("codec", boost::program_options::value<std::string>()->default_value("avro"), "codec")
+      ("val_column", boost::program_options::value<std::string>()->default_value(""), "val_column")
       ("topic_prefix", boost::program_options::value<std::string>()->default_value("DEV_postgres_"), "topic_prefix")
       ("topic", boost::program_options::value<std::string>(), "topic")
       ("filename", boost::program_options::value<std::string>(), "filename");
@@ -139,12 +140,32 @@ int main(int argc, char **argv) {
     query = vm["query"].as<std::string>();
   }
 
-  /*
-   * std::string query_name;
-  if (vm.count("query_name")) {
-    query_name = vm["query_name"].as<std::string>();
+  std::string codec;
+  if (vm.count("codec")) {
+    codec = vm["codec"].as<std::string>();
+
+    if (codec == "avro" || codec == "text"){
+      //OK
+    } else {
+      std::cerr << "codec must be text or avro"  << std::endl;
+      return -1;
+    }
   }
-   */
+
+  std::string val_column;
+  if (vm.count("val_column")) {
+    val_column = vm["val_column"].as<std::string>();
+
+    if (val_column.size()>0 && codec!="text") {
+      std::cerr << "--val_column only valid for --codec=text" << std::endl;
+      return -1;
+    }
+
+    if (val_column.size()==0 && codec=="text") {
+      std::cerr << "--val_column required for codec=text" << std::endl;
+      return -1;
+    }
+  }
 
   if (table.size()==0 && query.size()==0){
     std::cerr << "--table or --query must be specified";
@@ -197,10 +218,14 @@ int main(int argc, char **argv) {
   LOG(INFO) << "table              : " << table;
   LOG(INFO) << "query              : " << query;
   LOG(INFO) << "id_column          : " << id_column;
+  if (val_column.size())
+    LOG(INFO) << "val_column              : " << val_column;
+
   LOG(INFO) << "timestamp_column   : " << timestamp_column;
   LOG(INFO) << "poll_intervall     : " << poll_intervall;
   LOG(INFO) << "topic_prefix       : " << topic_prefix;
   LOG(INFO) << "topic              : " << topic;
+  LOG(INFO) << "codec              : " << codec;
 
   kspp::connect::connection_params connection_params;
   connection_params.host = db_host;
@@ -216,8 +241,6 @@ int main(int argc, char **argv) {
 
   LOG(INFO) << "discovering facts...";
 
-
-
   kspp::topology_builder generic_builder("kspp", SERVICE_NAME, config);
   auto topology = generic_builder.create_topology();
   std::string query_name = topic;
@@ -226,7 +249,26 @@ int main(int argc, char **argv) {
   if (filename.size()) {
     //topology->create_sink<kspp::avro_file_sink>(source0, "/tmp/" + topic + ".avro");
   } else {
+    if (codec == "avro"){
     topology->create_sink<kspp::kafka_sink< kspp::generic_avro, kspp::generic_avro, kspp::avro_serdes, kspp::avro_serdes>>(source0, topic, config->avro_serdes(), config->avro_serdes());
+  } else if (codec == "text" ){
+      auto extracted= topology->create_processors<kspp::flat_map<kspp::generic_avro, kspp::generic_avro, std::string, std::string>>(
+          source0,
+          [id_column, val_column](const auto record, auto flat_map) {
+          std::string key = *record->key().record().get_optional_as_string(id_column);
+            if (record->value()==nullptr){
+              flat_map->push_back(std::make_shared<kspp::krecord<std::string, std::string>>(key, nullptr));
+          //TODO
+        } else {
+          auto val = record->value()->record().get_optional_as_string(val_column);
+          if (val)
+            flat_map->push_back(std::make_shared<kspp::krecord<std::string, std::string>>(key, *val));
+          else
+            flat_map->push_back(std::make_shared<kspp::krecord<std::string, std::string>>(key, nullptr));
+        }
+      });
+      topology->create_sink<kspp::kafka_sink<std::string, std::string, kspp::text_serdes, kspp::text_serdes>>(extracted, topic);
+    }
   }
 
   std::vector<metrics20::avro::metrics20_key_tags_t> tags;
