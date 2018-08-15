@@ -160,6 +160,8 @@ namespace kspp {
   }
 
   std::size_t topology::process(int64_t ts) {
+    auto ev_count = 0u;
+
     // this needs to be done to to trigger callbacks
     for (auto &&i : _sinks)
       i->poll(0);
@@ -180,13 +182,13 @@ namespace kspp {
 
     //int64_t tick = milliseconds_since_epoch();
 
-    auto res = 0u;
+
     for (auto &&i : _top_partition_processors) {
-      res += i->process(ts);
+      ev_count += i->process(ts);
     }
 
     for (auto &&i : _sinks)
-      res += i->process(ts);
+      ev_count += i->process(ts);
 
     if (ts > _next_gc_ts) {
       for (auto &&i : _partition_processors)
@@ -196,7 +198,7 @@ namespace kspp {
       _next_gc_ts = ts + 10000; // 10 sec
     }
 
-    return res;
+    return ev_count;
   }
 
   std::size_t topology::process_1s(){
@@ -218,17 +220,17 @@ namespace kspp {
 
     int64_t max_ts = std::min(min_ts+1000, kspp::milliseconds_since_epoch()-_min_buffering_ms);
 
-    for (auto &&i : _sinks)
-      i->process(max_ts);
-
     size_t ev_count=0;
+
+    for (auto &&i : _sinks)
+      ev_count += i->process(max_ts);
 
     for (int64_t ts = min_ts; ts != max_ts; ++ts)
     for (auto &&i : _partition_processors)
-      i->process(ts);
+      ev_count += i->process(ts);
 
     for (auto &&i : _sinks)
-      i->process(max_ts);
+      ev_count +=  i->process(max_ts);
 
     if (max_ts > _next_gc_ts) {
       for (auto &&i : _partition_processors)
@@ -237,6 +239,8 @@ namespace kspp {
         i->garbage_collect(max_ts);
       _next_gc_ts = max_ts + 10000; // 10 sec
     }
+
+    return ev_count;
   }
 
   void topology::close() {
