@@ -42,7 +42,7 @@ namespace kspp {
   }
 
   std::string cluster_config::get_consumer_group() const {
-    consumer_group_;
+    return consumer_group_;
   }
 
   void cluster_config::set_brokers(std::string brokers) {
