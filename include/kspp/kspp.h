@@ -15,7 +15,6 @@
 #include <kspp/metrics/metrics.h>
 #include <kspp/kevent.h>
 #include <kspp/type_name.h>
-#include <kspp/app_info.h>
 #include <kspp/cluster_config.h>
 #include <kspp/impl/event_queue.h>
 #include <kspp/impl/hash/murmurhash2.h>

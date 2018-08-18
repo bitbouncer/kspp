@@ -11,7 +11,7 @@
 namespace kspp {
   class generic_avro_sink : public topic_sink<kspp::generic_avro, kspp::generic_avro> {
   public:
-    generic_avro_sink(topology &t, std::shared_ptr<generic_producer<kspp::generic_avro, kspp::generic_avro>> impl)
+    generic_avro_sink(std::shared_ptr<cluster_config> config, std::shared_ptr<generic_producer<kspp::generic_avro, kspp::generic_avro>> impl)
     : _impl(impl) {
     }
 

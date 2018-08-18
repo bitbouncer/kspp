@@ -13,7 +13,7 @@ namespace kspp {
   class rate_limiter : public event_consumer<K, V>, public partition_source<K, V> {
     static constexpr const char* PROCESSOR_NAME = "rate_limiter";
   public:
-    rate_limiter(topology &t, std::shared_ptr<partition_source<K, V>> source,
+    rate_limiter(std::shared_ptr<cluster_config> config, std::shared_ptr<partition_source<K, V>> source,
                  std::chrono::milliseconds agetime, size_t capacity)
             : event_consumer<K, V>(), partition_source<K, V>(source.get(), source->partition())
         , _source(source)

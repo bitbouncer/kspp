@@ -18,7 +18,8 @@ int main(int argc, char **argv) {
 
   size_t join_count = 0;
 
-  auto config = std::make_shared<kspp::cluster_config>();
+  std::string consumer_group("kspp-examples");
+  auto config = std::make_shared<kspp::cluster_config>(consumer_group);
   config->load_config_from_env();
 
   config->set_consumer_buffering_time(10ms);
@@ -26,7 +27,7 @@ int main(int argc, char **argv) {
   config->validate();
   config->log();
 
-  auto builder = kspp::topology_builder("kspp-examples", argv[0], config);
+  kspp::topology_builder builder(config);
 
   auto partitions1 = kspp::kafka::get_number_partitions(config, "kspp_test0_eventstream");
   auto partitions2 = kspp::kafka::get_number_partitions(config, "kspp_test0_table");

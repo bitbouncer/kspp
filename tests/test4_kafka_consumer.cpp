@@ -23,7 +23,8 @@ int main(int argc, char **argv) {
   FLAGS_logtostderr = 1;
   google::InitGoogleLogging(argv[0]);
 
-  auto config = std::make_shared<kspp::cluster_config>();
+  std::string consumer_group("kspp-tests");
+  auto config = std::make_shared<kspp::cluster_config>(consumer_group);
   //broker defaults to env KSPP_KAFKA_BROKER_URL if defined of localhost if not
   config->load_config_from_env();
   config->set_producer_buffering_time(100ms);

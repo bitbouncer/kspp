@@ -22,15 +22,13 @@ int main(int argc, char **argv) {
 
   // for this to work you need to have a avro schema registry running
   // configured in you ENV
-  auto config = std::make_shared<kspp::cluster_config>();
+  std::string consumer_group("kspp-examples");
+  auto config = std::make_shared<kspp::cluster_config>(consumer_group);
   config->load_config_from_env();
   config->validate();
   config->log();
 
-  //auto schema_registry = std::make_shared<kspp::avro_schema_registry>(config);
-  //auto avro_serdes = std::make_shared<kspp::avro_serdes>(schema_registry);
-  auto builder = kspp::topology_builder("kspp-examples", argv[0], config);
-
+  kspp::topology_builder builder(config);
   auto partitions = kspp::kafka::get_number_partitions(config, "postgres_mqtt_device_auth_view");
   auto partition_list = kspp::get_partition_list(partitions);
   auto topology = builder.create_topology();

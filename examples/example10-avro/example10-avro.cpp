@@ -30,14 +30,15 @@ int main(int argc, char **argv) {
 
   size_t join_count = 0;
 
-  auto config = std::make_shared<kspp::cluster_config>();
+  std::string consumer_group("kspp-examples");
+  auto config = std::make_shared<kspp::cluster_config>(consumer_group);
   config->load_config_from_env();
   config->set_consumer_buffering_time(10ms);
   config->set_producer_buffering_time(10ms);
   config->validate();// optional
   config->log(); // optional
 
-  auto builder = kspp::topology_builder("kspp-examples", argv[0], config);
+  kspp::topology_builder builder(config);
   {
     auto topology = builder.create_topology();
     auto avro_stream = topology->create_sink<kspp::kafka_sink<boost::uuids::uuid, int64_t, kspp::avro_serdes, kspp::avro_serdes>>(

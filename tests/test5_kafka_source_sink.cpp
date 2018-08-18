@@ -33,7 +33,7 @@ int main(int argc, char **argv) {
     test_data.push_back(r);
   }
 
-  auto config = std::make_shared<cluster_config>();
+  auto config = std::make_shared<cluster_config>(std::string("kspp-examples") + argv[0]);
   //broker defaults to env KSPP_KAFKA_BROKER_URL if defined of localhost if not
   config->load_config_from_env();
   config->set_producer_buffering_time(10ms);
@@ -41,8 +41,7 @@ int main(int argc, char **argv) {
   config->log(); // optional
   config->validate();// optional
 
-  auto builder = topology_builder("kspp", "test5", config);
-
+  kspp::topology_builder builder(config);
   auto nr_of_partitions = kafka::get_number_partitions(config, "kspp_test5");
   auto partition_list = get_partition_list(nr_of_partitions);
 

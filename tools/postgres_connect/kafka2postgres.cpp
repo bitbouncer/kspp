@@ -144,7 +144,10 @@ int main(int argc, char **argv) {
     filename = vm["filename"].as<std::string>();
   }
 
-  auto config = std::make_shared<kspp::cluster_config>();
+  std::string consumer_group(SERVICE_NAME);
+  consumer_group += postgres_dbname;
+
+  auto config = std::make_shared<kspp::cluster_config>(consumer_group);
   config->set_brokers(broker);
   config->set_schema_registry_uri(schema_registry);
   config->set_producer_buffering_time(1000ms);
@@ -197,8 +200,8 @@ int main(int argc, char **argv) {
     partition_list = kspp::get_partition_list(nr_of_partitions);
   LOG(INFO) << "partition_list   : " << kspp::partition_list_to_string(partition_list);
 
-  kspp::topology_builder generic_builder("kspp", SERVICE_NAME, config);
-  auto topology = generic_builder.create_topology();
+  kspp::topology_builder builder(config);
+  auto topology = builder.create_topology();
 
   auto source0 = topology->create_processors<kspp::kafka_source<kspp::generic_avro, kspp::generic_avro, kspp::avro_serdes, kspp::avro_serdes>>(partition_list, topic, config->avro_serdes(), config->avro_serdes());
   /*https://www.postgresql.org/docs/9.3/static/multibyte.html*/
@@ -242,7 +245,7 @@ int main(int argc, char **argv) {
   LOG(INFO) << "status is up";
 
   {
-    auto metrics_reporter = std::make_shared<kspp::influx_metrics_reporter>(generic_builder, "kspp_metrics", "kspp", "") << topology;
+    auto metrics_reporter = std::make_shared<kspp::influx_metrics_reporter>(builder, "kspp_metrics", "kspp", "") << topology;
     while (run) {
       if (topology->process(kspp::milliseconds_since_epoch()) == 0) {
         std::this_thread::sleep_for(10ms);

@@ -7,27 +7,13 @@
 namespace kspp {
   class topology {
   public:
-    topology(std::shared_ptr<app_info> ai,
-             std::shared_ptr<cluster_config> c_config,
-             std::string topology_id);
+    topology(std::shared_ptr<cluster_config> c_config, std::string topology_id);
 
     virtual ~topology();
 
     std::shared_ptr<cluster_config> get_cluster_config() {
       return _cluster_config;
     }
-
-    void set_storage_path(boost::filesystem::path root_path);
-
-    std::string app_id() const;
-
-    std::string consumer_group() const;
-
-    std::string topology_id() const;
-
-    std::string brokers() const;
-
-    std::string name() const;
 
     std::chrono::milliseconds max_buffering_time() const;
 
@@ -49,8 +35,6 @@ namespace kspp {
 
     void flush(bool wait_for_events = true, std::size_t event_limit = std::numeric_limits<std::size_t>::max());
 
-    boost::filesystem::path get_storage_path();
-
     void validate_preconditions();
 
     // top level factory
@@ -59,7 +43,7 @@ namespace kspp {
     create_processors(std::vector<int> partition_list, Args... args) {
       std::vector <std::shared_ptr<pp>> result;
       for (auto i : partition_list) {
-        auto p = std::make_shared<pp>(*this, i, args...);
+        auto p = std::make_shared<pp>(this->get_cluster_config(), i, args...);
         _partition_processors.push_back(p);
         result.push_back(p);
       }
@@ -70,7 +54,7 @@ namespace kspp {
     template<class pp, typename... Args>
     typename std::enable_if<std::is_base_of<kspp::partition_processor, pp>::value, std::shared_ptr<pp>>::type
     create_processor(Args... args) {
-      auto p = std::make_shared<pp>(*this, args...);
+      auto p = std::make_shared<pp>(this->get_cluster_config(), args...);
       _partition_processors.push_back(p);
       return p;
     }
@@ -79,7 +63,7 @@ namespace kspp {
     std::shared_ptr<kspp::merge<typename ps::key_type, typename ps::value_type>>
     merge(std::vector<std::shared_ptr<ps>> sources, Args... args) {
       std::shared_ptr <kspp::merge<typename ps::key_type, typename ps::value_type>> result = std::make_shared<kspp::merge<typename ps::key_type, typename ps::value_type>>(
-          *this, sources, args...);
+          this->get_cluster_config(), sources, args...);
       _partition_processors.push_back(result);
       return result;
     }
@@ -90,7 +74,7 @@ namespace kspp {
     create_processors(std::vector<std::shared_ptr<ps>> sources, Args... args) {
       std::vector <std::shared_ptr<pp>> result;
       for (auto i : sources) {
-        auto p = std::make_shared<pp>(*this, i, args...);
+        auto p = std::make_shared<pp>(this->get_cluster_config(), i, args...);
         _partition_processors.push_back(p);
         result.push_back(p);
       }
@@ -112,7 +96,7 @@ namespace kspp {
       auto j = v2.begin();
       auto end = v1.end();
       for (; i != end; ++i, ++j) {
-        auto p = std::make_shared<pp>(*this, *i, *j, args...);
+        auto p = std::make_shared<pp>(this->get_cluster_config(), *i, *j, args...);
         _partition_processors.push_back(std::static_pointer_cast<kspp::partition_processor>(p));
         result.push_back(p);
       }
@@ -124,7 +108,7 @@ namespace kspp {
     template<class pp, typename... Args>
     typename std::enable_if<std::is_base_of<kspp::processor, pp>::value, std::shared_ptr<pp>>::type
     create_sink(Args... args) {
-      auto p = std::make_shared<pp>(*this, args...);
+      auto p = std::make_shared<pp>(this->get_cluster_config(), args...);
       _sinks.push_back(p);
       return p;
     }
@@ -133,7 +117,7 @@ namespace kspp {
     template<class pp, class source, typename... Args>
     typename std::enable_if<std::is_base_of<kspp::processor, pp>::value, std::shared_ptr<pp>>::type
     create_sink(std::shared_ptr<source> src, Args... args) {
-      auto p = std::make_shared<pp>(*this, args...);
+      auto p = std::make_shared<pp>(this->get_cluster_config(), args...);
       _sinks.push_back(p);
       src->add_sink(p);
       return p;
@@ -143,7 +127,7 @@ namespace kspp {
     template<class pp, class source, typename... Args>
     typename std::enable_if<std::is_base_of<kspp::processor, pp>::value, std::shared_ptr<pp>>::type
     create_sink(std::vector<std::shared_ptr<source>> sources, Args... args) {
-      auto p = std::make_shared<pp>(*this, args...);
+      auto p = std::make_shared<pp>(this->get_cluster_config(), args...);
       _sinks.push_back(p);
       for (auto i : sources)
         i->add_sink(p);
@@ -153,8 +137,6 @@ namespace kspp {
   protected:
     void init_processing_graph();
     bool _is_started;
-
-    std::shared_ptr<app_info> _app_info;
     std::shared_ptr<cluster_config> _cluster_config;
     std::string _topology_id;
     boost::filesystem::path _root_path;

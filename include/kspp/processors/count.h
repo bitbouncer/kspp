@@ -15,13 +15,13 @@ namespace kspp {
     static constexpr const char* PROCESSOR_NAME = "count_by_key";
 
     template<typename... Args>
-    count_by_key(topology &t,
+    count_by_key(std::shared_ptr<cluster_config> config,
                  std::shared_ptr<partition_source<K, void>> source,
     std::chrono::milliseconds punctuate_intervall, Args ... args)
     : event_consumer<K, void>()
     , materialized_source<K, V>(source.get(), source->partition())
     , _stream(source)
-    , _counter_store(this->get_storage_path(t.get_storage_path()), args...)
+    , _counter_store(this->get_storage_path(config->get_storage_root()), args...)
     , _punctuate_intervall(punctuate_intervall.count()) // tbd we should use intervalls since epoch similar to windowed
     , _next_punctuate(0)
     , _dirty(false) {

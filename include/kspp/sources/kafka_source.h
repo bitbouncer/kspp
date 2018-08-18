@@ -187,30 +187,30 @@ namespace kspp {
   template<class K, class V,  class KEY_CODEC, class VAL_CODEC>
   class kafka_source : public kafka_source_base<K, V, KEY_CODEC, VAL_CODEC> {
   public:
-    kafka_source(topology &t,
+    kafka_source(std::shared_ptr<cluster_config> config,
                  int32_t partition,
                  std::string topic,
                  std::shared_ptr<KEY_CODEC> key_codec = std::make_shared<KEY_CODEC>(),
                  std::shared_ptr<VAL_CODEC> val_codec = std::make_shared<VAL_CODEC>())
         : kafka_source_base<K, V, KEY_CODEC, VAL_CODEC>(
-        t.get_cluster_config(),
+        config,
         topic, partition,
-        t.consumer_group(),
+        config->get_consumer_group(),
         std::chrono::system_clock::from_time_t(0),
         key_codec,
         val_codec) {
     }
 
-    kafka_source(topology &t,
+    kafka_source(std::shared_ptr<cluster_config> config,
                  int32_t partition,
                  std::string topic,
                  std::chrono::system_clock::time_point start_point,
                  std::shared_ptr<KEY_CODEC> key_codec = std::make_shared<KEY_CODEC>(),
                  std::shared_ptr<VAL_CODEC> val_codec = std::make_shared<VAL_CODEC>())
         : kafka_source_base<K, V, KEY_CODEC, VAL_CODEC>(
-        t.get_cluster_config(),
+        config,
         topic, partition,
-        t.consumer_group(),
+        config->get_consumer_group(),
         start_point,
         key_codec,
         val_codec) {
@@ -273,29 +273,29 @@ namespace kspp {
   template<class V, class VAL_CODEC>
   class kafka_source<void, V, void, VAL_CODEC> : public kafka_source_base<void, V, void, VAL_CODEC> {
   public:
-    kafka_source(topology &t,
+    kafka_source(std::shared_ptr<cluster_config> config,
                  int32_t partition,
                  std::string topic,
                  std::shared_ptr<VAL_CODEC> val_codec = std::make_shared<VAL_CODEC>())
         : kafka_source_base<void, V, void, VAL_CODEC>(
-        t.get_cluster_config(),
+        config,
         topic,
         partition,
-        t.consumer_group(),
+        config->get_consumer_group(),
         std::chrono::system_clock::from_time_t(0),
         nullptr,
         val_codec) {
     }
 
-    kafka_source(topology &t,
+    kafka_source(std::shared_ptr<cluster_config> config,
                  int32_t partition,
                  std::string topic,
                  std::chrono::system_clock::time_point start_point,
                  std::shared_ptr<VAL_CODEC> val_codec = std::make_shared<VAL_CODEC>())
         : kafka_source_base<void, V, void, VAL_CODEC>(
-        t.get_cluster_config(),
+        config,
         topic, partition,
-        t.consumer_group(),
+        config->get_consumer_group(),
         start_point,
         nullptr,
         val_codec) {
@@ -331,28 +331,28 @@ namespace kspp {
   template<class K, class KEY_CODEC>
   class kafka_source<K, void, KEY_CODEC, void> : public kafka_source_base<K, void, KEY_CODEC, void> {
   public:
-    kafka_source(topology &t,
+    kafka_source(std::shared_ptr<cluster_config> config,
                  int32_t partition,
                  std::string topic,
                  std::shared_ptr<KEY_CODEC> key_codec = std::make_shared<KEY_CODEC>())
         : kafka_source_base<K, void, KEY_CODEC, void>(
-        t.get_cluster_config(),
+        config,
         topic, partition,
-        t.consumer_group(),
+        config->get_consumer_group(),
         std::chrono::system_clock::from_time_t(0),
         key_codec,
         nullptr) {
     }
 
-    kafka_source(topology &t,
+    kafka_source(std::shared_ptr<cluster_config> config,
                  int32_t partition,
                  std::string topic,
                  std::chrono::system_clock::time_point start_point,
                  std::shared_ptr<KEY_CODEC> key_codec = std::make_shared<KEY_CODEC>())
         : kafka_source_base<K, void, KEY_CODEC, void>(
-        t.get_cluster_config(),
+        config,
         topic, partition,
-        t.consumer_group(),
+        config->get_consumer_group(),
         start_point,
         key_codec,
         nullptr) {

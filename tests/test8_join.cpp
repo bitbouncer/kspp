@@ -42,7 +42,8 @@ void produce_stream2(kspp::event_consumer<int32_t, std::string>& stream) {
 
 
 int main(int argc, char **argv) {
-  auto config = std::make_shared<kspp::cluster_config>();
+  std::string consumer_group("kspp-examples");
+  auto config = std::make_shared<kspp::cluster_config>(consumer_group);
   //config->load_config_from_env();
   //config->validate();// optional
   //config->log(); // optional
@@ -50,7 +51,7 @@ int main(int argc, char **argv) {
   //KStream-KTable LEFT Join
   {
     auto partition_list = {0};
-    auto builder = kspp::topology_builder("kspp-examples", argv[0], config);
+    kspp::topology_builder builder(config);
     auto topology = builder.create_topology();
 
     auto streamA = topology->create_processor<kspp::generic_stream<int32_t, std::string>>(0);
@@ -87,7 +88,7 @@ int main(int argc, char **argv) {
 //KStream-KTable INNER Join
   {
     auto partition_list = {0};
-    auto builder = kspp::topology_builder("kspp-examples", argv[0], config);
+    kspp::topology_builder builder(config);
     auto topology = builder.create_topology();
 
     auto streamA = topology->create_processor<kspp::generic_stream<int32_t, std::string>>(0);
@@ -121,7 +122,7 @@ int main(int argc, char **argv) {
   //KTable-KTable LEFT Join - OLD SEMANTICS (IE MORE null values)
   {
     auto partition_list = {0};
-    auto builder = kspp::topology_builder("kspp-examples", argv[0], config);
+    kspp::topology_builder builder(config);
     auto topology = builder.create_topology();
 
     auto streamA = topology->create_processor<kspp::generic_stream<int32_t, std::string>>(0);
@@ -169,7 +170,7 @@ int main(int argc, char **argv) {
   //KTable-KTable INNER Join - OLD SEMANTICS (IE MORE null values)
   {
     auto partition_list = {0};
-    auto builder = kspp::topology_builder("kspp-examples", argv[0], config);
+    kspp::topology_builder builder(config);
     auto topology = builder.create_topology();
 
     auto streamA = topology->create_processor<kspp::generic_stream<int32_t, std::string>>(0);
@@ -217,7 +218,7 @@ int main(int argc, char **argv) {
   //KTable-KTable OUTER Join - OLD SEMANTICS (IE MORE null values)
   {
     auto partition_list = {0};
-    auto builder = kspp::topology_builder("kspp-examples", argv[0], config);
+    kspp::topology_builder builder(config);
     auto topology = builder.create_topology();
 
     auto streamA = topology->create_processor<kspp::generic_stream<int32_t, std::string>>(0);

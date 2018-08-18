@@ -10,9 +10,9 @@ namespace kspp {
     static constexpr const char* PROCESSOR_NAME = "ktable";
   public:
     template<typename... Args>
-    ktable(topology &t, std::shared_ptr<kspp::partition_source<K, V>> source, Args... args)
+    ktable(std::shared_ptr<cluster_config> config, std::shared_ptr<kspp::partition_source<K, V>> source, Args... args)
             : event_consumer<K, V>(), materialized_source<K, V>(source.get(), source->partition()), _source(source),
-              _state_store(this->get_storage_path(t.get_storage_path()), args...),
+              _state_store(this->get_storage_path(config->get_storage_root()), args...),
               _state_store_count("state_store", metric::GAUGE, "msg", [this]() { return _state_store.aprox_size(); }) {
       _source->add_sink([this](auto ev) {
         this->_lag.add_event_time(kspp::milliseconds_since_epoch(), ev->event_time());

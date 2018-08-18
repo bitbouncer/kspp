@@ -13,7 +13,7 @@ namespace kspp {
   class tds_generic_avro_source : public partition_source<kspp::generic_avro, kspp::generic_avro> {
     static constexpr const char *PROCESSOR_NAME = "tds_avro_source";
   public:
-    tds_generic_avro_source(topology &t,
+    tds_generic_avro_source(std::shared_ptr<cluster_config> config,
                             int32_t partition,
                             std::string logical_name,
                             const kspp::connect::connection_params& cp,

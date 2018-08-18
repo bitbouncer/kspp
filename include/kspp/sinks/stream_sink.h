@@ -40,7 +40,7 @@ class stream_sink : public partition_sink<K, V> {
 public:
   enum { MAX_KEY_SIZE = 1000 };
 
-  stream_sink(topology &t, std::shared_ptr<partition_source<K, V>> source, std::ostream *os)
+  stream_sink(std::shared_ptr<cluster_config> config, std::shared_ptr<partition_source<K, V>> source, std::ostream *os)
   : partition_sink<K, V>(source->partition())
   , _os (*os)
   , _codec(std::make_shared<kspp::text_serdes>()) {

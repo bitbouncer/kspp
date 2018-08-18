@@ -12,10 +12,10 @@ namespace kspp {
     static constexpr const char* PROCESSOR_NAME = "count_by_value";
   public:
     template<typename... Args>
-    count_by_value(topology_base &topology, std::shared_ptr <partition_source<K, V>> source,
+    count_by_value(std::shared_ptr<cluster_config> config, std::shared_ptr <partition_source<K, V>> source,
                    std::chrono::milliseconds punctuate_intervall, Args... args)
             : materialized_source<K, V>(source.get(), source->partition()), _stream(source),
-            _counter_store(this->get_storage_path(topology.get_storage_path()), args...), _punctuate_intervall(
+            _counter_store(this->get_storage_path(config->get_storage_root()), args...), _punctuate_intervall(
                     punctuate_intervall.count()) // tbd we should use intervalls since epoch similar to windowed
               , _next_punctuate(0), _dirty(false), _in_count("in_count"), _lag() {
       source->add_sink([this](auto e) { this->_queue.push_back(e); });

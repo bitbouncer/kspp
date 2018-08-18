@@ -173,12 +173,12 @@ std::string ksource_to_string(const T &ksource) {
 int main(int argc, char **argv) {
   FLAGS_logtostderr = 1;
   google::InitGoogleLogging(argv[0]);
-
-  auto config = std::make_shared<kspp::cluster_config>();
+  std::string consumer_group("kspp-examples");
+  auto config = std::make_shared<kspp::cluster_config>(consumer_group);
   config->load_config_from_env();
   config->validate(); // optional
   config->log();// optional
-  auto builder = kspp::topology_builder("kspp-examples", argv[0], config);
+  kspp::topology_builder builder(config);
   {
     auto topology = builder.create_topology();
     auto sink = topology->create_processor<kspp::kafka_partition_sink<int64_t, page_view_data, kspp::binary_serdes, kspp::binary_serdes>>(

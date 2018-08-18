@@ -9,7 +9,7 @@ namespace kspp {
   public:
     typedef std::function<void(std::shared_ptr<const krecord <K, V>> record)> handler;
 
-    genric_topic_sink(topology &t, handler f)
+    genric_topic_sink(std::shared_ptr<cluster_config> config, handler f)
         : topic_sink<K, V>()
         , _handler(f) {
       this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "genric_sink");

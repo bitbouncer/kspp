@@ -11,7 +11,7 @@ namespace kspp {
   class postgres_generic_avro_source : public partition_source<kspp::generic_avro, kspp::generic_avro> {
     static constexpr const char *PROCESSOR_NAME = "postgres_avro_source";
   public:
-    postgres_generic_avro_source(topology &t,
+    postgres_generic_avro_source(std::shared_ptr<cluster_config> config,
                                   int32_t partition,
                                   std::string logical_name,
                                   const kspp::connect::connection_params& cp,

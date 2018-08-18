@@ -55,7 +55,8 @@ int main(int argc, char **argv) {
   std::string metrics_tags = default_metrics_tags(SERVICE_NAME);
 
 
-  auto config = std::make_shared<kspp::cluster_config>();
+  std::string consumer_group("kspp-examples");
+  auto config = std::make_shared<kspp::cluster_config>(consumer_group);
   config->load_config_from_env();
   config->set_consumer_buffering_time(10ms);
   config->set_producer_buffering_time(10ms);
@@ -64,9 +65,7 @@ int main(int argc, char **argv) {
 
   auto partitions = kspp::kafka::get_number_partitions(config, "telegraf");
   auto partition_list = kspp::get_partition_list(partitions);
-
-  auto builder = kspp::topology_builder("metrics2", SERVICE_NAME, config);
-
+  kspp::topology_builder builder(config);
   auto topology = builder.create_topology();
 
   auto sources = topology->create_processors<kspp::kafka_source<metrics20::avro::metrics20_key_t, double, kspp::avro_serdes, kspp::avro_serdes>>(

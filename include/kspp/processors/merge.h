@@ -12,7 +12,7 @@ namespace kspp {
 
     // fix this so source must be descendant from partition source...
     template<class source>
-    merge(topology &unused, const std::vector<std::shared_ptr<source>>& upstream, int32_t partition=-1)
+    merge(std::shared_ptr<cluster_config> config, const std::vector<std::shared_ptr<source>>& upstream, int32_t partition=-1)
         : event_consumer<K, V>()
         , partition_source<K, V>(nullptr, partition) {
       this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "merge");
@@ -73,7 +73,7 @@ namespace kspp {
     typedef V value_type;
     typedef kspp::kevent<void, V> record_type;
 
-    merge(topology &unused, std::vector<partition_source<void, V>*> upstream, int32_t partition=-1)
+    merge(std::shared_ptr<cluster_config> config, std::vector<partition_source<void, V>*> upstream, int32_t partition=-1)
     : event_consumer<void, V>()
     , partition_source<void, V>(nullptr, partition) {
       this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "merge");
@@ -135,7 +135,7 @@ namespace kspp {
     typedef void value_type;
     typedef kspp::kevent<K, void> record_type;
 
-    merge(topology &unused, std::vector<partition_source<K, void>*> upstream, int32_t partition=-1)
+    merge(std::shared_ptr<cluster_config> config, std::vector<partition_source<K, void>*> upstream, int32_t partition=-1)
     : event_consumer<K, void>()
     , partition_source<K, void>(nullptr, partition) {
       this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "merge");

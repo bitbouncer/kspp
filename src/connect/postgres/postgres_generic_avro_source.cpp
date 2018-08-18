@@ -4,7 +4,7 @@
 using namespace std::chrono_literals;
 
 namespace kspp {
-  postgres_generic_avro_source::postgres_generic_avro_source(topology &t,
+  postgres_generic_avro_source::postgres_generic_avro_source(std::shared_ptr<cluster_config> config,
                                                                int32_t partition,
                                                                std::string logical_name,
                                                                const kspp::connect::connection_params& cp,
@@ -17,7 +17,7 @@ namespace kspp {
       : partition_source<kspp::generic_avro, kspp::generic_avro>(nullptr, partition)
       , _started(false)
       , _exit(false)
-      , _impl(partition, logical_name, t.consumer_group(), cp, query, id_column, ts_column, registry, poll_intervall, max_items_in_fetch)
+      , _impl(partition, logical_name, config->get_consumer_group(), cp, query, id_column, ts_column, registry, poll_intervall, max_items_in_fetch)
       , _schema_registry(registry)
       , _schema_id(-1)
       , _commit_chain(logical_name, partition)

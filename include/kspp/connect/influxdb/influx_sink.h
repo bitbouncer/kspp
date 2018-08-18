@@ -10,7 +10,7 @@ namespace kspp {
       public kspp::topic_sink<void, std::string>
   {
   public:
-    influx_sink(kspp::topology &,
+    influx_sink(std::shared_ptr<cluster_config> config,
                 const kspp::connect::connection_params& cp,
                 int32_t http_batch_size,
                 std::chrono::milliseconds http_timeout);

@@ -13,7 +13,7 @@ namespace kspp {
     static constexpr const char* PROCESSOR_NAME = "elasticsearch_sink";
 
   public:
-    inline elasticsearch_sink(kspp::topology &,
+    inline elasticsearch_sink(std::shared_ptr<cluster_config> config,
                               std::string index_name,
                               const kspp::connect::connection_params& cp,
                               std::string id_column,

@@ -193,8 +193,8 @@ int main(int argc, char **argv) {
   if (vm.count("filename")) {
     filename = vm["filename"].as<std::string>();
   }
-
-  auto config = std::make_shared<kspp::cluster_config>();
+  std::string consumer_group(SERVICE_NAME);
+  auto config = std::make_shared<kspp::cluster_config>(consumer_group);
   config->set_brokers(broker);
   config->set_schema_registry_uri(schema_registry);
   config->set_producer_buffering_time(1000ms);
@@ -241,8 +241,8 @@ int main(int argc, char **argv) {
 
   LOG(INFO) << "discovering facts...";
 
-  kspp::topology_builder generic_builder("kspp", SERVICE_NAME, config);
-  auto topology = generic_builder.create_topology();
+  kspp::topology_builder builder(config);
+  auto topology = builder.create_topology();
   std::string query_name = topic;
   auto source0 = topology->create_processors<kspp::postgres_generic_avro_source>({0}, query_name, connection_params, query, id_column, timestamp_column, config->get_schema_registry(), std::chrono::seconds(poll_intervall), max_items_in_fetch);
 
@@ -290,7 +290,7 @@ int main(int argc, char **argv) {
   LOG(INFO) << "status is up";
 
   {
-    auto metrics_reporter = std::make_shared<kspp::influx_metrics_reporter>(generic_builder, "kspp_metrics", "kspp", "") << topology;
+    auto metrics_reporter = std::make_shared<kspp::influx_metrics_reporter>(builder, "kspp_metrics", "kspp", "") << topology;
     while (run) {
       if (topology->process(kspp::milliseconds_since_epoch()) == 0) {
         std::this_thread::sleep_for(10ms);

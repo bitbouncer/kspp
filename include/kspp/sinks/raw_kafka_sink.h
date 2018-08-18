@@ -1,27 +1,14 @@
 #include <assert.h>
 #include <memory>
-#include <functional>
 #include <sstream>
 #include <kspp/impl/sinks/kafka_producer.h>
-
+#include <kspp/sinks/sink_defs.h>
 #pragma once
 
 namespace kspp {
-  template<class K>
-  class kafka_partitioner_base {
-  public:
-    using partitioner = typename std::function<uint32_t(const K &key)>;
-  };
-
-  template<>
-  class kafka_partitioner_base<void> {
-  public:
-    using partitioner = typename std::function<uint32_t(void)>;
-  };
-
   template<class K, class V, class KEY_CODEC, class VAL_CODEC>
   class raw_kafka_sink_base {
-    static constexpr const char* PROCESSOR_NAME = "kafka_sink";
+    static constexpr const char* PROCESSOR_NAME = "raw_kafka_sink";
   public:
     virtual ~raw_kafka_sink_base() {}
 

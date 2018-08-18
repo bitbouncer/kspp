@@ -3,7 +3,7 @@
 using namespace std::chrono_literals;
 
 namespace kspp {
-  influx_sink::influx_sink(kspp::topology &,
+  influx_sink::influx_sink(std::shared_ptr<cluster_config> config,
                            const kspp::connect::connection_params& cp,
                            int32_t http_batch_size,
                            std::chrono::milliseconds http_timeout)

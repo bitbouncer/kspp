@@ -101,7 +101,7 @@ namespace kspp {
     typedef typename left_join<LEFT, RIGHT>::value_type value_type;
 
     kstream_left_join(
-        topology &t,
+        std::shared_ptr<cluster_config> config,
         std::shared_ptr<partition_source < KEY, LEFT>> left,
     std::shared_ptr<materialized_source < KEY, RIGHT>> right)
     : event_consumer<KEY, LEFT>()
@@ -195,7 +195,7 @@ namespace kspp {
     typedef typename inner_join<LEFT, RIGHT>::value_type value_type;
 
     kstream_inner_join(
-        topology &t,
+        std::shared_ptr<cluster_config> config,
         std::shared_ptr<partition_source < KEY, LEFT>> left,
     std::shared_ptr<materialized_source < KEY, RIGHT>> right)
     : event_consumer<KEY, LEFT>(), partition_source<KEY, value_type>(left.get(), left->partition())
@@ -288,7 +288,7 @@ namespace kspp {
     typedef typename left_join<LEFT, RIGHT>::value_type value_type;
 
     ktable_left_join(
-        topology &t,
+        std::shared_ptr<cluster_config> config,
         std::shared_ptr<materialized_source < KEY, LEFT>> left,
         std::shared_ptr<materialized_source < KEY, RIGHT>> right)
     : event_consumer<KEY, LEFT>()
@@ -391,7 +391,7 @@ namespace kspp {
     typedef typename inner_join<LEFT, RIGHT>::value_type value_type;
 
     ktable_inner_join(
-        topology &t,
+        std::shared_ptr<cluster_config> config,
         std::shared_ptr<materialized_source < KEY, LEFT>> left,
     std::shared_ptr<materialized_source < KEY, RIGHT>> right)
     : event_consumer<KEY, LEFT>()
@@ -486,7 +486,7 @@ namespace kspp {
   public:
     typedef typename outer_join<LEFT, RIGHT>::value_type value_type;
 
-    ktable_outer_join(topology &t,
+    ktable_outer_join(std::shared_ptr<cluster_config> config,
                       std::shared_ptr<materialized_source<KEY, LEFT>> left,
                       std::shared_ptr<materialized_source < KEY, RIGHT>> right)
     : event_consumer<KEY, LEFT>()

@@ -12,7 +12,7 @@ namespace kspp {
   public:
     typedef std::function<void(std::shared_ptr<const krecord <K, SV>> record, transform_value *self)> extractor;
 
-    transform_value(topology &unused, std::shared_ptr <partition_source<K, SV>> source, extractor f)
+    transform_value(std::shared_ptr<cluster_config> config, std::shared_ptr <partition_source<K, SV>> source, extractor f)
         : event_consumer<K, SV>()
         , partition_source<K, RV>(source.get(), source->partition())
         , _source(source),

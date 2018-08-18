@@ -10,14 +10,14 @@ namespace kspp {
     typedef V value_type;
     typedef kspp::kevent<K, V> record_type;
 
-    generic_stream(topology &t, int32_t partition)
+    generic_stream(std::shared_ptr<cluster_config> config, int32_t partition)
         : event_consumer<K, V>()
         , partition_source<K, V>(nullptr, partition) {
       this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
       this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(partition));
     }
 
-    generic_stream(topology &topology, std::shared_ptr<kspp::partition_source<K, V>> upstream)
+    generic_stream(std::shared_ptr<cluster_config> config, std::shared_ptr<kspp::partition_source<K, V>> upstream)
         : event_consumer<K, V>()
         , partition_source<K, V>(upstream.get(), upstream->partition()) {
       upstream->add_sink([this](auto e) {
@@ -27,7 +27,7 @@ namespace kspp {
       this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(upstream->partition()));
     }
 
-    generic_stream(topology &t, std::vector<std::shared_ptr<kspp::partition_source<K, V>>> upstream, int32_t partition)
+    generic_stream(std::shared_ptr<cluster_config> config, std::vector<std::shared_ptr<kspp::partition_source<K, V>>> upstream, int32_t partition)
         : event_consumer<K, V>()
         , partition_source<K, V>(nullptr, partition) {
       for (auto i : upstream) {
@@ -83,14 +83,14 @@ namespace kspp {
     typedef V value_type;
     typedef kspp::kevent<void, V> record_type;
 
-    generic_stream(topology &t, int32_t partition)
+    generic_stream(std::shared_ptr<cluster_config> config, int32_t partition)
         : event_consumer<void, V>()
         , partition_source<void, V>(nullptr, partition) {
       this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
       this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(partition));
     }
 
-    generic_stream(topology &t, std::shared_ptr<kspp::partition_source<void, V>> upstream)
+    generic_stream(std::shared_ptr<cluster_config> config, std::shared_ptr<kspp::partition_source<void, V>> upstream)
         : event_consumer<void, V>(), partition_source<void, V>(upstream.get(), upstream->partition()) {
       if (upstream)
         upstream->add_sink([this](auto e) {
@@ -100,7 +100,7 @@ namespace kspp {
       this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(upstream->partition()));
     }
 
-    generic_stream(topology &t, std::vector<std::shared_ptr<kspp::partition_source<void, V>>> upstream, int32_t partition)
+    generic_stream(std::shared_ptr<cluster_config> config, std::vector<std::shared_ptr<kspp::partition_source<void, V>>> upstream, int32_t partition)
         : event_consumer<void, V>()
         , partition_source<void, V>(nullptr, partition) {
       for (auto i : upstream) {
@@ -157,14 +157,14 @@ namespace kspp {
     typedef void value_type;
     typedef kspp::kevent<K, void> record_type;
 
-    generic_stream(topology &t, int32_t partition)
+    generic_stream(std::shared_ptr<cluster_config> config, int32_t partition)
         : event_consumer<K, void>()
         , partition_source<K, void>(nullptr, partition) {
       this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
       this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(partition));
     }
 
-    generic_stream(topology &t, std::shared_ptr<kspp::partition_source<K, void>> upstream)
+    generic_stream(std::shared_ptr<cluster_config> config, std::shared_ptr<kspp::partition_source<K, void>> upstream)
         : event_consumer<K, void>()
         , partition_source<K, void>(upstream.get(), upstream->partition()) {
       if (upstream)
@@ -175,7 +175,7 @@ namespace kspp {
       this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(upstream->partition()));
     }
 
-    generic_stream(topology &t, std::vector<std::shared_ptr<kspp::partition_source<K, void>>> upstream, int32_t partition)
+    generic_stream(std::shared_ptr<cluster_config> config, std::vector<std::shared_ptr<kspp::partition_source<K, void>>> upstream, int32_t partition)
         : event_consumer<K, void>()
         , partition_source<K, void>(nullptr, partition) {
       this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");

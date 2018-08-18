@@ -95,7 +95,12 @@ int main(int argc, char** argv) {
     partition_list = kspp::parse_partition_list(s);
   }
 
-  auto config = std::make_shared<kspp::cluster_config>();
+  std::string consumer_group(SERVICE_NAME);
+  consumer_group += dst_uri;
+  consumer_group += dst_database;
+
+  auto config = std::make_shared<kspp::cluster_config>(consumer_group);
+
   config->set_brokers(broker);
   config->set_schema_registry_uri(schema_registry);
   config->set_producer_buffering_time(1000ms);
@@ -123,7 +128,7 @@ int main(int argc, char** argv) {
     partition_list = kspp::get_partition_list(nr_of_partitions);
   LOG(INFO) << "partition_list   : " << kspp::partition_list_to_string(partition_list);
 
-  kspp::topology_builder generic_builder("kspp", SERVICE_NAME, config);
+  kspp::topology_builder generic_builder(config);
   auto topology = generic_builder.create_topology();
   auto sources = topology->create_processors<kafka_source<void, std::string, void, text_serdes>>(partition_list, src_topic);
   auto sink   = topology->create_sink<influx_sink>(sources, connection_params, http_batch_size, http_timeout);

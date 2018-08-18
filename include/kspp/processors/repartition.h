@@ -10,7 +10,7 @@ namespace kspp {
   class repartition_by_foreign_key : public event_consumer<K, V>, public partition_processor {
     static constexpr const char* PROCESSOR_NAME = "repartition_by_foreign_key";
   public:
-    repartition_by_foreign_key(topology &t,
+    repartition_by_foreign_key(std::shared_ptr<cluster_config> config,
         std::shared_ptr<partition_source < K, V>> source,
     std::shared_ptr<materialized_source < K, FOREIGN_KEY>> routing_table,
     std::shared_ptr<topic_sink < K, V>> topic_sink,

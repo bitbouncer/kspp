@@ -6,41 +6,22 @@
 using namespace std::chrono_literals;
 
 namespace kspp {
-  topology::topology(std::shared_ptr<app_info> ai,
-                     std::shared_ptr<cluster_config> cc,
-                     std::string topology_id)
-      : _app_info(ai)
-      , _cluster_config(cc)
+  topology::topology(std::shared_ptr<cluster_config> config, std::string topology_id)
+      : _cluster_config(config)
       , _is_started(false)
       , _topology_id(topology_id)
       , _next_gc_ts(0)
-      , _min_buffering_ms(cc->get_min_topology_buffering().count())
-      , _max_pending_sink_messages(cc->get_max_pending_sink_messages()) {
-    LOG(INFO) << "topology created, name:" << name();
+      , _min_buffering_ms(config->get_min_topology_buffering().count())
+      , _max_pending_sink_messages(config->get_max_pending_sink_messages()) {
+    LOG(INFO) << "topology created id:" << _topology_id;
   }
 
   topology::~topology() {
-    LOG(INFO) << "topology, name:" << name() << " terminating";
+    LOG(INFO) << "topology terminating id:" << _topology_id;
     _top_partition_processors.clear();
     _partition_processors.clear();
     _sinks.clear();
-    LOG(INFO) << "topology, name:" << name() << " terminated";
-  }
-
-  std::string topology::app_id() const {
-    return _app_info->identity();
-  }
-
-  std::string topology::consumer_group() const {
-    return _app_info->consumer_group();
-  }
-
-  std::string topology::topology_id() const {
-    return _topology_id;
-  }
-
-  std::string topology::name() const {
-    return "[" + _app_info->identity() + "]#" + _topology_id;
+    LOG(INFO) << "topology, terminating id:" << _topology_id;
   }
 
 //the metrics should look like this...
@@ -100,10 +81,10 @@ namespace kspp {
           upstream_of_something = true;
       }
       if (!upstream_of_something) {
-        DLOG(INFO) << "topology << " << name() << ": adding " << i->log_name() << " to top";
+        DLOG(INFO) << "topology << " << _topology_id << ": adding " << i->log_name() << " to top";
         _top_partition_processors.push_back(i);
       } else {
-        DLOG(INFO) << "topology << " << name() << ": skipping poll of " << i->log_name();
+        DLOG(INFO) << "topology << " << _topology_id << ": skipping poll of " << i->log_name();
       }
     }
   }
@@ -112,7 +93,7 @@ namespace kspp {
     LOG_IF(FATAL, _is_started) << "usage error - started twice";
 
     if (offset == kspp::OFFSET_STORED)
-      _precondition_consumer_group = consumer_group();
+      _precondition_consumer_group = _cluster_config->get_consumer_group();
 
     for (auto &&i : _partition_processors){
       auto topic = i->precondition_topic();
@@ -303,25 +284,6 @@ namespace kspp {
       else
         break;
     }
-  }
-
-  boost::filesystem::path topology::get_storage_path() {
-    // if no storage path has been set - let an eventual state store handle this problem
-    // only disk based one need th#include <vector>is and we pass storage path to all state stores (mem ones also)
-    if (_cluster_config->get_storage_root().size()==0)
-      return "";
-
-    boost::filesystem::path top_of_topology(_cluster_config->get_storage_root());
-    top_of_topology /= sanitize_filename(_app_info->identity());
-    top_of_topology /= sanitize_filename(_topology_id);
-    DLOG(INFO) << "topology " << _app_info->identity() << ": creating local storage at " << top_of_topology;
-    auto res = boost::filesystem::create_directories(top_of_topology);
-    // seems to be a bug in boost - always return false...
-    // so we check if the directory exists after instead...
-    if (!boost::filesystem::exists(top_of_topology))
-      LOG(FATAL) << "topology " << _app_info->identity() << ": failed to create local storage at "
-                 << top_of_topology;
-    return top_of_topology;
   }
 }
 

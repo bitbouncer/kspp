@@ -8,7 +8,7 @@ namespace kspp {
   class avro_file_sink : public topic_sink<void, kspp::generic_avro> {
     static constexpr const char* PROCESSOR_NAME = "avro_file_sink";
   public:
-    avro_file_sink(topology &t, std::string path)
+    avro_file_sink(std::shared_ptr<cluster_config> config, std::string path)
         : topic_sink<void, kspp::generic_avro>()
         , _path(path) {
       this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);

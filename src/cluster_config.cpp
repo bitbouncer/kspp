@@ -10,8 +10,9 @@
 using namespace std::chrono_literals;
 
 namespace kspp {
-  cluster_config::cluster_config()
-      : min_topology_buffering_(std::chrono::milliseconds(1000))
+  cluster_config::cluster_config(std::string consumer_group)
+      : consumer_group_(consumer_group)
+      , min_topology_buffering_(std::chrono::milliseconds(1000))
       , producer_buffering_(std::chrono::milliseconds(1000))
       , producer_message_timeout_(std::chrono::milliseconds(0))
       , consumer_buffering_(std::chrono::milliseconds(1000))
@@ -38,6 +39,10 @@ namespace kspp {
 
   std::string cluster_config::get_brokers() const {
     return brokers_;
+  }
+
+  std::string cluster_config::get_consumer_group() const {
+    consumer_group_;
   }
 
   void cluster_config::set_brokers(std::string brokers) {
@@ -234,6 +239,7 @@ namespace kspp {
 
   void cluster_config::log() const {
     LOG(INFO) << "cluster_config, kafka broker(s): " << get_brokers();
+    LOG(INFO) << "cluster_config, consumer_group: " << get_consumer_group();
     LOG_IF(INFO, get_ca_cert_path().size() > 0) << "cluster_config, ca cert: " << get_ca_cert_path();
     LOG_IF(INFO, get_client_cert_path().size() > 0) << "cluster_config, client cert: " << get_client_cert_path();
     LOG_IF(INFO, get_private_key_path().size() > 0) << "cluster_config, client key: " << get_private_key_path();

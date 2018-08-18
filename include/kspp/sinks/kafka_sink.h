@@ -5,24 +5,12 @@
 #include <kspp/kspp.h>
 #include <kspp/topology.h>
 #include <kspp/impl/sinks/kafka_producer.h>
-
+#include <kspp/sinks/sink_defs.h>
 
 #pragma once
 
 namespace kspp {
-  template<class K>
-  class kafka_partitioner_base {
-  public:
-    using partitioner = typename std::function<uint32_t(const K &key)>;
-  };
-
-  template<>
-  class kafka_partitioner_base<void> {
-  public:
-    using partitioner = typename std::function<uint32_t(void)>;
-  };
-
-  template<class K, class V, class KEY_CODEC, class VAL_CODEC>
+   template<class K, class V, class KEY_CODEC, class VAL_CODEC>
   class kafka_sink_base : public topic_sink<K, V> {
     static constexpr const char* PROCESSOR_NAME = "kafka_sink";
   public:
@@ -147,23 +135,23 @@ namespace kspp {
 
     using partitioner = typename kafka_partitioner_base<K>::partitioner;
 
-    kafka_sink(topology &topology,
+    kafka_sink(std::shared_ptr<cluster_config> config,
                std::string topic,
                partitioner p,
                std::shared_ptr<KEY_CODEC> key_codec = std::make_shared<KEY_CODEC>(),
                std::shared_ptr<VAL_CODEC> val_codec = std::make_shared<VAL_CODEC>())
-        : kafka_sink_base<K, V, KEY_CODEC, VAL_CODEC>(topology.get_cluster_config(),
+        : kafka_sink_base<K, V, KEY_CODEC, VAL_CODEC>(config,
                                        topic,
                                        p,
                                        key_codec,
                                        val_codec) {
     }
 
-    kafka_sink(topology &topology,
+    kafka_sink(std::shared_ptr<cluster_config> config,
                std::string topic,
                std::shared_ptr<KEY_CODEC> key_codec = std::make_shared<KEY_CODEC>(),
                std::shared_ptr<VAL_CODEC> val_codec = std::make_shared<VAL_CODEC>())
-        : kafka_sink_base<K, V, KEY_CODEC, VAL_CODEC>(topology.get_cluster_config(),
+        : kafka_sink_base<K, V, KEY_CODEC, VAL_CODEC>(config,
                                        topic,
                                        key_codec,
                                        val_codec) {
@@ -223,10 +211,10 @@ namespace kspp {
   template<class V, class VAL_CODEC>
   class kafka_sink<void, V, void, VAL_CODEC> : public kafka_sink_base<void, V, void, VAL_CODEC> {
   public:
-    kafka_sink(topology &topology,
+    kafka_sink(std::shared_ptr<cluster_config> config,
                std::string topic,
                std::shared_ptr<VAL_CODEC> val_codec = std::make_shared<VAL_CODEC>())
-        : kafka_sink_base<void, V, void, VAL_CODEC>(topology.get_cluster_config(), topic, nullptr, val_codec) {
+        : kafka_sink_base<void, V, void, VAL_CODEC>(config, topic, nullptr, val_codec) {
     }
 
     ~kafka_sink() override {
@@ -270,16 +258,16 @@ namespace kspp {
   public:
     using partitioner = typename kafka_partitioner_base<K>::partitioner;
 
-    kafka_sink(topology &topology,
+    kafka_sink(std::shared_ptr<cluster_config> config,
                std::string topic,
                partitioner p,
                std::shared_ptr<KEY_CODEC> key_codec = std::make_shared<KEY_CODEC>())
-        : kafka_sink_base<K, void, KEY_CODEC, void>(topology.get_cluster_config(), topic, p, key_codec, nullptr) {
+        : kafka_sink_base<K, void, KEY_CODEC, void>(config, topic, p, key_codec, nullptr) {
     }
 
-    kafka_sink(topology &topology, std::string topic,
+    kafka_sink(std::shared_ptr<cluster_config> config, std::string topic,
                std::shared_ptr<KEY_CODEC> key_codec = std::make_shared<KEY_CODEC>())
-        : kafka_sink_base<K, void, KEY_CODEC, void>(topology.get_cluster_config(), topic, key_codec, nullptr) {
+        : kafka_sink_base<K, void, KEY_CODEC, void>(config, topic, key_codec, nullptr) {
     }
 
     ~kafka_sink() override {

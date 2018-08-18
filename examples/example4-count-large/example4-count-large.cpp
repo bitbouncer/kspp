@@ -20,12 +20,13 @@ int main(int argc, char **argv) {
   FLAGS_logtostderr = 1;
   google::InitGoogleLogging(argv[0]);
 
-  auto config = std::make_shared<kspp::cluster_config>();
+  std::string consumer_group("kspp-examples");
+  auto config = std::make_shared<kspp::cluster_config>(consumer_group);
   config->load_config_from_env();
   config->validate();// optional
   config->log(); // optional
 
-  auto builder = kspp::topology_builder("kspp-examples", argv[0], config);
+  kspp::topology_builder builder(config);
   {
     auto partitions = kspp::kafka::get_number_partitions(config, "kspp_test_text");
     auto partition_list = kspp::get_partition_list(partitions);

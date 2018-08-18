@@ -11,12 +11,14 @@ namespace kspp {
 
   class cluster_config {
   public:
-    cluster_config();
+    cluster_config(std::string consumer_group);
 
     void load_config_from_env();
 
     void set_brokers(std::string uri);
     std::string get_brokers() const;
+
+    std::string get_consumer_group() const;
 
     void set_consumer_buffering_time(std::chrono::milliseconds timeout);
     std::chrono::milliseconds get_consumer_buffering_time() const;
@@ -72,6 +74,7 @@ namespace kspp {
     void log() const;
 
   private:
+    std::string consumer_group_;
     std::string brokers_;
     std::string ca_cert_path_;
     std::string client_cert_path_;
