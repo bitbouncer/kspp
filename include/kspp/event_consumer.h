@@ -192,4 +192,32 @@ namespace kspp {
   protected:
     kspp::event_queue<K, void> _queue;
   };
+
+  //EXTENSIONS
+  template<class K, class V>
+  inline void
+  produce(kspp::event_consumer<K, V>& dst, std::shared_ptr<const krecord<K, V>> r, std::function<void(int64_t offset, int32_t ec)> callback) {
+    auto am = std::make_shared<commit_chain::autocommit_marker>(callback);
+    dst.push_back(std::make_shared<kevent<K, V>>(r, am));
+  }
+
+  template<class K, class V>
+  inline void produce(kspp::event_consumer<K, V>& dst, uint32_t partition_hash, std::shared_ptr<const krecord<K, V>> r,
+                      std::function<void(int64_t offset, int32_t ec)> callback) {
+    auto am = std::make_shared<commit_chain::autocommit_marker>(callback);
+    dst.push_back(std::make_shared<kevent<K, V>>(r, am, partition_hash));
+  }
+
+  template<class K, class V>
+  inline void
+  produce(kspp::event_consumer<K, V>& dst, const K &key, const V &value, int64_t ts, std::function<void(int64_t offset, int32_t ec)> callback) {
+    produce(dst, std::make_shared<const krecord<K, V>>(key, value, ts), callback);
+  }
+
+  template<class K, class V>
+  inline void
+  produce(kspp::event_consumer<K, V>& dst, uint32_t partition_hash, const K &key, const V &value, int64_t ts,
+          std::function<void(int64_t offset, int32_t ec)> callback) {
+    produce(dst, partition_hash, std::make_shared<const krecord<K, V>>(key, value, ts), callback);
+  }
 }

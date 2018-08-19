@@ -2,20 +2,21 @@
 #include <kspp/kspp.h>
 #pragma once
 
+// null sink - useful for testing
 namespace kspp {
   template<class K, class V>
-  class genric_topic_sink : public topic_sink<K, V> {
+  class null_sink : public topic_sink<K, V> {
     static constexpr const char* PROCESSOR_NAME = "genric_sink";
   public:
     typedef std::function<void(std::shared_ptr<const krecord <K, V>> record)> handler;
 
-    genric_topic_sink(std::shared_ptr<cluster_config> config, handler f)
+    null_sink(std::shared_ptr<cluster_config> config, handler f)
         : topic_sink<K, V>()
         , _handler(f) {
-      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "genric_sink");
+      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "null_sink");
     }
 
-    ~genric_topic_sink() override {
+    ~null_sink() override {
       this->flush();
     }
 

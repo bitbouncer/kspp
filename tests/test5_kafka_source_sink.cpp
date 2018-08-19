@@ -8,7 +8,7 @@
 #include <kspp/processors/generic_stream.h>
 #include <kspp/state_stores/mem_store.h>
 #include <kspp/sources/kafka_source.h>
-#include <kspp/sinks/generic_sink.h>
+#include <kspp/sinks/null_sink.h>
 
 using namespace std::chrono_literals;
 using namespace kspp;
@@ -57,7 +57,7 @@ int main(int argc, char **argv) {
     // we need to consume the source to be able to commit - a null sink is perfect
     auto kafka_sources = topology->create_processors<kafka_source<std::string, std::string, binary_serdes, binary_serdes>>(
         partition_list, "kspp_test5");
-    auto dummy_sink = topology->create_sink<genric_topic_sink<std::string, std::string>>(kafka_sources, [](auto r){
+    auto dummy_sink = topology->create_sink<null_sink<std::string, std::string>>(kafka_sources, [](auto r){
       /* noop */ });
 
     topology->start(kspp::OFFSET_END);

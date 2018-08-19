@@ -1,6 +1,6 @@
 #include <iostream>
 #include <chrono>
-#include <kspp/sinks/raw_kafka_sink.h>
+#include <kspp/sinks/kafka_sink.h>
 #include <kspp/utils/env.h>
 #include <kspp/avro/avro_serdes.h>
 
@@ -13,6 +13,7 @@ static boost::uuids::uuid to_uuid(int64_t x) {
   return uuid;
 }
 
+// How to use a sink without a topology
 int main(int argc, char **argv) {
   FLAGS_logtostderr = 1;
   google::InitGoogleLogging(argv[0]);
@@ -22,7 +23,7 @@ int main(int argc, char **argv) {
   config->load_config_from_env();
   config->validate(); // optional
 
-  auto avro_stream = std::make_shared<kspp::raw_kafka_sink<boost::uuids::uuid, int64_t, kspp::avro_serdes, kspp::avro_serdes>>(
+  auto avro_stream = std::make_shared<kspp::kafka_sink<boost::uuids::uuid, int64_t, kspp::avro_serdes, kspp::avro_serdes>>(
       config,
       "kspp_test14_raw",
       config->avro_serdes(),
@@ -36,7 +37,7 @@ int main(int argc, char **argv) {
   for (int64_t update_nr = 0; update_nr != 10; ++update_nr) {
     for (auto &i : ids) {
 
-      avro_stream->produce(i, update_nr, kspp::milliseconds_since_epoch(), [](int64_t offset, int32_t ec) {
+      kspp::produce(*avro_stream, i, update_nr, kspp::milliseconds_since_epoch(), [](int64_t offset, int32_t ec) {
         if (ec)
           LOG(ERROR) << "produce failed ec:" << ec;
         else

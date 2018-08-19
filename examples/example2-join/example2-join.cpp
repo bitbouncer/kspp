@@ -8,7 +8,7 @@
 #include <kspp/state_stores/mem_store.h>
 #include <kspp/utils/kafka_utils.h>
 #include <kspp/utils/env.h>
-#include <kspp/sinks/generic_sink.h>
+#include <kspp/sinks/null_sink.h>
 
 using namespace std::chrono_literals;
 
@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
         streams,
         tables);
 
-    auto sinks = topology->create_sink<kspp::genric_topic_sink<boost::uuids::uuid, kspp::left_join<int64_t, int64_t>::value_type>>(
+    auto sinks = topology->create_sink<kspp::null_sink<boost::uuids::uuid, kspp::left_join<int64_t, int64_t>::value_type>>(
         joins,
         [&join_count](auto r) {
           join_count++;
