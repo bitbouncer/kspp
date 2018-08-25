@@ -136,7 +136,7 @@ namespace kspp {
 
           // OK...
           auto ts1 = kspp::milliseconds_since_epoch();
-          LOG(INFO) << "HTTP call nr of msg: " << msg_in_batch  << ", (" << ts1 - ts0 << ") ms";
+          //LOG(INFO) << "HTTP call nr of msg: " << msg_in_batch  << ", (" << ts1 - ts0 << ") ms";
           //DLOG_EVERY_N(INFO, 1000) << "influx_sink, http post: " << h->uri() << " got " << h->rx_content_length() << " bytes, time=" << h->milliseconds() << " ms";
 
           while (!in_batch.empty()) {
