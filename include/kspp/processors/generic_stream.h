@@ -57,7 +57,9 @@ namespace kspp {
         this->_lag.add_event_time(kspp::milliseconds_since_epoch(), p->event_time()); // move outside loop
         ++processed;
       }
+      return processed;
     }
+
 
     size_t queue_size() const override {
       return event_consumer<K, V>::queue_size();

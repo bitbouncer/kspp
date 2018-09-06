@@ -166,6 +166,8 @@ namespace kspp {
 
     for (auto &&i : _top_partition_processors) {
       ev_count += i->process(ts);
+      if (ev_count > 10000000)
+        LOG(INFO) << "bad count: " << ev_count << ", " << i->log_name();
     }
 
     for (auto &&i : _sinks)

@@ -18,7 +18,7 @@ sudo apt-get install -y automake autogen shtool libtool git wget cmake unzip bui
 ```
 optional build rocksdb 
 ```
-  wget -O rocksdb.tar.gz "https://github.com/facebook/rocksdb/archive/v5.7.5.tar.gz" && \
+  wget -O rocksdb.tar.gz "https://github.com/facebook/rocksdb/archive/v5.14.3.tar.gz" && \
   mkdir -p rocksdb && \
   tar \
       --extract \
@@ -26,6 +26,7 @@ optional build rocksdb
       --directory rocksdb \
       --strip-components 1 && \
   cd rocksdb && \
+  export USE_RTTI=1 && \
   make -j "$(getconf _NPROCESSORS_ONLN)" shared_lib && \
   sudo make install-shared && \
   cd .. && \

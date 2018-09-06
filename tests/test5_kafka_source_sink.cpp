@@ -18,7 +18,7 @@ struct record {
   std::string value;
 };
 
-#define TEST_SIZE 1000000
+#define TEST_SIZE 90000
 
 int main(int argc, char **argv) {
   FLAGS_logtostderr = 1;
@@ -85,13 +85,13 @@ int main(int argc, char **argv) {
     }
 
     topology->commit(true);
-    auto written_sz = kafka_sink0->get_metric("in_count");
+    auto written_sz = kafka_sink0->get_metric("kspp.processed");
     assert(written_sz == TEST_SIZE);
     LOG(INFO) << "produced sz:" << written_sz;
 
     int64_t consumed_sz = 0;
     for (auto &&i : kafka_sources)
-      consumed_sz += i->get_metric("in_count");
+      consumed_sz += i->get_metric("kspp.processed");
     LOG(INFO) << "consumed_sz: " << consumed_sz << " expected : " <<  TEST_SIZE;
     assert(consumed_sz == TEST_SIZE);
   }
@@ -117,15 +117,15 @@ int main(int argc, char **argv) {
     }
     topology->commit(true);
     {
-      auto actual = table_stream->get_metric("in_count");
+      auto actual = table_stream->get_metric("kspp.processed");
       assert(actual == TEST_SIZE);
     }
 
     int64_t sz = 0;
     for (auto &&i : streams) {
-      auto s = i->get_metric("in_count");
+      auto s = i->get_metric("kspp.processed");
       LOG(INFO) << i->log_name() <<  ", count:" << s;
-      sz += i->get_metric("in_count");
+      sz += i->get_metric("kspp.processed");
     }
     LOG(INFO) << "sz: " << sz << " expected : " <<  TEST_SIZE;
 
@@ -154,15 +154,15 @@ int main(int argc, char **argv) {
     }
     topology->commit(true);
     {
-      auto actual = table_stream->get_metric("in_count");
+      auto actual = table_stream->get_metric("kspp.processed");
       assert(actual == TEST_SIZE);
     }
 
     int64_t sz = 0;
     for (auto &&i : streams) {
-      auto s = i->get_metric("in_count");
+      auto s = i->get_metric("kspp.processed");
       LOG(INFO) << i->log_name() <<  ", count:" << s;
-      sz += i->get_metric("in_count");
+      sz += i->get_metric("kspp.processed");
     }
     LOG(INFO) << "sz: " << sz << " expected : " <<  TEST_SIZE;
 

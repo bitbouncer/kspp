@@ -43,18 +43,14 @@ namespace kspp {
       std::shared_ptr<const krecord <K, V>> item() const override {
         if (!_it->Valid())
           return nullptr;
-        rocksdb::Slice key = _it->key();
-        rocksdb::Slice value = _it->value();
+        rocksdb::Slice key_slice = _it->key();
+        rocksdb::Slice val_slice = _it->value();
 
-        K tmp_key;
-        if (_codec->decode(key.data(), key.size(), tmp_key) != key.size())
+        K key;
+        if (_codec->decode(key_slice.data(), key_slice.size(), key) != key_slice.size())
           return nullptr;
 
-        int64_t tmp_count = 0;
-        if (!Int64AddOperator::Deserialize(value, &tmp_count))
-          return nullptr;
-
-        return std::make_shared<krecord<K, V>>(tmp_key, static_cast<V>(tmp_count),
+        return std::make_shared<krecord<K, V>>(key, static_cast<V>(Int64AddOperator::Deserialize(val_slice)),
                                                milliseconds_since_epoch()); // or should we use -1.
       }
 
@@ -86,7 +82,8 @@ namespace kspp {
       boost::filesystem::create_directories(boost::filesystem::path(storage_path));
       _offset_storage_path /= "kspp_offset.bin";
       rocksdb::Options options;
-      options.merge_operator.reset(new Int64AddOperator);
+      //options.merge_operator.reset(new Int64AddOperator);
+      options.merge_operator = rocksdb::CreateInt64AddOperator();
       options.create_if_missing = true;
       rocksdb::DB *tmp = nullptr;
       auto s = rocksdb::DB::Open(options, storage_path.generic_string(), &tmp);
@@ -136,8 +133,7 @@ namespace kspp {
       std::strstream s(key_buf, MAX_KEY_SIZE);
       ksize = _codec->encode(record->key(), s);
       if (record->value()) {
-        std::string serialized;
-        Int64AddOperator::Serialize((int64_t) *record->value(), &serialized);
+        std::string serialized = Int64AddOperator::Serialize((int64_t) *record->value());
         auto status = _db->Merge(rocksdb::WriteOptions(), rocksdb::Slice(key_buf, ksize), serialized);
       } else {
         auto status = _db->Delete(rocksdb::WriteOptions(), rocksdb::Slice(key_buf, ksize));
@@ -151,11 +147,9 @@ namespace kspp {
       ksize = _codec->encode(key, os);
       std::string str;
       auto status = _db->Get(rocksdb::ReadOptions(), rocksdb::Slice(key_buf, ksize), &str);
-      int64_t count = 0;
-      if (!Int64AddOperator::Deserialize(str, &count))
+      if (!status.ok())
         return nullptr;
-
-      auto res = std::make_shared<krecord<K, V>>(key, std::make_shared<V>((V) count), -1);
+      auto res = std::make_shared<krecord<K, V>>(key, std::make_shared<V>((V) Int64AddOperator::Deserialize(str)), -1);
       return res;
     }
 

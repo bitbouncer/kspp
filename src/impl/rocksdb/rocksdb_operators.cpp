@@ -1,36 +1,45 @@
+#include <memory>
+#include <rocksdb/env.h>
+#include <rocksdb/merge_operator.h>
+#include <rocksdb/slice.h>
 #include <kspp/impl/rocksdb/rocksdb_operators.h>
-#include <glog/logging.h>
 
-namespace kspp {
-  bool Int64AddOperator::Merge(
-      const rocksdb::Slice &key,
-      const rocksdb::Slice *existing_value,
-      const rocksdb::Slice &value,
-      std::string *new_value,
-      rocksdb::Logger *logger) const {
+// A 'model' merge operator with uint64 addition semantics
+// Implemented as an AssociativeMergeOperator for simplicity and example.
+namespace rocksdb {
 
-    // assuming 0 if no existing value
-    int64_t existing = 0;
-    if (existing_value) {
-      if (!Deserialize(*existing_value, &existing)) {
-        // if existing_value is corrupted, treat it as 0
-        LOG(ERROR) << "Int64AddOperator::Merge existing_value value corruption";
-        existing = 0;
-      }
-    }
-
-    int64_t oper;
-    if (!Deserialize(value, &oper)) {
-      // if operand is corrupted, treat it as 0
-      LOG(ERROR) << "Int64AddOperator::Merge, Deserialize operand value corruption";
-      oper = 0;
-    }
-
-    Serialize(existing + oper, new_value);
-    return true;        // always return true for this, since we treat all errors as "zero".
+  static inline void PutFixed64(std::string *dst, int64_t val) {
+  dst->resize(sizeof(int64_t));
+  memcpy((void *) dst->data(), &val, sizeof(int64_t));
   }
 
-  const char *Int64AddOperator::Name() const {
-    return "Int64AddOperator";
+
+  class Int64AddOperator : public rocksdb::AssociativeMergeOperator {
+  public:
+    virtual bool Merge(const Slice& /*key*/, const Slice* existing_value,
+                       const Slice& value, std::string* new_value,
+                       Logger* logger) const override {
+      assert(new_value);
+      int64_t orig_value = 0;
+      if (existing_value){
+        orig_value = ::Int64AddOperator::Deserialize(*existing_value);
+      }
+      int64_t operand = ::Int64AddOperator::Deserialize(value);
+      int64_t updated_value = orig_value + operand;
+      new_value->resize(sizeof(int64_t));
+      memcpy((void *) new_value->data(), &updated_value, sizeof(int64_t));
+      return true;  // Return true always since corruption will be treated as 0
+    }
+
+    virtual const char* Name() const override {
+      return "Int64AddOperator";
+    }
+  };
+}
+
+
+namespace rocksdb {
+  std::shared_ptr<rocksdb::MergeOperator> CreateInt64AddOperator(){
+    return std::make_shared<Int64AddOperator>();
   }
 }
