@@ -163,7 +163,11 @@ namespace kspp {
           }
 
           // to much work in queue - back off and let the conumers work
-          while(_incomming_msg.size()>1000 && !_exit)
+         while(_incomming_msg.size()>1000 && !_exit)
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+          // to much uncomitted - back off and let the consumers work
+          while(_commit_chain.size()>10000 && !_exit)
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(10));

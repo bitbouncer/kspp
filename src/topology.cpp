@@ -200,6 +200,9 @@ namespace kspp {
     for (auto &&i : _partition_processors)
       min_ts = std::min(min_ts, i->next_event_time());
 
+    // empty queues?
+    if (min_ts == INT64_MAX)
+      return 0;
 
     int64_t max_ts = std::min(min_ts+1000, kspp::milliseconds_since_epoch()-_min_buffering_ms);
 
