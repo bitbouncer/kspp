@@ -3,4 +3,4 @@ SET(SRCS
         )
 
 add_executable(example_setup ${SRCS})
-target_link_libraries(example_setup ${CSI_LIBS})
+target_link_libraries(example_setup ${CSI_LIBS_STATIC})

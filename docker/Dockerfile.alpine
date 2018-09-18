@@ -119,7 +119,7 @@ BUILD_DIR="$(mktemp -d)" && \
    cd "$BUILD_DIR/kspp" && \
    mkdir build && \
    cd build && \
-   cmake  -DCMAKE_BUILD_TYPE=Release -DENABLE_ROCKSDB=ON -DBUILD_SAMPLES=OFF -DBUILD_SHARED=ON .. && \
+   cmake  -DCMAKE_BUILD_TYPE=Release -DENABLE_ROCKSDB=ON -DBUILD_SAMPLES=OFF -DLINK_SHARED=ON .. && \
    make -j "$(getconf _NPROCESSORS_ONLN)" && \
    make install && \
    cd .. && \
