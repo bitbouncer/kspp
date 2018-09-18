@@ -5,9 +5,23 @@ kspp
 
 A high performance / realtime C++ (14) Kafka stream-processing framework based on librdkafka. The design is based on the original Kafka Streams API (java)
 
-It is intended to be run on mesos or kubernetes but works equally well standalone
+Sources:
+- kafka
+- postgres
+- ms sqlserver
+ 
+Sinks:
+- kafka
+- postgres
+- influxdb  
 
-Platforms: Windows / Linux / Mac
+Statestores:
+- rocksdb
+- memory
+
+It is intended to be run in kubernetes but works equally well standalone
+
+Platforms: Linux
 
 
 ## Ubuntu 18.04 x64:
@@ -16,7 +30,7 @@ Install build tools
 ```
 sudo apt-get install -y automake autogen shtool libtool git wget cmake unzip build-essential libboost-all-dev g++ python-dev autotools-dev libicu-dev zlib1g-dev openssl libssl-dev libbz2-dev libsnappy-dev libgoogle-glog-dev libgflags-dev libjansson-dev libcurl4-openssl-dev liblzma-dev libpq-dev pkg-config
 ```
-optional build rocksdb 
+optional rocksdb 
 ```
   wget -O rocksdb.tar.gz "https://github.com/facebook/rocksdb/archive/v5.14.3.tar.gz" && \
   mkdir -p rocksdb && \
@@ -34,7 +48,7 @@ optional build rocksdb
   rm -rf rocksdb
 ```
 
-optional build freetds 
+optional freetds 
 ```
 wget -O freetds-patched.tar.gz "ftp://ftp.freetds.org/pub/freetds/stable/freetds-patched.tar.gz" && \
 mkdir -p freetds && \
@@ -107,49 +121,8 @@ build kspp
 ```
 git clone https://github.com/bitbouncer/kspp.git
 cd kspp
-#minimal
 ./rebuild.sh
-#all options
-./rebuild-all-options.sh
 cd ..
 ```
 
-## MacOS X
-
-Install build tools (using Homebrew)
-```
-# Install Xcode
-xcode-select --install
-brew install cmake
-brew install kafka
-brew install snappy
-brew install rocksdb
-brew install boost
-brew install boost-python
-brew install glog
-brew install gflags
-brew install rapidjson
-brew install avro-cpp
-brew install librdkafka
-brew install curl --with-openssl # && brew link curl --force
-```
-
-Check out source code
-```
-git clone https://github.com/bitbouncer/kspp.git
-cd kspp
-```
-
-Run the build
-```
-#minimal
-./rebuild.sh
-#all options
-./rebuild-all-options.sh
-cd ..
-```
-
-
-
-```
 
