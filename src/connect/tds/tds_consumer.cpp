@@ -590,14 +590,13 @@ namespace kspp {
 
       // have we lost connection ?
       if (!_connection->connected()) {
+        _eof = false;
         if (!_connection->connect(cp_))
         {
           std::this_thread::sleep_for(10s);
           continue;
         }
       }
-
-      _eof = false;
 
       /*
        * std::string fields = "*";
@@ -619,20 +618,26 @@ namespace kspp {
         order_by = " ORDER BY " + _id_column + " ASC";
       }
 
-
       std::string where_clause;
-
 
       // do we have a timestamp field
       // we have to have either a interger id that is increasing or a timestamp that is increasing
       // before we read anything the where clause will not be valid
       if (last_id_>INT_MIN) {
-        if (_ts_column.size())
-          where_clause =
-              " WHERE (" + _ts_column + " = '" + std::to_string(last_ts_) + "' AND " + _id_column + " > '" + std::to_string(last_id_) + "') OR (" +
-              _ts_column + " > '" + std::to_string(last_ts_) + "')";
-        else
+        if (_ts_column.size()) {
+          // it turns out that we cannot guarantee the order of id when we are at eof in an "updatable" table
+          if (_eof){
+            where_clause = " WHERE " + _ts_column + " >= '" + std::to_string(last_ts_) + "'";
+            LOG(INFO) << "EOF PATCH - WHERE_CLAUSE " << where_clause;
+          } else {
+            where_clause =
+                " WHERE (" + _ts_column + " = '" + std::to_string(last_ts_) + "' AND " + _id_column + " > '" +
+                std::to_string(last_id_) + "') OR (" +
+                _ts_column + " > '" + std::to_string(last_ts_) + "')";
+          }
+        } else {
           where_clause = " WHERE " + _id_column + " > '" + std::to_string(last_id_) + "'";
+        }
       } else {
         if (last_ts_> INT_MIN)
           if (cp_.connect_ts_policy == kspp::connect::GREATER) // this leads to potential data loss
@@ -676,9 +681,15 @@ namespace kspp {
       }
       auto ts1 = kspp::milliseconds_since_epoch();
 
-      _eof = true;
+
 
       size_t messages_in_batch = _msg_cnt - last_msg_count;
+
+      if (messages_in_batch<_max_items_in_fetch){
+        _eof = true;
+      } else {
+        _eof = false;
+      }
 
       if (messages_in_batch==0) {
         LOG_EVERY_N(INFO, 100) << "empty poll done, table: " << _logical_name << " total: " << _msg_cnt << ", last ts: "
