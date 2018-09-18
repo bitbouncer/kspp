@@ -121,7 +121,10 @@ build kspp
 ```
 git clone https://github.com/bitbouncer/kspp.git
 cd kspp
-./rebuild.sh
+mkdir build && cd build
+cmake  -DCMAKE_BUILD_TYPE=Release -DLINK_SHARED=ON ..
+make -j "$(getconf _NPROCESSORS_ONLN)"
+sudo make install
 cd ..
 ```
 
