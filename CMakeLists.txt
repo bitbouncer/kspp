@@ -10,6 +10,8 @@ option(ENABLE_TDS "enable tds support" ON)
 option(ENABLE_ELASTICSEARCH "enable elastic search support" ON)
 option(BUILD_TOOLS "build tools" ON)
 option(BUILD_SAMPLES "build examples" ON)
+option(BUILD_STATIC_LIBS "enable static linking support" ON)
+option(BUILD_SHARED_LIBS "enable static linking support" ON)
 option(BUILD_TESTS "build tests" ON)
 option(LINK_SHARED "link shared" OFF)
 
@@ -135,21 +137,21 @@ file(GLOB KSPP_INCLUDE_FILES
         include/kspp/beta/*.h
         )
 
-ADD_LIBRARY(kspp_s STATIC ${LIB_SRCS} ${KSPP_INCLUDE_FILES})
-INSTALL(TARGETS kspp_s
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
-        )
+if (BUILD_STATIC_LIBS)
+    ADD_LIBRARY(kspp_s STATIC ${LIB_SRCS} ${KSPP_INCLUDE_FILES})
+    INSTALL(TARGETS kspp_s
+            LIBRARY DESTINATION lib
+            ARCHIVE DESTINATION lib
+            )
+endif ()
 
-ADD_LIBRARY(kspp SHARED ${LIB_SRCS} ${KSPP_INCLUDE_FILES})
-IF (APPLE)
-    TARGET_LINK_LIBRARIES(kspp ${EXT_LIBS})
-ENDIF ()
-
-INSTALL(TARGETS kspp
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
-        )
+if (BUILD_SHARED_LIBS)
+    ADD_LIBRARY(kspp SHARED ${LIB_SRCS} ${KSPP_INCLUDE_FILES})
+    INSTALL(TARGETS kspp
+            LIBRARY DESTINATION lib
+            ARCHIVE DESTINATION lib
+            )
+endif ()
 
 #EXTENSIONS
 
@@ -157,16 +159,21 @@ IF (ENABLE_ROCKSDB)
     file(GLOB ROCKDB_LIB_SRCS
             src/impl/rocksdb/*.cpp)
 
-    ADD_LIBRARY(kspp_rocksdb_s STATIC ${ROCKDB_LIB_SRCS})
-    INSTALL(TARGETS kspp_rocksdb_s
-            LIBRARY DESTINATION lib
-            ARCHIVE DESTINATION lib
-            )
-    ADD_LIBRARY(kspp_rocksdb SHARED ${ROCKDB_LIB_SRCS})
-    INSTALL(TARGETS kspp_rocksdb
-            LIBRARY DESTINATION lib
-            ARCHIVE DESTINATION lib
-            )
+    if (BUILD_STATIC_LIBS)
+        ADD_LIBRARY(kspp_rocksdb_s STATIC ${ROCKDB_LIB_SRCS})
+        INSTALL(TARGETS kspp_rocksdb_s
+                LIBRARY DESTINATION lib
+                ARCHIVE DESTINATION lib
+                )
+    endif ()
+
+    if (BUILD_SHARED_LIBS)
+        ADD_LIBRARY(kspp_rocksdb SHARED ${ROCKDB_LIB_SRCS})
+        INSTALL(TARGETS kspp_rocksdb
+                LIBRARY DESTINATION lib
+                ARCHIVE DESTINATION lib
+                )
+    endif ()
 ENDIF ()
 
 if (ENABLE_POSTGRES)
@@ -174,16 +181,21 @@ if (ENABLE_POSTGRES)
             include/connect/postgres/*.h
             src/connect/postgres/*.cpp)
 
-    ADD_LIBRARY(kspp_pg_s STATIC ${POSTGRES_LIB_SRCS})
-    INSTALL(TARGETS kspp_pg_s
-            LIBRARY DESTINATION lib
-            ARCHIVE DESTINATION lib
-            )
-    ADD_LIBRARY(kspp_pg SHARED ${POSTGRES_LIB_SRCS})
-    INSTALL(TARGETS kspp_pg
-            LIBRARY DESTINATION lib
-            ARCHIVE DESTINATION lib
-            )
+    if (BUILD_STATIC_LIBS)
+        ADD_LIBRARY(kspp_pg_s STATIC ${POSTGRES_LIB_SRCS})
+        INSTALL(TARGETS kspp_pg_s
+                LIBRARY DESTINATION lib
+                ARCHIVE DESTINATION lib
+                )
+    endif ()
+
+    if (BUILD_SHARED_LIBS)
+        ADD_LIBRARY(kspp_pg SHARED ${POSTGRES_LIB_SRCS})
+        INSTALL(TARGETS kspp_pg
+                LIBRARY DESTINATION lib
+                ARCHIVE DESTINATION lib
+                )
+    endif ()
 ENDIF ()
 
 IF (ENABLE_TDS)
@@ -191,16 +203,21 @@ IF (ENABLE_TDS)
             include/connect/tds/*.h
             src/connect/tds/*.cpp)
 
-    ADD_LIBRARY(kspp_tds_s STATIC ${TDS_LIB_SRCS})
-    INSTALL(TARGETS kspp_tds_s
-            LIBRARY DESTINATION lib
-            ARCHIVE DESTINATION lib
-            )
-    ADD_LIBRARY(kspp_tds SHARED ${TDS_LIB_SRCS})
-    INSTALL(TARGETS kspp_tds
-            LIBRARY DESTINATION lib
-            ARCHIVE DESTINATION lib
-            )
+    if (BUILD_STATIC_LIBS)
+        ADD_LIBRARY(kspp_tds_s STATIC ${TDS_LIB_SRCS})
+        INSTALL(TARGETS kspp_tds_s
+                LIBRARY DESTINATION lib
+                ARCHIVE DESTINATION lib
+                )
+    endif ()
+
+    if (BUILD_SHARED_LIBS)
+        ADD_LIBRARY(kspp_tds SHARED ${TDS_LIB_SRCS})
+        INSTALL(TARGETS kspp_tds
+                LIBRARY DESTINATION lib
+                ARCHIVE DESTINATION lib
+                )
+    endif ()
 ENDIF ()
 
 IF (ENABLE_ELASTICSEARCH)
@@ -208,16 +225,21 @@ IF (ENABLE_ELASTICSEARCH)
             include/connect/elasticsearch/*.h
             src/connect/elasticsearch/*.cpp)
 
-    ADD_LIBRARY(kspp_es_s STATIC ${ELASTICSEARCH_LIB_SRCS})
-    INSTALL(TARGETS kspp_es_s
-            LIBRARY DESTINATION lib
-            ARCHIVE DESTINATION lib
-            )
-    ADD_LIBRARY(kspp_es SHARED ${ELASTICSEARCH_LIB_SRCS})
-    INSTALL(TARGETS kspp_es
-            LIBRARY DESTINATION lib
-            ARCHIVE DESTINATION lib
-            )
+    if (BUILD_STATIC_LIBS)
+        ADD_LIBRARY(kspp_es_s STATIC ${ELASTICSEARCH_LIB_SRCS})
+        INSTALL(TARGETS kspp_es_s
+                LIBRARY DESTINATION lib
+                ARCHIVE DESTINATION lib
+                )
+    endif ()
+
+    if (BUILD_SHARED_LIBS)
+        ADD_LIBRARY(kspp_es SHARED ${ELASTICSEARCH_LIB_SRCS})
+        INSTALL(TARGETS kspp_es
+                LIBRARY DESTINATION lib
+                ARCHIVE DESTINATION lib
+                )
+    endif ()
 ENDIF ()
 
 #INFLUXDB
@@ -226,16 +248,21 @@ IF (ENABLE_INFLUXDB)
             include/connect/influxdb/*.h
             src/connect/influxdb/*.cpp)
 
-    ADD_LIBRARY(kspp_influxdb_s STATIC ${INFLUXDB_LIB_SRCS})
-    INSTALL(TARGETS kspp_influxdb_s
-            LIBRARY DESTINATION lib
-            ARCHIVE DESTINATION lib
-            )
-    ADD_LIBRARY(kspp_influxdb SHARED ${INFLUXDB_LIB_SRCS})
-    INSTALL(TARGETS kspp_influxdb
-            LIBRARY DESTINATION lib
-            ARCHIVE DESTINATION lib
-            )
+    if (BUILD_STATIC_LIBS)
+        ADD_LIBRARY(kspp_influxdb_s STATIC ${INFLUXDB_LIB_SRCS})
+        INSTALL(TARGETS kspp_influxdb_s
+                LIBRARY DESTINATION lib
+                ARCHIVE DESTINATION lib
+                )
+    endif ()
+
+    if (BUILD_SHARED_LIBS)
+        ADD_LIBRARY(kspp_influxdb SHARED ${INFLUXDB_LIB_SRCS})
+        INSTALL(TARGETS kspp_influxdb
+                LIBRARY DESTINATION lib
+                ARCHIVE DESTINATION lib
+                )
+    endif ()
 ENDIF ()
 
 
