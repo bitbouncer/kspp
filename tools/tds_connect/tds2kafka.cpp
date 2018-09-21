@@ -204,6 +204,10 @@ int main(int argc, char **argv) {
   table_params.row_constness = row_constness;
   table_params.poll_intervall = std::chrono::seconds(poll_intervall);
 
+  // todo - harded code this for testing
+  table_params.rescrape_policy = kspp::connect::LAST_QUERY_TS;
+  table_params.rescrape_ticks = 2;
+
   if (filename.size()) {
      LOG(INFO) << "using avro file..";
     LOG(INFO) << "filename                   : " << filename;

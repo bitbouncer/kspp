@@ -9,6 +9,8 @@ namespace kspp {
 
     enum connect_ts_policy_t { GREATER_OR_EQUAL, GREATER };
 
+    enum rescrape_policy_t { RESCRAPE_OFF, LAST_QUERY_TS, CLIENT_TS };
+
     struct connection_params {
 
       std::string url;   // where relevant
@@ -31,8 +33,9 @@ namespace kspp {
       connect_ts_policy_t connect_ts_policy = GREATER_OR_EQUAL;
       row_constness_t row_constness = MUTABLE;
       size_t max_items_in_fetch=30000;
+      rescrape_policy_t rescrape_policy = RESCRAPE_OFF;
+      uint32_t rescrape_ticks = 1;
     };
-
     }
 }
 

@@ -623,15 +623,45 @@ namespace kspp {
       // before we read anything the where clause will not be valid
       if (last_id_>INT_MIN) {
         if (_ts_column.size()) {
-          // it turns out that we cannot guarantee the order of id when we are at eof in an "updatable" table
-          if (tp_.row_constness != kspp::connect::IMMUTABLE && _eof){
-            where_clause = " WHERE " + _ts_column + " >= '" + std::to_string(last_ts_) + "'";
-            //LOG(INFO) << "EOF PATCH - WHERE_CLAUSE " << where_clause;
-          } else {
-            where_clause =
-                " WHERE (" + _ts_column + " = '" + std::to_string(last_ts_) + "' AND " + _id_column + " > '" +
-                std::to_string(last_id_) + "') OR (" +
-                _ts_column + " > '" + std::to_string(last_ts_) + "')";
+          switch (tp_.rescrape_policy) {
+            case kspp::connect::RESCRAPE_OFF: {
+              if (tp_.row_constness != kspp::connect::IMMUTABLE && _eof){
+                where_clause = " WHERE " + _ts_column + " >= '" + std::to_string(last_ts_) + "'";
+              } else {
+                where_clause =
+                    " WHERE (" + _ts_column + " = '" + std::to_string(last_ts_) + "' AND " + _id_column + " > '" +
+                    std::to_string(last_id_) + "') OR (" +
+                    _ts_column + " > '" + std::to_string(last_ts_) + "')";
+              }
+            }
+            break;
+
+            case kspp::connect::LAST_QUERY_TS:
+              if (_eof) {
+                where_clause = " WHERE " + _ts_column + " >= '" + std::to_string(last_ts_ - tp_.rescrape_ticks) + "'";
+              } else {
+                where_clause =
+                    " WHERE (" + _ts_column + " = '" + std::to_string(last_ts_) + "' AND " + _id_column + " > '" +
+                    std::to_string(last_id_) + "') OR (" +
+                    _ts_column + " > '" + std::to_string(last_ts_) + "')";
+              }
+              break;
+
+            /* we have to have a generic way of trasforming client ts to server ts...
+             * case kspp::connect::CLIENT_TS:
+              if (_eof) {
+                where_clause = " WHERE " + _ts_column + " >= '" + std::to_string(last_ts_ - tp_.rescrape_ticks) + "'";
+              } else {
+                where_clause =
+                    " WHERE (" + _ts_column + " = '" + std::to_string(last_ts_) + "' AND " + _id_column + " > '" +
+                    std::to_string(last_id_) + "') OR (" +
+                    _ts_column + " > '" + std::to_string(last_ts_) + "')";
+              }
+              break;
+            */
+
+            default:
+              LOG(FATAL) << "bad - rescrape_policy: " << tp_.rescrape_policy;
           }
         } else {
           where_clause = " WHERE " + _id_column + " > '" + std::to_string(last_id_) + "'";
