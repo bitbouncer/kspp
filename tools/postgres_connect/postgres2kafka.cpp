@@ -234,6 +234,11 @@ int main(int argc, char **argv) {
   connection_params.password = db_password;
   connection_params.database = db_dbname;
 
+  kspp::connect::table_params table_params;
+  table_params.row_constness = kspp::connect::IMMUTABLE; // nothing else implemented
+  table_params.poll_intervall = std::chrono::seconds(poll_intervall);
+  table_params.max_items_in_fetch = max_items_in_fetch;
+
   if (filename.size()) {
      LOG(INFO) << "using avro file..";
     LOG(INFO) << "filename                   : " << filename;
@@ -244,7 +249,7 @@ int main(int argc, char **argv) {
   kspp::topology_builder builder(config);
   auto topology = builder.create_topology();
   std::string query_name = topic;
-  auto source0 = topology->create_processors<kspp::postgres_generic_avro_source>({0}, query_name, connection_params, query, id_column, timestamp_column, config->get_schema_registry(), std::chrono::seconds(poll_intervall), max_items_in_fetch);
+  auto source0 = topology->create_processors<kspp::postgres_generic_avro_source>({0}, query_name, connection_params, table_params, query, id_column, timestamp_column, config->get_schema_registry());
 
   if (filename.size()) {
     //topology->create_sink<kspp::avro_file_sink>(source0, "/tmp/" + topic + ".avro");

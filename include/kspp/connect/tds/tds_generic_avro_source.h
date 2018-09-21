@@ -5,7 +5,6 @@
 #include <kspp/kspp.h>
 #include <kspp/topology.h>
 #include <kspp/connect/tds/tds_consumer.h>
-//#include <kspp/avro/generic_avro.h>
 
 #pragma once
 
@@ -17,11 +16,11 @@ namespace kspp {
                             int32_t partition,
                             std::string logical_name,
                             const kspp::connect::connection_params& cp,
+                            kspp::connect::table_params tp,
                             std::string query,
                             std::string id_column,
                             std::string ts_column,
-                            std::shared_ptr<kspp::avro_schema_registry>,
-                            std::chrono::seconds poll_intervall = std::chrono::seconds(60));
+                            std::shared_ptr<kspp::avro_schema_registry>);
 
     virtual ~tds_generic_avro_source() {
       close();

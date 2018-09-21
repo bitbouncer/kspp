@@ -8,16 +8,15 @@ namespace kspp {
                                                                int32_t partition,
                                                                std::string logical_name,
                                                                const kspp::connect::connection_params& cp,
+                                                               kspp::connect::table_params tp,
                                                                std::string query,
                                                                std::string id_column,
                                                                std::string ts_column,
-                                                               std::shared_ptr<kspp::avro_schema_registry> registry,
-                                                               std::chrono::seconds poll_intervall,
-                                                               size_t max_items_in_fetch)
+                                                               std::shared_ptr<kspp::avro_schema_registry> registry)
       : partition_source<kspp::generic_avro, kspp::generic_avro>(nullptr, partition)
       , _started(false)
       , _exit(false)
-      , _impl(partition, logical_name, config->get_consumer_group(), cp, query, id_column, ts_column, registry, poll_intervall, max_items_in_fetch)
+      , _impl(partition, logical_name, config->get_consumer_group(), cp, tp, query, id_column, ts_column, registry)
       , _schema_registry(registry)
       , _schema_id(-1)
       , _commit_chain(logical_name, partition)

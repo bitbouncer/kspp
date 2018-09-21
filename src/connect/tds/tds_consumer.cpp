@@ -172,12 +172,11 @@ namespace kspp {
                              std::string logical_name,
                              std::string consumer_group,
                              const kspp::connect::connection_params& cp,
+                             kspp::connect::table_params tp,
                              std::string query,
                              std::string id_column,
                              std::string ts_column,
-                             std::shared_ptr<kspp::avro_schema_registry> schema_registry,
-                             std::chrono::seconds poll_intervall,
-                             size_t max_items_in_fetch)
+                             std::shared_ptr<kspp::avro_schema_registry> schema_registry)
       : _bg([this] { _thread(); })
       , _connection(std::make_shared<kspp_tds::connection>())
       , _logical_name(logical_name)
@@ -185,6 +184,7 @@ namespace kspp {
       , _partition(partition)
       , _consumer_group(consumer_group)
       , cp_(cp)
+      , tp_(tp)
       , _id_column(id_column)
       , _ts_column(ts_column)
       , id_column_index_(0)
@@ -192,17 +192,15 @@ namespace kspp {
       , last_ts_(INT_MIN)
       , last_id_(INT_MIN)
       , schema_registry_(schema_registry)
-      , _max_items_in_fetch(max_items_in_fetch)
       , key_schema_id_(-1)
       , val_schema_id_(-1)
-      , poll_intervall_(poll_intervall)
       , _msg_cnt(0)
       , _good(true)
       , _closed(false)
       , _eof(false)
       , _start_running(false)
       , _exit(false) {
-    std::string top_part(" TOP " + std::to_string(_max_items_in_fetch));
+    std::string top_part(" TOP " + std::to_string(tp_.max_items_in_fetch));
     // assumed to start with "SELECT"
     _query.insert(6,top_part);
     LOG(INFO) << " REAL QUERY: "  << _query;
@@ -590,7 +588,7 @@ namespace kspp {
 
       // have we lost connection ?
       if (!_connection->connected()) {
-        _eof = false;
+        //_eof = false;
         if (!_connection->connect(cp_))
         {
           std::this_thread::sleep_for(10s);
@@ -626,9 +624,9 @@ namespace kspp {
       if (last_id_>INT_MIN) {
         if (_ts_column.size()) {
           // it turns out that we cannot guarantee the order of id when we are at eof in an "updatable" table
-          if (_eof){
+          if (tp_.row_constness != kspp::connect::IMMUTABLE && _eof){
             where_clause = " WHERE " + _ts_column + " >= '" + std::to_string(last_ts_) + "'";
-            LOG(INFO) << "EOF PATCH - WHERE_CLAUSE " << where_clause;
+            //LOG(INFO) << "EOF PATCH - WHERE_CLAUSE " << where_clause;
           } else {
             where_clause =
                 " WHERE (" + _ts_column + " = '" + std::to_string(last_ts_) + "' AND " + _id_column + " > '" +
@@ -640,13 +638,13 @@ namespace kspp {
         }
       } else {
         if (last_ts_> INT_MIN)
-          if (cp_.connect_ts_policy == kspp::connect::GREATER) // this leads to potential data loss
+          if (tp_.connect_ts_policy == kspp::connect::GREATER) // this leads to potential data loss
             where_clause = " WHERE " + _ts_column + " > '" + std::to_string(last_ts_) + "'";
-          else if (cp_.connect_ts_policy == kspp::connect::GREATER_OR_EQUAL) // this leads to duplicates since last is repeated
+          else if (tp_.connect_ts_policy == kspp::connect::GREATER_OR_EQUAL) // this leads to duplicates since last is repeated
             where_clause = " WHERE " + _ts_column + " >= '" + std::to_string(last_ts_) + "'";
       }
 
-      //LOG(INFO) << "WHERE_CLAUSE " << where_clause;
+      LOG(INFO) << _logical_name << " - WHERE_CLAUSE... " << where_clause;
 
       /*
       // do we have a timestamp field
@@ -685,12 +683,6 @@ namespace kspp {
 
       size_t messages_in_batch = _msg_cnt - last_msg_count;
 
-      if (messages_in_batch<_max_items_in_fetch){
-        _eof = true;
-      } else {
-        _eof = false;
-      }
-
       if (messages_in_batch==0) {
         LOG_EVERY_N(INFO, 100) << "empty poll done, table: " << _logical_name << " total: " << _msg_cnt << ", last ts: "
                                << last_ts_ << " duration " << ts1 - ts0 << " ms";
@@ -701,21 +693,22 @@ namespace kspp {
                   << " ms";
       }
 
-      // if we got a lot of messages back run again
-      if ((_msg_cnt - last_msg_count) < 10) {
-        // if we sleep long we cannot be killed
-        int count = poll_intervall_.count();
+      if (messages_in_batch<tp_.max_items_in_fetch) {
+        _eof = true;
+        int count = tp_.poll_intervall.count();
+        if (count>61) {
+          LOG(INFO) << "sleeping POLL INTERVALL: " << count;
+        }
         for (int i = 0; i != count; ++i) {
           std::this_thread::sleep_for(1s);
           if (_exit)
             break;
         }
+      } else {
+        _eof = false;
       }
-
     }
     DLOG(INFO) << "exiting thread";
   }
-
-
 }
 

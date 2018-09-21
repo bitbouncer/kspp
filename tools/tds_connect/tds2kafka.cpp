@@ -41,6 +41,7 @@ int main(int argc, char **argv) {
       ("db_password", boost::program_options::value<std::string>()->default_value(get_env_and_log("DB_PASSWORD")), "db_password")
       ("db_dbname", boost::program_options::value<std::string>()->default_value(get_env_and_log("DB_DBNAME")), "db_dbname")
       ("id_column", boost::program_options::value<std::string>()->default_value(""), "id_column")
+      ("poll_algorithm", boost::program_options::value<std::string>()->default_value("MUTABLE"), "poll_algorithm")
       ("timestamp_column", boost::program_options::value<std::string>()->default_value("ts"), "timestamp_column")
       ("table", boost::program_options::value<std::string>(), "table")
       ("query", boost::program_options::value<std::string>(), "query")
@@ -81,6 +82,19 @@ int main(int argc, char **argv) {
   int db_port;
   if (vm.count("db_port")) {
     db_port = vm["db_port"].as<int>();
+  }
+
+  kspp::connect::row_constness_t  row_constness = kspp::connect::MUTABLE;
+  std::string poll_algorithm;
+  if (vm.count("poll_algorithm")) {
+    poll_algorithm = vm["poll_algorithm"].as<std::string>();
+    if (poll_algorithm == "MUTABLE"){
+      row_constness = kspp::connect::MUTABLE;
+    } else if (poll_algorithm == "IMMUTABLE") {
+      row_constness = kspp::connect::IMMUTABLE;
+    } else {
+      std::cerr <<  "poll_algorith must be MUTABLE/IMMUTABLE";
+    }
   }
 
   int poll_intervall;
@@ -174,6 +188,7 @@ int main(int argc, char **argv) {
   LOG(INFO) << "query              : " << query;
   LOG(INFO) << "id_column         : " << id_column;
   LOG(INFO) << "timestamp_column  : " << timestamp_column;
+  LOG(INFO) << "poll_algorithm    : " << to_string(row_constness);
   LOG(INFO) << "poll_intervall    : " << poll_intervall;
   LOG(INFO) << "topic_prefix      : " << topic_prefix;
   LOG(INFO) << "topic             : " << topic;
@@ -184,6 +199,10 @@ int main(int argc, char **argv) {
   connection_params.user = db_user;
   connection_params.password = db_password;
   connection_params.database = db_dbname;
+
+  kspp::connect::table_params table_params;
+  table_params.row_constness = row_constness;
+  table_params.poll_intervall = std::chrono::seconds(poll_intervall);
 
   if (filename.size()) {
      LOG(INFO) << "using avro file..";
@@ -198,7 +217,7 @@ int main(int argc, char **argv) {
   auto topology = builder.create_topology();
 
   std::string query_name = topic;
-  auto source0 = topology->create_processors<kspp::tds_generic_avro_source>({0}, query_name, connection_params, query, id_column, timestamp_column, config->get_schema_registry(),  std::chrono::seconds(poll_intervall));
+  auto source0 = topology->create_processors<kspp::tds_generic_avro_source>({0}, query_name, connection_params, table_params, query, id_column, timestamp_column, config->get_schema_registry());
 
    if (filename.size()) {
     //topology->create_sink<kspp::avro_file_sink>(source0, "/tmp/" + topic + ".avro");

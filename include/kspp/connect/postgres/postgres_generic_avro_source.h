@@ -15,12 +15,11 @@ namespace kspp {
                                   int32_t partition,
                                   std::string logical_name,
                                   const kspp::connect::connection_params& cp,
+                                  kspp::connect::table_params tp,
                                   std::string query,
                                   std::string id_column,
                                   std::string ts_column,
-                                  std::shared_ptr<kspp::avro_schema_registry>,
-                                  std::chrono::seconds poll_intervall,
-                                  size_t max_items_in_fetch);
+                                  std::shared_ptr<kspp::avro_schema_registry>);
 
     virtual ~postgres_generic_avro_source() {
       close();

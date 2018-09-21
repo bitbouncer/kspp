@@ -11,7 +11,7 @@ option(ENABLE_ELASTICSEARCH "enable elastic search support" ON)
 option(BUILD_TOOLS "build tools" ON)
 option(BUILD_SAMPLES "build examples" ON)
 option(BUILD_STATIC_LIBS "enable static linking support" ON)
-option(BUILD_SHARED_LIBS "enable static linking support" ON)
+option(BUILD_SHARED_LIBS "enable static linking support" OFF)
 option(BUILD_TESTS "build tests" ON)
 option(LINK_SHARED "link shared" OFF)
 

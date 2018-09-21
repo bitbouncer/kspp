@@ -89,12 +89,11 @@ namespace kspp {
                                        std::string logical_name,
                                        std::string consumer_group,
                                        const kspp::connect::connection_params& cp,
+                                       kspp::connect::table_params tp,
                                        std::string query,
                                        std::string id_column,
                                        std::string ts_column,
-                                       std::shared_ptr<kspp::avro_schema_registry> schema_registry,
-                                       std::chrono::seconds poll_intervall,
-                                       size_t max_items_in_fetch)
+                                       std::shared_ptr<kspp::avro_schema_registry> schema_registry)
       : _good(true)
       , _closed(false)
       , _eof(false)
@@ -106,16 +105,15 @@ namespace kspp {
       , _partition(partition)
       , _consumer_group(consumer_group)
       , cp_(cp)
+      , tp_(tp)
       , _query(query)
       , _id_column(id_column)
       , _ts_column(ts_column)
       , id_column_index_(-1)
       , ts_column_index_(-1)
       , schema_registry_(schema_registry)
-      , _max_items_in_fetch(max_items_in_fetch)
       , key_schema_id_(-1)
       , value_schema_id_(-1)
-      , poll_intervall_(poll_intervall)
       , _msg_cnt(0) {
   }
 
@@ -317,15 +315,15 @@ namespace kspp {
           where_clause = " WHERE " + _id_column + " > '" + last_id_ + "'";
       } else {
         if (last_ts_.size()) {
-          if (cp_.connect_ts_policy == kspp::connect::GREATER) // this leads to potential data loss
+          if (tp_.connect_ts_policy == kspp::connect::GREATER) // this leads to potential data loss
             where_clause = " WHERE " + _ts_column + " > '" + last_ts_ + "'";
-          else if (cp_.connect_ts_policy == kspp::connect::GREATER_OR_EQUAL) // this leads to duplicates since last is repeated
+          else if (tp_.connect_ts_policy == kspp::connect::GREATER_OR_EQUAL) // this leads to duplicates since last is repeated
             where_clause = " WHERE " + _ts_column + " >= '" + last_ts_ + "'";
           else
-            LOG(FATAL) << "unknown cp_.connect_ts_policy: " << cp_.connect_ts_policy;
+            LOG(FATAL) << "unknown cp_.connect_ts_policy: " << tp_.connect_ts_policy;
         }
       }
-      std::string statement = _query + where_clause + order_by + " LIMIT " + std::to_string(_max_items_in_fetch);
+      std::string statement = _query + where_clause + order_by + " LIMIT " + std::to_string(tp_.max_items_in_fetch);
 
       DLOG(INFO) << "exec(" + statement + ")";
 
@@ -348,7 +346,7 @@ namespace kspp {
       }
       auto ts1 = kspp::milliseconds_since_epoch();
 
-      if ((_msg_cnt - last_msg_count) != _max_items_in_fetch)
+      if ((_msg_cnt - last_msg_count) != tp_.max_items_in_fetch)
         _eof = true;
 
       size_t messages_in_batch = _msg_cnt - last_msg_count;
@@ -362,8 +360,8 @@ namespace kspp {
       }
 
       if (_eof) {
-        // what is sleeping cannot bne killed...
-        int count = poll_intervall_.count();
+        // what is sleeping cannot be killed...
+        int count = tp_.poll_intervall.count();
         for (int i = 0; i != count; ++i) {
           std::this_thread::sleep_for(1s);
           if (_exit)

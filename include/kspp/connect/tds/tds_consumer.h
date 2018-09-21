@@ -14,12 +14,11 @@ namespace kspp {
                  std::string logical_name,
                  std::string consumer_group,
                  const kspp::connect::connection_params& cp,
+                 kspp::connect::table_params tp,
                  std::string query,
                  std::string id_column,
                  std::string ts_column,
-                 std::shared_ptr<kspp::avro_schema_registry>,
-                 std::chrono::seconds poll_intervall,
-                 size_t max_items_in_fetch=30000);
+                 std::shared_ptr<kspp::avro_schema_registry>);
 
     ~tds_consumer();
 
@@ -80,7 +79,6 @@ namespace kspp {
     bool _good;
     bool _eof;
     bool _closed;
-    std::chrono::seconds poll_intervall_;
 
     std::thread _bg;
     std::shared_ptr<kspp_tds::connection> _connection;
@@ -90,11 +88,11 @@ namespace kspp {
     const std::string _consumer_group;
 
     const kspp::connect::connection_params cp_;
+    const kspp::connect::table_params tp_;
 
     std::string _query;
     const std::string _id_column;
     const std::string _ts_column;
-    size_t _max_items_in_fetch;
 
     int ts_column_index_;
     int id_column_index_;
