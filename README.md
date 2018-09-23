@@ -115,6 +115,56 @@ sudo make install && \
 cd .. && \
 rm librdkafka.tar.gz && \
 rm -rf librdkafka
+
+wget -O google-test.tar.gz "https://github.com/google/googletest/archive/release-1.8.1.tar.gz" && \
+mkdir -p google-test && \
+tar \
+  --extract \
+  --file google-test.tar.gz \
+  --directory google-test \
+  --strip-components 1 && \
+cd google-test && \
+mkdir build && cd build && \
+cmake  -DCMAKE_BUILD_TYPE=Release ..
+make -j "$(getconf _NPROCESSORS_ONLN)" && \
+sudo make install && \
+cd ../.. && \
+rm google-test.tar.gz && \
+rm -rf google-test
+
+wget -O google-benchmark.tar.gz "https://github.com/google/benchmark/archive/v1.4.1.tar.gz" && \
+mkdir -p google-benchmark && \
+tar \
+  --extract \
+  --file google-benchmark.tar.gz \
+  --directory google-benchmark \
+  --strip-components 1 && \
+cd google-benchmark && \
+mkdir build && cd build && \
+cmake  -DCMAKE_BUILD_TYPE=Release ..
+make -j "$(getconf _NPROCESSORS_ONLN)" && \
+sudo make install && \
+cd ../.. && \
+rm google-benchmark.tar.gz && \
+rm -rf google-benchmark
+
+https://github.com/civetweb/civetweb/archive/v1.11.tar.gz
+
+wget -O civetweb.tar.gz "https://github.com/civetweb/civetweb/archive/v1.11.tar.gz" && \
+mkdir -p civetweb && \
+tar \
+  --extract \
+  --file civetweb.tar.gz \
+  --directory civetweb \
+  --strip-components 1 && \
+mkdir build_xx && cd build_xx && \
+cmake  -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=YES ..
+make -j "$(getconf _NPROCESSORS_ONLN)" && \
+sudo make install && \
+cd ../.. && \
+rm civetweb.tar.gz && \
+rm -rf civetweb
+
 ```
 
 build kspp
