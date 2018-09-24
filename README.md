@@ -44,8 +44,6 @@ install 3rd party deps we need to build from source
 
 build kspp
 ```
-git clone https://github.com/bitbouncer/kspp.git
-cd kspp
 mkdir build && cd build
 cmake  -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DLINK_SHARED=ON ..
 make -j "$(getconf _NPROCESSORS_ONLN)"
@@ -53,11 +51,8 @@ sudo make install
 cd ..
 ```
 
-
 build docker image (alpine 3:8)
 ```
-git clone https://github.com/bitbouncer/kspp.git
-cd kspp
 cd docker
 ./build.sh
 ```
