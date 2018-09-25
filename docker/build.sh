@@ -9,7 +9,7 @@ pushd ..
 docker build -f docker/Dockerfile.build  --no-cache -tkspp-build .
 
 popd
-docker create --name extract kspp:build2
+docker create --name extract kspp-build
 docker cp extract:/usr/local/lib/libavrocpp.so.1.8.2.0       ./extract/lib
 docker cp extract:/usr/local/lib/libbenchmark.so.0.0.0       ./extract/lib
 docker cp extract:/usr/local/lib/libbenchmark_main.so.0.0.0  ./extract/lib
