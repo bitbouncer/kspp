@@ -1,4 +1,6 @@
 #!/bin/bash
+set -ef
+
 rm -rf ./extract
 mkdir -p ./extract/bin
 mkdir -p ./extract/lib
