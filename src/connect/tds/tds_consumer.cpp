@@ -674,7 +674,7 @@ namespace kspp {
             where_clause = " WHERE " + _ts_column + " >= '" + std::to_string(last_ts_) + "'";
       }
 
-      LOG(INFO) << _logical_name << " - WHERE_CLAUSE... " << where_clause;
+      //LOG(INFO) << _logical_name << " - WHERE_CLAUSE... " << where_clause;
 
       /*
       // do we have a timestamp field
