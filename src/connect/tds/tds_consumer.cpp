@@ -81,6 +81,8 @@ namespace kspp {
           int64_t v;
           assert(sizeof(v) == dbdatlen(stream, src_column + 1));
           memcpy(&v, dbdata(stream, src_column + 1), sizeof(v));
+          if (v==20968030340460)
+            LOG(INFO) << "opps";
           avro_item.value<int64_t>() = v;
         }
           break;

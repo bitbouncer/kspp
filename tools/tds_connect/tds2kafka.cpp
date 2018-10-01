@@ -206,7 +206,7 @@ int main(int argc, char **argv) {
 
   // todo - harded code this for testing
   table_params.rescrape_policy = kspp::connect::LAST_QUERY_TS;
-  table_params.rescrape_ticks = 2;
+  table_params.rescrape_ticks = 10;
 
   if (filename.size()) {
      LOG(INFO) << "using avro file..";
