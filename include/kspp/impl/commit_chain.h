@@ -6,6 +6,9 @@
 #pragma once
 
 namespace kspp {
+
+  void autocommit_marker_gc();
+
   class commit_chain {
   public:
 
@@ -15,9 +18,8 @@ namespace kspp {
               : _offset(-1), _ec(0), _cb(callback) {
       }
 
-      ~autocommit_marker() {
-        _cb(_offset, _ec);
-      }
+      ~autocommit_marker();
+
 
       inline int64_t offset() const {
         return _offset;

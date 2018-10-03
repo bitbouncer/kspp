@@ -142,6 +142,7 @@ namespace kspp {
 
   std::size_t topology::process(int64_t ts) {
     auto ev_count = 0u;
+    autocommit_marker_gc();
 
     // this needs to be done to to trigger callbacks
     for (auto &&i : _sinks)
@@ -180,11 +181,11 @@ namespace kspp {
         i->garbage_collect(ts);
       _next_gc_ts = ts + 10000; // 10 sec
     }
-
     return ev_count;
   }
 
   std::size_t topology::process_1s(){
+    autocommit_marker_gc();
     for (auto &&i : _sinks)
       i->poll(0);
     for (auto &&i : _partition_processors)
@@ -254,6 +255,7 @@ namespace kspp {
 
     auto processed = 0u;
     while (processed < event_limit) {
+      autocommit_marker_gc();
       for (auto &&i : _sinks)
         i->flush();
 
@@ -270,12 +272,17 @@ namespace kspp {
         break;
     }
 
-    for (auto &&i : _top_partition_processors)
+    for (auto &&i : _top_partition_processors) {
+      autocommit_marker_gc();
       i->flush();
+    }
 
     while (processed < event_limit) {
-      for (auto &&i : _sinks)
+      autocommit_marker_gc();
+      for (auto &&i : _sinks) {
         i->flush();
+        autocommit_marker_gc();
+      }
 
       auto sz = process(milliseconds_since_epoch());
 

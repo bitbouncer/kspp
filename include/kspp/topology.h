@@ -50,7 +50,7 @@ namespace kspp {
       return result;
     }
 
-    // should this be removed?? right now only pipe support this (ie merge)
+    // should this be removed?? right now only merge
     template<class pp, typename... Args>
     typename std::enable_if<std::is_base_of<kspp::partition_processor, pp>::value, std::shared_ptr<pp>>::type
     create_processor(Args... args) {
@@ -59,14 +59,30 @@ namespace kspp {
       return p;
     }
 
-    template<class ps, typename... Args>
+
+    // should this be removed - since we're likely to want to merge two streams
+    /*
+     * template<class ps, typename... Args>
     std::shared_ptr<kspp::merge<typename ps::key_type, typename ps::value_type>>
     merge(std::vector<std::shared_ptr<ps>> sources, Args... args) {
       std::shared_ptr <kspp::merge<typename ps::key_type, typename ps::value_type>> result = std::make_shared<kspp::merge<typename ps::key_type, typename ps::value_type>>(
-          this->get_cluster_config(), sources, args...);
+          this->get_cluster_config(), args...);
+      result->add(sources);
       _partition_processors.push_back(result);
       return result;
     }
+    */
+
+    /*
+     * template<class ps, typename... Args>
+    std::shared_ptr<kspp::merge<typename ps::key_type, typename ps::value_type>>
+    merge(Args... args) {
+      std::shared_ptr <kspp::merge<typename ps::key_type, typename ps::value_type>> result = std::make_shared<kspp::merge<typename ps::key_type, typename ps::value_type>>(
+          this->get_cluster_config(), args...);
+      _partition_processors.push_back(result);
+      return result;
+    }
+    */
 
     // when you have a vector of partitions - lets create a new processor layer
     template<class pp, class ps, typename... Args>

@@ -11,7 +11,8 @@ namespace kspp {
     typedef kspp::kevent<K, V> record_type;
 
     // fix this so source must be descendant from partition source...
-    template<class source>
+    /*
+     * template<class source>
     merge(std::shared_ptr<cluster_config> config, const std::vector<std::shared_ptr<source>>& upstream, int32_t partition=-1)
         : event_consumer<K, V>()
         , partition_source<K, V>(nullptr, partition) {
@@ -21,6 +22,39 @@ namespace kspp {
           this->_queue.push_back(e);
         });
       }
+    }
+    */
+
+    merge(std::shared_ptr<cluster_config> config, int32_t partition=-1)
+        : event_consumer<K, V>()
+        , partition_source<K, V>(nullptr, partition) {
+      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "merge");
+    }
+
+    /*
+     * void add(const std::vector<std::shared_ptr<partition_source<K, V>>>& upstream){
+      for (auto&& i : upstream) {
+        i->add_sink([this](auto e) {
+          this->_queue.push_back(e);
+        });
+      }
+    }
+     */
+
+    /*
+     * void add(std::vector<std::shared_ptr<partition_source<K, V>>>& upstream){
+      for (auto&& i : upstream) {
+        i->add_sink([this](auto e) {
+          this->_queue.push_back(e);
+        });
+      }
+    }
+    */
+
+    void add(partition_source<K, V>& upstream){
+        upstream.add_sink([this](auto e) {
+          this->_queue.push_back(e);
+        });
     }
 
     std::string log_name() const override {
@@ -83,6 +117,16 @@ namespace kspp {
         });
       }
     }
+
+    template<class source>
+    void add(const std::vector<std::shared_ptr<source>>& upstream){
+      for (auto&& i : upstream) {
+        i->add_sink([this](auto e) {
+          this->_queue.push_back(e);
+        });
+      }
+    }
+
 
     std::string simple_name() const override {
       return "merge";
