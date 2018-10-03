@@ -133,8 +133,9 @@ cd ../.. && \
 rm cpr.tar.gz && \
 rm -rf cpr
 
+
 #awaiting patch in org project (not possible to build from tar.gz)
-#wget -O prometheus-cpp.tar.gz "https://github.com/jupp0r/prometheus-cpp/archive/v0.4.2.tar.gz" && \
+#wget -O prometheus-cpp.tar.gz "https://github.com/jupp0r/prometheus-cpp/archive/external-dependencies.tar.gz" && \
 #mkdir -p prometheus-cpp && \
 #tar \
 #  --extract \
@@ -142,17 +143,14 @@ rm -rf cpr
 #  --directory prometheus-cpp \
 #  --strip-components 1 && \
 #cd prometheus-cpp && \
-#mkdir -p 3rdparty/civetweb/include && \
-#cp /usr/local/include/civetweb.h 3rdparty/civetweb/include/civetweb.h && \
-#mkdir -p 3rdparty/cpr/include/cpr && \
-#cp /usr/local/include/cpr/* 3rdparty/cpr/include/cpr && \
 #mkdir build && cd build && \
-#cmake  -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTING=OFF ..
+#cmake  -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTING=OFF -DENABLE_PUSH=OFF -DUSE_THIRDPARTY_LIBRARIES=OFF ..
 #make -j "$(getconf _NPROCESSORS_ONLN)" && \
 #sudo make install && \
-#cd .. && \
+#cd ../.. && \
 #rm prometheus-cpp.tar.gz && \
 #rm -rf prometheus-cpp
+
 
 wget -O prometheus-cpp.tar.gz "https://github.com/bitbouncer/prometheus-cpp/archive/master.tar.gz" && \
 mkdir -p prometheus-cpp && \
