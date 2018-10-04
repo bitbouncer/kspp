@@ -46,6 +46,7 @@ int main(int argc, char **argv) {
       ("table", boost::program_options::value<std::string>(), "table")
       ("query", boost::program_options::value<std::string>(), "query")
       ("poll_intervall", boost::program_options::value<int32_t>()->default_value(60), "poll_intervall")
+      ("rescrape", boost::program_options::value<int32_t>()->default_value(10), "rescrape")
       ("topic_prefix", boost::program_options::value<std::string>()->default_value(get_env_and_log("TOPIC_PREFIX", "DEV_sqlserver_")), "topic_prefix")
       ("topic", boost::program_options::value<std::string>(), "topic")
       ("filename", boost::program_options::value<std::string>(), "filename");
@@ -100,6 +101,11 @@ int main(int argc, char **argv) {
   int poll_intervall;
   if (vm.count("poll_intervall")) {
     poll_intervall = vm["poll_intervall"].as<int>();
+  }
+
+  int rescrape=0;
+  if (vm.count("rescrape")) {
+    rescrape = vm["rescrape"].as<int>();
   }
 
   std::string db_dbname;
@@ -190,6 +196,7 @@ int main(int argc, char **argv) {
   LOG(INFO) << "timestamp_column  : " << timestamp_column;
   LOG(INFO) << "poll_algorithm    : " << to_string(row_constness);
   LOG(INFO) << "poll_intervall    : " << poll_intervall;
+  LOG(INFO) << "rescrape          : " << rescrape;
   LOG(INFO) << "topic_prefix      : " << topic_prefix;
   LOG(INFO) << "topic             : " << topic;
 
@@ -206,7 +213,7 @@ int main(int argc, char **argv) {
 
   // todo - harded code this for testing
   table_params.rescrape_policy = kspp::connect::LAST_QUERY_TS;
-  table_params.rescrape_ticks = 10;
+  table_params.rescrape_ticks = rescrape;
 
   if (filename.size()) {
      LOG(INFO) << "using avro file..";
