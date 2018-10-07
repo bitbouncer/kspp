@@ -42,6 +42,7 @@ int main(int argc, char **argv) {
       ("postgres_dbname", boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_DBNAME")), "postgres_dbname")
       ("postgres_max_items_in_fetch", boost::program_options::value<int32_t>()->default_value(1000), "postgres_max_items_in_fetch")
       ("postgres_warning_timeout", boost::program_options::value<int32_t>()->default_value(1000), "postgres_warning_timeout")
+      ("id_column", boost::program_options::value<std::string>()->default_value("id"), "id_column")
       ("table_prefix", boost::program_options::value<std::string>()->default_value("kafka_"), "table_prefix")
       ("character_encoding", boost::program_options::value<std::string>()->default_value("UTF8"), "character_encoding")
       ("table_name_override", boost::program_options::value<std::string>(), "table_name_override")
@@ -121,6 +122,11 @@ int main(int argc, char **argv) {
     postgres_warning_timeout = vm["postgres_warning_timeout"].as<int>();
   }
 
+  std::string id_column;
+  if (vm.count("id_column")) {
+    id_column = vm["id_column"].as<std::string>();
+  }
+
   std::string table_prefix;
   if (vm.count("table_prefix")) {
     table_prefix = vm["table_prefix"].as<std::string>();
@@ -173,6 +179,7 @@ int main(int argc, char **argv) {
   LOG(INFO) << "postgres_user               : " << postgres_user;
   LOG(INFO) << "postgres_password           : " << "[hidden]";
   LOG(INFO) << "postgres_max_items_in_fetch : " << postgres_max_items_in_fetch;
+  LOG(INFO) << "id_column                   : " << id_column;
   LOG(INFO) << "postgres_warning_timeout    : " << postgres_warning_timeout;
   LOG(INFO) << "table_prefix                : " << table_prefix;
   LOG(INFO) << "table_name_override         : " << table_name_override;
@@ -224,7 +231,7 @@ int main(int argc, char **argv) {
           //self->push_back(krecord);
           self->push_back(in);
         });
-    topology->create_sink<kspp::postgres_generic_avro_sink>(transform, table_name, connection_params, "id", config->get_schema_registry(), character_encoding);
+    topology->create_sink<kspp::postgres_generic_avro_sink>(transform, table_name, connection_params, id_column, config->get_schema_registry(), character_encoding);
   }
 
   std::vector<metrics20::avro::metrics20_key_tags_t> tags;
