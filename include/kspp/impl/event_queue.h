@@ -49,6 +49,7 @@ namespace kspp {
     inline void pop_front() {
       spinlock::scoped_lock xxx(_spinlock);
       {
+        _queue[0].reset();
         _queue.pop_front();
         if (_queue.size() == 0)
           _next_event_time = INT64_MAX;
@@ -64,6 +65,7 @@ namespace kspp {
       spinlock::scoped_lock xxx(_spinlock);
       {
         auto p = _queue.front();
+        _queue[0].reset();
         _queue.pop_front();
 
         if (_queue.size() == 0)

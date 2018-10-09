@@ -686,8 +686,8 @@ namespace kspp {
           context->_curl_done = true;
           context->_transport_ok = (http_result > 0);
 
-
-          if (context->_request_id.size()>0) {
+          /*
+           * if (context->_request_id.size()>0) {
             DLOG(INFO) << context->_request_id << ", " << to_string(context->_method)
                        << ", uri: " << context->_uri
                        << ", res: " << http_result
@@ -702,6 +702,8 @@ namespace kspp {
                        << ((context->_method == http::GET) ? context->rx_content_length() : context->tx_content_length())
                        << ", time: " << context->milliseconds() << " ms";
           }
+           */
+
           if (context->_transport_ok) {
             std::string content_length_str = context->get_rx_header("Content-Length");
             if (content_length_str.size()) {

@@ -79,7 +79,8 @@ namespace kspp {
               work.push_front(batch.get_function(i));
             break;
           case elasticsearch_producer::HTTP_ERROR:
-            // no reason to retry...
+            // therre are a number of es codes that means it's overloaded - we should back off Todo
+            work.push_front(batch.get_function(i));
             break;
           case elasticsearch_producer::PARSE_ERROR:
             if (++parse_errors < max_parse_error_per_batch)
@@ -109,8 +110,6 @@ namespace kspp {
       body = avro2elastic_json(*value->valid_schema(), *value->generic_datum());
       //std::string url = _cp.url + "/" + _index_name + "/" + "_doc" + "/" + key_string;
     }
-
-
 
     //std::cerr << body << std::endl;
 
@@ -146,7 +145,7 @@ namespace kspp {
             }
           }
 
-          DLOG_EVERY_N(INFO, 100) << "http PUT: " << h->uri() << " got " << h->rx_content_length() << " bytes, time="
+          LOG_EVERY_N(INFO, 1000) << "http PUT: " << h->uri() << " got " << h->rx_content_length() << " bytes, time="
                                   << h->milliseconds() << " ms (" << h->rx_kb_per_sec() << " KB/s), #"
                                   << google::COUNTER;
           _msg_bytes += h->tx_content_length();
@@ -162,8 +161,9 @@ namespace kspp {
       size_t msg_in_batch = 0 ;
       event_queue<kspp::generic_avro, kspp::generic_avro> in_batch;
       std::deque<kspp::async::work<work_result_t>::async_function> work;
-      while(!_incomming_msg.empty() && msg_in_batch<10000) {
+      while(!_incomming_msg.empty() && msg_in_batch<1000) {
         auto msg = _incomming_msg.front();
+        ++msg_in_batch;
         if (auto p = create_one_http_work(msg->record()->key(), msg->record()->value()))
           work.push_back(p);
         in_batch.push_back(msg);

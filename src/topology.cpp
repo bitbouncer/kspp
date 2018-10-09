@@ -171,8 +171,10 @@ namespace kspp {
         LOG(INFO) << "bad count: " << ev_count << ", " << i->log_name();
     }
 
-    for (auto &&i : _sinks)
+    for (auto &&i : _sinks) {
       ev_count += i->process(ts);
+      i->poll(0);
+    }
 
     if (ts > _next_gc_ts) {
       for (auto &&i : _partition_processors)
