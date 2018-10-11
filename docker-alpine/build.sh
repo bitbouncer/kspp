@@ -7,7 +7,7 @@ mkdir -p ./extract/lib
 mkdir -p ./extract/lib64
 
 pushd ..
-docker build -f docker/Dockerfile.build  --no-cache -tkspp-build .
+docker build -f docker-alpine/Dockerfile.build  --no-cache -tkspp-build-alpine .
 
 popd
 docker create --name extract kspp-build
@@ -45,7 +45,7 @@ docker cp extract:/src/runDeps                               ./extract/runDeps
 
 docker rm -f extract
 
-docker build -f Dockerfile --no-cache -tkspp-sample .
+docker build -f Dockerfile --no-cache -tkspp-sample-alpine .
 
 rm -rf ./extract
 

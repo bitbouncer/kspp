@@ -1,6 +1,4 @@
-ARG from_build_tag=latest
-
-FROM kspp-build3rdparty:$from_build_tag
+FROM kspp-build3rdparty-alpine:latest
 
 WORKDIR /src
 
