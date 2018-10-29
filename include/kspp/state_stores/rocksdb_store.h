@@ -96,13 +96,14 @@ namespace kspp {
     };
 
     rocksdb_store(boost::filesystem::path storage_path, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : _offset_storage_path(storage_path), _codec(codec), _current_offset(-1), _last_comitted_offset(-1),
-              _last_flushed_offset(-1) {
+            : _offset_storage_path(storage_path), _codec(codec), _current_offset(kspp::OFFSET_BEGINNING), _last_comitted_offset(kspp::OFFSET_BEGINNING),
+              _last_flushed_offset(kspp::OFFSET_BEGINNING) {
       LOG_IF(FATAL, storage_path.generic_string().size()==0);
       boost::filesystem::create_directories(boost::filesystem::path(storage_path));
       _offset_storage_path /= "kspp_offset.bin";
       rocksdb::Options options;
       options.create_if_missing = true;
+      options.IncreaseParallelism(8); // should be #cores
       rocksdb::DB *tmp = nullptr;
       auto s = rocksdb::DB::Open(options, storage_path.generic_string(), &tmp);
       _db.reset(tmp);
@@ -245,7 +246,7 @@ namespace kspp {
            it != end_; it.next()) {
         auto s = _db->Delete(rocksdb::WriteOptions(), it._key_slice());
       }
-      _current_offset = -1;
+      _current_offset = kspp::OFFSET_BEGINNING;
     }
 
 

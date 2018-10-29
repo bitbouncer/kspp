@@ -15,3 +15,7 @@ ENDIF()
 IF (ENABLE_TDS)
 add_subdirectory(tds_connect)
 ENDIF()
+
+IF (ENABLE_ROCKSDB)
+add_subdirectory(kafka2rocksdb)
+ENDIF()
