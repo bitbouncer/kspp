@@ -103,7 +103,8 @@ namespace kspp {
       _offset_storage_path /= "kspp_offset.bin";
       rocksdb::Options options;
       options.create_if_missing = true;
-      options.IncreaseParallelism(8); // should be #cores
+      options.IncreaseParallelism(); // should be #cores
+      options.OptimizeLevelStyleCompaction();
       rocksdb::DB *tmp = nullptr;
       auto s = rocksdb::DB::Open(options, storage_path.generic_string(), &tmp);
       _db.reset(tmp);
