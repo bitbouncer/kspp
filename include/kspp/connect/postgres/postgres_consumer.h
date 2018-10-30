@@ -54,6 +54,7 @@ namespace kspp {
   private:
     void connect();
     int parse_response(std::shared_ptr<PGresult>);
+    std::string get_where_clause() const;
 
     //int64_t parse_ts(DBPROCESS *stream);
     //int parse_avro(DBPROCESS* stream, COL* columns, size_t ncols);

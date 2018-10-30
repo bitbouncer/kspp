@@ -8,6 +8,31 @@
 #pragma once
 
 namespace kspp {
+
+  class tds_read_cursor{
+  public:
+    tds_read_cursor(kspp::connect::table_params tp, std::string id_column, std::string ts_column);
+    void init(DBPROCESS *stream);
+    void parse(DBPROCESS *stream);
+    std::string get_where_clause() const;
+    std::string last_ts() const { return std::to_string(last_ts_); };
+
+  private:
+
+    int64_t parse_id(DBPROCESS *stream);
+    int64_t parse_ts(DBPROCESS *stream);
+
+    const kspp::connect::table_params tp_;
+    bool _eof;
+    const std::string _id_column;
+    const std::string _ts_column;
+    const std::string _order_by;
+    int ts_column_index_;
+    int id_column_index_;
+    int64_t last_ts_;
+    int64_t last_id_;
+  };
+
   class tds_consumer {
   public:
     tds_consumer(int32_t partition,
@@ -91,13 +116,17 @@ namespace kspp {
     const kspp::connect::table_params tp_;
 
     std::string _query;
-    const std::string _id_column;
-    const std::string _ts_column;
+    tds_read_cursor _read_cursor;
 
+    const std::string _id_column;
+    //const std::string _ts_column;
+
+    /*
     int ts_column_index_;
     int id_column_index_;
     int64_t last_ts_;
     int64_t last_id_;
+     */
 
     std::shared_ptr<kspp::avro_schema_registry> schema_registry_;
     std::shared_ptr<avro::ValidSchema> val_schema_;

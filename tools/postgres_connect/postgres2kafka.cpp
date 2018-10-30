@@ -235,7 +235,6 @@ int main(int argc, char **argv) {
   connection_params.database = db_dbname;
 
   kspp::connect::table_params table_params;
-  table_params.row_constness = kspp::connect::IMMUTABLE; // nothing else implemented
   table_params.poll_intervall = std::chrono::seconds(poll_intervall);
   table_params.max_items_in_fetch = max_items_in_fetch;
 

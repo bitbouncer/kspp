@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
       ("db_password", boost::program_options::value<std::string>()->default_value(get_env_and_log("DB_PASSWORD")), "db_password")
       ("db_dbname", boost::program_options::value<std::string>()->default_value(get_env_and_log("DB_DBNAME")), "db_dbname")
       ("id_column", boost::program_options::value<std::string>()->default_value(""), "id_column")
-      ("poll_algorithm", boost::program_options::value<std::string>()->default_value("MUTABLE"), "poll_algorithm")
+      //("poll_algorithm", boost::program_options::value<std::string>()->default_value("MUTABLE"), "poll_algorithm")
       ("timestamp_column", boost::program_options::value<std::string>()->default_value("ts"), "timestamp_column")
       ("table", boost::program_options::value<std::string>(), "table")
       ("query", boost::program_options::value<std::string>(), "query")
@@ -85,7 +85,8 @@ int main(int argc, char **argv) {
     db_port = vm["db_port"].as<int>();
   }
 
-  kspp::connect::row_constness_t  row_constness = kspp::connect::MUTABLE;
+  /*
+   * kspp::connect::row_constness_t  row_constness = kspp::connect::MUTABLE;
   std::string poll_algorithm;
   if (vm.count("poll_algorithm")) {
     poll_algorithm = vm["poll_algorithm"].as<std::string>();
@@ -97,6 +98,7 @@ int main(int argc, char **argv) {
       std::cerr <<  "poll_algorith must be MUTABLE/IMMUTABLE";
     }
   }
+   */
 
   int poll_intervall;
   if (vm.count("poll_intervall")) {
@@ -194,7 +196,6 @@ int main(int argc, char **argv) {
   LOG(INFO) << "query              : " << query;
   LOG(INFO) << "id_column         : " << id_column;
   LOG(INFO) << "timestamp_column  : " << timestamp_column;
-  LOG(INFO) << "poll_algorithm    : " << to_string(row_constness);
   LOG(INFO) << "poll_intervall    : " << poll_intervall;
   LOG(INFO) << "rescrape          : " << rescrape;
   LOG(INFO) << "topic_prefix      : " << topic_prefix;
@@ -208,8 +209,8 @@ int main(int argc, char **argv) {
   connection_params.database = db_dbname;
 
   kspp::connect::table_params table_params;
-  table_params.row_constness = row_constness;
   table_params.poll_intervall = std::chrono::seconds(poll_intervall);
+  //table_params.max_items_in_fetch = 3000;
 
   // todo - harded code this for testing
   table_params.rescrape_policy = kspp::connect::LAST_QUERY_TS;
@@ -256,14 +257,6 @@ int main(int argc, char **argv) {
   std::signal(SIGPIPE, SIG_IGN);
 
   LOG(INFO) << "status is up";
-
-
-  /*
-   * topology->for_each_metrics([](kspp::metric &m) {
-    std::cerr << "metrics: " << m.name() << " : " << m.value() << std::endl;
-  });
-   */
-
 
   // output metrics and run
   {

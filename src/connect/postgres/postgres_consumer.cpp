@@ -263,6 +263,52 @@ namespace kspp {
     return 0;
   }
 
+
+  /*
+  std::string postgres_consumer::get_where_clause() const {
+    std::string where_clause;
+
+    // if we are rescraping is active at eof - and then we do not care for id at all.
+    // rescrape 0 also handles when we do not have an id field
+    if (last_ts_> INT_MIN && tp_.rescrape_policy == kspp::connect::LAST_QUERY_TS && _eof)
+      return  " WHERE " + _ts_column + " >= '" + std::to_string(last_ts_ - tp_.rescrape_ticks) + "'";
+
+    // no data in either id or ts fields?
+    if (last_id_ == INT_MIN || last_ts_ == INT_MIN) {
+      if (last_id_ > INT_MIN)
+        return " WHERE " + _id_column + " > '" + std::to_string(last_id_) + "'";
+      else if (last_ts_ > INT_MIN)
+        return " WHERE " + _ts_column + " >= '" + std::to_string(last_ts_) + "'";
+      else
+        return "";
+    } else {
+      return " WHERE (" + _ts_column + " = '" + std::to_string(last_ts_) + "' AND " + _id_column + " > '" + std::to_string(last_id_) + "') OR (" + _ts_column + " > '" + std::to_string(last_ts_) + "')";
+    }
+  }
+  */
+
+  std::string postgres_consumer::get_where_clause() const {
+    std::string where_clause;
+
+    // if we are rescraping is active at eof - and then we do not care for id at all.
+    // rescrape 0 also handles when we do not have an id field
+    //if (last_ts_> INT_MIN && tp_.rescrape_policy == kspp::connect::LAST_QUERY_TS && _eof)
+    //  return  " WHERE " + _ts_column + " >= '" + std::to_string(last_ts_ - tp_.rescrape_ticks) + "'";
+
+    // no data in either id or ts fields?
+    if (last_id_.size()==0 || last_ts_.size()==0) {
+      if (last_id_.size()>0)
+        return " WHERE " + _id_column + " > '" + last_id_ + "'";
+      else if (last_ts_.size()>0)
+        return " WHERE " + _ts_column + " >= '" + last_ts_ + "'";
+      else
+        return "";
+    } else {
+      return " WHERE (" + _ts_column + " = '" + last_ts_ + "' AND " + _id_column + " > '" + last_id_ + "') OR (" + _ts_column + " > '" + last_ts_ + "')";
+    }
+  }
+
+
   void postgres_consumer::_thread() {
     while (!_exit) {
       if (_closed)
@@ -301,28 +347,29 @@ namespace kspp {
         order_by = " ORDER BY " + _id_column + " ASC";
       }
 
-      std::string where_clause;
+      std::string where_clause = get_where_clause();
 
-      // do we have a timestamp field
-      // we have to have either a interger id that is increasing or a timestamp that is increasing
-      // before we read anything the where clause will not be valid
-      if (last_id_.size()) {
-        if (_ts_column.size())
-          where_clause =
-              " WHERE (" + _ts_column + " = '" + last_ts_ + "' AND " + _id_column + " > '" + last_id_ + "') OR (" +
-              _ts_column + " > '" + last_ts_ + "')";
-        else
-          where_clause = " WHERE " + _id_column + " > '" + last_id_ + "'";
-      } else {
-        if (last_ts_.size()) {
-          if (tp_.connect_ts_policy == kspp::connect::GREATER) // this leads to potential data loss
-            where_clause = " WHERE " + _ts_column + " > '" + last_ts_ + "'";
-          else if (tp_.connect_ts_policy == kspp::connect::GREATER_OR_EQUAL) // this leads to duplicates since last is repeated
-            where_clause = " WHERE " + _ts_column + " >= '" + last_ts_ + "'";
-          else
-            LOG(FATAL) << "unknown cp_.connect_ts_policy: " << tp_.connect_ts_policy;
-        }
-      }
+//      // do we have a timestamp field
+//      // we have to have either a interger id that is increasing or a timestamp that is increasing
+//      // before we read anything the where clause will not be valid
+//      if (last_id_.size()) {
+//        if (_ts_column.size())
+//          where_clause =
+//              " WHERE (" + _ts_column + " = '" + last_ts_ + "' AND " + _id_column + " > '" + last_id_ + "') OR (" +
+//              _ts_column + " > '" + last_ts_ + "')";
+//        else
+//          where_clause = " WHERE " + _id_column + " > '" + last_id_ + "'";
+//      } else {
+//        if (last_ts_.size()) {
+//          if (tp_.connect_ts_policy == kspp::connect::GREATER) // this leads to potential data loss
+//            where_clause = " WHERE " + _ts_column + " > '" + last_ts_ + "'";
+//          else if (tp_.connect_ts_policy == kspp::connect::GREATER_OR_EQUAL) // this leads to duplicates since last is repeated
+//            where_clause = " WHERE " + _ts_column + " >= '" + last_ts_ + "'";
+//          else
+//            LOG(FATAL) << "unknown cp_.connect_ts_policy: " << tp_.connect_ts_policy;
+//        }
+//      }
+
       std::string statement = _query + where_clause + order_by + " LIMIT " + std::to_string(tp_.max_items_in_fetch);
 
       DLOG(INFO) << "exec(" + statement + ")";
