@@ -96,8 +96,11 @@ namespace kspp {
     };
 
     rocksdb_store(boost::filesystem::path storage_path, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : _offset_storage_path(storage_path), _codec(codec), _current_offset(kspp::OFFSET_BEGINNING), _last_comitted_offset(kspp::OFFSET_BEGINNING),
-              _last_flushed_offset(kspp::OFFSET_BEGINNING) {
+            : _offset_storage_path(storage_path)
+            , _codec(codec)
+            , _current_offset(kspp::OFFSET_BEGINNING)
+            , _last_comitted_offset(kspp::OFFSET_BEGINNING)
+            , _last_flushed_offset(kspp::OFFSET_BEGINNING) {
       LOG_IF(FATAL, storage_path.generic_string().size()==0);
       boost::filesystem::create_directories(boost::filesystem::path(storage_path));
       _offset_storage_path /= "kspp_offset.bin";

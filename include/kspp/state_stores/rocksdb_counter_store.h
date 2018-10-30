@@ -20,7 +20,8 @@ namespace kspp {
       enum seek_pos_e { BEGIN, END };
 
       iterator_impl(rocksdb::DB *db, std::shared_ptr<CODEC> codec, seek_pos_e pos)
-              : _it(db->NewIterator(rocksdb::ReadOptions())), _codec(codec) {
+              : _it(db->NewIterator(rocksdb::ReadOptions()))
+              , _codec(codec) {
         if (pos == BEGIN) {
           _it->SeekToFirst();
         } else {
@@ -74,14 +75,18 @@ namespace kspp {
       std::shared_ptr<CODEC> _codec;
     };
 
-    rocksdb_counter_store(boost::filesystem::path storage_path,
-                          std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : _offset_storage_path(storage_path), _codec(codec), _current_offset(kspp::OFFSET_BEGINNING), _last_comitted_offset(kspp::OFFSET_BEGINNING),
-              _last_flushed_offset(kspp::OFFSET_BEGINNING) {
+    rocksdb_counter_store(boost::filesystem::path storage_path, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
+            : _offset_storage_path(storage_path)
+            , _codec(codec)
+            , _current_offset(kspp::OFFSET_BEGINNING)
+            , _last_comitted_offset(kspp::OFFSET_BEGINNING)
+            , _last_flushed_offset(kspp::OFFSET_BEGINNING) {
       LOG_IF(FATAL, storage_path.generic_string().size()==0);
       boost::filesystem::create_directories(boost::filesystem::path(storage_path));
       _offset_storage_path /= "kspp_offset.bin";
       rocksdb::Options options;
+      options.IncreaseParallelism(); // should be #cores
+      options.OptimizeLevelStyleCompaction();
       //options.merge_operator.reset(new Int64AddOperator);
       options.merge_operator = rocksdb::CreateInt64AddOperator();
       options.create_if_missing = true;
@@ -90,8 +95,7 @@ namespace kspp {
       _db.reset(tmp);
       if (!s.ok()) {
         LOG(FATAL) << "rocksdb_counter_store, failed to open rocks db, path:" << storage_path.generic_string();
-        throw std::runtime_error(
-                std::string("rocksdb_counter_store, failed to open rocks db, path:") + storage_path.generic_string());
+        throw std::runtime_error(std::string("rocksdb_counter_store, failed to open rocks db, path:") + storage_path.generic_string());
       }
 
       if (boost::filesystem::exists(_offset_storage_path)) {
@@ -220,7 +224,5 @@ namespace kspp {
     int64_t _current_offset;
     int64_t _last_comitted_offset;
     int64_t _last_flushed_offset;
-    //const std::shared_ptr<rocksdb::ReadOptions>   _read_options;
-    //const std::shared_ptr<rocksdb::WriteOptions>  _write_options;
   };
 }

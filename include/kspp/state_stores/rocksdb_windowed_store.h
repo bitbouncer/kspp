@@ -116,9 +116,15 @@ namespace kspp {
 
     rocksdb_windowed_store(boost::filesystem::path storage_path, std::chrono::milliseconds slot_width,
                            size_t nr_of_slots, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : _storage_path(storage_path), _offset_storage_path(storage_path), _slot_width(slot_width.count()),
-              _nr_of_slots(nr_of_slots), _codec(codec), _current_offset(-1), _last_comitted_offset(-1),
-              _last_flushed_offset(-1), _oldest_kept_slot(-1) {
+            : _storage_path(storage_path)
+            , _offset_storage_path(storage_path)
+            , _slot_width(slot_width.count())
+            , _nr_of_slots(nr_of_slots)
+            , _codec(codec)
+            , _current_offset(kspp::OFFSET_BEGINNING)
+            , _last_comitted_offset(kspp::OFFSET_BEGINNING)
+            , _last_flushed_offset(kspp::OFFSET_BEGINNING)
+            , _oldest_kept_slot(-1) {
       LOG_IF(FATAL, storage_path.generic_string().size()==0);
       boost::filesystem::create_directories(boost::filesystem::path(storage_path));
       _offset_storage_path /= "kspp_offset.bin";
@@ -196,6 +202,8 @@ namespace kspp {
         auto bucket_it = _buckets.find(new_slot);
         if (bucket_it == _buckets.end()) {
           rocksdb::Options options;
+          options.IncreaseParallelism(); // should be #cores
+          options.OptimizeLevelStyleCompaction();
           options.create_if_missing = true;
           boost::filesystem::path path(_storage_path);
           path /= std::to_string(new_slot);
@@ -334,7 +342,7 @@ namespace kspp {
 
     void clear() override {
       _buckets.clear(); // how do we kill database on disk?
-      _current_offset = -1;
+      _current_offset = kspp::OFFSET_BEGINNING;
     }
 
     typename kspp::materialized_source<K, V>::iterator begin(void) const override {
