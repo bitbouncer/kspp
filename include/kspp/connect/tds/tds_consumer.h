@@ -1,38 +1,13 @@
 #include <chrono>
 #include <memory>
 #include <kspp/impl/queue.h>
-#include <kspp/connect/tds/tds_connection.h>
 #include <kspp/topology.h>
 #include <kspp/avro/generic_avro.h>
-
+#include <kspp/connect/tds/tds_connection.h>
+#include <kspp/connect/tds/tds_read_cursor.h>
 #pragma once
 
 namespace kspp {
-
-  class tds_read_cursor{
-  public:
-    tds_read_cursor(kspp::connect::table_params tp, std::string id_column, std::string ts_column);
-    void init(DBPROCESS *stream);
-    void parse(DBPROCESS *stream);
-    std::string get_where_clause() const;
-    std::string last_ts() const { return std::to_string(last_ts_); };
-
-  private:
-
-    int64_t parse_id(DBPROCESS *stream);
-    int64_t parse_ts(DBPROCESS *stream);
-
-    const kspp::connect::table_params tp_;
-    bool _eof;
-    const std::string _id_column;
-    const std::string _ts_column;
-    const std::string _order_by;
-    int ts_column_index_;
-    int id_column_index_;
-    int64_t last_ts_;
-    int64_t last_id_;
-  };
-
   class tds_consumer {
   public:
     tds_consumer(int32_t partition,
@@ -77,6 +52,8 @@ namespace kspp {
       return _incomming_msg;
     };
 
+    void commit(bool flush);
+
   private:
     // this should go away when we can parse datetime2
     struct COL
@@ -97,6 +74,7 @@ namespace kspp {
 
     int parse_row(DBPROCESS* stream, COL* columns);
     int parse_response(DBPROCESS* stream);
+    void commit(int64_t ticks, bool flush);
     void _thread();
 
     bool _exit;
@@ -112,6 +90,11 @@ namespace kspp {
     const int32_t _partition;
     const std::string _consumer_group;
 
+    boost::filesystem::path _offset_storage_path;
+    commit_chain _commit_chain;
+    int64_t _last_commited_ts_ticks=0;
+    int64_t _last_flushed_ticks=0;
+
     const kspp::connect::connection_params cp_;
     const kspp::connect::table_params tp_;
 
@@ -119,14 +102,6 @@ namespace kspp {
     tds_read_cursor _read_cursor;
 
     const std::string _id_column;
-    //const std::string _ts_column;
-
-    /*
-    int ts_column_index_;
-    int id_column_index_;
-    int64_t last_ts_;
-    int64_t last_id_;
-     */
 
     std::shared_ptr<kspp::avro_schema_registry> schema_registry_;
     std::shared_ptr<avro::ValidSchema> val_schema_;

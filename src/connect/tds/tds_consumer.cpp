@@ -9,203 +9,7 @@
 using namespace std::chrono_literals;
 
 namespace kspp {
-
-  static std::string __order_by(const std::string& ts_column, const std::string& id_column){
-    if (ts_column.size()>0 && id_column.size()>0)
-      return " ORDER BY " + ts_column + " ASC, " + id_column + " ASC";
-    else if (ts_column.size()>0)
-      return " ORDER BY " + ts_column + " ASC ";
-    else if (id_column.size()>0)
-      return " ORDER BY " + id_column + " ASC ";
-    return "";
-  }
-
-  tds_read_cursor::tds_read_cursor(kspp::connect::table_params tp,  std::string id_column, std::string ts_column)
-  : tp_(tp)
-  , _id_column(id_column)
-  , _ts_column(ts_column)
-  , _order_by(__order_by(_ts_column, _id_column))
-  , _eof(false)
-  , ts_column_index_(-1)
-  , id_column_index_(-1)
-  , last_ts_(INT_MIN)
-  , last_id_(INT_MIN){
-  }
-
-  void tds_read_cursor::init(DBPROCESS *stream){
-    if (_id_column.size()){
-      std::string simple_name = tds::simple_column_name(_id_column);
-      int ix = tds::find_column_by_name(stream, simple_name);
-      if (ix >= 0)
-        id_column_index_ = ix + 1;
-      else
-        LOG(FATAL) << "could not find id column: " << _id_column;
-    }
-
-    if (_ts_column.size()){
-      std::string simple_name = tds::simple_column_name(_ts_column);
-      int ix = tds::find_column_by_name(stream, simple_name);
-      if (ix>=0)
-        ts_column_index_ = ix + 1;
-       else
-        LOG(FATAL) << "could not find ts column: " << _ts_column;
-    }
-  }
-
-  void tds_read_cursor::parse(DBPROCESS *stream) {
-    if (ts_column_index_>0)
-      last_ts_ = parse_ts(stream);
-    if (id_column_index_>0)
-      last_id_ = parse_id(stream);
-  }
-
-  int64_t tds_read_cursor::parse_ts(DBPROCESS *stream){
-    assert(ts_column_index_>0);
-
-    switch (dbcoltype(stream, ts_column_index_)){
-      /*
-       * case tds::SYBINT2: {
-        int16_t v;
-        assert(sizeof(v) == dbdatlen(stream, ts_column_index_));
-        memcpy(&v, dbdata(stream, i + 1), sizeof(v));
-        avro_item.value<int32_t>() = v;
-      }
-        break;
-      */
-
-      case tds::SYBINT4: {
-        int32_t v;
-        assert(sizeof(v) == dbdatlen(stream, ts_column_index_));
-        memcpy(&v, dbdata(stream, ts_column_index_), sizeof(v));
-        return v;
-      }
-        break;
-
-      case tds::SYBINT8: {
-        int64_t v;
-        assert(sizeof(v) == dbdatlen(stream, ts_column_index_));
-        memcpy(&v, dbdata(stream, ts_column_index_), sizeof(v));
-        return v;
-      }
-        break;
-
-        /*
-         * case SYBDATETIME:
-        case SYBDATETIME4:
-        case SYBMSTIME:
-        case SYBMSDATE:
-        case SYBMSDATETIMEOFFSET:
-        case SYBTIME:
-        case SYBDATE:
-        case SYB5BIGTIME:
-        case SYB5BIGDATETIME:
-         */
-/*
-        case tds::SYBMSDATETIME2: {
-        std::string s;
-        */
-/*
-         * int sz = dbdatlen(stream, i + 1);
-         * s.reserve(sz);
-         * s.assign((const char *) dbdata(stream, i + 1), sz);
-         *//*
-
-        s = pcol->buffer;
-        avro_item.value<std::string>() = s;
-      }
-
-      break;
-*/
-
-      default:
-        LOG(FATAL) << "unexpected / non supported timestamp type e:" << dbcoltype(stream, ts_column_index_);
-    }
-  }
-
-  int64_t tds_read_cursor::parse_id(DBPROCESS *stream){
-    assert(id_column_index_>0);
-
-    switch (dbcoltype(stream, id_column_index_)){
-      /*
-       * case tds::SYBINT2: {
-        int16_t v;
-        assert(sizeof(v) == dbdatlen(stream, ts_column_index_));
-        memcpy(&v, dbdata(stream, i + 1), sizeof(v));
-        avro_item.value<int32_t>() = v;
-      }
-        break;
-      */
-
-      case tds::SYBINT4: {
-        int32_t v;
-        assert(sizeof(v) == dbdatlen(stream, id_column_index_));
-        memcpy(&v, dbdata(stream, id_column_index_), sizeof(v));
-        return v;
-      }
-        break;
-
-      case tds::SYBINT8: {
-        int64_t v;
-        assert(sizeof(v) == dbdatlen(stream, id_column_index_));
-        memcpy(&v, dbdata(stream, id_column_index_), sizeof(v));
-        return v;
-      }
-        break;
-
-        /*
-         * case SYBDATETIME:
-        case SYBDATETIME4:
-        case SYBMSTIME:
-        case SYBMSDATE:
-        case SYBMSDATETIMEOFFSET:
-        case SYBTIME:
-        case SYBDATE:
-        case SYB5BIGTIME:
-        case SYB5BIGDATETIME:
-         */
-/*
-        case tds::SYBMSDATETIME2: {
-        std::string s;
-        */
-/*
-         * int sz = dbdatlen(stream, i + 1);
-         * s.reserve(sz);
-         * s.assign((const char *) dbdata(stream, i + 1), sz);
-         *//*
-
-        s = pcol->buffer;
-        avro_item.value<std::string>() = s;
-      }
-
-      break;
-*/
-
-      default:
-        LOG(FATAL) << "unexpected / non supported id type e:" << dbcoltype(stream, id_column_index_);
-    }
-  }
-
-
-  std::string tds_read_cursor::get_where_clause() const {
-    // if we are rescraping is active at eof - and then we do not care for id at all.
-    // rescrape 0 also handles when we do not have an id field
-    if (_eof && last_ts_> INT_MIN && tp_.rescrape_policy == kspp::connect::LAST_QUERY_TS)
-      return  " WHERE " + _ts_column + " >= '" + std::to_string(last_ts_ - tp_.rescrape_ticks) + "' " +_order_by;
-
-    // no data in either id or ts fields?
-    if (last_id_ == INT_MIN || last_ts_ == INT_MIN) {
-      if (last_id_ > INT_MIN)
-        return " WHERE " + _id_column + " > '" + std::to_string(last_id_) + "' " + _order_by;
-      else if (last_ts_ > INT_MIN)
-        return " WHERE " + _ts_column + " >= '" + std::to_string(last_ts_) + "' " + _order_by;
-      else
-        return "" + _order_by;
-    } else {
-      return " WHERE (" + _ts_column + " = '" + std::to_string(last_ts_) + "' AND " + _id_column + " > '" + std::to_string(last_id_) + "') OR (" + _ts_column + " > '" + std::to_string(last_ts_) + "') " + _order_by;
-    }
-  }
-
-void tds_consumer::load_avro_by_name(kspp::generic_avro* avro, DBPROCESS *stream, COL *columns){
+  void tds_consumer::load_avro_by_name(kspp::generic_avro* avro, DBPROCESS *stream, COL *columns){
     // key type is null if there is no key
     if (avro->type() == avro::AVRO_NULL)
       return;
@@ -381,16 +185,13 @@ void tds_consumer::load_avro_by_name(kspp::generic_avro* avro, DBPROCESS *stream
       , _query(query)
       , _partition(partition)
       , _consumer_group(consumer_group)
+      , _offset_storage_path("/tmp/" + logical_name)
       , cp_(cp)
       , tp_(tp)
       , _read_cursor(tp, id_column, ts_column)
       , _id_column(id_column)
-      //, _ts_column(ts_column)
-      //, id_column_index_(0)
-      //, ts_column_index_(0)
-      //, last_ts_(INT_MIN)
-      //, last_id_(INT_MIN)
       , schema_registry_(schema_registry)
+      , _commit_chain(logical_name, partition)
       , key_schema_id_(-1)
       , val_schema_id_(-1)
       , _msg_cnt(0)
@@ -399,10 +200,15 @@ void tds_consumer::load_avro_by_name(kspp::generic_avro* avro, DBPROCESS *stream
       , _eof(false)
       , _start_running(false)
       , _exit(false) {
+    boost::filesystem::create_directories(boost::filesystem::path(_offset_storage_path));
+    _offset_storage_path /= "tds.state";
     std::string top_part(" TOP " + std::to_string(tp_.max_items_in_fetch));
     // assumed to start with "SELECT"
     _query.insert(6,top_part);
     LOG(INFO) << " REAL QUERY: "  << _query;
+
+
+
   }
 
   tds_consumer::~tds_consumer() {
@@ -412,11 +218,14 @@ void tds_consumer::load_avro_by_name(kspp::generic_avro* avro, DBPROCESS *stream
     _bg.join();
     _connection->close();
     _connection = nullptr;
+    LOG(INFO) << "closing, read cursor at " << _read_cursor.last_tick();
   }
 
   void tds_consumer::close() {
     _exit = true;
     _start_running = false;
+
+    commit(true);
 
     if (_closed)
       return;
@@ -425,6 +234,24 @@ void tds_consumer::load_avro_by_name(kspp::generic_avro* avro, DBPROCESS *stream
     if (_connection) {
       _connection->close();
       LOG(INFO) << "tds_consumer table:" << _logical_name << ":" << _partition << ", closed - consumed " << _msg_cnt << " messages";
+    }
+  }
+
+  void tds_consumer::commit(bool flush) {
+    int64_t ticks = _commit_chain.last_good_offset();
+    if (ticks>0)
+      commit(_commit_chain.last_good_offset(), flush);
+  }
+
+  void tds_consumer::commit(int64_t ticks, bool flush) {
+    _last_commited_ts_ticks = ticks;
+    if (flush || ((_last_commited_ts_ticks - _last_flushed_ticks) > 3600)) {
+      if (_last_flushed_ticks != _last_commited_ts_ticks) {
+        std::ofstream os(_offset_storage_path.generic_string(), std::ios::binary);
+        os.write((char *) &_last_commited_ts_ticks, sizeof(int64_t));
+        _last_flushed_ticks = _last_commited_ts_ticks;
+        os.flush();
+      }
     }
   }
 
@@ -439,6 +266,16 @@ void tds_consumer::load_avro_by_name(kspp::generic_avro* avro, DBPROCESS *stream
 
   void tds_consumer::start(int64_t offset) {
     if (offset == kspp::OFFSET_STORED) {
+
+      if (boost::filesystem::exists(_offset_storage_path)) {
+        std::ifstream is(_offset_storage_path.generic_string(), std::ios::binary);
+        int64_t tmp;
+        is.read((char *) &tmp, sizeof(int64_t));
+        if (is.good()) {
+          _read_cursor.start(tmp);
+        }
+      }
+
       //TODO not implemented yet
       /*
        * if (_config->get_cluster_metadata()->consumer_group_exists(_consumer_group, 5s)) {
@@ -459,17 +296,13 @@ void tds_consumer::load_avro_by_name(kspp::generic_avro* avro, DBPROCESS *stream
       DLOG(INFO) << "tds_consumer::start table:" << _logical_name << ":" << _partition << " consumer group: "
                  << _consumer_group << " starting from fixed offset: " << offset;
     }
-
     initialize();
   }
 
   /*
   int32_t tds_consumer::commit(int64_t offset, bool flush) {
   }
-   */
-
-
-
+  */
 
   int tds_consumer::parse_row(DBPROCESS *stream, COL *columns) {
     //TODO what name should we segister this under.. source/database/table ? table seems to week
@@ -483,7 +316,7 @@ void tds_consumer::load_avro_by_name(kspp::generic_avro* avro, DBPROCESS *stream
       if (!key_schema_) {
         if (_id_column.size() == 0)
           key_schema_ = std::make_shared<avro::ValidSchema>(avro::NullSchema());
-         else
+        else
           key_schema_ = tds::schema_for_table_key(_logical_name + "_key", {_id_column}, stream);
 
 
@@ -526,7 +359,9 @@ void tds_consumer::load_avro_by_name(kspp::generic_avro* avro, DBPROCESS *stream
     _read_cursor.parse(stream);
 
     auto record = std::make_shared<krecord<kspp::generic_avro, kspp::generic_avro>>(*key, val, kspp::milliseconds_since_epoch());
-    auto e = std::make_shared<kevent<kspp::generic_avro, kspp::generic_avro>>(record);
+    // do we have one...
+    int64_t tick = _read_cursor.last_tick();
+    auto e = std::make_shared<kevent<kspp::generic_avro, kspp::generic_avro>>(record, tick  > 0 ? _commit_chain.create(tick) : nullptr);
     assert(e.get()!=nullptr);
 
     ++_msg_cnt;
@@ -632,7 +467,6 @@ void tds_consumer::load_avro_by_name(kspp::generic_avro* avro, DBPROCESS *stream
     }
   }
 
-
   void tds_consumer::_thread() {
     while (!_exit) {
       if (_closed)
@@ -654,83 +488,8 @@ void tds_consumer::load_avro_by_name(kspp::generic_avro* avro, DBPROCESS *stream
         }
       }
 
-      /*
-       * std::string fields = "*";
-      std::string order_by = "";
-      if (_ts_column.size())
-        order_by = _ts_column + " ASC, " + _id_column + " ASC";
-      else
-        order_by = _id_column + " ASC";
-      */
-
-
-      std::string where_clause =  _read_cursor.get_where_clause();
-
-/*      // do we have a timestamp field
-      // we have to have either a interger id that is increasing or a timestamp that is increasing
-      // before we read anything the where clause will not be valid
-      if (last_id_>INT_MIN) {
-        if (_ts_column.size()) {
-          switch (tp_.rescrape_policy) {
-            case kspp::connect::RESCRAPE_OFF: {
-              if (tp_.row_constness != kspp::connect::IMMUTABLE && _eof){
-                where_clause = " WHERE " + _ts_column + " >= '" + std::to_string(last_ts_) + "'";
-              } else {
-                where_clause = " WHERE (" + _ts_column + " = '" + std::to_string(last_ts_) + "' AND " + _id_column + " > '" + std::to_string(last_id_) + "') OR (" + _ts_column + " > '" + std::to_string(last_ts_) + "')";
-              }
-            }
-            break;
-
-            case kspp::connect::LAST_QUERY_TS:
-              if (_eof) {
-                where_clause = " WHERE " + _ts_column + " >= '" + std::to_string(last_ts_ - tp_.rescrape_ticks) + "'";
-              } else {
-                where_clause = " WHERE (" + _ts_column + " = '" + std::to_string(last_ts_) + "' AND " + _id_column + " > '" + std::to_string(last_id_) + "') OR (" +  _ts_column + " > '" + std::to_string(last_ts_) + "')";
-              }
-              break;
-
-            *//* we have to have a generic way of trasforming client ts to server ts...
-             * case kspp::connect::CLIENT_TS:
-              if (_eof) {
-                where_clause = " WHERE " + _ts_column + " >= '" + std::to_string(last_ts_ - tp_.rescrape_ticks) + "'";
-              } else {
-                where_clause =
-                    " WHERE (" + _ts_column + " = '" + std::to_string(last_ts_) + "' AND " + _id_column + " > '" +
-                    std::to_string(last_id_) + "') OR (" +
-                    _ts_column + " > '" + std::to_string(last_ts_) + "')";
-              }
-              break;
-            *//*
-
-            default:
-              LOG(FATAL) << "bad - rescrape_policy: " << tp_.rescrape_policy;
-          }
-        } else {
-          where_clause = " WHERE " + _id_column + " > '" + std::to_string(last_id_) + "'";
-        }
-      } else {
-        if (last_ts_> INT_MIN)
-          if (tp_.connect_ts_policy == kspp::connect::GREATER) // this leads to potential data loss
-            where_clause = " WHERE " + _ts_column + " > '" + std::to_string(last_ts_) + "'";
-          else if (tp_.connect_ts_policy == kspp::connect::GREATER_OR_EQUAL) // this leads to duplicates since last is repeated
-            where_clause = " WHERE " + _ts_column + " >= '" + std::to_string(last_ts_) + "'";
-      }*/
-
-      //LOG(INFO) << _logical_name << " - WHERE_CLAUSE... " << where_clause;
-
-      /*
-      // do we have a timestamp field
-      // we have to have either a interger id that is increasing or a timestamp that is increasing
-     if (_ts_column.size())
-          where_clause = " WHERE " + _ts_column + " >= " + std::to_string(last_ts_);
-        //else
-        //  where_clause = _id_column + " >= " + std::to_string(last_id_);
-        */
-
-      //std::string statement = "SELECT TOP " + std::to_string(_max_items_in_fetch) + " " + fields + " FROM " + _table + where_clause + order_by;
-      std::string statement = _query + where_clause;
+      std::string statement = _query + _read_cursor.get_where_clause();
       DLOG(INFO) << "exec(" + statement + ")";
-
 
       auto ts0 = kspp::milliseconds_since_epoch();
       auto last_msg_count = _msg_cnt;
@@ -751,8 +510,6 @@ void tds_consumer::load_avro_by_name(kspp::generic_avro* avro, DBPROCESS *stream
       }
       auto ts1 = kspp::milliseconds_since_epoch();
 
-
-
       size_t messages_in_batch = _msg_cnt - last_msg_count;
 
       if (messages_in_batch==0) {
@@ -765,8 +522,11 @@ void tds_consumer::load_avro_by_name(kspp::generic_avro* avro, DBPROCESS *stream
                   << " ms";
       }
 
+      commit(false);
+
       if (messages_in_batch<tp_.max_items_in_fetch) {
         _eof = true;
+        _read_cursor.set_eof(_eof);
         int count = tp_.poll_intervall.count();
         if (count>61) {
           LOG(INFO) << "sleeping POLL INTERVALL: " << count;
@@ -778,6 +538,7 @@ void tds_consumer::load_avro_by_name(kspp::generic_avro* avro, DBPROCESS *stream
         }
       } else {
         _eof = false;
+        _read_cursor.set_eof(_eof);
       }
     }
     DLOG(INFO) << "exiting thread";

@@ -48,10 +48,7 @@ namespace kspp {
     }
 
     void commit(bool flush) override {
-      /*
-       * if (_commit_chain.last_good_offset() >= 0)
-        _impl.commit(_commit_chain.last_good_offset(), flush);
-        */
+      _impl.commit(flush);
     }
 
     // TBD if we store last offset and end of stream offset we can use this...
