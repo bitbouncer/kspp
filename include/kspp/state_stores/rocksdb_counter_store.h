@@ -76,8 +76,8 @@ namespace kspp {
 
     rocksdb_counter_store(boost::filesystem::path storage_path,
                           std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : _offset_storage_path(storage_path), _codec(codec), _current_offset(-1), _last_comitted_offset(-1),
-              _last_flushed_offset(-1) {
+            : _offset_storage_path(storage_path), _codec(codec), _current_offset(kspp::OFFSET_BEGINNING), _last_comitted_offset(kspp::OFFSET_BEGINNING),
+              _last_flushed_offset(kspp::OFFSET_BEGINNING) {
       LOG_IF(FATAL, storage_path.generic_string().size()==0);
       boost::filesystem::create_directories(boost::filesystem::path(storage_path));
       _offset_storage_path /= "kspp_offset.bin";
@@ -195,11 +195,12 @@ namespace kspp {
     }
 
     void clear() override {
-      for (auto it = iterator_impl(_db.get(), _codec, iterator_impl::BEGIN), end_ = iterator_impl(_db.get(), _codec,
-                                                                                                  iterator_impl::END);
-           it != end_; it.next()) {
+      for (auto it = iterator_impl(_db.get(), _codec, iterator_impl::BEGIN), end_ = iterator_impl(_db.get(), _codec, iterator_impl::END);
+          it != end_;
+          it.next()) {
         auto s = _db->Delete(rocksdb::WriteOptions(), it._key_slice());
       }
+      _current_offset = kspp::OFFSET_BEGINNING;
     }
 
     typename kspp::materialized_source<K, V>::iterator begin(void) const override {

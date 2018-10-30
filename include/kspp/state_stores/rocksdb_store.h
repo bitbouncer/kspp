@@ -242,8 +242,7 @@ namespace kspp {
     }
 
     void clear() override {
-      for (auto it = iterator_impl(_db.get(), _codec, iterator_impl::BEGIN), end_ = iterator_impl(_db.get(), _codec,
-                                                                                                  iterator_impl::END);
+      for (auto it = iterator_impl(_db.get(), _codec, iterator_impl::BEGIN), end_ = iterator_impl(_db.get(), _codec, iterator_impl::END);
            it != end_; it.next()) {
         auto s = _db->Delete(rocksdb::WriteOptions(), it._key_slice());
       }
