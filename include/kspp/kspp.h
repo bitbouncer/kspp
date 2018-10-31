@@ -26,6 +26,8 @@ namespace kspp {
 
   enum start_offset_t { OFFSET_BEGINNING=-2, OFFSET_END=-1, OFFSET_STORED=-1000 };
 
+  std::string to_string(start_offset_t);
+
   class processor {
   protected:
     processor() :

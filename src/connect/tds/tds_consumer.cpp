@@ -185,7 +185,7 @@ namespace kspp {
       , _query(query)
       , _partition(partition)
       , _consumer_group(consumer_group)
-      , _offset_storage_path("/tmp/" + logical_name)
+      , _offset_storage_path(tp.offset_storage)
       , cp_(cp)
       , tp_(tp)
       , _read_cursor(tp, id_column, ts_column)
@@ -200,15 +200,13 @@ namespace kspp {
       , _eof(false)
       , _start_running(false)
       , _exit(false) {
-    boost::filesystem::create_directories(boost::filesystem::path(_offset_storage_path));
-    _offset_storage_path /= "tds.state";
+    if (_offset_storage_path.size()){
+      boost::filesystem::create_directories(boost::filesystem::path(_offset_storage_path).parent_path());
+    }
     std::string top_part(" TOP " + std::to_string(tp_.max_items_in_fetch));
     // assumed to start with "SELECT"
     _query.insert(6,top_part);
     LOG(INFO) << " REAL QUERY: "  << _query;
-
-
-
   }
 
   tds_consumer::~tds_consumer() {
@@ -244,6 +242,9 @@ namespace kspp {
   }
 
   void tds_consumer::commit(int64_t ticks, bool flush) {
+    if (_offset_storage_path.size()==0)
+      return;
+
     _last_commited_ts_ticks = ticks;
     if (flush || ((_last_commited_ts_ticks - _last_flushed_ticks) > 3600)) {
       if (_last_flushed_ticks != _last_commited_ts_ticks) {
@@ -272,6 +273,8 @@ namespace kspp {
         int64_t tmp;
         is.read((char *) &tmp, sizeof(int64_t));
         if (is.good()) {
+          // if we are rescraping we must assume that this offset were at eof
+          _read_cursor.set_eof(true);
           _read_cursor.start(tmp);
         }
       }

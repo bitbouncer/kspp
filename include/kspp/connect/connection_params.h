@@ -29,6 +29,7 @@ namespace kspp {
       size_t max_items_in_fetch=30000;
       rescrape_policy_t rescrape_policy = RESCRAPE_OFF;
       uint32_t rescrape_ticks = 1;
+      std::string offset_storage;
     };
     }
 }

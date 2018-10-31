@@ -48,6 +48,9 @@ int main(int argc, char **argv) {
       ("val_column", boost::program_options::value<std::string>()->default_value(""), "val_column")
       ("topic_prefix", boost::program_options::value<std::string>()->default_value("DEV_postgres_"), "topic_prefix")
       ("topic", boost::program_options::value<std::string>(), "topic")
+      ("start_offset", boost::program_options::value<std::string>()->default_value("OFFSET_BEGINNING"), "start_offset")
+      ("offset_storage", boost::program_options::value<std::string>()->default_value(""), "offset_storage")
+      ("oneshot", "run to eof and exit")
       ("filename", boost::program_options::value<std::string>(), "filename");
 
   boost::program_options::variables_map vm;
@@ -193,6 +196,34 @@ int main(int argc, char **argv) {
   if (vm.count("filename")) {
     filename = vm["filename"].as<std::string>();
   }
+
+  std::string offset_storage;
+  if (vm.count("offset_storage")) {
+    offset_storage = vm["offset_storage"].as<std::string>();
+  }
+  if (boost::iequals(offset_storage, ""))
+    offset_storage="/tmp/tds2kafka/" + topic + "-offset";
+
+  kspp::start_offset_t start_offset=kspp::OFFSET_BEGINNING;
+  if (vm.count("start_offset")) {
+    auto s = vm["start_offset"].as<std::string>();
+    if (boost::iequals(s, "OFFSET_BEGINNING"))
+      start_offset=kspp::OFFSET_BEGINNING;
+    else if (boost::iequals(s, "OFFSET_END"))
+      start_offset=kspp::OFFSET_END;
+    else if (boost::iequals(s, "OFFSET_STORED"))
+      start_offset=kspp::OFFSET_STORED;
+    else {
+      std::cerr << "start_offset must be one of OFFSET_BEGINNING / OFFSET_END / OFFSET_STORED";
+      return -1;
+    }
+  }
+
+  bool oneshot=false;
+  if (vm.count("oneshot"))
+    oneshot=true;
+
+
   std::string consumer_group(SERVICE_NAME);
   auto config = std::make_shared<kspp::cluster_config>(consumer_group);
   config->set_brokers(broker);
@@ -227,6 +258,11 @@ int main(int argc, char **argv) {
   LOG(INFO) << "topic              : " << topic;
   LOG(INFO) << "codec              : " << codec;
 
+  LOG(INFO) << "offset_storage    : " << offset_storage;
+  LOG(INFO) << "start_offset      : " << kspp::to_string(start_offset);
+  if (oneshot)
+    LOG(INFO) << "oneshot           : TRUE";
+
   kspp::connect::connection_params connection_params;
   connection_params.host = db_host;
   connection_params.port = db_port;
@@ -237,6 +273,7 @@ int main(int argc, char **argv) {
   kspp::connect::table_params table_params;
   table_params.poll_intervall = std::chrono::seconds(poll_intervall);
   table_params.max_items_in_fetch = max_items_in_fetch;
+  table_params.offset_storage = offset_storage;
 
   if (filename.size()) {
      LOG(INFO) << "using avro file..";
@@ -282,27 +319,27 @@ int main(int argc, char **argv) {
   tags.push_back(kspp::make_metrics_tag("db_host", db_host));
   tags.push_back(kspp::make_metrics_tag("dst_topic", topic));
 
-
   topology->init_metrics(tags);
-  //topology->start(kspp::OFFSET_STORED);
-  topology->start(kspp::OFFSET_BEGINNING);
+  topology->start(start_offset);
 
   std::signal(SIGINT, sigterm);
   std::signal(SIGTERM, sigterm);
   std::signal(SIGPIPE, SIG_IGN);
 
   LOG(INFO) << "status is up";
-
   {
     auto metrics_reporter = std::make_shared<kspp::influx_metrics_reporter>(builder, "kspp_metrics", "kspp", "") << topology;
     while (run) {
       if (topology->process(kspp::milliseconds_since_epoch()) == 0) {
         std::this_thread::sleep_for(10ms);
         topology->commit(false);
+        if (oneshot && topology->eof()){
+          LOG(INFO) << "at eof - exiting";
+          break;
+        }
       }
     }
   }
-
   topology->commit(true);
   topology->close();
   LOG(INFO) << "status is down";

@@ -13,6 +13,7 @@
 #include <kspp/processors/transform.h>
 #include <kspp/processors/flat_map.h>
 #include <clocale>
+#include <algorithm>
 
 #define SERVICE_NAME "tds2kafka"
 
@@ -41,7 +42,6 @@ int main(int argc, char **argv) {
       ("db_password", boost::program_options::value<std::string>()->default_value(get_env_and_log("DB_PASSWORD")), "db_password")
       ("db_dbname", boost::program_options::value<std::string>()->default_value(get_env_and_log("DB_DBNAME")), "db_dbname")
       ("id_column", boost::program_options::value<std::string>()->default_value(""), "id_column")
-      //("poll_algorithm", boost::program_options::value<std::string>()->default_value("MUTABLE"), "poll_algorithm")
       ("timestamp_column", boost::program_options::value<std::string>()->default_value("ts"), "timestamp_column")
       ("table", boost::program_options::value<std::string>(), "table")
       ("query", boost::program_options::value<std::string>(), "query")
@@ -49,6 +49,9 @@ int main(int argc, char **argv) {
       ("rescrape", boost::program_options::value<int32_t>()->default_value(10), "rescrape")
       ("topic_prefix", boost::program_options::value<std::string>()->default_value(get_env_and_log("TOPIC_PREFIX", "DEV_sqlserver_")), "topic_prefix")
       ("topic", boost::program_options::value<std::string>(), "topic")
+      ("start_offset", boost::program_options::value<std::string>()->default_value("OFFSET_BEGINNING"), "start_offset")
+      ("offset_storage", boost::program_options::value<std::string>()->default_value(""), "offset_storage")
+      ("oneshot", "run to eof and exit")
       ("filename", boost::program_options::value<std::string>(), "filename");
 
   boost::program_options::variables_map vm;
@@ -84,21 +87,6 @@ int main(int argc, char **argv) {
   if (vm.count("db_port")) {
     db_port = vm["db_port"].as<int>();
   }
-
-  /*
-   * kspp::connect::row_constness_t  row_constness = kspp::connect::MUTABLE;
-  std::string poll_algorithm;
-  if (vm.count("poll_algorithm")) {
-    poll_algorithm = vm["poll_algorithm"].as<std::string>();
-    if (poll_algorithm == "MUTABLE"){
-      row_constness = kspp::connect::MUTABLE;
-    } else if (poll_algorithm == "IMMUTABLE") {
-      row_constness = kspp::connect::IMMUTABLE;
-    } else {
-      std::cerr <<  "poll_algorith must be MUTABLE/IMMUTABLE";
-    }
-  }
-   */
 
   int poll_intervall;
   if (vm.count("poll_intervall")) {
@@ -172,6 +160,32 @@ int main(int argc, char **argv) {
     topic = topic_prefix + table;
   }
 
+  std::string offset_storage;
+  if (vm.count("offset_storage")) {
+    offset_storage = vm["offset_storage"].as<std::string>();
+  }
+  if (boost::iequals(offset_storage, ""))
+    offset_storage="/tmp/tds2kafka/" + topic + "-offset";
+
+  kspp::start_offset_t start_offset=kspp::OFFSET_BEGINNING;
+  if (vm.count("start_offset")) {
+    auto s = vm["start_offset"].as<std::string>();
+    if (boost::iequals(s, "OFFSET_BEGINNING"))
+      start_offset=kspp::OFFSET_BEGINNING;
+    else if (boost::iequals(s, "OFFSET_END"))
+      start_offset=kspp::OFFSET_END;
+    else if (boost::iequals(s, "OFFSET_STORED"))
+      start_offset=kspp::OFFSET_STORED;
+    else {
+      std::cerr << "start_offset must be one of OFFSET_BEGINNING / OFFSET_END / OFFSET_STORED";
+      return -1;
+    }
+  }
+
+  bool oneshot=false;
+  if (vm.count("oneshot"))
+    oneshot=true;
+
   std::string consumer_group(SERVICE_NAME);
   auto config = std::make_shared<kspp::cluster_config>(consumer_group);
   config->set_brokers(broker);
@@ -192,14 +206,18 @@ int main(int argc, char **argv) {
   LOG(INFO) << "db_dbname         : " << db_dbname;
   LOG(INFO) << "db_user           : " << db_user;
   LOG(INFO) << "db_password       : " << "[hidden]";
-  LOG(INFO) << "table              : " << table;
-  LOG(INFO) << "query              : " << query;
+  LOG(INFO) << "table             : " << table;
+  LOG(INFO) << "query             : " << query;
   LOG(INFO) << "id_column         : " << id_column;
   LOG(INFO) << "timestamp_column  : " << timestamp_column;
   LOG(INFO) << "poll_intervall    : " << poll_intervall;
   LOG(INFO) << "rescrape          : " << rescrape;
   LOG(INFO) << "topic_prefix      : " << topic_prefix;
   LOG(INFO) << "topic             : " << topic;
+  LOG(INFO) << "offset_storage    : " << offset_storage;
+  LOG(INFO) << "start_offset      : " << kspp::to_string(start_offset);
+  if (oneshot)
+    LOG(INFO) << "oneshot           : TRUE";
 
   kspp::connect::connection_params connection_params;
   connection_params.host = db_host;
@@ -215,6 +233,7 @@ int main(int argc, char **argv) {
   // todo - harded code this for testing
   table_params.rescrape_policy = kspp::connect::LAST_QUERY_TS;
   table_params.rescrape_ticks = rescrape;
+  table_params.offset_storage = offset_storage;
 
   if (filename.size()) {
      LOG(INFO) << "using avro file..";
@@ -249,8 +268,7 @@ int main(int argc, char **argv) {
     tags.push_back(kspp::make_metrics_tag("source", table));
 
   topology->init_metrics(tags);
-  //topology->start(kspp::OFFSET_STORED);
-  topology->start(kspp::OFFSET_BEGINNING);
+  topology->start(start_offset);
 
   std::signal(SIGINT, sigterm);
   std::signal(SIGTERM, sigterm);
@@ -265,6 +283,10 @@ int main(int argc, char **argv) {
       if (topology->process(kspp::milliseconds_since_epoch()) == 0) {
         std::this_thread::sleep_for(10ms);
         topology->commit(false);
+        if (oneshot && topology->eof()){
+          LOG(INFO) << "at eof - exiting";
+          break;
+        }
       }
     }
   }
