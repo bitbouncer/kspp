@@ -8,7 +8,7 @@ namespace kspp {
 
   std::string default_schema_registry_uri();
 
-  std::string default_statestore_directory();
+  std::string default_statestore_root();
 
   std::string default_ca_cert_path();
 

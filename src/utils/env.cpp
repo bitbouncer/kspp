@@ -40,8 +40,8 @@ namespace kspp {
     return get_env_and_log("KSPP_SCHEMA_REGISTRY_URL", "http://localhost:8081");
   }
 
-  std::string default_statestore_directory() {
-    return get_env_and_log("KSPP_STATE_STORE_DIR", boost::filesystem::temp_directory_path().generic_string());
+  std::string default_statestore_root() {
+    return get_env_and_log("KSPP_STATE_STORE_ROOT", boost::filesystem::temp_directory_path().generic_string() + "/kspp");
   }
 
 #ifdef _WIN32

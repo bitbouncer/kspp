@@ -274,30 +274,23 @@ namespace kspp {
         is.read((char *) &tmp, sizeof(int64_t));
         if (is.good()) {
           // if we are rescraping we must assume that this offset were at eof
+          LOG(INFO) << _logical_name << ", start(OFFSET_STORED) - > ts:" << tmp;
           _read_cursor.set_eof(true);
           _read_cursor.start(tmp);
+        } else {
+          LOG(INFO) << _logical_name << ", start(OFFSET_STORED), bad file " << _offset_storage_path << ", starting from OFFSET_BEGINNING";
         }
-      }
-
-      //TODO not implemented yet
-      /*
-       * if (_config->get_cluster_metadata()->consumer_group_exists(_consumer_group, 5s)) {
-        DLOG(INFO) << "kafka_consumer::start topic:" << _topic << ":" << _partition  << " consumer group: " << _consumer_group << " starting from OFFSET_STORED";
       } else {
-        //non existing consumer group means start from beginning
-        LOG(INFO) << "kafka_consumer::start topic:" << _topic << ":" << _partition  << " consumer group: " << _consumer_group << " missing, OFFSET_STORED failed -> starting from OFFSET_BEGINNING";
-        offset = kspp::OFFSET_BEGINNING;
+        LOG(INFO) << _logical_name << ", start(OFFSET_STORED), missing file " << _offset_storage_path << ", starting from OFFSET_BEGINNING";
       }
-       */
     } else if (offset == kspp::OFFSET_BEGINNING) {
-      DLOG(INFO) << "tds_consumer::start table:" << _logical_name << ":" << _partition << " consumer group: "
-                 << _consumer_group << " starting from OFFSET_BEGINNING";
+      DLOG(INFO) << "tds_consumer::start table:" << _logical_name << ":" << _partition << " consumer group: " << _consumer_group << " starting from OFFSET_BEGINNING";
     } else if (offset == kspp::OFFSET_END) {
-      DLOG(INFO) << "tds_consumer::start table:" << _logical_name << ":" << _partition << " consumer group: "
-                 << _consumer_group << " starting from OFFSET_END";
+      DLOG(INFO) << "tds_consumer::start table:" << _logical_name << ":" << _partition << " consumer group: " << _consumer_group << " starting from OFFSET_END";
     } else {
-      DLOG(INFO) << "tds_consumer::start table:" << _logical_name << ":" << _partition << " consumer group: "
-                 << _consumer_group << " starting from fixed offset: " << offset;
+      LOG(INFO) << "tds_consumer::start table:" << _logical_name << ":" << _partition << " consumer group: " << _consumer_group << " starting from fixed offset: " << offset;
+      _read_cursor.set_eof(true);
+      _read_cursor.start(offset);
     }
     initialize();
   }

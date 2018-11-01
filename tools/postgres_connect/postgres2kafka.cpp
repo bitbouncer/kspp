@@ -29,8 +29,8 @@ int main(int argc, char **argv) {
   boost::program_options::options_description desc("options");
   desc.add_options()
       ("help", "produce help message")
-      ("broker", boost::program_options::value<std::string>()->default_value(kspp::default_kafka_broker_uri()), "broker")
-      ("schema_registry", boost::program_options::value<std::string>()->default_value(kspp::default_schema_registry_uri()), "schema_registry")
+      ("broker", boost::program_options::value<std::string>(), "broker")
+      ("schema_registry", boost::program_options::value<std::string>(), "schema_registry")
       ("app_realm", boost::program_options::value<std::string>()->default_value(get_env_and_log("APP_REALM", "DEV")), "app_realm")
       ("db_host", boost::program_options::value<std::string>()->default_value(get_env_and_log("DB_HOST")), "db_host")
       ("db_port", boost::program_options::value<int32_t>()->default_value(5432), "db_port")
@@ -62,20 +62,19 @@ int main(int argc, char **argv) {
     return 0;
   }
 
-  std::string broker;
-  if (vm.count("broker")) {
-    broker = vm["broker"].as<std::string>();
-  } else {
-    std::cout << "--broker must be specified" << std::endl;
-    return 0;
+  std::string consumer_group(SERVICE_NAME);
+  auto config = std::make_shared<kspp::cluster_config>(consumer_group);
+
+  if (vm.count("state_store_root")) {
+    config->set_storage_root(vm["state_store_root"].as<std::string>());
   }
 
-  std::string schema_registry;
+  if (vm.count("broker")) {
+    config->set_brokers(vm["broker"].as<std::string>());
+  }
+
   if (vm.count("schema_registry")) {
-    schema_registry = vm["schema_registry"].as<std::string>();
-  } else {
-    std::cout << "--schema_registry must be specified" << std::endl;
-    return 0;
+    config->set_schema_registry_uri(vm["schema_registry"].as<std::string>());
   }
 
   std::string app_realm;
@@ -200,9 +199,9 @@ int main(int argc, char **argv) {
   std::string offset_storage;
   if (vm.count("offset_storage")) {
     offset_storage = vm["offset_storage"].as<std::string>();
+  } else {
+    offset_storage = config->get_storage_root() + "/import-" + topic + ".offset";
   }
-  if (boost::iequals(offset_storage, ""))
-    offset_storage="/tmp/tds2kafka/" + topic + "-offset";
 
   kspp::start_offset_t start_offset=kspp::OFFSET_BEGINNING;
   if (vm.count("start_offset")) {
@@ -223,17 +222,8 @@ int main(int argc, char **argv) {
   if (vm.count("oneshot"))
     oneshot=true;
 
-
-  std::string consumer_group(SERVICE_NAME);
-  auto config = std::make_shared<kspp::cluster_config>(consumer_group);
-  config->set_brokers(broker);
-  config->set_schema_registry_uri(schema_registry);
   config->set_producer_buffering_time(1000ms);
   config->set_consumer_buffering_time(500ms);
-  config->set_ca_cert_path(kspp::default_ca_cert_path());
-  config->set_private_key_path(kspp::default_client_cert_path(),
-                               kspp::default_client_key_path(),
-                               kspp::default_client_key_passphrase());
   config->validate();
   config->log();
   auto s= config->avro_serdes();
@@ -334,6 +324,8 @@ int main(int argc, char **argv) {
         std::this_thread::sleep_for(10ms);
         topology->commit(false);
         if (oneshot && topology->eof()){
+          LOG(INFO) << "at eof - flushing";
+          topology->flush(true);
           LOG(INFO) << "at eof - exiting";
           break;
         }

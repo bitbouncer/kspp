@@ -24,7 +24,7 @@ namespace kspp {
 
   void cluster_config::load_config_from_env() {
     set_brokers(default_kafka_broker_uri());
-    set_storage_root(default_statestore_directory());
+    set_storage_root(default_statestore_root());
     //set_consumer_buffering_time()
     //set_producer_buffering_time
     set_ca_cert_path(default_ca_cert_path());
