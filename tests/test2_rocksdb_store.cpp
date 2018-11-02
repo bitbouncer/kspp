@@ -9,7 +9,7 @@ int main(int argc, char **argv) {
   FLAGS_logtostderr = 1;
   google::InitGoogleLogging(argv[0]);
 
-  boost::filesystem::path path = kspp::default_statestore_directory();
+  boost::filesystem::path path = kspp::default_statestore_root();
   path /= "test2_rocksdb_store";
 
   if (boost::filesystem::exists(path))
