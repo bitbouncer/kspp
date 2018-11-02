@@ -51,7 +51,7 @@ sudo make install
 cd ..
 ```
 
-build docker image (alpine 3:8)
+build docker image / alpine 3:8
 ```
 cd docker-alpine
 #this takes a long time and is only needed when 3rd party things change
@@ -60,7 +60,7 @@ cd docker-alpine
 ./build.sh
 ```
 
-build docker image ubuntu 18.04)
+build docker image / ubuntu 18.04
 ```
 cd docker-ubuntu
 #this takes a long time and is only needed when 3rd party things change
