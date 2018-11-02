@@ -53,9 +53,19 @@ cd ..
 
 build docker image (alpine 3:8)
 ```
-cd docker
+cd docker-alpine
 #this takes a long time and is only needed when 3rd party things change
 ./build_3rdparty.sh
+
+./build.sh
+```
+
+build docker image ubuntu 18.04)
+```
+cd docker-ubuntu
+#this takes a long time and is only needed when 3rd party things change
+./build_3rdparty.sh
+
 ./build.sh
 ```
 
