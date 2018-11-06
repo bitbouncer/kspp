@@ -353,8 +353,11 @@ namespace kspp {
     load_avro_by_name(last_key_.get(), stream, columns);
 
     _read_cursor.parse(stream);
+    int64_t tick_ms = _read_cursor.last_ts_ms();
+    if (tick_ms==0)
+      tick_ms = kspp::milliseconds_since_epoch();
 
-    auto record = std::make_shared<krecord<kspp::generic_avro, kspp::generic_avro>>(*key, val, kspp::milliseconds_since_epoch());
+    auto record = std::make_shared<krecord<kspp::generic_avro, kspp::generic_avro>>(*key, val, tick_ms);
     // do we have one...
     int64_t tick = _read_cursor.last_tick();
     auto e = std::make_shared<kevent<kspp::generic_avro, kspp::generic_avro>>(record, tick  > 0 ? _commit_chain.create(tick) : nullptr);

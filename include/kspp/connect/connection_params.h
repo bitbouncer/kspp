@@ -30,6 +30,11 @@ namespace kspp {
       rescrape_policy_t rescrape_policy = RESCRAPE_OFF;
       uint32_t rescrape_ticks = 1;
       std::string offset_storage;
+      std::string query;
+      std::string ts_column;
+      int ts_multiplier=0;
+      int ts_utc_offset=0;
+      std::string id_column;
     };
     }
 }

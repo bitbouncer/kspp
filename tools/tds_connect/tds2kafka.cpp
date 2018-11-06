@@ -43,6 +43,7 @@ int main(int argc, char **argv) {
       ("db_dbname", boost::program_options::value<std::string>()->default_value(get_env_and_log("DB_DBNAME")), "db_dbname")
       ("id_column", boost::program_options::value<std::string>()->default_value(""), "id_column")
       ("timestamp_column", boost::program_options::value<std::string>()->default_value("ts"), "timestamp_column")
+      ("timestamp_unit", boost::program_options::value<std::string>(), "timestamp_unit")
       ("table", boost::program_options::value<std::string>(), "table")
       ("query", boost::program_options::value<std::string>(), "query")
       ("poll_intervall", boost::program_options::value<int32_t>()->default_value(60), "poll_intervall")
@@ -118,6 +119,15 @@ int main(int argc, char **argv) {
   std::string timestamp_column;
   if (vm.count("timestamp_column")) {
     timestamp_column = vm["timestamp_column"].as<std::string>();
+  }
+
+  int timetamp_multiplier = 0;
+  if (vm.count("timestamp_unit")) {
+    auto s = vm["timestamp_unit"].as<std::string>();
+    if (s == "s")
+      timetamp_multiplier = 1000;
+    if (s == "ms")
+      timetamp_multiplier = 1;
   }
 
   std::string table;
@@ -227,12 +237,11 @@ int main(int argc, char **argv) {
 
   kspp::connect::table_params table_params;
   table_params.poll_intervall = std::chrono::seconds(poll_intervall);
-  //table_params.max_items_in_fetch = 3000;
-
-  // todo - harded code this for testing
   table_params.rescrape_policy = kspp::connect::LAST_QUERY_TS;
   table_params.rescrape_ticks = rescrape;
   table_params.offset_storage = offset_storage;
+  table_params.ts_utc_offset=0;
+  table_params.ts_multiplier=timetamp_multiplier;
 
   if (filename.size()) {
      LOG(INFO) << "using avro file..";
