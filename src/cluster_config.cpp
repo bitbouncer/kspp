@@ -202,13 +202,13 @@ namespace kspp {
     return cluster_state_timeout_;
   }
 
-  std::shared_ptr<kspp::avro_serdes> cluster_config::avro_serdes()
+  std::shared_ptr<kspp::avro_serdes> cluster_config::avro_serdes(bool relaxed_parsing)
   {
     //TODO some error handling would be fine...
     if (!avro_serdes_)
     {
       avro_schema_registry_ =  std::make_shared<kspp::avro_schema_registry>(*this);
-      avro_serdes_ = std::make_shared<kspp::avro_serdes>(avro_schema_registry_);
+      avro_serdes_ = std::make_shared<kspp::avro_serdes>(avro_schema_registry_, relaxed_parsing);
     }
     return avro_serdes_;
   }

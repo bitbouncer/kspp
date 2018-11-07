@@ -63,7 +63,7 @@ namespace kspp {
     void set_cluster_state_timeout(std::chrono::seconds);
     std::chrono::seconds get_cluster_state_timeout() const ;
 
-    std::shared_ptr<kspp::avro_serdes> avro_serdes();
+    std::shared_ptr<kspp::avro_serdes> avro_serdes(bool relaxed_parsing=false);
 
     std::shared_ptr<kspp::avro_schema_registry> get_schema_registry(){
       return avro_schema_registry_;

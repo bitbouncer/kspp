@@ -22,8 +22,9 @@ namespace kspp {
     template<typename T> struct fake_dependency : public std::false_type {};
 
   public:
-    avro_serdes(std::shared_ptr<avro_schema_registry> registry)
-            : _registry(registry) {
+    avro_serdes(std::shared_ptr<avro_schema_registry> registry, bool relaxed_parsing)
+            : _registry(registry)
+            , _relaxed_parsing(relaxed_parsing){
     }
 
     static std::string name() { return "kspp::avro"; }
@@ -134,8 +135,10 @@ namespace kspp {
       memcpy(&encoded_schema_id, &payload[1], 4);
       int32_t schema_id = ntohl(encoded_schema_id);
       if (expected_schema_id != schema_id) {
-        // print warning - not message for me
-        return 0;
+        if (!_relaxed_parsing) {
+          LOG(ERROR) << "expected schema id " << expected_schema_id << ", actual: " << schema_id;
+          return 0;
+        }
       }
 
       try {
@@ -160,6 +163,7 @@ namespace kspp {
     }
 
     std::shared_ptr<avro_schema_registry> _registry;
+    bool _relaxed_parsing=false;
   };
 
   template<> inline  int32_t avro_serdes::register_schema(std::string name, const std::string& dummy){
