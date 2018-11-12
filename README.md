@@ -33,7 +33,7 @@ sudo apt-get install -y automake autogen shtool libtool git wget cmake unzip bui
 
 Install build deps
 ```
-sudo apt-get install -y libboost-all-dev g++ python-dev autotools-dev libicu-dev zlib1g-dev openssl libssl-dev libbz2-dev libsnappy-dev libgoogle-glog-dev libgflags-dev libjansson-dev libcurl4-openssl-dev liblzma-dev libpq-dev freetds-dev
+sudo apt-get install -y libboost-all-dev g++ python-dev autotools-dev libicu-dev zlib1g-dev openssl libssl-dev libbz2-dev libsnappy-dev libgoogle-glog-dev libgflags-dev libjansson-dev libcurl4-openssl-dev liblzma-dev libpq-dev freetds-dev libc-ares-dev
 ```
 
 install 3rd party deps we need to build from source

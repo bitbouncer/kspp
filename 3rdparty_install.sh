@@ -1,5 +1,7 @@
 mkdir tmp && cd tmp
 
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+
 wget -O google-test.tar.gz "https://github.com/google/googletest/archive/release-1.8.1.tar.gz" && \
 mkdir -p google-test && \
 tar \
@@ -31,6 +33,35 @@ sudo make install && \
 cd ../.. && \
 rm google-benchmark.tar.gz && \
 rm -rf google-benchmark
+
+wget -O protobuf.tar.gz "https://github.com/protocolbuffers/protobuf/releases/download/v3.6.1/protobuf-cpp-3.6.1.tar.gz" && \
+mkdir -p protobuf && \
+tar \
+  --extract \
+  --file protobuf.tar.gz \
+  --directory protobuf \
+  --strip-components 1 && \
+cd protobuf && \
+./configure && \
+make -j "$(getconf _NPROCESSORS_ONLN)" && \
+sudo make install && \
+cd .. && \
+rm protobuf.tar.gz && \
+rm -rf protobuf
+
+wget -O grpc.tar.gz "https://github.com/grpc/grpc/archive/v1.16.0.tar.gz" && \
+mkdir -p grpc && \
+tar \
+  --extract \
+  --file grpc.tar.gz \
+  --directory grpc \
+  --strip-components 1 && \
+cd grpc && \
+make -j "$(getconf _NPROCESSORS_ONLN)" && \
+sudo make install && \
+cd .. && \
+rm grpc.tar.gz && \
+rm -rf grpc
 
 wget -O rapidjson.tar.gz "https://github.com/miloyip/rapidjson/archive/v1.1.0.tar.gz" && \
 mkdir -p rapidjson && \
