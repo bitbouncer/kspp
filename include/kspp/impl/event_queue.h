@@ -32,6 +32,7 @@ namespace kspp {
       return _next_event_time == INT64_MAX; // this is faster than locking..
     }
 
+    //normal usage
     inline void push_back(std::shared_ptr<kevent<K, V>> p) {
       if (p != nullptr && p.get() != nullptr) {
         spinlock::scoped_lock xxx(_spinlock);
@@ -41,9 +42,24 @@ namespace kspp {
       }
     }
 
+    // used for error handling
+    inline void push_front(std::shared_ptr<kevent<K, V>> p) {
+      if (p != nullptr && p.get() != nullptr) {
+        spinlock::scoped_lock xxx(_spinlock);
+          _next_event_time = p->event_time();
+        _queue.push_front(p);
+      }
+    }
+
+
     inline std::shared_ptr<kevent<K, V>> front() {
       spinlock::scoped_lock xxx(_spinlock);
       return _queue.front();
+    }
+
+    inline std::shared_ptr<kevent<K, V>> back() {
+      spinlock::scoped_lock xxx(_spinlock);
+      return _queue.back();
     }
 
     inline void pop_front() {
@@ -57,6 +73,18 @@ namespace kspp {
           _next_event_time = _queue[0]->event_time();
       }
     }
+
+    // used for erro handling
+    inline void pop_back() {
+      spinlock::scoped_lock xxx(_spinlock);
+      {
+        _queue[_queue.size()-1].reset();
+        _queue.pop_back();
+        if (_queue.size() == 0)
+          _next_event_time = INT64_MAX;
+      }
+    }
+
 
     inline std::shared_ptr<kevent<K, V>> pop_and_get() {
       if (empty())

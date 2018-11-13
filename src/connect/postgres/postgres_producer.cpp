@@ -209,21 +209,21 @@ namespace kspp {
         auto res = _connection->exec(statement);
         auto ts1 = kspp::milliseconds_since_epoch();
 
-
-        /*
-         * if (ec) {
-          LOG(FATAL) << statement << " failed ec:" << ec << " last_error: "
-                     << _connection->last_error();
-          return;
+        // if we failed we have to push back messages to the _incomming_msg and retry
+        if (res.first){
+          // should we just exit here ??? - it depends if we trust stored offsets.
+          while (!in_batch.empty()) {
+            LOG(INFO) << "pushing back failed update to queue";
+            _incomming_msg.push_front(in_batch.back());
+            in_batch.pop_back();
+          }
+        } else {
+          while (!in_batch.empty()) {
+            _done.push_back(in_batch.pop_and_get());
+          }
+          _msg_cnt += msg_in_batch;
+          _msg_bytes += bytes_in_batch;
         }
-        */
-
-        while (!in_batch.empty()) {
-          _done.push_back(in_batch.pop_and_get());
-        }
-
-        _msg_cnt += msg_in_batch;
-        _msg_bytes += bytes_in_batch;
       } else {
         std::string statement = "DELETE FROM " + _table + " WHERE ";
         size_t msg_in_batch = 0;
@@ -251,24 +251,24 @@ namespace kspp {
           auto ts0 = kspp::milliseconds_since_epoch();
           auto res = _connection->exec(statement);
           auto ts1 = kspp::milliseconds_since_epoch();
+          // if we failed we have to push back messages to the _incomming_msg and retry
+          if (res.first) {
+            // should we just exit here ??? - it depends if we trust stored offsets.
+            while (!in_batch.empty()) {
+              LOG(INFO) << "pushing back failed delete to queue";
+              _incomming_msg.push_front(in_batch.back());
+              in_batch.pop_back();
+            }
+          } else {
+            while (!in_batch.empty()) {
+              _done.push_back(in_batch.pop_and_get());
+            }
+            _msg_cnt += msg_in_batch;
+            _msg_bytes += bytes_in_batch;
+          }
         }
-        /*
-         * if (ec) {
-          LOG(FATAL) << statement << " failed ec:" << ec << " last_error: "
-                     << _connection->last_error();
-          return;
-        }
-        */
-
-        while (!in_batch.empty()) {
-          _done.push_back(in_batch.pop_and_get());
-        }
-
-        _msg_cnt += msg_in_batch;
-        //_msg_bytes += bytes_in_batch;
       }
-
-      }
+    }
   DLOG(INFO) << "exiting thread";
 }
 

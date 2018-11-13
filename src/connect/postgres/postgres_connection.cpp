@@ -94,7 +94,6 @@ namespace kspp_postgres {
         case PGRES_TUPLES_OK:
         case PGRES_COPY_OUT:
         case PGRES_COPY_IN:
-        case PGRES_NONFATAL_ERROR:
         case PGRES_COPY_BOTH:
         case PGRES_SINGLE_TUPLE:
           //LOG(INFO) << _trace_id << ", postgres::exec complete, t=" << duration << ", s=" << _current_statement.substr(0, STATEMENT_LOG_BYTES);
@@ -102,6 +101,7 @@ namespace kspp_postgres {
             LOG(WARNING) << _trace_id << ", postgres::exec complete - took long time, t=" << duration << ", s = " << statement.substr(0, STATEMENT_LOG_BYTES);
           }
           return std::make_pair<>(0, std::move(res));
+        case PGRES_NONFATAL_ERROR:
         case PGRES_BAD_RESPONSE:
         case PGRES_FATAL_ERROR:
           LOG(ERROR) << _trace_id << ", postgres::exec failed " << last_error() << ", t=" << duration << ", s=" << statement.substr(0, STATEMENT_LOG_BYTES);
