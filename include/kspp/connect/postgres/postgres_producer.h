@@ -37,6 +37,12 @@ namespace kspp {
 
     void poll() override;
 
+    size_t queue_size() const override {
+      auto sz0 =_incomming_msg.size();
+      auto sz1 =_done.size();
+      return sz0 + sz1;
+    }
+
   private:
     bool initialize();
     bool check_table_exists();

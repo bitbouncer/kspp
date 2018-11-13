@@ -171,7 +171,7 @@ namespace kspp {
         size_t msg_in_batch = 0;
         size_t bytes_in_batch = 0;
         std::set<std::string> unique_keys_in_batch;
-        event_queue<kspp::generic_avro, kspp::generic_avro> in_batch;
+        std::deque<std::shared_ptr<kevent<kspp::generic_avro, kspp::generic_avro>>> in_update_batch;
         while (!_incomming_msg.empty() && msg_in_batch < _max_items_in_fetch) {
           auto msg = _incomming_msg.front();
           if (msg->record()->value()==nullptr) {
@@ -196,7 +196,7 @@ namespace kspp {
           statement += pq::avro2sql_values(*msg->record()->value()->valid_schema(),
                                        *msg->record()->value()->generic_datum());
           ++msg_in_batch;
-          in_batch.push_back(msg);
+          in_update_batch.push_back(msg);
           _incomming_msg.pop_front();
         }
 
@@ -212,23 +212,28 @@ namespace kspp {
         // if we failed we have to push back messages to the _incomming_msg and retry
         if (res.first){
           // should we just exit here ??? - it depends if we trust stored offsets.
-          while (!in_batch.empty()) {
+
+          while (!in_update_batch.empty()) {
             LOG(INFO) << "pushing back failed update to queue";
-            _incomming_msg.push_front(in_batch.back());
-            in_batch.pop_back();
+            _incomming_msg.push_front(in_update_batch.back());
+            in_update_batch.pop_back();
           }
         } else {
-          while (!in_batch.empty()) {
-            _done.push_back(in_batch.pop_and_get());
+          while (!in_update_batch.empty()) {
+            _done.push_back(in_update_batch.back());
+            in_update_batch.pop_back();
           }
           _msg_cnt += msg_in_batch;
           _msg_bytes += bytes_in_batch;
         }
+
+        if (!in_update_batch.empty())
+          LOG(ERROR) << "in_batch should be empty here";
       } else {
         std::string statement = "DELETE FROM " + _table + " WHERE ";
         size_t msg_in_batch = 0;
         size_t bytes_in_batch = 0;
-        event_queue<kspp::generic_avro, kspp::generic_avro> in_batch;
+        std::deque<std::shared_ptr<kevent<kspp::generic_avro, kspp::generic_avro>>> in_delete_batch;
         while (!_incomming_msg.empty() && msg_in_batch < _max_items_in_fetch) {
           auto msg = _incomming_msg.front();
           if (msg->record()->value() != nullptr) {
@@ -239,7 +244,7 @@ namespace kspp {
             statement += "OR \n ";
           statement += pq::avro2sql_delete_key_values(*msg->record()->key().valid_schema(), _id_column, *msg->record()->key().generic_datum());
           ++msg_in_batch;
-          in_batch.push_back(msg);
+          in_delete_batch.push_back(msg);
           _incomming_msg.pop_front();
         }
         statement += "\n";
@@ -254,19 +259,27 @@ namespace kspp {
           // if we failed we have to push back messages to the _incomming_msg and retry
           if (res.first) {
             // should we just exit here ??? - it depends if we trust stored offsets.
-            while (!in_batch.empty()) {
+            while (!in_delete_batch.empty()) {
               LOG(INFO) << "pushing back failed delete to queue";
-              _incomming_msg.push_front(in_batch.back());
-              in_batch.pop_back();
+              _incomming_msg.push_front(in_delete_batch.back());
+              in_delete_batch.pop_back();
             }
           } else {
-            while (!in_batch.empty()) {
-              _done.push_back(in_batch.pop_and_get());
+            while (!in_delete_batch.empty()) {
+              _done.push_back(in_delete_batch.back());
+              in_delete_batch.pop_back();
             }
             _msg_cnt += msg_in_batch;
             _msg_bytes += bytes_in_batch;
           }
+        } else  {
+          while (!in_delete_batch.empty()) {
+            _done.push_back(in_delete_batch.back());
+            in_delete_batch.pop_back();
+          }
         }
+        if (!in_delete_batch.empty())
+          LOG(ERROR) << "in_batch should be empty here";
       }
     }
   DLOG(INFO) << "exiting thread";

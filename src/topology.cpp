@@ -6,13 +6,15 @@
 using namespace std::chrono_literals;
 
 namespace kspp {
-  topology::topology(std::shared_ptr<cluster_config> config, std::string topology_id)
+  topology::topology(std::shared_ptr<cluster_config> config, std::string topology_id, bool internal)
       : _cluster_config(config)
       , _is_started(false)
       , _topology_id(topology_id)
       , _next_gc_ts(0)
       , _min_buffering_ms(config->get_min_topology_buffering().count())
       , _max_pending_sink_messages(config->get_max_pending_sink_messages()) {
+    if (internal)
+      _allow_commit_chain_gc=false;
     LOG(INFO) << "topology created id:" << _topology_id;
   }
 
@@ -142,7 +144,8 @@ namespace kspp {
 
   std::size_t topology::process(int64_t ts) {
     auto ev_count = 0u;
-    autocommit_marker_gc();
+    if (_allow_commit_chain_gc)
+      autocommit_marker_gc(); // this is a global resource - we have to do this better for now only allow
 
     // this needs to be done to to trigger callbacks
     for (auto &&i : _sinks)

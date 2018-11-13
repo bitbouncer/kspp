@@ -47,6 +47,10 @@ namespace kspp {
 
     void poll();
 
+    size_t queue_size() const override {
+      return _incomming_msg.size() + _done.size();
+    }
+
   private:
     void connect_async();
     void check_table_exists_async();

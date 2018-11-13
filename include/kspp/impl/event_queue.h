@@ -21,7 +21,7 @@ namespace kspp {
 
     inline size_t size() const {
       spinlock::scoped_lock xxx(_spinlock);
-      return _queue.size();
+      { return _queue.size(); }
     }
 
     inline int64_t next_event_time() const {
@@ -36,9 +36,11 @@ namespace kspp {
     inline void push_back(std::shared_ptr<kevent<K, V>> p) {
       if (p != nullptr && p.get() != nullptr) {
         spinlock::scoped_lock xxx(_spinlock);
-        if (_queue.size() == 0)
-          _next_event_time = p->event_time();
-        _queue.push_back(p);
+        {
+          if (_queue.size() == 0)
+            _next_event_time = p->event_time();
+          _queue.push_back(p);
+        }
       }
     }
 
@@ -46,8 +48,10 @@ namespace kspp {
     inline void push_front(std::shared_ptr<kevent<K, V>> p) {
       if (p != nullptr && p.get() != nullptr) {
         spinlock::scoped_lock xxx(_spinlock);
+        {
           _next_event_time = p->event_time();
-        _queue.push_front(p);
+          _queue.push_front(p);
+        }
       }
     }
 

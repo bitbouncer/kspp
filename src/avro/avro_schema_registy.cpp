@@ -49,10 +49,12 @@ namespace kspp {
   std::shared_ptr<const avro::ValidSchema> avro_schema_registry::get_schema(int32_t schema_id) {
     {
       kspp::spinlock::scoped_lock xxx(_spinlock);
-      std::map<int32_t, std::shared_ptr<const avro::ValidSchema>>::iterator item = _cache.find(schema_id);
-      if (item != _cache.end()) {
-        //DLOG_EVERY_N(INFO, 1000) << "avro_schema_registry, cache lookup on " << schema_id;
-        return item->second;
+      {
+        std::map<int32_t, std::shared_ptr<const avro::ValidSchema>>::iterator item = _cache.find(schema_id);
+        if (item != _cache.end()) {
+          //DLOG_EVERY_N(INFO, 1000) << "avro_schema_registry, cache lookup on " << schema_id;
+          return item->second;
+        }
       }
     }
 
@@ -69,8 +71,8 @@ namespace kspp {
     rpc_result.schema->toJson(ss);
     LOG(INFO) << "avro_schema_registry get " << schema_id << "-> " << ss.str();
 
+    kspp::spinlock::scoped_lock xxx(_spinlock);
     {
-      kspp::spinlock::scoped_lock xxx(_spinlock);
       _cache[schema_id] = rpc_result.schema;
     }
     return rpc_result.schema;

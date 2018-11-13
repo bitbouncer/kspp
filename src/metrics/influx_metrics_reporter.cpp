@@ -24,7 +24,7 @@ namespace kspp {
   influx_metrics_reporter::influx_metrics_reporter(kspp::topology_builder &builder, std::string topic,
                                                    std::string prefix, std::string tags)
           : _run(true), _topic(topic), _prefix(prefix), _tags(tags), _hostname(hostname()) {
-    _metrics_topology = builder.create_topology();
+    _metrics_topology = builder.create_internal_topology();
     _sink = _metrics_topology->create_sink<kspp::kafka_sink<std::string, std::string, kspp::text_serdes, kspp::text_serdes>>(_topic);
 
     _thread = std::make_shared<std::thread>([this]() {

@@ -484,8 +484,8 @@ namespace kspp {
 
         curl_socket_t sockfd = tcp_socket->native_handle();
         /* save it for monitoring */
+        spinlock::scoped_lock xxx(_spinlock);
         {
-          spinlock::scoped_lock xxx(_spinlock);
           _socket_map.insert(std::pair<curl_socket_t, boost::asio::ip::tcp::socket *>(sockfd, tcp_socket));
         }
         //BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << " open ok, socket: " << sockfd;
@@ -516,8 +516,8 @@ namespace kspp {
       if (!tcp_socket) {
         //we try to find the data in our own mapping
         //if we find it - register this to curl so we dont have to do this every time.
+        spinlock::scoped_lock xxx(_spinlock);
         {
-          spinlock::scoped_lock xxx(_spinlock);
           std::map<curl_socket_t, boost::asio::ip::tcp::socket *>::iterator it = _socket_map.find(s);
           if (it != _socket_map.end()) {
             tcp_socket = it->second;
@@ -640,24 +640,23 @@ namespace kspp {
     }
 
     int client::closesocket_cb(curl_socket_t item) {
-      //BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << ", socket: " << item;
-      {
         spinlock::scoped_lock xxx(_spinlock);
-        std::map<curl_socket_t, boost::asio::ip::tcp::socket *>::iterator it = _socket_map.find(item);
-        if (it != _socket_map.end()) {
-          boost::system::error_code ec;
-          it->second->cancel(ec);
-          it->second->close(ec);
-          boost::asio::ip::tcp::socket *s = it->second;
+        {
+          std::map<curl_socket_t, boost::asio::ip::tcp::socket *>::iterator it = _socket_map.find(item);
+          if (it != _socket_map.end()) {
+            boost::system::error_code ec;
+            it->second->cancel(ec);
+            it->second->close(ec);
+            boost::asio::ip::tcp::socket *s = it->second;
 
-          //curl_multi_assign(_multi, it->first, NULL); // we need to remove this at once since curl likes to reuse sockets
-          _socket_map.erase(it);
-          _io_service.post([this, s]() {
-            //BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << ", socket: " << s;
-            delete s; // must be deleted after operations on socket completed. therefore the _io_service.post
-          });
+            //curl_multi_assign(_multi, it->first, NULL); // we need to remove this at once since curl likes to reuse sockets
+            _socket_map.erase(it);
+            _io_service.post([this, s]() {
+              //BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << ", socket: " << s;
+              delete s; // must be deleted after operations on socket completed. therefore the _io_service.post
+            });
+          }
         }
-      }
       return 0;
     }
 

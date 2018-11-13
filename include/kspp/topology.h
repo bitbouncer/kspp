@@ -7,7 +7,7 @@
 namespace kspp {
   class topology {
   public:
-    topology(std::shared_ptr<cluster_config> c_config, std::string topology_id);
+    topology(std::shared_ptr<cluster_config> c_config, std::string topology_id, bool internal=false);
 
     virtual ~topology();
 
@@ -164,5 +164,6 @@ namespace kspp {
     size_t _max_pending_sink_messages;
     std::set<std::string> _precondition_topics;
     std::string _precondition_consumer_group;
+    bool _allow_commit_chain_gc=true;
   };
 } // namespace

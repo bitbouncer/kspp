@@ -18,6 +18,11 @@ namespace kspp {
       return std::make_shared<kspp::topology>(_cluster_config, std::to_string(_next_topology_id++));
     }
 
+    std::shared_ptr<kspp::topology> create_internal_topology() {
+      return std::make_shared<kspp::topology>(_cluster_config, std::to_string(_next_topology_id++), true);
+    }
+
+
   private:
     std::shared_ptr<cluster_config> _cluster_config;
     size_t _next_topology_id;
