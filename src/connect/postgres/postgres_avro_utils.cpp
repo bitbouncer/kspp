@@ -243,10 +243,12 @@ namespace kspp {
           return FLOAT8OID;
         case avro::AVRO_BOOL:
           return BOOLOID;
+        case avro::AVRO_ARRAY: // we map arrays to a json string representation of the array eg [ 123, 123 ] or [ "nisse" ]
+          return TEXTOID;
+
         case avro::AVRO_UNION:
         case avro::AVRO_RECORD:
         case avro::AVRO_ENUM:
-        case avro::AVRO_ARRAY:
         case avro::AVRO_MAP:
 
         case avro::AVRO_FIXED:
@@ -367,14 +369,14 @@ namespace kspp {
     }
 
     // only maps simple types to value
-    static std::string avro2sql_simple_column_value(const avro::GenericDatum &column) {
+    static std::string avro_2_sql_simple_column_value(const avro::GenericDatum &column) {
       auto t = column.type();
       switch (t) {
         // nullable columns are represented as union of NULL and value
         // parse those recursive
         case avro::AVRO_UNION: {
           const avro::GenericUnion &au(column.value<avro::GenericUnion>());
-          return avro2sql_simple_column_value(au.datum());
+          return avro_2_sql_simple_column_value(au.datum());
         }
         case avro::AVRO_NULL:
           return "NULL";
@@ -400,11 +402,30 @@ namespace kspp {
         case avro::AVRO_BOOL:
           return column.value<bool>() ? "True" : "False";
           break;
+        case avro::AVRO_ARRAY: {
+          const avro::GenericArray &v = column.value<avro::GenericArray>();
+          const std::vector<avro::GenericDatum>&r = v.value();
+          if (r.size()==0)
+            return "'[]'";
+
+          std::vector<avro::GenericDatum>::const_iterator second_last = r.end();
+          --second_last;
+
+          std::string s = "[";
+          for (std::vector<avro::GenericDatum>::const_iterator i = r.begin(); i!=r.end(); ++i){
+            s += avro_2_sql_simple_column_value(*i);
+            if (i != second_last)
+              s += ", ";
+          }
+          s += "]";
+
+          return escapeSQLstring(s);
+        }
+          break;
+
         case avro::AVRO_RECORD:
         case avro::AVRO_ENUM:
-        case avro::AVRO_ARRAY:
         case avro::AVRO_MAP:
-
         case avro::AVRO_FIXED:
         default:
           LOG(FATAL) << "unexpected / non supported type e:" << column.type();
@@ -420,7 +441,7 @@ namespace kspp {
       const avro::GenericRecord &record(datum.value<avro::GenericRecord>());
       size_t nFields = record.fieldCount();
       for (int i = 0; i < nFields; i++) {
-        std::string val = avro2sql_simple_column_value(record.fieldAt(i));
+        std::string val = avro_2_sql_simple_column_value(record.fieldAt(i));
         if (i < (nFields - 1))
           result += val + ", ";
         else
@@ -436,7 +457,7 @@ namespace kspp {
       const avro::GenericRecord &record(datum.value<avro::GenericRecord>());
       std::string result;
       auto x = record.field(key);
-      result += avro2sql_simple_column_value(x);
+      result += avro_2_sql_simple_column_value(x);
       return result;
     }
 
@@ -450,7 +471,7 @@ namespace kspp {
         size_t nFields = record.fieldCount();
         for (int i = 0; i < nFields; i++) {
           result += root->nameAt(i) + "=";
-          std::string val = avro2sql_simple_column_value(record.fieldAt(i));
+          std::string val = avro_2_sql_simple_column_value(record.fieldAt(i));
           if (i < (nFields - 1))
             result += "=" + val + " AND ";
           else
@@ -458,7 +479,7 @@ namespace kspp {
         }
         return result;
       } else {
-        return key + "=" + avro2sql_simple_column_value(datum);
+        return key + "=" + avro_2_sql_simple_column_value(datum);
       }
     }
   } // namespace
