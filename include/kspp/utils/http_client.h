@@ -253,6 +253,9 @@ namespace kspp {
 
       inline kspp::http::method_t method() const { return _method; }
 
+      // use this with care
+      //CURL* get_curl() { return _curl_easy; }
+
     private:
 
       void curl_start(std::shared_ptr<request> self);
