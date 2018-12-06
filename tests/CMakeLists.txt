@@ -62,4 +62,9 @@ add_test(NAME test8_join COMMAND $<TARGET_FILE:test8_join>)
 #target_link_libraries(test9_kafka_rest ${CSI_LIBS_STATIC})
 #add_test(NAME test9_kafka_rest COMMAND $<TARGET_FILE:test9_kafka_rest>)
 
+add_executable(test10_http test10_http.cpp)
+target_link_libraries(test10_http ${CSI_LIBS_STATIC})
+add_test(NAME test10_http COMMAND $<TARGET_FILE:test10_http>)
+
+
 

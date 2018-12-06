@@ -272,18 +272,16 @@ namespace kspp {
     }
 
     void client::close() {
+      if (_closing)
+        return;
       _closing = true;
-      //BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION;
-      _timer.cancel();
       if (_multi) {
-        //BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << "before curl_multi_cleanup(_multi);";
         _io_service.post([this]() {
-          //BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << ", curl_multi_cleanup(_multi): "
-          //                         << _multi;
           curl_multi_cleanup(_multi);
           _multi = NULL;
         });
       }
+      _timer.cancel();
     }
 
     bool client::done() {
