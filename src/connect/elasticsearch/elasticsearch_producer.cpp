@@ -97,7 +97,7 @@ namespace kspp {
   }
 
   kspp::async::work<elasticsearch_producer::work_result_t>::async_function  elasticsearch_producer::create_one_http_work(const kspp::generic_avro& key, const kspp::generic_avro* value) {
-    auto key_string = avro_simple_column_value(*key.generic_datum());
+    auto key_string = avro_2_raw_column_value(*key.generic_datum());
     std::string url = _cp.url + "/" + _index_name + "/" + "_doc" + "/" + key_string;
 
     kspp::http::method_t request_type = (value) ? kspp::http::PUT : kspp::http::DELETE_;

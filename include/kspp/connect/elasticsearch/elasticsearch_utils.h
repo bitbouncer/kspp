@@ -4,8 +4,11 @@
 #pragma once
 
 namespace kspp {
-  std::string avro2elastic_simple_column_value(const avro::GenericDatum &datum);
-  std::string avro_simple_column_value(const avro::GenericDatum &column);
+  // decorated as json - ie "" around strings and [] around arrays
+  std::string avro_2_json_simple_column_value(const avro::GenericDatum &datum);
+
+  //no decoration
+  std::string avro_2_raw_column_value(const avro::GenericDatum &column);
 
   std::string avro2elastic_key_values(const avro::ValidSchema &schema, const std::string &key, const avro::GenericDatum &datum);
   std::string avro2elastic_json(const avro::ValidSchema &schema, const avro::GenericDatum &datum);

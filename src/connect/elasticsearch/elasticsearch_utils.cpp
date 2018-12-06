@@ -7,14 +7,14 @@
 
 namespace kspp {
 // only maps simple types to value
-  std::string avro2elastic_simple_column_value(const avro::GenericDatum &column) {
+  std::string avro_2_json_simple_column_value(const avro::GenericDatum &column) {
     auto t = column.type();
     switch (t) {
       // nullable columns are represented as union of NULL and value
       // parse those recursive
       case avro::AVRO_UNION: {
         const avro::GenericUnion &au(column.value<avro::GenericUnion>());
-        return avro2elastic_simple_column_value(au.datum());
+        return avro_2_json_simple_column_value(au.datum());
       }
       case avro::AVRO_NULL:
         return "NULL";
@@ -40,25 +40,42 @@ namespace kspp {
       case avro::AVRO_BOOL:
         return column.value<bool>() ? "true" : "false";
         break;
+      case avro::AVRO_ARRAY: {
+        const avro::GenericArray &v = column.value<avro::GenericArray>();
+        const std::vector<avro::GenericDatum>&r = v.value();
+        if (r.size()==0)
+          return "[]";
+
+         std::vector<avro::GenericDatum>::const_iterator second_last = r.end();
+        --second_last;
+
+        std::string s = "[";
+        for (std::vector<avro::GenericDatum>::const_iterator i = r.begin(); i!=r.end(); ++i){
+          s += avro_2_json_simple_column_value(*i);
+          if (i != second_last)
+            s += ", ";
+        }
+        s += "]";
+        return s;
+      }
+        break;
       case avro::AVRO_RECORD:
       case avro::AVRO_ENUM:
-      case avro::AVRO_ARRAY:
       case avro::AVRO_MAP:
-
       case avro::AVRO_FIXED:
       default:
         LOG(FATAL) << "unexpected / non supported type e:" << column.type();
     }
   }
 
-  std::string avro_simple_column_value(const avro::GenericDatum &column) {
+  std::string avro_2_raw_column_value(const avro::GenericDatum &column) {
     auto t = column.type();
     switch (t) {
       // nullable columns are represented as union of NULL and value
       // parse those recursive
       case avro::AVRO_UNION: {
         const avro::GenericUnion &au(column.value<avro::GenericUnion>());
-        return avro2elastic_simple_column_value(au.datum());
+        return avro_2_raw_column_value(au.datum());
       }
       case avro::AVRO_NULL:
         return "NULL";
@@ -121,7 +138,7 @@ namespace kspp {
       if (avro2elastic_simple_column_type(record.fieldAt(i)) != avro::AVRO_NULL) {
         if (has_previous)
           result += ", ";
-        result += "\"" + r->nameAt(i) + "\": " + avro2elastic_simple_column_value(record.fieldAt(i));
+        result += "\"" + r->nameAt(i) + "\": " + avro_2_json_simple_column_value(record.fieldAt(i));
         has_previous = true;
       }
     }
@@ -135,7 +152,7 @@ namespace kspp {
     const avro::GenericRecord &record(datum.value<avro::GenericRecord>());
     std::string result;
     auto x = record.field(key);
-    result += avro2elastic_simple_column_value(x);
+    result += avro_2_json_simple_column_value(x); // is this really correct??? should it now be raw??
     return result;
   }
 } // namespace
