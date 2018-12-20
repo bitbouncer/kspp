@@ -64,6 +64,7 @@ int main(int argc, char **argv) {
 
   std::string consumer_group(SERVICE_NAME);
   auto config = std::make_shared<kspp::cluster_config>(consumer_group);
+  config->load_config_from_env();
 
   if (vm.count("state_store_root")) {
     config->set_storage_root(vm["state_store_root"].as<std::string>());

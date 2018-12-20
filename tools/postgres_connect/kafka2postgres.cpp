@@ -154,6 +154,7 @@ int main(int argc, char **argv) {
   consumer_group += postgres_dbname;
 
   auto config = std::make_shared<kspp::cluster_config>(consumer_group);
+
   config->set_brokers(broker);
   config->set_schema_registry_uri(schema_registry);
   config->set_producer_buffering_time(1000ms);
