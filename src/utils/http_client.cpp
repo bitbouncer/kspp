@@ -366,6 +366,8 @@ namespace kspp {
         case kspp::http::POST:
           res = curl_easy_setopt(request->_curl_easy, CURLOPT_POST, 1);
           // must be different in post and put???
+          //res = curl_easy_setopt(request->_curl_easy, CURLOPT_POSTFIELDS, NULL);
+          res = curl_easy_setopt(request->_curl_easy, CURLOPT_POSTFIELDS, NULL);
           res = curl_easy_setopt(request->_curl_easy, CURLOPT_POSTFIELDSIZE_LARGE, (curl_off_t) request->tx_content_length());
           break;
 
