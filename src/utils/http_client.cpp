@@ -60,13 +60,13 @@ namespace kspp {
       return sz;
     }
 
-    static size_t read_callback_std_stream(void *ptr, size_t size, size_t nmemb, std::istream *stream) {
+    /*static size_t read_callback_std_stream(void *ptr, size_t size, size_t nmemb, std::istream *stream) {
       size_t max_sz = size * nmemb;
       stream->read((char *) ptr, max_sz);
       size_t actual = stream->gcount();
       //BOOST_LOG_TRIVIAL(trace) << BOOST_CURRENT_FUNCTION << ", out size: " << actual;
       return actual;
-    }
+    }*/
 
     static size_t parse_headers(void *buffer, size_t size, size_t nmemb, std::vector<kspp::http::header_t> *v) {
       size_t sz = size * nmemb;;
@@ -152,7 +152,7 @@ namespace kspp {
         , _timeout(timeout)
         , _http_result(kspp::http::undefined)
         , _tx_headers(headers)
-        , _tx_stream(std::ios_base::ate | std::ios_base::in | std::ios_base::out)
+//        , _tx_stream(std::ios_base::ate | std::ios_base::in | std::ios_base::out)
         , _curl_easy(NULL)
         , _curl_headerlist(NULL)
         , _curl_done(false) {
@@ -359,16 +359,27 @@ namespace kspp {
           break;
 
         case kspp::http::PUT:
-          res = curl_easy_setopt(request->_curl_easy, CURLOPT_UPLOAD, 1L);
-          res = curl_easy_setopt(request->_curl_easy, CURLOPT_INFILESIZE_LARGE, (curl_off_t) request->tx_content_length());
+          /* only works with read callbacks
+           * res = curl_easy_setopt(request->_curl_easy, CURLOPT_UPLOAD, 1L);
+          * res = curl_easy_setopt(request->_curl_easy, CURLOPT_INFILESIZE_LARGE, (curl_off_t) request->tx_content_length());
+          */
+          // this seems to be the right way with PUT and strings
+          curl_easy_setopt(request->_curl_easy, CURLOPT_CUSTOMREQUEST, "PUT"); /* !!! */
+          res = curl_easy_setopt(request->_curl_easy, CURLOPT_POSTFIELDS, request->tx_content().data());
+          res = curl_easy_setopt(request->_curl_easy, CURLOPT_POSTFIELDSIZE, (long) request->tx_content_length());
           break;
 
-        case kspp::http::POST:
-          res = curl_easy_setopt(request->_curl_easy, CURLOPT_POST, 1);
+        case kspp::http::POST: {
+          //res = curl_easy_setopt(request->_curl_easy, CURLOPT_POST, 1);
+          curl_easy_setopt(request->_curl_easy, CURLOPT_BUFFERSIZE, 102400L);
+          curl_easy_setopt(request->_curl_easy, CURLOPT_CUSTOMREQUEST, "POST");
           // must be different in post and put???
           //res = curl_easy_setopt(request->_curl_easy, CURLOPT_POSTFIELDS, NULL);
-          res = curl_easy_setopt(request->_curl_easy, CURLOPT_POSTFIELDS, NULL);
-          res = curl_easy_setopt(request->_curl_easy, CURLOPT_POSTFIELDSIZE_LARGE, (curl_off_t) request->tx_content_length());
+          res = curl_easy_setopt(request->_curl_easy, CURLOPT_POSTFIELDS, request->tx_content().data());
+            size_t sz = request->tx_content_length();
+            //LOG(INFO) << "sending - content lenght " << sz;
+            res = curl_easy_setopt(request->_curl_easy, CURLOPT_POSTFIELDSIZE, (long) sz);
+          }
           break;
 
         case kspp::http::DELETE_:
@@ -380,8 +391,8 @@ namespace kspp {
       };
 
       /* the request */
-      res = curl_easy_setopt(request->_curl_easy, CURLOPT_READFUNCTION, read_callback_std_stream);
-      res = curl_easy_setopt(request->_curl_easy, CURLOPT_READDATA, &request->_tx_stream);
+      //res = curl_easy_setopt(request->_curl_easy, CURLOPT_READFUNCTION, read_callback_std_stream);
+      //res = curl_easy_setopt(request->_curl_easy, CURLOPT_READDATA, &request->_tx_stream);
 
       /* the reply */
       res = curl_easy_setopt(request->_curl_easy, CURLOPT_WRITEFUNCTION, write_callback_buffer);
@@ -488,7 +499,7 @@ namespace kspp {
         {
           _socket_map.insert(std::pair<curl_socket_t, boost::asio::ip::tcp::socket *>(sockfd, tcp_socket));
         }
-        //BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << " open ok, socket: " << sockfd;
+        //LOG(INFO) << ",  open ok, socket: " << sockfd;
         return sockfd;
       }
 
@@ -502,13 +513,7 @@ namespace kspp {
 
     int client::sock_cb(CURL *e, curl_socket_t s, int what, void *per_socket_user_data) {
       if (what == CURL_POLL_REMOVE) {
-        //std::shared_ptr<call_context> context = call_context::lookup(e);
-        //if (!context) {
-        //  BOOST_LOG_TRIVIAL(warning) << this << ", " << BOOST_CURRENT_FUNCTION << ", CURL_POLL_REMOVE, socket: " << s << " - no context, skipping";
-        //  return 0;
-        //}
-        //// do nothing and hope we get a socket close callback???? kolla om det är rätt...
-        //// we cannot close or destroy the boost socket since this in inside callback - it is still used...
+        //LOG(INFO) << ", CURL_POLL_REMOVE, socket: " << s;
         return 0;
       }
 
@@ -526,8 +531,7 @@ namespace kspp {
         }
 
         if (!tcp_socket) {
-          //BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << ", socket: " << s
-          //                         << " is a c-ares socket, ignoring";
+          //LOG(INFO) << "socket: " << s  << " is a c-ares socket, ignoring";
           return 0;
         }
       }
@@ -536,7 +540,7 @@ namespace kspp {
 
       switch (what) {
         case CURL_POLL_IN:
-          //BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << ", CURL_POLL_IN, socket: " << s;
+          //LOG(INFO) << ", CURL_POLL_IN, socket: " << s;
           tcp_socket->async_read_some(boost::asio::null_buffers(),
                                       [this, tcp_socket, context](const boost::system::error_code &ec,
                                                                   std::size_t bytes_transferred) {
@@ -544,7 +548,7 @@ namespace kspp {
                                       });
           break;
         case CURL_POLL_OUT:
-          //BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << ", CURL_POLL_OUT, socket: " << s;
+          //LOG(INFO) << ", CURL_POLL_OUT, socket: " << s;
           tcp_socket->async_write_some(boost::asio::null_buffers(),
                                        [this, tcp_socket, context](const boost::system::error_code &ec,
                                                                    std::size_t bytes_transferred) {
@@ -552,7 +556,7 @@ namespace kspp {
                                        });
           break;
         case CURL_POLL_INOUT:
-          //BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << ", CURL_POLL_INOUT, socket: " << s;
+          //LOG(INFO) << ", CURL_POLL_INOUT, socket: " << s;
           tcp_socket->async_read_some(boost::asio::null_buffers(),
                                       [this, tcp_socket, context](const boost::system::error_code &ec,
                                                                   std::size_t bytes_transferred) {
@@ -589,9 +593,14 @@ namespace kspp {
 
     void client::socket_tx_cb(const boost::system::error_code &ec, boost::asio::ip::tcp::socket *tcp_socket,
                               std::shared_ptr<request> context) {
+      //LOG(INFO) << ", socket_tx_cb, EC: " << ec;
       if (!ec) {
-        CURLMcode rc = curl_multi_socket_action(_multi, tcp_socket->native_handle(), CURL_CSELECT_OUT,
-                                                &_curl_handles_still_running);
+        CURLMcode rc = curl_multi_socket_action(_multi, tcp_socket->native_handle(), CURL_CSELECT_OUT, &_curl_handles_still_running);
+        if (!context->_curl_done)
+          tcp_socket->async_write_some(boost::asio::null_buffers(),
+                                       [this, tcp_socket, context](const boost::system::error_code &ec, std::size_t bytes_transferred) {
+                                         socket_tx_cb(ec, tcp_socket, context);
+                                       });
         check_completed();
       }
     }
@@ -652,7 +661,6 @@ namespace kspp {
             //curl_multi_assign(_multi, it->first, NULL); // we need to remove this at once since curl likes to reuse sockets
             _socket_map.erase(it);
             _io_service.post([this, s]() {
-              //BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << ", socket: " << s;
               delete s; // must be deleted after operations on socket completed. therefore the _io_service.post
             });
           }

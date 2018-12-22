@@ -145,6 +145,13 @@ namespace kspp {
       std::vector<uint8_t> _data;
     };
 
+    /*struct put_cursor
+    {
+      const char *data=nullptr;
+      size_t len=0;
+    };
+     */
+
     class request {
       friend class kspp::http::client;
 
@@ -207,21 +214,35 @@ namespace kspp {
         return duration.count();
       }
 
-      inline void append(const std::string &s) {
+      /*inline void append(const std::string &s) {
         _tx_stream << s;
       }
 
       inline std::string tx_content() const {
         return _tx_stream.str();
       }
+       */
+
+      inline void append(const std::string &s) {
+        _tx_buffer.append(s);
+      }
+
+      inline const std::string& tx_content() const {
+        return _tx_buffer;
+      }
 
       inline const char *rx_content() const {
         return _rx_buffer.size() ? (const char *) _rx_buffer.data() : "";
       }
 
-      inline size_t tx_content_length() const {
+      /*inline size_t tx_content_length() const {
         return _tx_stream.str().size();
+      }*/
+
+      inline size_t tx_content_length() const {
+        return _tx_buffer.size();
       }
+
 
       inline size_t rx_content_length() const {
         return _rx_buffer.size();
@@ -285,7 +306,8 @@ namespace kspp {
 
       callback _callback;
       //TX
-      std::stringstream _tx_stream; // temporary for test...
+      //std::stringstream _tx_stream; // temporary for test...
+      std::string _tx_buffer;
       //RX
       buffer _rx_buffer;
 
