@@ -155,6 +155,14 @@ namespace kspp {
     for (auto &&i : _partition_processors)
       i->poll(0);
 
+    if (ts > _next_gc_ts) {
+      for (auto &&i : _partition_processors)
+        i->garbage_collect(ts);
+      for (auto &&i : _sinks)
+        i->garbage_collect(ts);
+      _next_gc_ts = ts + 10000; // 10 sec
+    }
+
     // tbd partiotns sinks???
     // check sinks here an return 0 if we need to wait...
     // we should not check every loop
@@ -179,17 +187,11 @@ namespace kspp {
       i->poll(0);
     }
 
-    if (ts > _next_gc_ts) {
-      for (auto &&i : _partition_processors)
-        i->garbage_collect(ts);
-      for (auto &&i : _sinks)
-        i->garbage_collect(ts);
-      _next_gc_ts = ts + 10000; // 10 sec
-    }
     return ev_count;
   }
 
   std::size_t topology::process_1s(){
+    if (_allow_commit_chain_gc)
     autocommit_marker_gc();
     for (auto &&i : _sinks)
       i->poll(0);
@@ -231,6 +233,55 @@ namespace kspp {
         i->garbage_collect(max_ts);
       _next_gc_ts = max_ts + 10000; // 10 sec
     }
+
+    return ev_count;
+  }
+
+  std::size_t topology::process_1ms(){
+    if (_allow_commit_chain_gc)
+      autocommit_marker_gc();
+    for (auto &&i : _sinks)
+      i->poll(0);
+    for (auto &&i : _partition_processors)
+      i->poll(0);
+
+
+    int64_t now = kspp::milliseconds_since_epoch();
+    if (now > _next_gc_ts) {
+      for (auto &&i : _partition_processors)
+        i->garbage_collect(now);
+      for (auto &&i : _sinks)
+        i->garbage_collect(now);
+      _next_gc_ts = now + 10000; // 10 sec
+    }
+
+    size_t sink_queue_len = 0;
+    for (auto &&i : _sinks)
+      sink_queue_len += i->outbound_queue_len();
+    if (sink_queue_len > _max_pending_sink_messages)
+      return 0;
+
+    int64_t min_ts = INT64_MAX;
+    for (auto &&i : _partition_processors)
+      min_ts = std::min(min_ts, i->next_event_time());
+
+    // empty queues?
+    if (min_ts == INT64_MAX)
+      return 0;
+
+    int64_t max_ts = std::min(min_ts+1, kspp::milliseconds_since_epoch()-_min_buffering_ms);
+
+    size_t ev_count=0;
+
+    for (auto &&i : _sinks)
+      ev_count += i->process(max_ts);
+
+    for (int64_t ts = min_ts; ts != max_ts; ++ts)
+      for (auto &&i : _partition_processors)
+        ev_count += i->process(ts);
+
+    for (auto &&i : _sinks)
+      ev_count +=  i->process(max_ts);
 
     return ev_count;
   }

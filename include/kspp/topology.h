@@ -24,7 +24,7 @@ namespace kspp {
     bool eof();
 
     std::size_t process_1s();
-
+    std::size_t process_1ms();
     std::size_t process(int64_t ts); // =milliseconds_since_epoch()
 
     void close();
@@ -58,31 +58,6 @@ namespace kspp {
       _partition_processors.push_back(p);
       return p;
     }
-
-
-    // should this be removed - since we're likely to want to merge two streams
-    /*
-     * template<class ps, typename... Args>
-    std::shared_ptr<kspp::merge<typename ps::key_type, typename ps::value_type>>
-    merge(std::vector<std::shared_ptr<ps>> sources, Args... args) {
-      std::shared_ptr <kspp::merge<typename ps::key_type, typename ps::value_type>> result = std::make_shared<kspp::merge<typename ps::key_type, typename ps::value_type>>(
-          this->get_cluster_config(), args...);
-      result->add(sources);
-      _partition_processors.push_back(result);
-      return result;
-    }
-    */
-
-    /*
-     * template<class ps, typename... Args>
-    std::shared_ptr<kspp::merge<typename ps::key_type, typename ps::value_type>>
-    merge(Args... args) {
-      std::shared_ptr <kspp::merge<typename ps::key_type, typename ps::value_type>> result = std::make_shared<kspp::merge<typename ps::key_type, typename ps::value_type>>(
-          this->get_cluster_config(), args...);
-      _partition_processors.push_back(result);
-      return result;
-    }
-    */
 
     // when you have a vector of partitions - lets create a new processor layer
     template<class pp, class ps, typename... Args>
