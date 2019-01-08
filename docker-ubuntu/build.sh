@@ -17,8 +17,8 @@ popd
 docker rm -f $EXTRACT_CONTAINER || true
 docker create --name $EXTRACT_CONTAINER $BUILD_CONTAINER_NAME
 docker cp $EXTRACT_CONTAINER:/usr/local/lib/libavrocpp.so.1.8.2.0       ./extract/lib
-docker cp $EXTRACT_CONTAINER:/usr/local/lib/libbenchmark.so.0.0.0       ./extract/lib
-docker cp $EXTRACT_CONTAINER:/usr/local/lib/libbenchmark_main.so.0.0.0  ./extract/lib
+#docker cp $EXTRACT_CONTAINER:/usr/local/lib/libbenchmark.so.0.0.0       ./extract/lib
+#docker cp $EXTRACT_CONTAINER:/usr/local/lib/libbenchmark_main.so.0.0.0  ./extract/lib
 docker cp $EXTRACT_CONTAINER:/usr/local/lib/libcivetweb-cpp.so.1.11.0   ./extract/lib
 docker cp $EXTRACT_CONTAINER:/usr/local/lib/libcivetweb.so.1.11.0       ./extract/lib
 docker cp $EXTRACT_CONTAINER:/usr/local/lib/libcpr.so                   ./extract/lib
@@ -32,10 +32,10 @@ docker cp $EXTRACT_CONTAINER:/usr/local/lib/librdkafka++.so.1           ./extrac
 docker cp $EXTRACT_CONTAINER:/usr/local/lib/librdkafka.so.1             ./extract/lib
 docker cp $EXTRACT_CONTAINER:/usr/local/lib/librocksdb.so               ./extract/lib
 
-docker cp $EXTRACT_CONTAINER:/usr/local/lib/libgmock.so                 ./extract/lib
-docker cp $EXTRACT_CONTAINER:/usr/local/lib/libgtest.so                 ./extract/lib
-docker cp $EXTRACT_CONTAINER:/usr/local/lib/libgmock_main.so            ./extract/lib
-docker cp $EXTRACT_CONTAINER:/usr/local/lib/libgtest_main.so            ./extract/lib
+#docker cp $EXTRACT_CONTAINER:/usr/local/lib/libgmock.so                 ./extract/lib
+#docker cp $EXTRACT_CONTAINER:/usr/local/lib/libgtest.so                 ./extract/lib
+#docker cp $EXTRACT_CONTAINER:/usr/local/lib/libgmock_main.so            ./extract/lib
+#docker cp $EXTRACT_CONTAINER:/usr/local/lib/libgtest_main.so            ./extract/lib
 docker cp $EXTRACT_CONTAINER:/usr/local/lib/libprometheus-cpp-core.so   ./extract/lib
 docker cp $EXTRACT_CONTAINER:/usr/local/lib/libprometheus-cpp-pull.so   ./extract/lib
 docker cp $EXTRACT_CONTAINER:/usr/local/lib/libprometheus-cpp-push.so   ./extract/lib
