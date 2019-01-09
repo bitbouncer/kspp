@@ -208,7 +208,7 @@ tar \
   --strip-components 1 && \
 cd prometheus-cpp && \
 mkdir build && cd build && \
-cmake  -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTING=OFF -DBUILD_SHARED_LIBS=ON .. && \
+cmake  -DCMAKE_BUILD_TYPE=Release -DUSE_THIRDPARTY_LIBRARIES=OFF -DENABLE_TESTING=OFF -DBUILD_SHARED_LIBS=ON .. && \
 make -j "$(getconf _NPROCESSORS_ONLN)" && \
 sudo make install && \
 cd ../.. && \
