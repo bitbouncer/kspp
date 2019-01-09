@@ -16,6 +16,7 @@ pushd ..
 docker build -f docker-ubuntu/Dockerfile.build  --no-cache -t$BUILD_CONTAINER_NAME .
 popd
 docker create --name $EXTRACT_CONTAINER $BUILD_CONTAINER_NAME
+
 docker cp $EXTRACT_CONTAINER:/usr/local/lib                                 ./extract
 echo $PWD
 find ./extract -name "*.a" -exec rm -rf {} \;
