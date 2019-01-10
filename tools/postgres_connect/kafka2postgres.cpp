@@ -40,8 +40,9 @@ int main(int argc, char **argv) {
       ("postgres_user", boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_USER")), "postgres_user")
       ("postgres_password", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("POSTGRES_PASSWORD")), "postgres_password")
       ("postgres_dbname", boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_DBNAME")), "postgres_dbname")
-      ("postgres_max_items_in_fetch", boost::program_options::value<int32_t>()->default_value(1000), "postgres_max_items_in_fetch")
+      ("postgres_max_items_in_insert", boost::program_options::value<int32_t>()->default_value(1000), "postgres_max_items_in_insert")
       ("postgres_warning_timeout", boost::program_options::value<int32_t>()->default_value(1000), "postgres_warning_timeout")
+      ("postgres_disable_delete", boost::program_options::value<int32_t>(), "postgres_disable_delete")
       ("id_column", boost::program_options::value<std::string>()->default_value("id"), "id_column")
       ("table_prefix", boost::program_options::value<std::string>()->default_value("kafka_"), "table_prefix")
       ("character_encoding", boost::program_options::value<std::string>()->default_value("UTF8"), "character_encoding")
@@ -112,9 +113,9 @@ int main(int argc, char **argv) {
     postgres_password = vm["postgres_password"].as<std::string>();
   }
 
-  int postgres_max_items_in_fetch;
-  if (vm.count("postgres_max_items_in_fetch")) {
-    postgres_max_items_in_fetch = vm["postgres_max_items_in_fetch"].as<int>();
+  int postgres_max_items_in_insert;
+  if (vm.count("postgres_max_items_in_insert")) {
+    postgres_max_items_in_insert = vm["postgres_max_items_in_insert"].as<int>();
   }
 
   int postgres_warning_timeout;
@@ -150,6 +151,12 @@ int main(int argc, char **argv) {
     filename = vm["filename"].as<std::string>();
   }
 
+
+  bool postgres_disable_delete=false;
+  if (vm.count("postgres_disable_delete")) {
+    postgres_disable_delete = (vm["postgres_disable_delete"].as<int>() > 0);
+  }
+
   std::string consumer_group(SERVICE_NAME);
   consumer_group += postgres_dbname;
 
@@ -179,13 +186,14 @@ int main(int argc, char **argv) {
   LOG(INFO) << "postgres_dbname             : " << postgres_dbname;
   LOG(INFO) << "postgres_user               : " << postgres_user;
   LOG(INFO) << "postgres_password           : " << "[hidden]";
-  LOG(INFO) << "postgres_max_items_in_fetch : " << postgres_max_items_in_fetch;
+  LOG(INFO) << "postgres_max_items_in_insert : " << postgres_max_items_in_insert;
   LOG(INFO) << "id_column                   : " << id_column;
   LOG(INFO) << "postgres_warning_timeout    : " << postgres_warning_timeout;
   LOG(INFO) << "table_prefix                : " << table_prefix;
   LOG(INFO) << "table_name_override         : " << table_name_override;
   LOG(INFO) << "table_name                  : " << table_name;
   LOG(INFO) << "character_encoding          : " << character_encoding;
+  LOG(INFO) << "postgres_disable_delete     : " << postgres_disable_delete;
 
   kspp::connect::connection_params connection_params;
   connection_params.host = postgres_host;
@@ -232,7 +240,7 @@ int main(int argc, char **argv) {
           //self->push_back(krecord);
           self->push_back(in);
         });
-    topology->create_sink<kspp::postgres_generic_avro_sink>(transform, table_name, connection_params, id_column, config->get_schema_registry(), character_encoding);
+    topology->create_sink<kspp::postgres_generic_avro_sink>(transform, table_name, connection_params, id_column, config->get_schema_registry(), character_encoding, postgres_max_items_in_insert, postgres_disable_delete);
   }
 
   std::vector<metrics20::avro::metrics20_key_tags_t> tags;

@@ -13,7 +13,8 @@ namespace kspp {
                                        const kspp::connect::connection_params& cp,
                                        std::string id_column,
                                        std::string client_encoding,
-                                       size_t max_items_in_fetch )
+                                       size_t max_items_in_insert,
+                                       bool skip_delete)
       : _good(true)
       , _closed(false)
       , _start_running(false)
@@ -25,11 +26,12 @@ namespace kspp {
       , cp_(cp)
       , _id_column(id_column)
       , _client_encoding(client_encoding)
-      , _max_items_in_fetch(max_items_in_fetch)
+      , _max_items_in_insert(max_items_in_insert)
       , _msg_cnt(0)
       , _msg_bytes(0)
       , _table_checked(false)
-      , _table_exists(false) {
+      , _table_exists(false)
+      , _skip_delete(skip_delete){
     initialize();
   }
 
@@ -163,6 +165,12 @@ namespace kspp {
 
 
       auto msg = _incomming_msg.front();
+
+      if (_skip_delete && msg->record()->value()==nullptr) {
+        LOG(INFO) << "skipping delete";
+        continue;
+      }
+
       // upsert?
       if (msg->record()->value()) {
         std::string statement = pq::avro2sql_build_insert_1(_table, *msg->record()->value()->valid_schema());
@@ -172,9 +180,14 @@ namespace kspp {
         size_t bytes_in_batch = 0;
         std::set<std::string> unique_keys_in_batch;
         std::deque<std::shared_ptr<kevent<kspp::generic_avro, kspp::generic_avro>>> in_update_batch;
-        while (!_incomming_msg.empty() && msg_in_batch < _max_items_in_fetch) {
+        while (!_incomming_msg.empty() && msg_in_batch < _max_items_in_insert) {
           auto msg = _incomming_msg.front();
           if (msg->record()->value()==nullptr) {
+            if (_skip_delete) {
+              LOG(INFO) << "skipping delete";
+              continue;
+            }
+
             DLOG(INFO) << "breaking up upsert due to delete message, batch size: " << msg_in_batch;
             break;
           }
@@ -193,8 +206,7 @@ namespace kspp {
 
           if (msg_in_batch > 0)
             statement += ", \n";
-          statement += pq::avro2sql_values(*msg->record()->value()->valid_schema(),
-                                       *msg->record()->value()->generic_datum());
+          statement += pq::avro2sql_values(*msg->record()->value()->valid_schema(), *msg->record()->value()->generic_datum());
           ++msg_in_batch;
           in_update_batch.push_back(msg);
           _incomming_msg.pop_front();
@@ -212,9 +224,11 @@ namespace kspp {
         // if we failed we have to push back messages to the _incomming_msg and retry
         if (res.first){
           // should we just exit here ??? - it depends if we trust stored offsets.
+          //DLOG(INFO) << statement;
 
           while (!in_update_batch.empty()) {
-            LOG(INFO) << "pushing back failed update to queue";
+            //LOG(INFO) << "pushing back failed update to queue";
+
             _incomming_msg.push_front(in_update_batch.back());
             in_update_batch.pop_back();
           }
@@ -234,7 +248,7 @@ namespace kspp {
         size_t msg_in_batch = 0;
         size_t bytes_in_batch = 0;
         std::deque<std::shared_ptr<kevent<kspp::generic_avro, kspp::generic_avro>>> in_delete_batch;
-        while (!_incomming_msg.empty() && msg_in_batch < _max_items_in_fetch) {
+        while (!_incomming_msg.empty() && msg_in_batch < _max_items_in_insert) { // TODO should proably be something different from insert limit  - postpone till we do out-of-band" delete
           auto msg = _incomming_msg.front();
           if (msg->record()->value() != nullptr) {
             DLOG(INFO) << "breaking up delete due to insert message, batch size: " << msg_in_batch;

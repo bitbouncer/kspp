@@ -18,8 +18,10 @@ namespace kspp {
                                const kspp::connect::connection_params& cp,
                                std::string id_column,
                                std::shared_ptr<kspp::avro_schema_registry> schema_registry,
-                               std::string client_encoding="UTF8")
-        : generic_avro_sink(config, std::make_shared<kspp::postgres_producer>(table, cp, id_column, client_encoding)){
+                               std::string client_encoding="UTF8",
+                               size_t max_items_in_insert=1000,
+                               bool skip_delete = false)
+        : generic_avro_sink(config, std::make_shared<kspp::postgres_producer>(table, cp, id_column, client_encoding, max_items_in_insert, skip_delete)){
       this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
       this->add_metrics_tag(KSPP_TOPIC_TAG, table);
     }

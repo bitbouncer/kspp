@@ -14,7 +14,8 @@ namespace kspp {
                       const kspp::connect::connection_params& cp,
                       std::string id_column,
                       std::string client_encoding,
-                      size_t max_items_in_fetch=1000);
+                      size_t max_items_in_insert,
+                      bool skip_delete=false);
     ~postgres_producer();
 
     void close() override;
@@ -66,12 +67,13 @@ namespace kspp {
 
     event_queue<kspp::generic_avro, kspp::generic_avro> _incomming_msg;
     event_queue<kspp::generic_avro, kspp::generic_avro> _done;  // waiting to be deleted in poll();
-    size_t _max_items_in_fetch;
+    size_t _max_items_in_insert;
     uint64_t _msg_cnt;
     uint64_t _msg_bytes;
 
     bool _table_checked;
     bool _table_exists;
+    bool _skip_delete;
   };
 }
 
