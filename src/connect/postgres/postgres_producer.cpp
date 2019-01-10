@@ -167,7 +167,7 @@ namespace kspp {
       auto msg = _incomming_msg.front();
 
       if (_skip_delete && msg->record()->value()==nullptr) {
-        LOG(INFO) << "skipping delete";
+        DLOG(INFO) << "skipping delete";
         continue;
       }
 
@@ -179,12 +179,13 @@ namespace kspp {
         size_t msg_in_batch = 0;
         size_t bytes_in_batch = 0;
         std::set<std::string> unique_keys_in_batch;
+        std::map<std::string, int64_t> unique_keys_in_batch2;
         std::deque<std::shared_ptr<kevent<kspp::generic_avro, kspp::generic_avro>>> in_update_batch;
         while (!_incomming_msg.empty() && msg_in_batch < _max_items_in_insert) {
           auto msg = _incomming_msg.front();
           if (msg->record()->value()==nullptr) {
             if (_skip_delete) {
-              LOG(INFO) << "skipping delete";
+              DLOG(INFO) << "skipping delete";
               continue;
             }
 
@@ -196,6 +197,17 @@ namespace kspp {
           // postgres::exec failed ERROR:  ON CONFLICT DO UPDATE command cannot affect row a second time
           auto key_string = pq::avro2sql_key_values(*msg->record()->value()->valid_schema(), _id_column,
                                                 *msg->record()->value()->generic_datum());
+
+          auto res0 = unique_keys_in_batch2.find(key_string);
+          if (res0 != unique_keys_in_batch2.end()){
+            if (res0->second == msg->event_time()){
+              //LOG(INFO) << "SAME TS FOR SAME KEY - SKIPPING";
+              continue;
+            }
+          }
+
+          unique_keys_in_batch2[key_string] = msg->event_time();
+
           auto res = unique_keys_in_batch.insert(key_string);
           if (res.second == false) {
             DLOG(INFO)
