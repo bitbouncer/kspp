@@ -31,7 +31,7 @@ namespace kspp {
       , _msg_bytes(0)
       , _table_checked(false)
       , _table_exists(false)
-      , _skip_delete(skip_delete){
+      , _skip_delete2(skip_delete){
     initialize();
   }
 
@@ -166,7 +166,9 @@ namespace kspp {
 
       auto msg = _incomming_msg.front();
 
-      if (_skip_delete && msg->record()->value()==nullptr) {
+      if (_skip_delete2 && msg->record()->value()==nullptr) {
+        _done.push_back(msg);
+        _incomming_msg.pop_front();
         DLOG(INFO) << "skipping delete";
         continue;
       }
@@ -178,14 +180,17 @@ namespace kspp {
 
         size_t msg_in_batch = 0;
         size_t bytes_in_batch = 0;
+        //size_t same_key_skipped=0;
         std::set<std::string> unique_keys_in_batch;
         std::map<std::string, int64_t> unique_keys_in_batch2;
         std::deque<std::shared_ptr<kevent<kspp::generic_avro, kspp::generic_avro>>> in_update_batch;
         while (!_incomming_msg.empty() && msg_in_batch < _max_items_in_insert) {
           auto msg = _incomming_msg.front();
           if (msg->record()->value()==nullptr) {
-            if (_skip_delete) {
+            if (_skip_delete2) {
               DLOG(INFO) << "skipping delete";
+              _done.push_back(msg);
+              _incomming_msg.pop_front();
               continue;
             }
 
@@ -201,8 +206,10 @@ namespace kspp {
           auto res0 = unique_keys_in_batch2.find(key_string);
           if (res0 != unique_keys_in_batch2.end()){
             if (res0->second == msg->event_time()){
-              //LOG(INFO) << "SAME TS FOR SAME KEY - SKIPPING";
+              _done.push_back(msg);
+              _incomming_msg.pop_front();
               continue;
+              //same_key_skipped++;
             }
           }
 

@@ -73,7 +73,7 @@ namespace kspp {
 
     bool _table_checked;
     bool _table_exists;
-    bool _skip_delete;
+    bool _skip_delete2;
   };
 }
 
