@@ -39,6 +39,7 @@ int main(int argc, char **argv) {
       ("db_dbname", boost::program_options::value<std::string>()->default_value(get_env_and_log("DB_DBNAME")), "db_dbname")
       ("id_column", boost::program_options::value<std::string>()->default_value(""), "id_column")
       ("timestamp_column", boost::program_options::value<std::string>()->default_value(""), "timestamp_column")
+      ("timestamp_unit", boost::program_options::value<std::string>(), "timestamp_unit")
       ("poll_intervall", boost::program_options::value<int32_t>()->default_value(60), "poll_intervall")
       ("max_items_in_fetch", boost::program_options::value<int32_t>()->default_value(1000), "max_items_in_fetch")
       ("warning_timeout", boost::program_options::value<int32_t>()->default_value(1000), "warning_timeout")
@@ -116,6 +117,15 @@ int main(int argc, char **argv) {
   std::string timestamp_column;
   if (vm.count("timestamp_column")) {
     timestamp_column = vm["timestamp_column"].as<std::string>();
+  }
+
+  int timetamp_multiplier = 0;
+  if (vm.count("timestamp_unit")) {
+    auto s = vm["timestamp_unit"].as<std::string>();
+    if (s == "s")
+      timetamp_multiplier = 1000;
+    if (s == "ms")
+      timetamp_multiplier = 1;
   }
 
   int max_items_in_fetch;
@@ -265,6 +275,7 @@ int main(int argc, char **argv) {
   table_params.poll_intervall = std::chrono::seconds(poll_intervall);
   table_params.max_items_in_fetch = max_items_in_fetch;
   table_params.offset_storage = offset_storage;
+  table_params.ts_multiplier=timetamp_multiplier;
 
   if (filename.size()) {
      LOG(INFO) << "using avro file..";
