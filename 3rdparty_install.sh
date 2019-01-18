@@ -2,38 +2,6 @@ mkdir tmp && cd tmp
 
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 
-#wget -O google-test.tar.gz "https://github.com/google/googletest/archive/release-1.8.1.tar.gz" && \
-#mkdir -p google-test && \
-#tar \
-#  --extract \
-#  --file google-test.tar.gz \
-#  --directory google-test \
-#  --strip-components 1 && \
-#cd google-test && \
-#mkdir build && cd build && \
-#cmake  -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON .. && \
-#make -j "$(getconf _NPROCESSORS_ONLN)" && \
-#sudo make install && \
-#cd ../.. && \
-#rm google-test.tar.gz && \
-#rm -rf google-test
-
-#wget -O google-benchmark.tar.gz "https://github.com/google/benchmark/archive/v1.4.1.tar.gz" && \
-#mkdir -p google-benchmark && \
-#tar \
-#  --extract \
-#  --file google-benchmark.tar.gz \
-#  --directory google-benchmark \
-#  --strip-components 1 && \
-#cd google-benchmark && \
-#mkdir build && cd build && \
-#cmake  -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON .. && \
-#make -j "$(getconf _NPROCESSORS_ONLN)" && \
-#sudo make install && \
-#cd ../.. && \
-#rm google-benchmark.tar.gz && \
-#rm -rf google-benchmark
-
 wget -O protobuf.tar.gz "https://github.com/protocolbuffers/protobuf/releases/download/v3.6.1/protobuf-cpp-3.6.1.tar.gz" && \
 mkdir -p protobuf && \
 tar \
@@ -96,23 +64,6 @@ cd .. && \
 rm rocksdb.tar.gz && \
 rm -rf rocksdb
 
-#moved to prebuilt package
-#wget -O freetds-patched.tar.gz "ftp://ftp.freetds.org/pub/freetds/stable/freetds-patched.tar.gz" && \
-#mkdir -p freetds && \
-#tar \
-#  --extract \
-#  --file freetds-patched.tar.gz \
-#  --directory freetds \
-#  --strip-components 1 && \
-#cd freetds && \
-#./configure --prefix=/usr/local && \
-#make -j "$(getconf _NPROCESSORS_ONLN)" && \
-#sudo make install && \
-#sudo rm -rf /usr/local/share/doc/freetds && \
-#cd .. && \
-#rm freetds-patched.tar.gz && \
-#rm -rf freetds
-
 wget -O avro.tar.gz "https://github.com/apache/avro/archive/release-1.8.2.tar.gz" && \
 mkdir -p avro && \
 tar \
@@ -163,41 +114,6 @@ sudo cp -r ../include/cpr/* /usr/local/include/cpr && \
 cd ../.. && \
 rm cpr.tar.gz && \
 rm -rf cpr
-
-#awaiting patch in org project (not possible to build from tar.gz)
-#wget -O prometheus-cpp.tar.gz "https://github.com/jupp0r/prometheus-cpp/archive/external-dependencies.tar.gz" && \
-#mkdir -p prometheus-cpp && \
-#tar \
-#  --extract \
-#  --file prometheus-cpp.tar.gz \
-#  --directory prometheus-cpp \
-#  --strip-components 1 && \
-#cd prometheus-cpp && \
-#mkdir build && cd build && \
-#cmake  -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTING=OFF -DENABLE_PUSH=OFF -DUSE_THIRDPARTY_LIBRARIES=OFF ..
-#make -j "$(getconf _NPROCESSORS_ONLN)" && \
-#sudo make install && \
-#cd ../.. && \
-#rm prometheus-cpp.tar.gz && \
-#rm -rf prometheus-cpp
-
-
-#wget -O prometheus-cpp.tar.gz "https://github.com/bitbouncer/prometheus-cpp/archive/master.tar.gz" && \
-#mkdir -p prometheus-cpp && \
-#tar \
-#  --extract \
-#  --file prometheus-cpp.tar.gz \
-#  --directory prometheus-cpp \
-#  --strip-components 1 && \
-#cd prometheus-cpp && \
-#mkdir build && cd build && \
-#cmake  -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTING=OFF -DBUILD_SHARED_LIBS=ON .. && \
-#make -j "$(getconf _NPROCESSORS_ONLN)" && \
-#sudo make install && \
-#cd ../.. && \
-#rm prometheus-cpp.tar.gz && \
-#rm -rf prometheus-cpp
-
 
 wget -O prometheus-cpp.tar.gz "https://github.com/jupp0r/prometheus-cpp/archive/master.tar.gz" && \
 mkdir -p prometheus-cpp && \
