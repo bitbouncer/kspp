@@ -77,7 +77,7 @@ namespace kspp {
           continue;
         } else if (ec == RdKafka::ERR__QUEUE_FULL) {
           // expected and retriable
-          count;
+          return count;
         } else  {
           LOG(ERROR) << "other error from rd_kafka ec:" << ec;
           // permanent failure - need to stop TBD

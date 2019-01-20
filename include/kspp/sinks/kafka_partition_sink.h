@@ -82,17 +82,27 @@ namespace kspp {
       return this->_queue.size() == 0;
     }
 
+    // lets try to get as much as possible from queue to librdkafka - stop when queue is empty or librdkafka fails
     size_t process(int64_t tick) override {
       size_t count = 0;
       while (this->_queue.size()) {
         auto ev = this->_queue.front();
-        if (handle_event(ev) != 0)
+        int ec = handle_event(ev);
+        if (ec == 0) {
+          ++count;
+          ++(this->_processed_count);
+          this->_lag.add_event_time(kspp::milliseconds_since_epoch(), ev->event_time()); // move outside loop
+          this->_queue.pop_front();
+          continue;
+        } else if (ec == RdKafka::ERR__QUEUE_FULL) {
+          // expected and retriable
           return count;
-        ++count;
-        ++(this->_processed_count);
-        this->_lag.add_event_time(kspp::milliseconds_since_epoch(), ev->event_time()); // move outside loop
-        this->_queue.pop_front();
-      }
+        } else  {
+          LOG(ERROR) << "other error from rd_kafka ec:" << ec;
+          // permanent failure - need to stop TBD
+          return count;
+        }
+      } // while
       return count;
     }
 
