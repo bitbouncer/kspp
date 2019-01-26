@@ -121,7 +121,7 @@ namespace kspp {
         request->set_basic_auth(_cp.user, _cp.password);
 
       request->append(body);
-      request->set_verbose(false);
+      //request->set_trace_level(http::TRACE_LOG_NONE);
       _http_handler.perform_async(
         request,
         [this, cb](std::shared_ptr<kspp::http::request> h) {

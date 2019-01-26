@@ -115,7 +115,7 @@ namespace kspp {
                                         _private_key_passphrase);
 
 #ifndef NDEBUG
-        request->set_verbose(true);
+        request->set_trace_level(http::TRACE_LOG_VERBOSE);
         auto uuid = boost::uuids::random_generator()();
         request->set_request_id(to_string(uuid));
         DLOG(INFO) << to_string(uuid) << ", getting config from " << uri;

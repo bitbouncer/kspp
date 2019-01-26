@@ -14,7 +14,6 @@ docker rm -f $EXTRACT_CONTAINER || true
 
 pushd ..
 docker build -f docker-alpine/Dockerfile.build --no-cache -t$BUILD_CONTAINER_NAME .
-
 popd
 docker create --name $EXTRACT_CONTAINER $BUILD_CONTAINER_NAME
 

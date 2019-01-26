@@ -206,8 +206,8 @@ namespace kspp {
       _timeout = timeout;
     }
 
-    void request::set_verbose(bool state) {
-      _curl_verbose = state;
+    void request::set_trace_level(trace_log_level level) {
+      trace_log_level _log_level = level;
     }
 
 
@@ -295,8 +295,7 @@ namespace kspp {
       });
     }
 
-    std::shared_ptr<kspp::http::request> client::perform(std::shared_ptr<kspp::http::request> request, bool verbose) {
-      request->_curl_verbose = verbose;
+    std::shared_ptr<kspp::http::request> client::perform(std::shared_ptr<kspp::http::request> request) {
       std::promise<std::shared_ptr<kspp::http::request>> p;
       std::future<std::shared_ptr<kspp::http::request>> f = p.get_future();
       perform_async(request, [&p](std::shared_ptr<kspp::http::request> result) {
@@ -349,7 +348,7 @@ namespace kspp {
       // retrieve cert info
       //curl_easy_setopt(_curl, CURLOPT_CERTINFO, 1);
 
-      if (request->_curl_verbose)
+      if (request->_log_level == TRACE_LOG_VERBOSE)
         res = curl_easy_setopt(request->_curl_easy, CURLOPT_VERBOSE, 1L);
 
       switch (request->_method) {

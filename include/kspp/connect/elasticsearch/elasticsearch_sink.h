@@ -167,7 +167,7 @@ namespace kspp {
         auto ts0 = kspp::milliseconds_since_epoch();
         // retry sent till we have to exit
         while(!_exit) {
-          auto res = _http_handler.perform(request, true);
+          auto res = _http_handler.perform(request);
 
           // NOT OK?
           if (!res->ok()) {

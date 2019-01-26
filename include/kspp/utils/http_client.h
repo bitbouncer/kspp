@@ -26,6 +26,11 @@
 
 namespace kspp {
   namespace http {
+    enum trace_log_level {
+      TRACE_LOG_NONE = 0,
+      TRACE_LOG_VERBOSE  =1
+    };
+
     enum status_type {
       undefined = 0,
 
@@ -195,14 +200,11 @@ namespace kspp {
       /*
        * turns on detailed logging
        */
-      void set_verbose(bool state);
-
+      void set_trace_level(trace_log_level level);
 
       void set_tx_headers(const std::vector<std::string> &headers);
 
-
       void set_timeout(const std::chrono::milliseconds &timeout);
-
 
       inline int64_t milliseconds() const {
         std::chrono::milliseconds duration = std::chrono::duration_cast<std::chrono::milliseconds>(_end_ts - _start_ts);
@@ -213,15 +215,6 @@ namespace kspp {
         std::chrono::microseconds duration = std::chrono::duration_cast<std::chrono::microseconds>(_end_ts - _start_ts);
         return duration.count();
       }
-
-      /*inline void append(const std::string &s) {
-        _tx_stream << s;
-      }
-
-      inline std::string tx_content() const {
-        return _tx_stream.str();
-      }
-       */
 
       inline void append(const std::string &s) {
         _tx_buffer.append(s);
@@ -235,14 +228,9 @@ namespace kspp {
         return _rx_buffer.size() ? (const char *) _rx_buffer.data() : "";
       }
 
-      /*inline size_t tx_content_length() const {
-        return _tx_stream.str().size();
-      }*/
-
       inline size_t tx_content_length() const {
         return _tx_buffer.size();
       }
-
 
       inline size_t rx_content_length() const {
         return _rx_buffer.size();
@@ -302,7 +290,8 @@ namespace kspp {
 
       // logging stuff
       std::string _request_id;
-      bool _curl_verbose = { false };
+      //bool _curl_verbose = { false };
+      trace_log_level _log_level = TRACE_LOG_NONE;
 
       callback _callback;
       //TX
@@ -331,7 +320,7 @@ namespace kspp {
       void close();
       bool done();
       void perform_async(std::shared_ptr<kspp::http::request> request, kspp::http::request::callback cb);
-      std::shared_ptr<kspp::http::request> perform(std::shared_ptr<kspp::http::request> request, bool verbose);
+      std::shared_ptr<kspp::http::request> perform(std::shared_ptr<kspp::http::request> request);
 
     protected:
       void _perform(std::shared_ptr<kspp::http::request> request);
