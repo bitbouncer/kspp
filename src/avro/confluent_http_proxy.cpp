@@ -228,7 +228,10 @@ namespace kspp {
               LOG(ERROR) << "confluent_http_proxy cannot parse response";
 #endif
           }
-          cb(-1);
+          if (request->transport_result())
+            cb(request->http_result());
+          else
+            cb(-1);
         });
       });
     }
