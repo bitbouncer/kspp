@@ -31,7 +31,6 @@ namespace kspp {
 
     void start(int64_t offset) override {
       _impl.start(offset);
-      _started = true;
     }
 
     void close() override {
@@ -47,6 +46,7 @@ namespace kspp {
     }
 
     void commit(bool flush) override {
+      //_impl.commit(flush);
       /*
        * if (_commit_chain.last_good_offset() >= 0)
         _impl.commit(_commit_chain.last_good_offset(), flush);
@@ -84,16 +84,7 @@ namespace kspp {
     }
 
   protected:
-    //void thread_f();
-    bool _started;
-    bool _exit;
     postgres_consumer _impl;
-    std::shared_ptr<kspp::avro_schema_registry> _schema_registry;
-    std::shared_ptr<avro::ValidSchema> _schema;
-    int32_t _schema_id;
-    commit_chain _commit_chain;
-    metric_counter _parse_errors;
-    metric_evaluator _commit_chain_size;
   };
 }
 

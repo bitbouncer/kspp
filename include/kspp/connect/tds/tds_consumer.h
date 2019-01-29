@@ -30,7 +30,7 @@ namespace kspp {
        return (_incomming_msg.size() == 0) && _eof;
     }
 
-    inline std::string logcal_name() const {
+    inline std::string logical_name() const {
       return _logical_name;
     }
 

@@ -32,7 +32,6 @@ namespace kspp {
 
     void start(int64_t offset) override {
       _impl.start(offset);
-      _started = true;
     }
 
     void close() override {
@@ -78,19 +77,11 @@ namespace kspp {
     }
 
     std::string topic() const override {
-      return _impl.logcal_name();
+      return _impl.logical_name();
     }
 
   protected:
-    bool _started;
-    bool _exit;
     tds_consumer _impl;
-    std::shared_ptr<kspp::avro_schema_registry> _schema_registry;
-    std::shared_ptr<avro::ValidSchema> _schema;
-    int32_t _schema_id;
-    commit_chain _commit_chain;
-    metric_counter _parse_errors;
-    metric_evaluator _commit_chain_size;
   };
 }
 
