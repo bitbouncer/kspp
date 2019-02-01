@@ -5,156 +5,167 @@
 #pragma once
 
 namespace kspp {
-   class generic_avro
+  class generic_avro
   {
   public:
-     class generic_record
-     {
-     public:
-       generic_record(const avro::GenericRecord &record)
-           : record_(record){
-       }
+    class generic_record
+    {
+    public:
+      generic_record(const avro::GenericRecord &record)
+          : record_(record){
+      }
 
-       template<class T>
-       T get(std::string name) const {
-         if (!record_.hasField(name))
-           throw std::invalid_argument("no such member: " + name);
+      template<class T>
+      T get(std::string name) const {
+        if (!record_.hasField(name))
+          throw std::invalid_argument("no such member: " + name);
 
-         const avro::GenericDatum &field = record_.field(name);
+        const avro::GenericDatum &field = record_.field(name);
 
-         if(field.type() == cpp_to_avro_type<T>())
-           return field.value<T>();
+        if(field.type() == cpp_to_avro_type<T>())
+          return field.value<T>();
 
-         if (field.isUnion()) {
-           const avro::GenericUnion &generic_union(field.value<avro::GenericUnion>());
-           if(generic_union.datum().type() == cpp_to_avro_type<T>()) {
-             return generic_union.datum().value<T>();
-           } else if (generic_union.datum().type() == avro::AVRO_NULL) {
-             throw std::invalid_argument(std::string("wrong type, expected:") + to_string(cpp_to_avro_type<T>())+ ", actual: " + to_string(generic_union.datum().type()));
-           } else {
-             //bad type - throw...
-             throw std::invalid_argument(std::string("wrong type, expected:") + to_string(cpp_to_avro_type<T>())+ ", actual: " + to_string(generic_union.datum().type()));
-           }
-         }
-         throw std::invalid_argument(std::string("wrong type, expected:") + to_string(cpp_to_avro_type<T>()) +  ", actual: " + to_string(field.type()));
-       }
+        if (field.isUnion()) {
+          const avro::GenericUnion &generic_union(field.value<avro::GenericUnion>());
+          if(generic_union.datum().type() == cpp_to_avro_type<T>()) {
+            return generic_union.datum().value<T>();
+          } else if (generic_union.datum().type() == avro::AVRO_NULL) {
+            throw std::invalid_argument(std::string("wrong type, expected:") + to_string(cpp_to_avro_type<T>())+ ", actual: " + to_string(generic_union.datum().type()));
+          } else {
+            //bad type - throw...
+            throw std::invalid_argument(std::string("wrong type, expected:") + to_string(cpp_to_avro_type<T>())+ ", actual: " + to_string(generic_union.datum().type()));
+          }
+        }
+        throw std::invalid_argument(std::string("wrong type, expected:") + to_string(cpp_to_avro_type<T>()) +  ", actual: " + to_string(field.type()));
+      }
 
-       template<class T>
-       boost::optional<T> get_optional(const std::string& name) const{
-         if (!record_.hasField(name))
-           throw std::invalid_argument("no such member: " + name);
+      template<class T>
+      boost::optional<T> get_optional(const std::string& name) const{
+        if (!record_.hasField(name))
+          throw std::invalid_argument("no such member: " + name);
 
-         const avro::GenericDatum &field = record_.field(name);
+        const avro::GenericDatum &field = record_.field(name);
 
-         if (field.isUnion()) {
-           const avro::GenericUnion &generic_union(field.value<avro::GenericUnion>());
-           if (generic_union.datum().type() == avro::AVRO_NULL)
-             return boost::none;
-           else
-             return convert<T>(generic_union.datum());
-         } else {
-           return convert<T>(field);
-         }
-       }
+        if (field.isUnion()) {
+          const avro::GenericUnion &generic_union(field.value<avro::GenericUnion>());
+          if (generic_union.datum().type() == avro::AVRO_NULL)
+            return boost::none;
+          else
+            return convert<T>(generic_union.datum());
+        } else {
+          return convert<T>(field);
+        }
+      }
 
       boost::optional<std::string> get_optional_as_string(const std::string& name) const{
-         if (!record_.hasField(name))
-           throw std::invalid_argument("no such member: " + name);
+        if (!record_.hasField(name))
+          throw std::invalid_argument("no such member: " + name);
 
-         const avro::GenericDatum &field = record_.field(name);
+        const avro::GenericDatum &field = record_.field(name);
 
-         if (field.isUnion()) {
-           const avro::GenericUnion &generic_union(field.value<avro::GenericUnion>());
-           switch (generic_union.datum().type()) {
-             case avro::AVRO_NULL:
-               return boost::none;
-             case avro::AVRO_STRING :
-               return convert<std::string>(generic_union.datum());
-             case avro::AVRO_INT:
-               return std::to_string(convert<int32_t>(generic_union.datum()));
-             case avro::AVRO_LONG:
-               return std::to_string(convert<int64_t>(generic_union.datum()));
-             case avro::AVRO_FLOAT:
-               return std::to_string(convert<float>(generic_union.datum()));
-             case avro::AVRO_DOUBLE:
-               return std::to_string(convert<double>(generic_union.datum()));
-             case avro::AVRO_BOOL:
-               return std::to_string(convert<bool>(generic_union.datum()));
-           }
-         } else {
-           switch (field.type()) {
-             case avro::AVRO_NULL:
-               return boost::none;
-             case avro::AVRO_STRING :
-               return convert<std::string>(field);
-             case avro::AVRO_INT:
-               return std::to_string(convert<int32_t>(field));
-             case avro::AVRO_LONG:
-               return std::to_string(convert<int64_t>(field));
-             case avro::AVRO_FLOAT:
-               return std::to_string(convert<float>(field));
-             case avro::AVRO_DOUBLE:
-               return std::to_string(convert<double>(field));
-             case avro::AVRO_BOOL:
-               return std::to_string(convert<bool>(field));
-           }
-         }
+        if (field.isUnion()) {
+          const avro::GenericUnion &generic_union(field.value<avro::GenericUnion>());
+          switch (generic_union.datum().type()) {
+            case avro::AVRO_NULL:
+              return boost::none;
+            case avro::AVRO_STRING :
+              return convert<std::string>(generic_union.datum());
+            case avro::AVRO_INT:
+              return std::to_string(convert<int32_t>(generic_union.datum()));
+            case avro::AVRO_LONG:
+              return std::to_string(convert<int64_t>(generic_union.datum()));
+            case avro::AVRO_FLOAT:
+              return std::to_string(convert<float>(generic_union.datum()));
+            case avro::AVRO_DOUBLE:
+              return std::to_string(convert<double>(generic_union.datum()));
+            case avro::AVRO_BOOL:
+              return std::to_string(convert<bool>(generic_union.datum()));
+          }
+        } else {
+          switch (field.type()) {
+            case avro::AVRO_NULL:
+              return boost::none;
+            case avro::AVRO_STRING :
+              return convert<std::string>(field);
+            case avro::AVRO_INT:
+              return std::to_string(convert<int32_t>(field));
+            case avro::AVRO_LONG:
+              return std::to_string(convert<int64_t>(field));
+            case avro::AVRO_FLOAT:
+              return std::to_string(convert<float>(field));
+            case avro::AVRO_DOUBLE:
+              return std::to_string(convert<double>(field));
+            case avro::AVRO_BOOL:
+              return std::to_string(convert<bool>(field));
+          }
+        }
         return boost::none; // TODO not a good default - throw exception
-       }
+      }
 
 
-       template<class T>
-       T get(std::string name, const T& default_value) const {
-         if (!record_.hasField(name))
-           return default_value;
+      template<class T>
+      T get(std::string name, const T& default_value) const {
+        if (!record_.hasField(name))
+          return default_value;
 
-         const avro::GenericDatum &field = record_.field(name);
+        const avro::GenericDatum &field = record_.field(name);
 
-         if(field.type() == cpp_to_avro_type<T>())
-           return field.value<T>();
+        if(field.type() == cpp_to_avro_type<T>())
+          return field.value<T>();
 
-         if (field.isUnion()) {
-           const avro::GenericUnion &generic_union(field.value<avro::GenericUnion>());
-           if(generic_union.datum().type() == cpp_to_avro_type<T>()) {
-             return generic_union.datum().value<T>();
-           } else if (generic_union.datum().type() == avro::AVRO_NULL) {
-             return default_value; // should we do this? no value -> default  but null -> null????
-             // we could have a default value here....
-             //return null or T
-           } else {
-             //bad type - throw...
-             throw std::invalid_argument(std::string("wrong type, expected:") + to_string(cpp_to_avro_type<T>())+ ", actual: " + to_string(generic_union.datum().type()));
-           }
-         }
-         throw std::invalid_argument(std::string("wrong type, expected:") + to_string(cpp_to_avro_type<T>()) +  ", actual: " + to_string(field.type()));
-       }
+        if (field.isUnion()) {
+          const avro::GenericUnion &generic_union(field.value<avro::GenericUnion>());
+          if(generic_union.datum().type() == cpp_to_avro_type<T>()) {
+            return generic_union.datum().value<T>();
+          } else if (generic_union.datum().type() == avro::AVRO_NULL) {
+            return default_value; // should we do this? no value -> default  but null -> null????
+            // we could have a default value here....
+            //return null or T
+          } else {
+            //bad type - throw...
+            throw std::invalid_argument(std::string("wrong type, expected:") + to_string(cpp_to_avro_type<T>())+ ", actual: " + to_string(generic_union.datum().type()));
+          }
+        }
+        throw std::invalid_argument(std::string("wrong type, expected:") + to_string(cpp_to_avro_type<T>()) +  ", actual: " + to_string(field.type()));
+      }
 
-       bool is_null(std::string name) const {
-         if (!record_.hasField(name))
-           throw std::invalid_argument("no such member: " + name);
+      bool is_null(std::string name) const {
+        if (!record_.hasField(name))
+          throw std::invalid_argument("no such member: " + name);
 
-         const avro::GenericDatum &field = record_.field(name);
+        const avro::GenericDatum &field = record_.field(name);
 
-         if(field.type() == avro::AVRO_NULL) // can this ever happen???
-           return true;
+        if(field.type() == avro::AVRO_NULL) // can this ever happen???
+          return true;
 
-         if (field.isUnion()) {
-           const avro::GenericUnion &generic_union(field.value<avro::GenericUnion>());
-           return (generic_union.datum().type() == avro::AVRO_NULL);
-         }
+        if (field.isUnion()) {
+          const avro::GenericUnion &generic_union(field.value<avro::GenericUnion>());
+          return (generic_union.datum().type() == avro::AVRO_NULL);
+        }
 
-         return false;
-       }
+        return false;
+      }
 
-     private:
-       const avro::GenericRecord& record_;
-     };
+      /*std::vector<avro::GenericDatum>& array() const {
+        if (_generic_datum->type() == avro::AVRO_ARRAY) {
+          return _generic_datum->value<avro:: GenericArray>();
+        } else {
+          throw std::invalid_argument(std::string("wrong type, expected: ") + to_string(avro::AVRO_ARRAY) + " actual: " + to_string(_generic_datum->type()));
+        }
+      }
+       */
 
-     generic_avro()
+
+
+    private:
+      const avro::GenericRecord& record_;
+    };
+
+    generic_avro()
         : _schema_id(-1) {
     }
 
-     generic_avro(std::shared_ptr<const avro::ValidSchema> s, int32_t schema_id) {
+    generic_avro(std::shared_ptr<const avro::ValidSchema> s, int32_t schema_id) {
       create(s, schema_id);
     }
 
@@ -184,12 +195,12 @@ namespace kspp {
       return _generic_datum->type();
     }
 
-     generic_avro::generic_record record() const {
+    generic_avro::generic_record record() const {
       if (_generic_datum->type() == avro::AVRO_RECORD) {
         return generic_avro::generic_record(_generic_datum->value<avro::GenericRecord>());
       } else {
         throw std::invalid_argument(std::string("wrong type, expected: ") + to_string(avro::AVRO_RECORD) + " actual: " + to_string(_generic_datum->type()));
-       }
+      }
     }
 
   private:
@@ -200,3 +211,5 @@ namespace kspp {
 
 
 }
+
+std::string to_json(const kspp::generic_avro& src);
