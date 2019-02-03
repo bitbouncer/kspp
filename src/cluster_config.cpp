@@ -207,13 +207,12 @@ namespace kspp {
     //TODO some error handling would be fine...
     if (!avro_serdes_)
     {
-      avro_schema_registry_ =  std::make_shared<kspp::avro_schema_registry>(*this);
-      avro_serdes_ = std::make_shared<kspp::avro_serdes>(avro_schema_registry_, relaxed_parsing);
+      avro_serdes_ = std::make_shared<kspp::avro_serdes>(get_schema_registry(), relaxed_parsing);
     }
     return avro_serdes_;
   }
 
-  void cluster_config::validate() const {
+  void cluster_config::validate() {
     LOG_IF(FATAL, brokers_.size() == 0) << "cluster_config, no brokers defined";
     {
       auto v = kspp::split_url_list(brokers_, "plaintext");
@@ -235,6 +234,12 @@ namespace kspp {
     // creates and validates...
     get_cluster_metadata()->validate();
 
+    if (get_schema_registry_uri().size()) {
+      auto sr = get_schema_registry();
+      if (!sr->validate()){
+        LOG(FATAL) << "schema registry validate failed - exiting";
+      }
+    }
   }
 
   void cluster_config::log() const {

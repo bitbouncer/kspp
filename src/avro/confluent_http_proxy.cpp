@@ -96,8 +96,7 @@ namespace kspp {
 
   void confluent_http_proxy::get_config(get_top_level_config_callback cb) {
     auto shared_result = std::make_shared<rpc_get_config_result>();
-    auto work = std::make_shared<kspp::async::work<int>>(_read_policy,
-                                                         kspp::async::FIRST_SUCCESS); // should we do random order??  can we send rpc result to work...
+    auto work = std::make_shared<kspp::async::work<int>>(_read_policy, kspp::async::FIRST_SUCCESS); // should we do random order??  can we send rpc result to work...
     for (auto &&i : _base_urls) {
       std::string uri = i.str() + "/config";
       work->push_back([this, uri, shared_result](kspp::async::work<int>::callback cb) {

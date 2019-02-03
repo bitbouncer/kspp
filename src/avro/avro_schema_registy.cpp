@@ -8,8 +8,6 @@ namespace kspp {
       , _work(new boost::asio::io_service::work(_ios))
       , _thread([this] { _ios.run(); })
       , _proxy(std::make_shared<confluent_http_proxy>(_ios, config)) {
-    if (_fail_fast)
-      validate();
   }
 
   avro_schema_registry::~avro_schema_registry() {
@@ -24,7 +22,6 @@ namespace kspp {
     future.wait();
     auto rpc_result = future.get();
     if (rpc_result.ec) {
-      LOG_IF(FATAL, _fail_fast) << "avro_schema_registry validate failed: ec" << rpc_result.ec;
       LOG(WARNING) << "avro_schema_registry validate failed: ec" << rpc_result.ec;
       return false;
     }

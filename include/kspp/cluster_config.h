@@ -66,10 +66,12 @@ namespace kspp {
     std::shared_ptr<kspp::avro_serdes> avro_serdes(bool relaxed_parsing=false);
 
     std::shared_ptr<kspp::avro_schema_registry> get_schema_registry(){
+      if (!avro_schema_registry_)
+        avro_schema_registry_ =  std::make_shared<kspp::avro_schema_registry>(*this);
       return avro_schema_registry_;
     }
 
-    void validate() const;
+    void validate();
 
     void log() const;
 
