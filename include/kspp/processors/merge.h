@@ -10,46 +10,11 @@ namespace kspp {
     typedef V value_type;
     typedef kspp::kevent<K, V> record_type;
 
-    // fix this so source must be descendant from partition source...
-    /*
-     * template<class source>
-    merge(std::shared_ptr<cluster_config> config, const std::vector<std::shared_ptr<source>>& upstream, int32_t partition=-1)
-        : event_consumer<K, V>()
-        , partition_source<K, V>(nullptr, partition) {
-      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "merge");
-      for (auto&& i : upstream) {
-        i->add_sink([this](auto e) {
-          this->_queue.push_back(e);
-        });
-      }
-    }
-    */
-
     merge(std::shared_ptr<cluster_config> config, int32_t partition=-1)
         : event_consumer<K, V>()
         , partition_source<K, V>(nullptr, partition) {
-      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "merge");
+      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
     }
-
-    /*
-     * void add(const std::vector<std::shared_ptr<partition_source<K, V>>>& upstream){
-      for (auto&& i : upstream) {
-        i->add_sink([this](auto e) {
-          this->_queue.push_back(e);
-        });
-      }
-    }
-     */
-
-    /*
-     * void add(std::vector<std::shared_ptr<partition_source<K, V>>>& upstream){
-      for (auto&& i : upstream) {
-        i->add_sink([this](auto e) {
-          this->_queue.push_back(e);
-        });
-      }
-    }
-    */
 
     void add(partition_source<K, V>& upstream){
         upstream.add_sink([this](auto e) {
@@ -92,10 +57,6 @@ namespace kspp {
       this->send_to_sinks(r);
       return 0;
     }
-
-    //int produce(const K &key, const V &value, int64_t ts = kspp::milliseconds_since_epoch()) {
-    //  return produce(std::make_shared<kevent<K, V>>(std::make_shared<krecord<K, V>>(key, value, ts)));
-    //}
   };
 
 //<null, VALUE>
@@ -107,29 +68,20 @@ namespace kspp {
     typedef V value_type;
     typedef kspp::kevent<void, V> record_type;
 
-    merge(std::shared_ptr<cluster_config> config, std::vector<partition_source<void, V>*> upstream, int32_t partition=-1)
+    merge(std::shared_ptr<cluster_config> config, int32_t partition=-1)
     : event_consumer<void, V>()
     , partition_source<void, V>(nullptr, partition) {
-      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "merge");
-      for (auto&& i : upstream) {
-        i->add_sink([this](auto e) {
-          this->_queue.push_back(e);
-        });
-      }
+      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
     }
 
-    template<class source>
-    void add(const std::vector<std::shared_ptr<source>>& upstream){
-      for (auto&& i : upstream) {
-        i->add_sink([this](auto e) {
-          this->_queue.push_back(e);
-        });
-      }
+    std::string log_name() const override {
+      return PROCESSOR_NAME;
     }
 
-
-    std::string simple_name() const override {
-      return "merge";
+    void add(partition_source<void, V>& upstream){
+      upstream.add_sink([this](auto e) {
+        this->_queue.push_back(e);
+      });
     }
 
     size_t process(int64_t tick) override {
@@ -168,7 +120,6 @@ namespace kspp {
     int produce(const V &value) {
       return produce(std::make_shared<kevent<void, V>>(std::make_shared<krecord<void, V>>(value)));
     }
-
   };
 
   template<class K>
@@ -179,17 +130,20 @@ namespace kspp {
     typedef void value_type;
     typedef kspp::kevent<K, void> record_type;
 
-    merge(std::shared_ptr<cluster_config> config, std::vector<partition_source<K, void>*> upstream, int32_t partition=-1)
+    merge(std::shared_ptr<cluster_config> config, int32_t partition=-1)
     : event_consumer<K, void>()
     , partition_source<K, void>(nullptr, partition) {
-      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "merge");
-      for (auto&& i : upstream) {
-        i->add_sink([this](auto e) { this->_queue.push_back(e); });
-      }
+      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
     }
 
     std::string log_name() const override {
       return PROCESSOR_NAME;
+    }
+
+    void add(partition_source<K, void>& upstream){
+      upstream.add_sink([this](auto e) {
+        this->_queue.push_back(e);
+      });
     }
 
     size_t process(int64_t tick) override {
