@@ -94,19 +94,21 @@ namespace kspp {
   void topology::start(start_offset_t offset) {
     LOG_IF(FATAL, _is_started) << "usage error - started twice";
 
-    if (offset == kspp::OFFSET_STORED)
-      _precondition_consumer_group = _cluster_config->get_consumer_group();
+    if (_cluster_config->has_feature(cluster_config::KAFKA)) {
+      if (offset == kspp::OFFSET_STORED)
+        _precondition_consumer_group = _cluster_config->get_consumer_group();
 
-    for (auto &&i : _partition_processors){
-      auto topic = i->precondition_topic();
-      if (topic.size())
-        _precondition_topics.insert(topic);
-    }
+      for (auto &&i : _partition_processors) {
+        auto topic = i->precondition_topic();
+        if (topic.size())
+          _precondition_topics.insert(topic);
+      }
 
-    for (auto &&i : _sinks){
-      auto topic = i->precondition_topic();
-      if (topic.size())
-        _precondition_topics.insert(topic);
+      for (auto &&i : _sinks) {
+        auto topic = i->precondition_topic();
+        if (topic.size())
+          _precondition_topics.insert(topic);
+      }
     }
 
     validate_preconditions();

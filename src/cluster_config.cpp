@@ -10,7 +10,7 @@
 using namespace std::chrono_literals;
 
 namespace kspp {
-  cluster_config::cluster_config(std::string consumer_group)
+  cluster_config::cluster_config(std::string consumer_group, uint64_t flags)
       : consumer_group_(consumer_group)
       , min_topology_buffering_(std::chrono::milliseconds(1000))
       , producer_buffering_(std::chrono::milliseconds(1000))
@@ -19,11 +19,13 @@ namespace kspp {
       , schema_registry_timeout_(std::chrono::milliseconds(10000))
       , cluster_state_timeout_(std::chrono::seconds(60))
       , max_pending_sink_messages_(50000)
-      , fail_fast_(true) {
+      , fail_fast_(true)
+      , flags_(flags){
   }
 
   void cluster_config::load_config_from_env() {
-    set_brokers(default_kafka_broker_uri());
+    if (has_feature(cluster_config::KAFKA))
+      set_brokers(default_kafka_broker_uri());
     set_storage_root(default_statestore_root());
     //set_consumer_buffering_time()
     //set_producer_buffering_time
@@ -31,8 +33,11 @@ namespace kspp {
     set_private_key_path(default_client_cert_path(),
                          default_client_key_path(),
                          default_client_key_passphrase());
-    set_schema_registry_uri(default_schema_registry_uri());
-    set_kafka_rest_uri(default_kafka_rest_uri());
+    if (has_feature(cluster_config::SCHEMA_REGISTRY))
+      set_schema_registry_uri(default_schema_registry_uri());
+
+    if (has_feature(cluster_config::REST_PROXY))
+      set_kafka_rest_uri(default_kafka_rest_uri());
     //set_schema_registry_timeout()
     //set_fail_fast()
   }
@@ -213,15 +218,18 @@ namespace kspp {
   }
 
   void cluster_config::validate() {
-    LOG_IF(FATAL, brokers_.size() == 0) << "cluster_config, no brokers defined";
-    {
-      auto v = kspp::split_url_list(brokers_, "plaintext");
-      for (auto url : v) {
-        if (url.scheme() == "ssl")
-          LOG_IF(FATAL, ca_cert_path_.size() == 0) << "cluster_config, brokers using ssl and no ca cert configured";
+    if (has_feature(KAFKA)) {
+      LOG_IF(FATAL, brokers_.size() == 0) << "cluster_config, no brokers defined";
+      {
+        auto v = kspp::split_url_list(brokers_, "plaintext");
+        for (auto url : v) {
+          if (url.scheme() == "ssl")
+            LOG_IF(FATAL, ca_cert_path_.size() == 0) << "cluster_config, brokers using ssl and no ca cert configured";
+        }
       }
     }
 
+    if (has_feature(SCHEMA_REGISTRY))
     {
       auto v = kspp::split_url_list(schema_registry_uri_, "http");
       for (auto url : v) {
@@ -234,16 +242,20 @@ namespace kspp {
     // creates and validates...
     get_cluster_metadata()->validate();
 
-    if (get_schema_registry_uri().size()) {
-      auto sr = get_schema_registry();
-      if (!sr->validate()){
-        LOG(FATAL) << "schema registry validate failed - exiting";
+    if (has_feature(SCHEMA_REGISTRY)) {
+      if (get_schema_registry_uri().size()) {
+        auto sr = get_schema_registry();
+        if (!sr->validate()) {
+          LOG(FATAL) << "schema registry validate failed - exiting";
+        }
       }
     }
   }
 
   void cluster_config::log() const {
-    LOG(INFO) << "cluster_config, kafka broker(s): " << get_brokers();
+    if (has_feature(SCHEMA_REGISTRY)) {
+      LOG(INFO) << "cluster_config, kafka broker(s): " << get_brokers();
+    }
     LOG(INFO) << "cluster_config, consumer_group: " << get_consumer_group();
     LOG_IF(INFO, get_ca_cert_path().size() > 0) << "cluster_config, ca cert: " << get_ca_cert_path();
     LOG_IF(INFO, get_client_cert_path().size() > 0) << "cluster_config, client cert: " << get_client_cert_path();
@@ -260,9 +272,12 @@ namespace kspp {
       LOG(INFO) << "cluster_config, kafka producer_message_timeout: " << get_producer_message_timeout().count()
                 << " ms";
 
-    LOG_IF(INFO, get_schema_registry_uri().size() > 0) << "cluster_config, schema_registry: " << get_schema_registry_uri();
-    LOG_IF(INFO, get_schema_registry_uri().size() > 0)
-    << "cluster_config, schema_registry_timeout: " << get_schema_registry_timeout().count() << " ms";
+    if (has_feature(SCHEMA_REGISTRY)) {
+      LOG_IF(INFO, get_schema_registry_uri().size() > 0)
+      << "cluster_config, schema_registry: " << get_schema_registry_uri();
+      LOG_IF(INFO, get_schema_registry_uri().size() > 0)
+      << "cluster_config, schema_registry_timeout: " << get_schema_registry_timeout().count() << " ms";
+    }
     LOG(INFO) << "kafka cluster_state_timeout: " << get_cluster_state_timeout().count() << " s";
   }
 }

@@ -11,7 +11,11 @@ namespace kspp {
 
   class cluster_config {
   public:
-    cluster_config(std::string consumer_group);
+    enum flags_t { NONE=0x0, KAFKA=0x01, SCHEMA_REGISTRY=0x02, REST_PROXY=0x04, BB_STREAMING=0x08 };
+
+    cluster_config(std::string consumer_group, uint64_t flags = KAFKA | SCHEMA_REGISTRY );
+
+    inline bool has_feature(flags_t f) const {  return (flags_ & f); }
 
     void load_config_from_env();
 
@@ -76,6 +80,7 @@ namespace kspp {
     void log() const;
 
   private:
+    uint64_t    flags_;
     std::string consumer_group_;
     std::string brokers_;
     std::string ca_cert_path_;
