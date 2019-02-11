@@ -67,4 +67,8 @@ target_link_libraries(test10_http ${CSI_LIBS_STATIC})
 add_test(NAME test10_http COMMAND $<TARGET_FILE:test10_http>)
 
 
+add_executable(test11_metrics test11_metrics.cpp)
+target_link_libraries(test11_metrics ${CSI_LIBS_STATIC})
+add_test(NAME test11_metrics COMMAND $<TARGET_FILE:test11_metrics>)
+
 

@@ -1,8 +1,8 @@
 #include <iostream>
 #include <csignal>
 #include <boost/program_options.hpp>
+#include <kspp/topology_builder.h>
 #include <kspp/sources/kafka_source.h>
-#include <kspp/metrics/influx_metrics_reporter.h>
 #include <kspp/utils/env.h>
 #include <kspp/utils/kafka_utils.h>
 #include <boost/bind.hpp>
@@ -11,6 +11,7 @@
 #include <kspp/connect/avro_file/avro_file_sink.h>
 #include <kspp/processors/transform.h>
 #include <kspp/processors/flat_map.h>
+#include <kspp/metrics/prometheus_pushgateway_reporter.h>
 
 #define SERVICE_NAME "kafka2postgres"
 
@@ -48,6 +49,7 @@ int main(int argc, char **argv) {
       ("character_encoding", boost::program_options::value<std::string>()->default_value("UTF8"), "character_encoding")
       ("table_name_override", boost::program_options::value<std::string>(), "table_name_override")
       ("filename", boost::program_options::value<std::string>(), "filename")
+      ("pushgateway_uri", boost::program_options::value<std::string>()->default_value(get_env_and_log("PUSHGATEWAY_URI", "localhost:9091")),"pushgateway_uri")
       ;
 
   boost::program_options::variables_map vm;
@@ -157,6 +159,12 @@ int main(int argc, char **argv) {
     postgres_disable_delete = (vm["postgres_disable_delete"].as<int>() > 0);
   }
 
+  std::string pushgateway_uri;
+  if (vm.count("pushgateway_uri")) {
+    pushgateway_uri = vm["pushgateway_uri"].as<std::string>();
+  }
+
+
   std::string consumer_group(SERVICE_NAME);
   consumer_group += postgres_dbname;
 
@@ -194,6 +202,7 @@ int main(int argc, char **argv) {
   LOG(INFO) << "table_name                  : " << table_name;
   LOG(INFO) << "character_encoding          : " << character_encoding;
   LOG(INFO) << "postgres_disable_delete     : " << postgres_disable_delete;
+  LOG(INFO) << "pushgateway_uri : " << pushgateway_uri;
 
   kspp::connect::connection_params connection_params;
   connection_params.host = postgres_host;
@@ -244,14 +253,12 @@ int main(int argc, char **argv) {
   }
 
   std::vector<metrics20::avro::metrics20_key_tags_t> tags;
-  tags.push_back(kspp::make_metrics_tag("app_name", SERVICE_NAME));
   tags.push_back(kspp::make_metrics_tag("app_realm", app_realm));
   tags.push_back(kspp::make_metrics_tag("hostname", default_hostname()));
   tags.push_back(kspp::make_metrics_tag("db_host", postgres_host));
   tags.push_back(kspp::make_metrics_tag("dst_table", table_name));
 
-  topology->init_metrics(tags);
-  //topology->start(kspp::OFFSET_STORED);
+  topology->set_labels(tags);
   topology->start(kspp::OFFSET_BEGINNING);
 
   std::signal(SIGINT, sigterm);
@@ -261,7 +268,7 @@ int main(int argc, char **argv) {
   LOG(INFO) << "status is up";
 
   {
-    auto metrics_reporter = std::make_shared<kspp::influx_metrics_reporter>(builder, "kspp_metrics", "kspp", "") << topology;
+    auto metrics_reporter = std::make_shared<kspp::prometheus_pushgateway_reporter>(SERVICE_NAME, pushgateway_uri) << topology;
     while (run) {
       if (topology->process(kspp::milliseconds_since_epoch()) == 0) {
         std::this_thread::sleep_for(10ms);

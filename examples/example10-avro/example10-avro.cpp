@@ -68,7 +68,6 @@ int main(int argc, char **argv) {
             "kspp_test10_avro",
             config->avro_serdes(),
             config->avro_serdes());
-    topology->init_metrics();
     topology->start(kspp::OFFSET_BEGINNING);
     auto t0 = std::chrono::high_resolution_clock::now();
     topology->flush();
@@ -91,7 +90,6 @@ int main(int argc, char **argv) {
             "kspp_test10_avro",
             config->avro_serdes(),
             config->avro_serdes());
-    topology->init_metrics();
     topology->start(kspp::OFFSET_BEGINNING);
     auto t0 = std::chrono::high_resolution_clock::now();
     topology->flush();
@@ -119,7 +117,6 @@ int main(int argc, char **argv) {
             "kspp_test10_avro_B",
             config->avro_serdes(),
             config->avro_serdes());
-    topology->init_metrics();
     topology->start(kspp::OFFSET_BEGINNING);
     auto t0 = std::chrono::high_resolution_clock::now();
     topology->flush();
@@ -145,7 +142,6 @@ int main(int argc, char **argv) {
             config->avro_serdes(),
             config->avro_serdes());
     auto sink = topology->create_sink<kspp::null_sink<kspp::generic_avro, kspp::generic_avro>>(sources, [](auto r){});
-    topology->init_metrics();
     topology->start(kspp::OFFSET_BEGINNING);
     auto t0 = std::chrono::high_resolution_clock::now();
     topology->flush();

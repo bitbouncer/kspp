@@ -15,6 +15,7 @@ namespace kspp {
       , _max_pending_sink_messages(config->get_max_pending_sink_messages()) {
     if (internal)
       _allow_commit_chain_gc=false;
+    _prom_registry = std::make_shared<prometheus::Registry>();
     LOG(INFO) << "topology created id:" << _topology_id;
   }
 
@@ -37,28 +38,28 @@ namespace kspp {
     return s4;
   }
 
-  void topology::init_metrics(std::vector<metrics20::avro::metrics20_key_tags_t> app_tags) {
+  void topology::init_metrics() {
     for (auto &&i : _partition_processors) {
-      for (auto j : app_tags)
-        i->add_metrics_tag(j.key, j.value);
+      for (auto j : _labels)
+        i->add_metrics_tag(j.first, j.second);
 
       i->add_metrics_tag(KSPP_KEY_TYPE_TAG, escape_influx(i->key_type_name()));
       i->add_metrics_tag(KSPP_VALUE_TYPE_TAG, escape_influx(i->value_type_name()));
       i->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(i->partition()));
 
       for (auto &&j : i->get_metrics()) {
-        j->finalize_tags(); // maybe add string escape function here...
+        j->finalize_tags(_prom_registry); // maybe add string escape function here...
       }
     }
 
     for (auto &&i : _sinks) {
-      for (auto j : app_tags)
-        i->add_metrics_tag(j.key, j.value);
+      for (auto j : _labels)
+        i->add_metrics_tag(j.first, j.second);
       i->add_metrics_tag(KSPP_KEY_TYPE_TAG, escape_influx(i->key_type_name()));
       i->add_metrics_tag(KSPP_VALUE_TYPE_TAG, escape_influx(i->value_type_name()));
 
       for (auto &&j : i->get_metrics()) {
-        j->finalize_tags();
+        j->finalize_tags(_prom_registry);
       }
     }
   }
@@ -110,6 +111,8 @@ namespace kspp {
           _precondition_topics.insert(topic);
       }
     }
+
+    init_metrics();
 
     validate_preconditions();
 

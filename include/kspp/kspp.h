@@ -160,7 +160,7 @@ namespace kspp {
 
     std::vector<metric *> _metrics;
     metric_counter _processed_count;
-    metric_lag _lag;
+    metric_streaming_lag _lag;
   };
 
 

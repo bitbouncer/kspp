@@ -99,7 +99,6 @@ int main(int argc, char **argv) {
     i->add_sink(sink);
    */
 
-  topology->init_metrics();
   topology->start(kspp::OFFSET_STORED);
   //topology->start(kspp::OFFSET_BEGINNING);
 
@@ -119,7 +118,7 @@ int main(int argc, char **argv) {
 
   // output metrics and run
   {
-    auto metrics_reporter = std::make_shared<kspp::influx_metrics_reporter>(builder, "kspp_metrics", "kspp", metrics_tags) << topology;
+    //auto metrics_reporter = std::make_shared<kspp::influx_metrics_reporter>(builder, "kspp_metrics", "kspp", metrics_tags) << topology;
     while (run) {
       if (topology->process(kspp::milliseconds_since_epoch()) == 0) {
         std::this_thread::sleep_for(10ms);

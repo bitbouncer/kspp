@@ -53,7 +53,6 @@ int main(int argc, char **argv) {
           join_count++;
         });
 
-    topology->init_metrics();
     topology->start(kspp::OFFSET_BEGINNING);
 
     // first sync table

@@ -58,7 +58,6 @@ int main(int argc, char **argv) {
     auto word_sources = topology->create_processors<kspp::kafka_source<std::string, void, kspp::text_serdes, void>>(partition_list, "kspp_test_words");
     auto word_counts = topology->create_processors<kspp::count_by_key<std::string, size_t, kspp::mem_counter_store>>(word_sources, 10s);
     
-    topology->init_metrics();
     topology->start(kspp::OFFSET_BEGINNING);
     topology->flush();
 
