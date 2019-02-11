@@ -13,7 +13,7 @@ namespace kspp {
     ktable(std::shared_ptr<cluster_config> config, std::shared_ptr<kspp::partition_source<K, V>> source, Args... args)
             : event_consumer<K, V>(), materialized_source<K, V>(source.get(), source->partition()), _source(source),
               _state_store(this->get_storage_path(config->get_storage_root()), args...),
-              _state_store_count("state_store", metric::GAUGE, "msg", [this]() { return _state_store.aprox_size(); }) {
+              _state_store_count("state_store_size", "msg") {
       _source->add_sink([this](auto ev) {
         this->_lag.add_event_time(kspp::milliseconds_since_epoch(), ev->event_time());
         ++(this->_processed_count);
@@ -70,6 +70,9 @@ namespace kspp {
         ++processed;
         this->send_to_sinks(trans);
       }
+
+      // TODO is this expensive??
+      _state_store_count.set(_state_store.aprox_size());
       return processed;
     }
 
@@ -108,6 +111,6 @@ namespace kspp {
   private:
     std::shared_ptr<kspp::partition_source<K, V>> _source;
     STATE_STORE<K, V, CODEC> _state_store;
-    metric_evaluator _state_store_count;
+    metric_gauge     _state_store_count;
   };
 }

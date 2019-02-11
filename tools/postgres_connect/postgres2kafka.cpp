@@ -1,8 +1,9 @@
 #include <iostream>
 #include <csignal>
 #include <boost/program_options.hpp>
+#include <kspp/topology_builder.h>
+#include <kspp/impl/serdes/text_serdes.h>
 #include <kspp/sinks/kafka_sink.h>
-#include <kspp/metrics/influx_metrics_reporter.h>
 #include <kspp/utils/env.h>
 #include <boost/bind.hpp>
 #include <boost/make_shared.hpp>
@@ -10,6 +11,7 @@
 #include <kspp/connect/avro_file/avro_file_sink.h>
 #include <kspp/processors/transform.h>
 #include <kspp/processors/flat_map.h>
+#include <kspp/metrics/prometheus_pushgateway_reporter.h>
 
 #define SERVICE_NAME "postgres2kafka"
 
@@ -53,6 +55,8 @@ int main(int argc, char **argv) {
       ("offset_storage", boost::program_options::value<std::string>()->default_value(""), "offset_storage")
       ("oneshot", "run to eof and exit")
       ("filename", boost::program_options::value<std::string>(), "filename");
+      ("pushgateway_uri", boost::program_options::value<std::string>()->default_value(get_env_and_log("PUSHGATEWAY_URI", "localhost:9091")),"pushgateway_uri")
+      ;
 
   boost::program_options::variables_map vm;
   boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
@@ -229,6 +233,12 @@ int main(int argc, char **argv) {
     }
   }
 
+  std::string pushgateway_uri;
+  if (vm.count("pushgateway_uri")) {
+    pushgateway_uri = vm["pushgateway_uri"].as<std::string>();
+  }
+
+
   bool oneshot=false;
   if (vm.count("oneshot"))
     oneshot=true;
@@ -259,10 +269,11 @@ int main(int argc, char **argv) {
   LOG(INFO) << "topic              : " << topic;
   LOG(INFO) << "codec              : " << codec;
 
-  LOG(INFO) << "offset_storage    : " << offset_storage;
-  LOG(INFO) << "start_offset      : " << kspp::to_string(start_offset);
+  LOG(INFO) << "offset_storage     : " << offset_storage;
+  LOG(INFO) << "start_offset       : " << kspp::to_string(start_offset);
   if (oneshot)
-    LOG(INFO) << "oneshot           : TRUE";
+    LOG(INFO) << "oneshot            : TRUE";
+  LOG(INFO) << "pushgateway_uri    : " << pushgateway_uri;
 
   kspp::connect::connection_params connection_params;
   connection_params.host = db_host;
@@ -315,13 +326,12 @@ int main(int argc, char **argv) {
   }
 
   std::vector<metrics20::avro::metrics20_key_tags_t> tags;
-  tags.push_back(kspp::make_metrics_tag("app_name", SERVICE_NAME));
   tags.push_back(kspp::make_metrics_tag("app_realm", app_realm));
   tags.push_back(kspp::make_metrics_tag("hostname", default_hostname()));
   tags.push_back(kspp::make_metrics_tag("db_host", db_host));
   tags.push_back(kspp::make_metrics_tag("dst_topic", topic));
 
-  topology->init_metrics(tags);
+  topology->set_labels(tags);
   topology->start(start_offset);
 
   std::signal(SIGINT, sigterm);
@@ -330,7 +340,7 @@ int main(int argc, char **argv) {
 
   LOG(INFO) << "status is up";
   {
-    auto metrics_reporter = std::make_shared<kspp::influx_metrics_reporter>(builder, "kspp_metrics", "kspp", "") << topology;
+    auto metrics_reporter = std::make_shared<kspp::prometheus_pushgateway_reporter>(SERVICE_NAME, pushgateway_uri) << topology;
     while (run) {
       if (topology->process(kspp::milliseconds_since_epoch()) == 0) {
         std::this_thread::sleep_for(10ms);

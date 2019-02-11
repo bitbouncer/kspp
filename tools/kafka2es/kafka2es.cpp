@@ -1,8 +1,9 @@
 #include <iostream>
 #include <csignal>
 #include <boost/program_options.hpp>
+#include <kspp/topology_builder.h>
+#include <kspp/impl/serdes/text_serdes.h>
 #include <kspp/sources/kafka_source.h>
-#include <kspp/metrics/influx_metrics_reporter.h>
 #include <kspp/utils/env.h>
 #include <kspp/utils/kafka_utils.h>
 #include <boost/bind.hpp>
@@ -11,6 +12,7 @@
 #include <kspp/connect/elasticsearch/elasticsearch_sink.h>
 #include <kspp/processors/transform.h>
 #include <kspp/processors/flat_map.h>
+#include <kspp/metrics/prometheus_pushgateway_reporter.h>
 
 #define SERVICE_NAME "elasticsearch_sink"
 
@@ -40,6 +42,7 @@ int main(int argc, char **argv) {
       ("es_password", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("ES_PASSWORD")), "es_password")
       ("es_index", boost::program_options::value<std::string>(), "es_index")
       ("es_http_header", boost::program_options::value<std::string>()->default_value(get_env_and_log("ES_HTTP_HEADER")),"es_http_header")
+      ("pushgateway_uri", boost::program_options::value<std::string>()->default_value(get_env_and_log("PUSHGATEWAY_URI", "localhost:9091")),"pushgateway_uri")
       ;
 
   boost::program_options::variables_map vm;
@@ -107,6 +110,11 @@ int main(int argc, char **argv) {
     es_index = "kafka_" + topic;
   }
 
+  std::string pushgateway_uri;
+  if (vm.count("pushgateway_uri")) {
+    pushgateway_uri = vm["pushgateway_uri"].as<std::string>();
+  }
+
   std::string consumer_group(SERVICE_NAME);
   consumer_group += es_index;
 
@@ -130,6 +138,7 @@ int main(int argc, char **argv) {
   LOG(INFO) << "es_password     : " << "[hidden]";
   LOG(INFO) << "es_http_header  : " << es_http_header;
   LOG(INFO) << "es_index        : " << es_index;
+  LOG(INFO) << "pushgateway_uri : " << pushgateway_uri;
 
   LOG(INFO) << "discovering facts...";
 
@@ -154,13 +163,11 @@ int main(int argc, char **argv) {
   //topology->create_sink<kspp::elasticsearch_sink>(source0, es_index, connection_params, "id",10, 1s);
 
   std::vector<metrics20::avro::metrics20_key_tags_t> tags;
-  tags.push_back(kspp::make_metrics_tag("app_name", SERVICE_NAME));
   tags.push_back(kspp::make_metrics_tag("app_realm", app_realm));
   tags.push_back(kspp::make_metrics_tag("hostname", default_hostname()));
   tags.push_back(kspp::make_metrics_tag("es_url", es_url));
   tags.push_back(kspp::make_metrics_tag("es_index", es_index));
-
-  topology->init_metrics(tags);
+  topology->set_labels(tags);
 
   //topology->start(kspp::OFFSET_STORED);
   topology->start(kspp::OFFSET_BEGINNING);
@@ -172,7 +179,7 @@ int main(int argc, char **argv) {
   LOG(INFO) << "status is up";
 
   {
-    auto metrics_reporter = std::make_shared<kspp::influx_metrics_reporter>(builder, "kspp_metrics", "kspp", "") << topology;
+    auto metrics_reporter = std::make_shared<kspp::prometheus_pushgateway_reporter>(SERVICE_NAME, pushgateway_uri) << topology;
     while (run) {
       if (topology->process(kspp::milliseconds_since_epoch()) == 0) {
         std::this_thread::sleep_for(10ms);

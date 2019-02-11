@@ -34,7 +34,6 @@ int main(int argc, char **argv) {
   auto event_stream = topology->create_sink<kspp::kafka_sink<boost::uuids::uuid, int64_t, kspp::binary_serdes, kspp::binary_serdes>>(
           "kspp_test0_eventstream");
 
-  topology->init_metrics();
 
   std::vector<boost::uuids::uuid> ids;
   for (int i = 0; i != 10000; ++i)

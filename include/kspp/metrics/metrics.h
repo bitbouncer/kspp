@@ -2,6 +2,7 @@
 #include <chrono>
 #include <functional>
 #include "metric20_key_t.h"
+#include <prometheus/registry.h>
 #pragma once
 
 #define KSPP_KEY_TYPE_TAG "key_type"
@@ -24,9 +25,7 @@ namespace kspp {
     enum mtype { RATE, COUNT, GAUGE, COUNTER, TIMESTAMP }; // http://metrics20.org/spec/
 
     metric(std::string what, mtype mt, std::string unit)
-        : _name("kspp." + what) {
-      add_tag("framework", "kspp");
-      add_tag("what", what);
+        : _name("kspp_" + what) {
       switch (mt) {
         case RATE: add_tag("mtype", "rate"); break;
         case COUNT: add_tag("mtype", "count"); break;
@@ -37,13 +36,13 @@ namespace kspp {
       add_tag("unit", unit);
     }
 
-    virtual int64_t value() const = 0;
+    virtual double value() const = 0;
 
     inline std::string name() const {
       return _name;
     }
 
-    void finalize_tags()
+    virtual void finalize_tags(std::shared_ptr<prometheus::Registry> registry)
     {
       _derived_tags.clear();
       for (std::map<std::string, std::string>::const_iterator i =_real_tags.begin(); i!=_real_tags.end(); ++i)
@@ -83,94 +82,125 @@ namespace kspp {
 
   struct metric_counter : public metric {
     metric_counter(std::string what, std::string unit)
-        : metric(what, COUNTER, unit),
-          _value(0) {
+        : metric(what, COUNTER, unit)
+        ,  _counter(nullptr) {
     }
 
-    virtual int64_t value() const {
-      return _value;
+    void finalize_tags(std::shared_ptr<prometheus::Registry> registry) override
+    {
+      _derived_tags.clear();
+      for (std::map<std::string, std::string>::const_iterator i =_real_tags.begin(); i!=_real_tags.end(); ++i)
+      {
+        _derived_tags += i->first + "=" + i->second;
+        if (std::next(i) != _real_tags.end())
+          _derived_tags += ",";
+      }
+
+      auto& counter_family = prometheus::BuildCounter().Name(_name).Register(*registry);
+      _counter = &counter_family.Add(_real_tags);
     }
 
-    inline metric_counter &operator=(int64_t v) {
-      _value = v;
-      return *this;
+    virtual double value() const {
+      return _counter->Value();
     }
 
     inline metric_counter &operator++() {
-      _value++;
+      _counter->Increment();
       return *this;
     }
 
-    inline metric_counter &operator+=(int64_t v) {
-      _value = _value + v;
+    inline metric_counter &operator+=(double v) {
+      _counter->Increment(v);
       return *this;
     }
 
-    inline metric_counter &operator--() {
-      _value--;
-      return *this;
-    }
-
-    inline metric_counter &operator-=(int64_t v) {
-      _value = _value - v;
-      return *this;
-    }
-
-    int64_t _value;
+    prometheus::Counter* _counter;
   };
 
-  struct metric_average : public metric {
-    metric_average(std::string what, std::string unit)
-        : metric(what, GAUGE, unit), _sum(0), _count(0) {}
-
-    void add_measurement(int64_t v) {
-      _sum += v;
-      ++_count;
+  struct metric_gauge : public metric {
+    metric_gauge(std::string what, std::string unit)
+        : metric(what, GAUGE, unit)
+        ,  _gauge(nullptr) {
     }
 
-    virtual int64_t value() const {
-      return _count ? _sum / _count : 0;
+    void finalize_tags(std::shared_ptr<prometheus::Registry> registry) override
+    {
+      _derived_tags.clear();
+      for (std::map<std::string, std::string>::const_iterator i =_real_tags.begin(); i!=_real_tags.end(); ++i)
+      {
+        _derived_tags += i->first + "=" + i->second;
+        if (std::next(i) != _real_tags.end())
+          _derived_tags += ",";
+      }
+
+      auto& family = prometheus::BuildGauge().Name(_name).Register(*registry);
+      _gauge = &family.Add(_real_tags);
+    }
+
+    void set(double v) {
+      _gauge->Set(v);
+    }
+
+    virtual double value() const {
+     _gauge->Value();
     }
 
     void clear() {
-      _sum = 0;
-      _count = 0;
+      _gauge->Set(0);
     }
 
-    int64_t _sum;
-    int64_t _count;
+    prometheus::Gauge* _gauge;
   };
 
-  struct metric_lag : public metric {
-    metric_lag()
-        : metric("streaming_lag", GAUGE, "ms"), _lag(-1) {}
+  struct metric_streaming_lag : public metric {
+    metric_streaming_lag()
+        : metric("streaming_lag", GAUGE, "ms")
+        ,  _gauge(nullptr) {
+
+    }
+
+    void finalize_tags(std::shared_ptr<prometheus::Registry> registry) override
+    {
+      _derived_tags.clear();
+      for (std::map<std::string, std::string>::const_iterator i =_real_tags.begin(); i!=_real_tags.end(); ++i)
+      {
+        _derived_tags += i->first + "=" + i->second;
+        if (std::next(i) != _real_tags.end())
+          _derived_tags += ",";
+      }
+
+      auto& family = prometheus::BuildGauge().Name(_name).Register(*registry);
+      _gauge = &family.Add(_real_tags);
+    }
 
     inline void add_event_time(int64_t tick, int64_t event_time) {
       if (event_time > 0)
-        _lag = tick - event_time;
+        _gauge->Set(tick - event_time);
       else
-        _lag = -1;
+        _gauge->Set(-1.0);
     }
 
-    virtual int64_t value() const {
-      return _lag;
+    virtual double value() const {
+      _gauge->Value();
     }
 
   private:
-    int64_t _lag;
+    prometheus::Gauge* _gauge;
   };
 
-  struct metric_evaluator : public metric {
+  /*
+   * struct metric_evaluator : public metric {
     using evaluator = std::function<int64_t(void)>;
 
     metric_evaluator(std::string what,  mtype mt, std::string unit, evaluator f)
         : metric(what, mt, unit), _f(f) {}
 
-    virtual int64_t value() const {
+    virtual double value() const {
       return _f();
     }
 
   private:
     evaluator _f;
   };
+   */
 }

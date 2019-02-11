@@ -249,9 +249,6 @@ int main(int argc, char **argv) {
         PARTITION,
         "kspp_PageViewsDecorated");
 
-    topology->init_metrics();
-    //join->add_sink(sink);
-
     topology->start(kspp::OFFSET_BEGINNING);
     topology->flush();
     topology->for_each_metrics([](kspp::metric &m) {

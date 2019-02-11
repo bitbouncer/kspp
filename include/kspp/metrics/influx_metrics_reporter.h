@@ -1,3 +1,4 @@
+/*
 #include <string>
 #include <memory>
 #include <thread>
@@ -34,4 +35,4 @@ namespace kspp {
 
   std::shared_ptr<influx_metrics_reporter>
   operator<<(std::shared_ptr<influx_metrics_reporter> reporter, std::vector<std::shared_ptr<topology>> v);
-}
+}*/

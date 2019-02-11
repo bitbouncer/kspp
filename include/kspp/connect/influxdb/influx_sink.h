@@ -42,7 +42,7 @@ namespace kspp {
     int64_t _next_time_to_send;
     int64_t _next_time_to_poll;
     std::chrono::milliseconds _http_timeout;
-    kspp::metric_lag _lag;
+    kspp::metric_streaming_lag _lag;
     kspp::metric_counter _http_requests;
     kspp::metric_counter _http_timeouts;
     kspp::metric_counter _http_error;

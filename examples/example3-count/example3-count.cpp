@@ -63,7 +63,6 @@ int main(int argc, char **argv) {
 
     auto sink = topology->create_processor<kspp::stream_sink<std::string, int>>(merged, &std::cerr);
 
-    topology->init_metrics();
     topology->start(kspp::OFFSET_BEGINNING);
     topology->flush();
   }

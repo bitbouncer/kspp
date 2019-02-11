@@ -2,6 +2,7 @@
 #include <kspp/processors/merge.h>
 #include <limits>
 #include <set>
+#include <prometheus/registry.h>
 #pragma once
 
 namespace kspp {
@@ -17,7 +18,14 @@ namespace kspp {
 
     std::chrono::milliseconds max_buffering_time() const;
 
-    void init_metrics(std::vector<metrics20::avro::metrics20_key_tags_t> tags = std::vector<metrics20::avro::metrics20_key_tags_t>());
+    void set_labels(const std::map<std::string, std::string>& labels){
+      _labels = labels;
+    }
+
+    void set_labels(std::vector<metrics20::avro::metrics20_key_tags_t> tags){
+      for(auto i : tags)
+        _labels[i.key] = i.value;
+    }
 
     void for_each_metrics(std::function<void(kspp::metric &)> f);
 
@@ -125,7 +133,19 @@ namespace kspp {
       return p;
     }
 
+    std::shared_ptr<prometheus::Registry> get_prometheus_registry() {
+      return _prom_registry;
+    }
+
+    prometheus::Counter& metrics_counter_add(std::string what, metric::mtype t, std::string unit, const std::map<std::string, std::string>& labels){
+      auto& counter_family = prometheus::BuildCounter().Name("kspp_" + what).Labels(_labels).Register(*_prom_registry);
+      std::map<std::string, std::string> l(labels);
+      l["unit"]=unit;
+      return counter_family.Add(l);
+    }
+
   protected:
+    void init_metrics();
     void init_processing_graph();
     bool _is_started;
     std::shared_ptr<cluster_config> _cluster_config;
@@ -140,5 +160,8 @@ namespace kspp {
     std::set<std::string> _precondition_topics;
     std::string _precondition_consumer_group;
     bool _allow_commit_chain_gc=true;
+
+    std::map<std::string, std::string> _labels;
+    std::shared_ptr<prometheus::Registry> _prom_registry;
   };
 } // namespace

@@ -113,7 +113,7 @@ namespace kspp {
         , _commit_chain(topic, partition)
         , _start_point_ms(std::chrono::time_point_cast<std::chrono::milliseconds>(start_point).time_since_epoch().count())
         , _parse_errors("parse_errors", "err")
-        , _commit_chain_size("commit_chain_size", metric::GAUGE, "msg", [this]() { return _commit_chain.size(); })
+        , _commit_chain_size("commit_chain_size", "msg")
     {
       this->add_metric(&_commit_chain_size);
       this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
@@ -146,6 +146,7 @@ namespace kspp {
               }
             }
           }
+          _commit_chain_size.set(_commit_chain.size());
           std::this_thread::sleep_for(std::chrono::milliseconds(10)); // wait for more messages
         }
       }
@@ -162,14 +163,17 @@ namespace kspp {
             ++_parse_errors;
           }
 
-          // to much work in queue - back off and let the conumers work
-         while(_incomming_msg.size()>100 && !_exit)
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+          // to much work in queue - back off and let the consumers work
+         while(_incomming_msg.size()>100 && !_exit) {
+           std::this_thread::sleep_for(std::chrono::milliseconds(10));
+           _commit_chain_size.set(_commit_chain.size());
+         }
 
           // to much uncomitted - back off and let the consumers work
           //while(_commit_chain.size()>10000 && !_exit)
           //  std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
+        _commit_chain_size.set(_commit_chain.size());
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
       }
       DLOG(INFO) << "exiting thread";
@@ -185,7 +189,8 @@ namespace kspp {
     commit_chain _commit_chain;
     int64_t _start_point_ms;
     metric_counter _parse_errors;
-    metric_evaluator _commit_chain_size;
+    metric_gauge _commit_chain_size;
+    //metric_evaluator _commit_chain_size;
   };
 
   template<class K, class V,  class KEY_CODEC, class VAL_CODEC>

@@ -146,6 +146,7 @@ namespace kspp {
               }
             }
           }
+          _commit_chain_size.set(_commit_chain.size());
           std::this_thread::sleep_for(std::chrono::milliseconds(10)); // wait for more messages
         }
       }
@@ -163,9 +164,12 @@ namespace kspp {
           }
 
           // to much work in queue - back off and let the conumers work
-          while(_incomming_msg.size()>1000 && !_exit)
+          while(_incomming_msg.size()>1000 && !_exit) {
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            _commit_chain_size.set(_commit_chain.size());
+          }
         }
+        _commit_chain_size.set(_commit_chain.size());
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
       }
       DLOG(INFO) << "exiting thread";
@@ -181,7 +185,7 @@ namespace kspp {
     commit_chain _commit_chain;
     int64_t _start_point_ms;
     metric_counter _parse_errors;
-    metric_evaluator _commit_chain_size;
+    metric_gauge _commit_chain_size;
   };
 
   template<class K, class V,  class KEY_CODEC, class VAL_CODEC>

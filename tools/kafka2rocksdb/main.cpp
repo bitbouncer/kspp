@@ -3,15 +3,15 @@
 #include <boost/program_options.hpp>
 #include <kspp/processors/filter.h>
 #include <kspp/sources/kafka_source.h>
-//#include <kspp/connect/influxdb/influx_sink.h>
+#include <kspp/topology_builder.h>
 #include <kspp/processors/ktable.h>
 #include <kspp/state_stores/rocksdb_store.h>
-#include <kspp/metrics/influx_metrics_reporter.h>
 #include <kspp/utils/env.h>
 #include <kspp/utils/kafka_utils.h>
+#include <kspp/metrics/prometheus_pushgateway_reporter.h>
 
 #define SERVICE_NAME "kafka2rocksdb"
-#define DEFAULT_PATH           "/tmp/kafka2rocksdb"
+#define DEFAULT_PATH "/tmp/kafka2rocksdb"
 
 using namespace std::chrono_literals;
 using namespace kspp;
@@ -34,6 +34,7 @@ int main(int argc, char** argv) {
       ("partition_list", boost::program_options::value<std::string>()->default_value("[-1]"), "partition_list")
       ("dst_path", boost::program_options::value<std::string>()->default_value(get_env_and_log("DST_PATH", DEFAULT_PATH)), "dst_path")
       ("schema_registry", boost::program_options::value<std::string>()->default_value(default_schema_registry_uri()), "schema_registry")
+      ("pushgateway_uri", boost::program_options::value<std::string>()->default_value(get_env_and_log("PUSHGATEWAY_URI", "localhost:9091")),"pushgateway_uri")
       ;
 
   boost::program_options::variables_map vm;
@@ -76,6 +77,12 @@ int main(int argc, char** argv) {
     partition_list = kspp::parse_partition_list(s);
   }
 
+  std::string pushgateway_uri;
+  if (vm.count("pushgateway_uri")) {
+    pushgateway_uri = vm["pushgateway_uri"].as<std::string>();
+  }
+
+
   std::string consumer_group(SERVICE_NAME);
   consumer_group += dst_path;
 
@@ -95,6 +102,7 @@ int main(int argc, char** argv) {
 
   LOG(INFO) << "src_topic        : " << src_topic;
   LOG(INFO) << "dst_path          : " << dst_path;
+  LOG(INFO) << "pushgateway_uri : " << pushgateway_uri;
   LOG(INFO) << "discovering facts...";
 
   auto nr_of_partitions = kspp::kafka::get_number_partitions(config, src_topic);
@@ -112,12 +120,11 @@ int main(int argc, char** argv) {
   std::signal(SIGPIPE, SIG_IGN);
 
   std::vector<metrics20::avro::metrics20_key_tags_t> tags;
-  tags.push_back(kspp::make_metrics_tag("app_name", SERVICE_NAME));
   tags.push_back(kspp::make_metrics_tag("app_realm", app_realm));
   tags.push_back(kspp::make_metrics_tag("hostname",  default_hostname()));
   tags.push_back(kspp::make_metrics_tag("src_topic", src_topic));
-  tags.push_back(kspp::make_metrics_tag("dst_path",   dst_path));
-  topology->init_metrics(tags);
+  tags.push_back(kspp::make_metrics_tag("dst_path",  dst_path));
+  topology->set_labels(tags);
 
   topology->start(kspp::OFFSET_STORED);
   //topology->start(kspp::OFFSET_END);
@@ -126,7 +133,7 @@ int main(int argc, char** argv) {
 
   // output metrics and run...
   {
-    auto metrics_reporter = std::make_shared<kspp::influx_metrics_reporter>(generic_builder, "kspp_metrics", "kspp", "") << topology;
+    auto metrics_reporter = std::make_shared<kspp::prometheus_pushgateway_reporter>(SERVICE_NAME, pushgateway_uri) << topology;
     while (run) {
       if (topology->process(kspp::milliseconds_since_epoch()) == 0) {
         std::this_thread::sleep_for(10ms);
