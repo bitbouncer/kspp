@@ -42,6 +42,7 @@ int main(int argc, char** argv) {
       ("http_batch_size", boost::program_options::value<int32_t>()->default_value(500), "http_batch_size")
       ("http_timeout_ms", boost::program_options::value<int32_t>()->default_value(1000), "http_timeout_ms")
       ("pushgateway_uri", boost::program_options::value<std::string>()->default_value(get_env_and_log("PUSHGATEWAY_URI", "localhost:9091")),"pushgateway_uri")
+      ("metrics_namespace", boost::program_options::value<std::string>()->default_value(get_env_and_log("METRICS_NAMESPACE", "bb")),"metrics_namespace")
       ;
 
   boost::program_options::variables_map vm;
@@ -104,6 +105,10 @@ int main(int argc, char** argv) {
     pushgateway_uri = vm["pushgateway_uri"].as<std::string>();
   }
 
+  std::string metrics_namespace;
+  if (vm.count("metrics_namespace")) {
+    metrics_namespace = vm["metrics_namespace"].as<std::string>();
+  }
 
   std::string consumer_group(SERVICE_NAME);
   consumer_group += dst_uri;
@@ -122,12 +127,13 @@ int main(int argc, char** argv) {
   config->validate();
   config->log();
 
-  LOG(INFO) << "src_topic        : " << src_topic;
-  LOG(INFO) << "dst_uri          : " << dst_uri;
-  LOG(INFO) << "dst_database     : " << dst_database;
-  LOG(INFO) << "http_batch_size  : " << http_batch_size;
-  LOG(INFO) << "http_timeout_ms  : " << http_timeout.count();
-  LOG(INFO) << "pushgateway_uri : " << pushgateway_uri;
+  LOG(INFO) << "src_topic         : " << src_topic;
+  LOG(INFO) << "dst_uri           : " << dst_uri;
+  LOG(INFO) << "dst_database      : " << dst_database;
+  LOG(INFO) << "http_batch_size   : " << http_batch_size;
+  LOG(INFO) << "http_timeout_ms   : " << http_timeout.count();
+  LOG(INFO) << "pushgateway_uri   : " << pushgateway_uri;
+  LOG(INFO) << "metrics_namespace : " << metrics_namespace;
   LOG(INFO) << "discovering facts...";
 
   kspp::connect::connection_params connection_params;
@@ -149,6 +155,7 @@ int main(int argc, char** argv) {
   std::signal(SIGPIPE, SIG_IGN);
 
   std::vector<metrics20::avro::metrics20_key_tags_t> tags;
+  tags.push_back(kspp::make_metrics_tag("app_name", SERVICE_NAME));
   tags.push_back(kspp::make_metrics_tag("app_realm", app_realm));
   tags.push_back(kspp::make_metrics_tag("hostname",  default_hostname()));
   tags.push_back(kspp::make_metrics_tag("src_topic", src_topic));
@@ -163,7 +170,7 @@ int main(int argc, char** argv) {
 
   // output metrics and run...
   {
-    auto metrics_reporter = std::make_shared<kspp::prometheus_pushgateway_reporter>(SERVICE_NAME, pushgateway_uri) << topology;
+    auto metrics_reporter = std::make_shared<kspp::prometheus_pushgateway_reporter>(metrics_namespace, pushgateway_uri) << topology;
     while (run) {
       if (topology->process(kspp::milliseconds_since_epoch()) == 0) {
         std::this_thread::sleep_for(10ms);

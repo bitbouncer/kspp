@@ -53,9 +53,10 @@ int main(int argc, char **argv) {
       ("topic", boost::program_options::value<std::string>(), "topic")
       ("start_offset", boost::program_options::value<std::string>()->default_value("OFFSET_BEGINNING"), "start_offset")
       ("offset_storage", boost::program_options::value<std::string>()->default_value(""), "offset_storage")
-      ("oneshot", "run to eof and exit")
-      ("filename", boost::program_options::value<std::string>(), "filename");
+      ("filename", boost::program_options::value<std::string>(), "filename")
       ("pushgateway_uri", boost::program_options::value<std::string>()->default_value(get_env_and_log("PUSHGATEWAY_URI", "localhost:9091")),"pushgateway_uri")
+      ("metrics_namespace", boost::program_options::value<std::string>()->default_value(get_env_and_log("METRICS_NAMESPACE", "bb")),"metrics_namespace")
+      ("oneshot", "run to eof and exit")
       ;
 
   boost::program_options::variables_map vm;
@@ -238,6 +239,10 @@ int main(int argc, char **argv) {
     pushgateway_uri = vm["pushgateway_uri"].as<std::string>();
   }
 
+  std::string metrics_namespace;
+  if (vm.count("metrics_namespace")) {
+    metrics_namespace = vm["metrics_namespace"].as<std::string>();
+  }
 
   bool oneshot=false;
   if (vm.count("oneshot"))
@@ -271,10 +276,10 @@ int main(int argc, char **argv) {
 
   LOG(INFO) << "offset_storage     : " << offset_storage;
   LOG(INFO) << "start_offset       : " << kspp::to_string(start_offset);
+  LOG(INFO) << "pushgateway_uri    : " << pushgateway_uri;
+  LOG(INFO) << "metrics_namespace  : " << metrics_namespace;
   if (oneshot)
     LOG(INFO) << "oneshot            : TRUE";
-  LOG(INFO) << "pushgateway_uri    : " << pushgateway_uri;
-
   kspp::connect::connection_params connection_params;
   connection_params.host = db_host;
   connection_params.port = db_port;
@@ -326,6 +331,7 @@ int main(int argc, char **argv) {
   }
 
   std::vector<metrics20::avro::metrics20_key_tags_t> tags;
+  tags.push_back(kspp::make_metrics_tag("app_name", SERVICE_NAME));
   tags.push_back(kspp::make_metrics_tag("app_realm", app_realm));
   tags.push_back(kspp::make_metrics_tag("hostname", default_hostname()));
   tags.push_back(kspp::make_metrics_tag("db_host", db_host));
@@ -340,7 +346,7 @@ int main(int argc, char **argv) {
 
   LOG(INFO) << "status is up";
   {
-    auto metrics_reporter = std::make_shared<kspp::prometheus_pushgateway_reporter>(SERVICE_NAME, pushgateway_uri) << topology;
+    auto metrics_reporter = std::make_shared<kspp::prometheus_pushgateway_reporter>(metrics_namespace, pushgateway_uri) << topology;
     while (run) {
       if (topology->process(kspp::milliseconds_since_epoch()) == 0) {
         std::this_thread::sleep_for(10ms);
