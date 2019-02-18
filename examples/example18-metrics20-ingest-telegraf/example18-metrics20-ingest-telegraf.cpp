@@ -262,10 +262,6 @@ int main(int argc, char **argv) {
     }
   }
 
-  topology->for_each_metrics([](kspp::metric &m) {
-    std::cerr << "metrics: " << m.name() << " " << m.tags() << " : " << m.value() << std::endl;
-  });
-
   topology->commit(true);
   topology->close();
   return 0;

@@ -107,8 +107,6 @@ int main(int argc, char **argv) {
     topology->create_processors<kspp::stream_sink<int, std::string>>(sources, &std::cerr);
     topology->start(kspp::OFFSET_BEGINNING);
     topology->flush();
-    topology->for_each_metrics([](kspp::metric& m) {
-      std::cerr << "metrics: " << m.tags() << " " << m.name() << " : " << m.value() << std::endl;
-    });
+
   }
 }

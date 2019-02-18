@@ -55,9 +55,5 @@ int main(int argc, char **argv) {
 
   topology->flush();
 
-  topology->for_each_metrics([](kspp::metric &m) {
-    std::cerr << m.tags() << " " << m.name() << " : " << m.value() << std::endl;
-  });
-
   return 0;
 }

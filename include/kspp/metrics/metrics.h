@@ -1,5 +1,6 @@
 #include <string>
 #include <chrono>
+#include <cmath>
 #include <functional>
 #include "metric20_key_t.h"
 #include <prometheus/registry.h>
@@ -8,7 +9,9 @@
 #define KSPP_KEY_TYPE_TAG "key_type"
 #define KSPP_VALUE_TYPE_TAG "value_type"
 #define KSPP_PROCESSOR_TYPE_TAG "processor_type"
-#define KSPP_PROCESSOR_INSTANCE_NAME_TAG "processor_instance_name"
+#define KSPP_COMPONENT_TYPE_TAG "component"
+#define KSPP_DESTINATION_HOST   "destination_host"
+//#define KSPP_PROCESSOR_INSTANCE_NAME_TAG "processor_instance_name"
 #define KSPP_PARTITION_TAG "partition"
 #define KSPP_TOPIC_TAG "topic"
 
@@ -22,7 +25,7 @@ namespace kspp {
   }
 
   struct metric {
-    enum mtype { RATE, COUNT, GAUGE, COUNTER, TIMESTAMP }; // http://metrics20.org/spec/
+    enum mtype { RATE, COUNT, GAUGE, COUNTER, TIMESTAMP, SUMMARY }; // http://metrics20.org/spec/ and some prometheus
 
     metric(std::string what, mtype mt, std::string unit)
         : _name("kspp_" + what) {
@@ -32,6 +35,7 @@ namespace kspp {
         case GAUGE: add_tag("mtype", "gauge"); break;
         case COUNTER: add_tag("mtype", "counter"); break;
         case TIMESTAMP: add_tag("mtype", "timestamp"); break;
+        case SUMMARY: add_tag("mtype", "summary"); break;
       }
       add_tag("unit", unit);
     }
@@ -42,8 +46,8 @@ namespace kspp {
       return _name;
     }
 
-    virtual void finalize_tags(std::shared_ptr<prometheus::Registry> registry)
-    {
+    virtual void finalize_tags(std::shared_ptr<prometheus::Registry> registry)=0;
+    /*{
       _derived_tags.clear();
       for (std::map<std::string, std::string>::const_iterator i =_real_tags.begin(); i!=_real_tags.end(); ++i)
       {
@@ -51,16 +55,13 @@ namespace kspp {
         if (std::next(i) != _real_tags.end())
           _derived_tags += ",";
       }
-    }
+    }*/
 
-    /*void set_tags(std::string s) {
-      _tags = s;
-    }
-     */
 
-    inline std::string tags() const {
+    /*inline std::string tags() const {
       return _derived_tags;
     }
+    */
 
     void add_tag(std::string key, std::string val)
     {
@@ -76,7 +77,7 @@ namespace kspp {
      */
 
     std::string _name; // what
-    std::string _derived_tags;
+    //std::string _derived_tags;
     std::map<std::string, std::string> _real_tags;
   };
 
@@ -88,13 +89,14 @@ namespace kspp {
 
     void finalize_tags(std::shared_ptr<prometheus::Registry> registry) override
     {
-      _derived_tags.clear();
+      /*_derived_tags.clear();
       for (std::map<std::string, std::string>::const_iterator i =_real_tags.begin(); i!=_real_tags.end(); ++i)
       {
         _derived_tags += i->first + "=" + i->second;
         if (std::next(i) != _real_tags.end())
           _derived_tags += ",";
       }
+       */
 
       auto& counter_family = prometheus::BuildCounter().Name(_name).Register(*registry);
       _counter = &counter_family.Add(_real_tags);
@@ -125,13 +127,15 @@ namespace kspp {
 
     void finalize_tags(std::shared_ptr<prometheus::Registry> registry) override
     {
-      _derived_tags.clear();
+      /*
+       * _derived_tags.clear();
       for (std::map<std::string, std::string>::const_iterator i =_real_tags.begin(); i!=_real_tags.end(); ++i)
       {
         _derived_tags += i->first + "=" + i->second;
         if (std::next(i) != _real_tags.end())
           _derived_tags += ",";
       }
+       */
 
       auto& family = prometheus::BuildGauge().Name(_name).Register(*registry);
       _gauge = &family.Add(_real_tags);
@@ -161,13 +165,14 @@ namespace kspp {
 
     void finalize_tags(std::shared_ptr<prometheus::Registry> registry) override
     {
-      _derived_tags.clear();
+      /*_derived_tags.clear();
       for (std::map<std::string, std::string>::const_iterator i =_real_tags.begin(); i!=_real_tags.end(); ++i)
       {
         _derived_tags += i->first + "=" + i->second;
         if (std::next(i) != _real_tags.end())
           _derived_tags += ",";
       }
+      */
 
       auto& family = prometheus::BuildGauge().Name(_name).Register(*registry);
       _gauge = &family.Add(_real_tags);
@@ -187,6 +192,46 @@ namespace kspp {
   private:
     prometheus::Gauge* _gauge;
   };
+
+  struct metric_summary : public metric {
+    metric_summary(std::string what, std::string unit, const std::vector<float>& quantiles={0.99})
+        : metric(what, SUMMARY, unit)
+        ,  _quantiles(quantiles)
+        ,  _summary(nullptr) {
+      add_tag("window", "60s");
+    }
+
+    void finalize_tags(std::shared_ptr<prometheus::Registry> registry) override
+    {
+     /* _derived_tags.clear();
+      for (std::map<std::string, std::string>::const_iterator i =_real_tags.begin(); i!=_real_tags.end(); ++i)
+      {
+        _derived_tags += i->first + "=" + i->second;
+        if (std::next(i) != _real_tags.end())
+          _derived_tags += ",";
+      }
+      */
+
+      std::vector<prometheus::detail::CKMSQuantiles::Quantile> q;
+      for (auto i : _quantiles)
+        q.emplace_back(i, 0.05);
+      auto& family = prometheus::BuildSummary().Name(_name).Register(*registry);
+      _summary = &family.Add(_real_tags, q, std::chrono::seconds{60}, 5);
+    }
+
+    inline void observe(double v) {
+      _summary->Observe(v);
+    }
+
+    virtual double value() const {
+      return NAN;
+    }
+
+  private:
+    const std::vector<float> _quantiles;
+    prometheus::Summary* _summary;
+  };
+
 
   /*
    * struct metric_evaluator : public metric {

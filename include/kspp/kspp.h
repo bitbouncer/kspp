@@ -152,12 +152,12 @@ namespace kspp {
          i->add_tag(key, value);
     }
 
-  protected:
     // must be valid for processor lifetime  (cannot be removed)
     void add_metric(metric *p) {
       _metrics.push_back(p);
     }
 
+  protected:
     std::vector<metric *> _metrics;
     metric_counter _processed_count;
     metric_streaming_lag _lag;

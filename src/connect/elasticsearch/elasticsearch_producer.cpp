@@ -5,28 +5,51 @@
 namespace kspp {
   using namespace std::chrono_literals;
 
-  elasticsearch_producer::elasticsearch_producer(std::string index_name,
+  elasticsearch_producer::elasticsearch_producer(kspp::processor* parent,
+                                                 std::string index_name,
                                                  const kspp::connect::connection_params& cp,
                                                  std::string id_column,
                                                  size_t batch_size)
-    : _work(new boost::asio::io_service::work(_ios))
-    , _fg([this] { _process_work(); })
-    , _bg(boost::bind(&boost::asio::io_service::run, &_ios))
-    , _http_handler(_ios, batch_size)
-    , _index_name(index_name)
-    , _cp(cp)
-    , _id_column(id_column)
-    , _batch_size(batch_size)
-    , _http_timeout(std::chrono::seconds(2))
-    , _msg_cnt(0)
-    , _msg_bytes(0)
-    , _good(true)
-    , _closed(false)
-    , _connected(false)
-    , _table_checked(false)
-    , _table_exists(false)
-    , _table_create_pending(false)
-    , _insert_in_progress(false) {
+      : _work(new boost::asio::io_service::work(_ios))
+      , _fg([this] { _process_work(); })
+      , _bg(boost::bind(&boost::asio::io_service::run, &_ios))
+      , _http_handler(_ios, batch_size)
+      , _index_name(index_name)
+      , _cp(cp)
+      , _id_column(id_column)
+      , _batch_size(batch_size)
+      , _http_timeout(std::chrono::seconds(2))
+      , _msg_cnt(0)
+      , _msg_bytes(0)
+      , _good(true)
+      , _closed(false)
+      , _connected(false)
+      , _table_checked(false)
+      , _table_exists(false)
+      , _table_create_pending(false)
+      , _insert_in_progress(false)
+      , _request_time("http_request_time", "ms", { 0.9, 0.99 })
+      , _timeout("http_timeout", "msg")
+      , _http_2xx("http_request", "msg")
+      , _http_3xx("http_request", "msg")
+      , _http_4xx("http_request", "msg")
+      , _http_404("http_request", "msg")
+      , _http_5xx("http_request", "msg"){
+    _request_time.add_tag(KSPP_COMPONENT_TYPE_TAG, "elasticsearch_producer");
+    _request_time.add_tag(KSPP_DESTINATION_HOST, cp.host);
+    _http_2xx.add_tag("code", "2xx");
+    _http_3xx.add_tag("code", "3xx");
+    _http_404.add_tag("code", "404_NO_ERROR");
+    _http_4xx.add_tag("code", "4xx");
+    _http_5xx.add_tag("code", "5xx");
+
+    parent->add_metric(&_request_time);
+    parent->add_metric(&_http_2xx);
+    parent->add_metric(&_http_3xx);
+    parent->add_metric(&_http_404);
+    parent->add_metric(&_http_4xx);
+    parent->add_metric(&_http_5xx);
+
     curl_global_init(CURL_GLOBAL_NOTHING); /* minimal */
     _http_handler.set_user_agent("Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36");
     connect_async();
@@ -76,7 +99,7 @@ namespace kspp {
             break;
           case elasticsearch_producer::TIMEOUT:
             //if (++timeouts < max_timeouts_per_batch)
-              work.push_front(batch.get_function(i));
+            work.push_front(batch.get_function(i));
             break;
           case elasticsearch_producer::HTTP_ERROR:
             // therre are a number of es codes that means it's overloaded - we should back off Todo
@@ -85,6 +108,9 @@ namespace kspp {
           case elasticsearch_producer::PARSE_ERROR:
             if (++parse_errors < max_parse_error_per_batch)
               work.push_front(batch.get_function(i));
+            break;
+          case elasticsearch_producer::HTTP_BAD_REQUEST_ERROR:
+            // nothing to do - no point of retrying this
             break;
         }
       }
@@ -123,35 +149,55 @@ namespace kspp {
       request->append(body);
       //request->set_trace_level(http::TRACE_LOG_NONE);
       _http_handler.perform_async(
-        request,
-        [this, cb](std::shared_ptr<kspp::http::request> h) {
-          //++_http_requests;
-          if (!h->ok()) {
-            if (!h->transport_result()) {
-              //++_http_timeouts;
-              DLOG(INFO) << "http transport failed - retrying";
-              cb(TIMEOUT);
-              return;
-            } else {
-              // if we are deleteing and the document does not exist we do not consideer this as a failure
-              if (h->method()==kspp::http::DELETE_ && h->http_result()==kspp::http::not_found){
-                cb(SUCCESS);
+          request,
+          [this, cb](std::shared_ptr<kspp::http::request> h) {
+
+            // only observes sunncessful roundtrips
+            if (h->transport_result())
+              _request_time.observe(h->milliseconds());
+
+            //++_http_requests;
+            if (!h->ok()) {
+              if (!h->transport_result()) {
+                ++_timeout;
+                DLOG(INFO) << "http transport failed - retrying";
+                cb(TIMEOUT);
+                return;
+              } else {
+                // if we are deleteing and the document does not exist we do not consideer this as a failure
+                if (h->method()==kspp::http::DELETE_ && h->http_result()==kspp::http::not_found){
+                  ++_http_404;
+                  cb(SUCCESS);
+                  return;
+                }
+                auto ec = h->http_result();
+                if (ec>=300 && ec <400)
+                  ++_http_3xx;
+                else if (ec>=400 && ec <500)
+                  ++_http_4xx;
+                else if (ec>=500 && ec <600)
+                  ++_http_5xx;
+
+                LOG(ERROR) << "http " << kspp::http::to_string(h->method()) << ", "  << h->uri() << " HTTPRES = " << h->http_result() << " - retrying, reponse:" << h->rx_content();
+
+                if (ec==400) {
+                  LOG(ERROR) << "http(500) content: " << h->tx_content();
+                  cb(HTTP_BAD_REQUEST_ERROR);
+                  return;
+                }
+
+                cb(HTTP_ERROR);
                 return;
               }
-              //++_http_error;
-              LOG(WARNING) << "http " << kspp::http::to_string(h->method()) << ", "  << h->uri() << " HTTPRES = " << h->http_result() << " - retrying, reponse:" << h->rx_content();
-              cb(HTTP_ERROR);
-              return;
             }
-          }
 
-          LOG_EVERY_N(INFO, 1000) << "http PUT: " << h->uri() << " got " << h->rx_content_length() << " bytes, time="
-                                  << h->milliseconds() << " ms (" << h->rx_kb_per_sec() << " KB/s), #"
-                                  << google::COUNTER;
-          _msg_bytes += h->tx_content_length();
-          cb(SUCCESS);
-          // TBD store metrics on request time
-        }); // perform_async
+            LOG_EVERY_N(INFO, 1000) << "http PUT: " << h->uri() << " got " << h->rx_content_length() << " bytes, time="
+                                    << h->milliseconds() << " ms (" << h->rx_kb_per_sec() << " KB/s), #"
+                                    << google::COUNTER;
+            _msg_bytes += h->tx_content_length();
+            cb(SUCCESS);
+            // TBD store metrics on request time
+          }); // perform_async
     }; // work
     return f;
   }
