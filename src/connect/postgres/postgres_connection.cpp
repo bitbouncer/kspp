@@ -43,7 +43,7 @@ namespace kspp_postgres {
                                  " port=" + std::to_string(cp.port) +
                                  " user=" + cp.user +
                                  " password=" + cp.password +
-                                 " dbname=" + cp.database;
+                                 " dbname=" + cp.database_name;
     _pg_conn = PQconnectdb(connect_string.c_str());
     auto status = PQstatus(_pg_conn); //
     int32_t duration = (int32_t) (kspp::milliseconds_since_epoch() - t0);

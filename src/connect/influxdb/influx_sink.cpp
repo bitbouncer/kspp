@@ -93,7 +93,7 @@ namespace kspp {
       }
 
       size_t items_to_copy = std::min<size_t>(this->_queue.size(), _batch_size);
-      std::string url = _cp.url + "/write?db=" + _cp.database;
+      std::string url = _cp.url + "/write?db=" + _cp.database_name;
       std::shared_ptr<kspp::http::request> request(new kspp::http::request(kspp::http::POST, url, {}, _http_timeout));
 
       size_t msg_in_batch = 0;

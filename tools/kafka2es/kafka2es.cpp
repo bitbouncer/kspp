@@ -151,6 +151,7 @@ int main(int argc, char **argv) {
 
   kspp::connect::connection_params connection_params;
   connection_params.url = es_url;
+  connection_params.database_name = es_index;
   connection_params.user = es_user;
   connection_params.password = es_password;
 
@@ -164,7 +165,7 @@ int main(int argc, char **argv) {
 
   auto source0 = topology->create_processors<kspp::kafka_source<kspp::generic_avro, kspp::generic_avro, kspp::avro_serdes, kspp::avro_serdes>>(partition_list, topic, config->avro_serdes(), config->avro_serdes());
 
-  topology->create_sink<kspp::elasticsearch_generic_avro_sink>(source0, es_index, connection_params, "id", config->get_schema_registry());
+  topology->create_sink<kspp::elasticsearch_generic_avro_sink>(source0, connection_params, "id", config->get_schema_registry());
 
   //topology->create_sink<kspp::elasticsearch_sink>(source0, es_index, connection_params, "id", 3, 30s);
   //topology->create_sink<kspp::elasticsearch_sink>(source0, es_index, connection_params, "id",10, 1s);

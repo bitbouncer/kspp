@@ -249,7 +249,7 @@ int main(int argc, char **argv) {
   connection_params.port = db_port;
   connection_params.user = db_user;
   connection_params.password = db_password;
-  connection_params.database = db_dbname;
+  connection_params.database_name = db_dbname;
 
   kspp::connect::table_params table_params;
   table_params.poll_intervall = std::chrono::seconds(poll_intervall);

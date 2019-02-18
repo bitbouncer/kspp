@@ -215,8 +215,7 @@ int main(int argc, char **argv) {
   connection_params.port = postgres_port;
   connection_params.user = postgres_user;
   connection_params.password = postgres_password;
-  connection_params.database = postgres_dbname;
-
+  connection_params.database_name = postgres_dbname;
 
   if (filename.size()) {
     LOG(INFO) << "using avro file..";

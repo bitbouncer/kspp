@@ -115,7 +115,7 @@ namespace kspp_tds {
     //login_->port = 1433;
     // what about port??
     DBSETLPWD(login_, cp.password.c_str());
-    DBSETLDBNAME(login_, cp.database.c_str()); // maybe optional
+    DBSETLDBNAME(login_, cp.database_name.c_str()); // maybe optional
 
     /* use UTF-8 as our coding */
     DBSETLCHARSET(login_, "UTF-8");
@@ -124,7 +124,7 @@ namespace kspp_tds {
     if ((dbproc_ = dbopen(login_, cp.host.c_str())) == NULL)
       LOG(ERROR) << _trace_id << " cannot connect to " << cp.host;
     else
-      LOG(INFO) << _trace_id << " connected to " << cp.host <<  " user: " << cp.user << ", database: " << cp.database;
+      LOG(INFO) << _trace_id << " connected to " << cp.host <<  " user: " << cp.user << ", database: " << cp.database_name;
   }
 
   void connection::close()

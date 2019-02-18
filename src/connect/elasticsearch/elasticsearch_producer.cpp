@@ -5,21 +5,15 @@
 namespace kspp {
   using namespace std::chrono_literals;
 
-  elasticsearch_producer::elasticsearch_producer(std::string index_name,
-                                                 const kspp::connect::connection_params& cp,
-                                                 std::string id_column,
-                                                 size_t batch_size)
+  elasticsearch_producer::elasticsearch_producer(const kspp::connect::connection_params& cp, std::string id_column, size_t batch_size)
       : _work(new boost::asio::io_service::work(_ios))
       , _fg([this] { _process_work(); })
       , _bg(boost::bind(&boost::asio::io_service::run, &_ios))
       , _http_handler(_ios, batch_size)
-      , _index_name(index_name)
       , _cp(cp)
       , _id_column(id_column)
       , _batch_size(batch_size)
       , _http_timeout(std::chrono::seconds(2))
-      , _msg_cnt(0)
-      , _msg_bytes(0)
       , _good(true)
       , _closed(false)
       , _connected(false)
@@ -33,7 +27,8 @@ namespace kspp {
       , _http_3xx("http_request", "msg")
       , _http_4xx("http_request", "msg")
       , _http_404("http_request", "msg")
-      , _http_5xx("http_request", "msg"){
+      , _http_5xx("http_request", "msg")
+      , _msg_bytes("bytes_sent", "bytes"){
     _request_time.add_tag(KSPP_COMPONENT_TYPE_TAG, "elasticsearch_producer");
     _request_time.add_tag(KSPP_DESTINATION_HOST, cp.host);
     _http_2xx.add_tag("code", "2xx");
@@ -47,10 +42,8 @@ namespace kspp {
   }
 
   elasticsearch_producer::~elasticsearch_producer(){
-
     _http_handler.close();
     close();
-
     _work.reset();
     _fg.join();
     _bg.join();
@@ -63,6 +56,7 @@ namespace kspp {
     parent->add_metric(&_http_404);
     parent->add_metric(&_http_4xx);
     parent->add_metric(&_http_5xx);
+    parent->add_metric(&_msg_bytes);
   }
 
   void elasticsearch_producer::close(){
@@ -126,7 +120,7 @@ namespace kspp {
 
   kspp::async::work<elasticsearch_producer::work_result_t>::async_function  elasticsearch_producer::create_one_http_work(const kspp::generic_avro& key, const kspp::generic_avro* value) {
     auto key_string = avro_2_raw_column_value(*key.generic_datum());
-    std::string url = _cp.url + "/" + _index_name + "/" + "_doc" + "/" + key_string;
+    std::string url = _cp.url + "/" + _cp.database_name + "/" + "_doc" + "/" + key_string;
 
     kspp::http::method_t request_type = (value) ? kspp::http::PUT : kspp::http::DELETE_;
 
@@ -172,6 +166,7 @@ namespace kspp {
                   cb(SUCCESS);
                   return;
                 }
+
                 auto ec = h->http_result();
                 if (ec>=300 && ec <400)
                   ++_http_3xx;
@@ -193,9 +188,12 @@ namespace kspp {
               }
             }
 
+
+
             LOG_EVERY_N(INFO, 1000) << "http PUT: " << h->uri() << " got " << h->rx_content_length() << " bytes, time="
                                     << h->milliseconds() << " ms (" << h->rx_kb_per_sec() << " KB/s), #"
                                     << google::COUNTER;
+            ++_http_2xx;
             _msg_bytes += h->tx_content_length();
             cb(SUCCESS);
             // TBD store metrics on request time
@@ -230,7 +228,6 @@ namespace kspp {
         while (!in_batch.empty()) {
           _done.push_back(in_batch.pop_and_get());
         }
-        _msg_cnt += msg_in_batch;
       } else {
         std::this_thread::sleep_for(2s);
       }

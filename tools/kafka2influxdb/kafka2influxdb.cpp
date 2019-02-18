@@ -138,7 +138,7 @@ int main(int argc, char** argv) {
 
   kspp::connect::connection_params connection_params;
   connection_params.url = dst_uri;
-  connection_params.database = dst_database;
+  connection_params.database_name = dst_database;
 
   auto nr_of_partitions = kspp::kafka::get_number_partitions(config, src_topic);
   if (partition_list.size() == 0 || partition_list[0] == -1)

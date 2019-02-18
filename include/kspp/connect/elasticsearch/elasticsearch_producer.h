@@ -18,8 +18,7 @@ namespace kspp {
   public:
     enum work_result_t { SUCCESS = 0, TIMEOUT = -1, HTTP_ERROR = -2, PARSE_ERROR = -3 , HTTP_BAD_REQUEST_ERROR = -4};
 
-    elasticsearch_producer(std::string index_name,
-                           const kspp::connect::connection_params& cp,
+    elasticsearch_producer(const kspp::connect::connection_params& cp,
                            std::string id_column,
                            size_t http_batch_size);
 
@@ -34,7 +33,7 @@ namespace kspp {
     }
 
     std::string topic() const override {
-      return _index_name;
+      return _cp.database_name;
     }
 
     void stop();
@@ -69,14 +68,12 @@ namespace kspp {
     size_t _batch_size;
     std::chrono::milliseconds _http_timeout;
 
-    const std::string _index_name;
     const kspp::connect::connection_params _cp;
     const std::string _id_column;
 
     event_queue<kspp::generic_avro, kspp::generic_avro> _incomming_msg;
     event_queue<kspp::generic_avro, kspp::generic_avro> _done;
-    uint64_t _msg_cnt;
-    uint64_t _msg_bytes;
+
     bool _good;
     bool _connected;
     bool _closed;
@@ -85,8 +82,6 @@ namespace kspp {
     bool _table_create_pending;
     bool _insert_in_progress;
 
-
-
     std::thread _fg;
     metric_counter _timeout;
     metric_counter _http_2xx;
@@ -94,6 +89,7 @@ namespace kspp {
     metric_counter _http_404;
     metric_counter _http_4xx;
     metric_counter _http_5xx;
+    metric_counter _msg_bytes;
     metric_summary _request_time;
   };
 }
