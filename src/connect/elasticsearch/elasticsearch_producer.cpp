@@ -29,8 +29,8 @@ namespace kspp {
       , _http_404("http_request", "msg")
       , _http_5xx("http_request", "msg")
       , _msg_bytes("bytes_sent", "bytes"){
-    _request_time.add_tag(KSPP_COMPONENT_TYPE_TAG, "elasticsearch_producer");
-    _request_time.add_tag(KSPP_DESTINATION_HOST, cp.host);
+    //_request_time.add_tag(KSPP_COMPONENT_TYPE_TAG, "elasticsearch_producer");
+    _request_time.add_tag(KSPP_DESTINATION_HOST, _cp.host);
     _http_2xx.add_tag("code", "2xx");
     _http_3xx.add_tag("code", "3xx");
     _http_404.add_tag("code", "404_NO_ERROR");
@@ -179,7 +179,8 @@ namespace kspp {
 
                 if (ec==400) {
                   LOG(ERROR) << "http(500) content: " << h->tx_content();
-                  cb(HTTP_BAD_REQUEST_ERROR);
+                  cb(HTTP_ERROR);
+                  //cb(HTTP_BAD_REQUEST_ERROR);
                   return;
                 }
 
@@ -195,7 +196,8 @@ namespace kspp {
                                     << google::COUNTER;
             ++_http_2xx;
             _msg_bytes += h->tx_content_length();
-            cb(SUCCESS);
+            //cb(SUCCESS);
+            cb(HTTP_BAD_REQUEST_ERROR);
             // TBD store metrics on request time
           }); // perform_async
     }; // work
