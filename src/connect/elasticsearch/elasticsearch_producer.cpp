@@ -196,8 +196,7 @@ namespace kspp {
                                     << google::COUNTER;
             ++_http_2xx;
             _msg_bytes += h->tx_content_length();
-            //cb(SUCCESS);
-            cb(HTTP_BAD_REQUEST_ERROR);
+            cb(SUCCESS);
             // TBD store metrics on request time
           }); // perform_async
     }; // work
