@@ -178,9 +178,8 @@ namespace kspp {
                 LOG(ERROR) << "http " << kspp::http::to_string(h->method()) << ", "  << h->uri() << " HTTPRES = " << h->http_result() << " - retrying, reponse:" << h->rx_content();
 
                 if (ec==400) {
-                  LOG(ERROR) << "http(500) content: " << h->tx_content();
-                  cb(HTTP_ERROR);
-                  //cb(HTTP_BAD_REQUEST_ERROR);
+                  //LOG(ERROR) << "http(500) content: " << h->tx_content();
+                  cb(HTTP_BAD_REQUEST_ERROR);
                   return;
                 }
 
