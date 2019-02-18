@@ -50,6 +50,7 @@ namespace kspp {
   }
 
   void elasticsearch_producer::register_metrics(kspp::processor* parent){
+    parent->add_metric(&_timeout);
     parent->add_metric(&_request_time);
     parent->add_metric(&_http_2xx);
     parent->add_metric(&_http_3xx);
