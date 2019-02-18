@@ -5,8 +5,7 @@
 namespace kspp {
   using namespace std::chrono_literals;
 
-  elasticsearch_producer::elasticsearch_producer(kspp::processor* parent,
-                                                 std::string index_name,
+  elasticsearch_producer::elasticsearch_producer(std::string index_name,
                                                  const kspp::connect::connection_params& cp,
                                                  std::string id_column,
                                                  size_t batch_size)
@@ -42,15 +41,7 @@ namespace kspp {
     _http_404.add_tag("code", "404_NO_ERROR");
     _http_4xx.add_tag("code", "4xx");
     _http_5xx.add_tag("code", "5xx");
-
-    parent->add_metric(&_request_time);
-    parent->add_metric(&_http_2xx);
-    parent->add_metric(&_http_3xx);
-    parent->add_metric(&_http_404);
-    parent->add_metric(&_http_4xx);
-    parent->add_metric(&_http_5xx);
-
-    curl_global_init(CURL_GLOBAL_NOTHING); /* minimal */
+     curl_global_init(CURL_GLOBAL_NOTHING); /* minimal */
     _http_handler.set_user_agent("Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36");
     connect_async();
   }
@@ -65,9 +56,20 @@ namespace kspp {
     _bg.join();
   }
 
+  void elasticsearch_producer::register_metrics(kspp::processor* parent){
+    parent->add_metric(&_request_time);
+    parent->add_metric(&_http_2xx);
+    parent->add_metric(&_http_3xx);
+    parent->add_metric(&_http_404);
+    parent->add_metric(&_http_4xx);
+    parent->add_metric(&_http_5xx);
+  }
+
   void elasticsearch_producer::close(){
     _closed=true;
   }
+
+
 
   void elasticsearch_producer::connect_async(){
     _connected = true; // TODO login and get an auth token

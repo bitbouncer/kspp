@@ -18,6 +18,9 @@ namespace kspp {
                       bool skip_delete=false);
     ~postgres_producer();
 
+    void register_metrics(kspp::processor* parent) override {
+    }
+
     void close() override;
 
     bool eof() const override {

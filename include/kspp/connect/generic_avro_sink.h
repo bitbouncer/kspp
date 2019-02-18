@@ -19,6 +19,10 @@ namespace kspp {
       close();
     }
 
+    void register_metrics(kspp::processor* parent){
+      _impl->register_metrics(parent);
+    }
+
     void close() override {
       if (!_exit) {
         _exit = true;

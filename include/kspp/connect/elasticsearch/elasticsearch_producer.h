@@ -18,13 +18,14 @@ namespace kspp {
   public:
     enum work_result_t { SUCCESS = 0, TIMEOUT = -1, HTTP_ERROR = -2, PARSE_ERROR = -3 , HTTP_BAD_REQUEST_ERROR = -4};
 
-    elasticsearch_producer(kspp::processor* parent,
-                           std::string index_name,
+    elasticsearch_producer(std::string index_name,
                            const kspp::connect::connection_params& cp,
                            std::string id_column,
                            size_t http_batch_size);
 
     ~elasticsearch_producer();
+
+    void register_metrics(kspp::processor* parent) override;
 
     void close() override;
 
