@@ -9,9 +9,7 @@
 #define KSPP_KEY_TYPE_TAG "key_type"
 #define KSPP_VALUE_TYPE_TAG "value_type"
 #define KSPP_PROCESSOR_TYPE_TAG "processor_type"
-#define KSPP_COMPONENT_TYPE_TAG "component"
 #define KSPP_DESTINATION_HOST   "destination_host"
-//#define KSPP_PROCESSOR_INSTANCE_NAME_TAG "processor_instance_name"
 #define KSPP_PARTITION_TAG "partition"
 #define KSPP_TOPIC_TAG "topic"
 
@@ -25,7 +23,7 @@ namespace kspp {
   }
 
   struct metric {
-    enum mtype { RATE, COUNT, GAUGE, COUNTER, TIMESTAMP, SUMMARY }; // http://metrics20.org/spec/ and some prometheus
+    enum mtype { RATE, COUNT, GAUGE, COUNTER, TIMESTAMP, SUMMARY, HISTOGRAM }; // http://metrics20.org/spec/ and some prometheus
 
     metric(std::string what, mtype mt, std::string unit)
         : _name("kspp_" + what) {
@@ -36,6 +34,7 @@ namespace kspp {
         case COUNTER: add_tag("mtype", "counter"); break;
         case TIMESTAMP: add_tag("mtype", "timestamp"); break;
         case SUMMARY: add_tag("mtype", "summary"); break;
+        case HISTOGRAM: add_tag("mtype", "histogram"); break;
       }
       add_tag("unit", unit);
     }
@@ -47,37 +46,13 @@ namespace kspp {
     }
 
     virtual void finalize_tags(std::shared_ptr<prometheus::Registry> registry)=0;
-    /*{
-      _derived_tags.clear();
-      for (std::map<std::string, std::string>::const_iterator i =_real_tags.begin(); i!=_real_tags.end(); ++i)
-      {
-        _derived_tags += i->first + "=" + i->second;
-        if (std::next(i) != _real_tags.end())
-          _derived_tags += ",";
-      }
-    }*/
-
-
-    /*inline std::string tags() const {
-      return _derived_tags;
-    }
-    */
 
     void add_tag(std::string key, std::string val)
     {
       _real_tags[key]=val;
     }
 
-    /*
-     * static bool tag_order_fn (const metrics20::avro::metrics20_key_tags_t& i,const metrics20::avro::metrics20_key_tags_t& j) { return (i.key<j.key); }
-
-    inline void sort_tags() {
-      std::sort(_real_tags.begin(), _real_tags.end(), tag_order_fn);
-    }
-     */
-
     std::string _name; // what
-    //std::string _derived_tags;
     std::map<std::string, std::string> _real_tags;
   };
 
@@ -89,15 +64,6 @@ namespace kspp {
 
     void finalize_tags(std::shared_ptr<prometheus::Registry> registry) override
     {
-      /*_derived_tags.clear();
-      for (std::map<std::string, std::string>::const_iterator i =_real_tags.begin(); i!=_real_tags.end(); ++i)
-      {
-        _derived_tags += i->first + "=" + i->second;
-        if (std::next(i) != _real_tags.end())
-          _derived_tags += ",";
-      }
-       */
-
       auto& counter_family = prometheus::BuildCounter().Name(_name).Register(*registry);
       _counter = &counter_family.Add(_real_tags);
     }
@@ -127,16 +93,6 @@ namespace kspp {
 
     void finalize_tags(std::shared_ptr<prometheus::Registry> registry) override
     {
-      /*
-       * _derived_tags.clear();
-      for (std::map<std::string, std::string>::const_iterator i =_real_tags.begin(); i!=_real_tags.end(); ++i)
-      {
-        _derived_tags += i->first + "=" + i->second;
-        if (std::next(i) != _real_tags.end())
-          _derived_tags += ",";
-      }
-       */
-
       auto& family = prometheus::BuildGauge().Name(_name).Register(*registry);
       _gauge = &family.Add(_real_tags);
     }
@@ -165,15 +121,6 @@ namespace kspp {
 
     void finalize_tags(std::shared_ptr<prometheus::Registry> registry) override
     {
-      /*_derived_tags.clear();
-      for (std::map<std::string, std::string>::const_iterator i =_real_tags.begin(); i!=_real_tags.end(); ++i)
-      {
-        _derived_tags += i->first + "=" + i->second;
-        if (std::next(i) != _real_tags.end())
-          _derived_tags += ",";
-      }
-      */
-
       auto& family = prometheus::BuildGauge().Name(_name).Register(*registry);
       _gauge = &family.Add(_real_tags);
     }
@@ -203,20 +150,11 @@ namespace kspp {
 
     void finalize_tags(std::shared_ptr<prometheus::Registry> registry) override
     {
-     /* _derived_tags.clear();
-      for (std::map<std::string, std::string>::const_iterator i =_real_tags.begin(); i!=_real_tags.end(); ++i)
-      {
-        _derived_tags += i->first + "=" + i->second;
-        if (std::next(i) != _real_tags.end())
-          _derived_tags += ",";
-      }
-      */
-
-      std::vector<prometheus::detail::CKMSQuantiles::Quantile> q;
+        std::vector<prometheus::detail::CKMSQuantiles::Quantile> q;
       for (auto i : _quantiles)
         q.emplace_back(i, 0.05);
       auto& family = prometheus::BuildSummary().Name(_name).Register(*registry);
-      _summary = &family.Add(_real_tags, q, std::chrono::seconds{60}, 5);
+      _summary = &family.Add(_real_tags, q, std::chrono::seconds{600}, 5);
     }
 
     inline void observe(double v) {
@@ -230,6 +168,33 @@ namespace kspp {
   private:
     const std::vector<float> _quantiles;
     prometheus::Summary* _summary;
+  };
+
+
+  struct metric_histogram : public metric {
+    metric_histogram(std::string what, std::string unit, const std::vector<double>& buckets)
+        : metric(what, HISTOGRAM, unit)
+        ,  _buckets(buckets)
+        ,  _histgram(nullptr) {
+    }
+
+    void finalize_tags(std::shared_ptr<prometheus::Registry> registry) override
+    {
+      auto& family = prometheus::BuildHistogram().Name(_name).Register(*registry);
+      _histgram = &family.Add(_real_tags, _buckets);
+    }
+
+    inline void observe(double v) {
+      _histgram->Observe(v);
+    }
+
+    virtual double value() const {
+      return NAN;
+    }
+
+  private:
+    const std::vector<double> _buckets;
+    prometheus::Histogram* _histgram;
   };
 
 
