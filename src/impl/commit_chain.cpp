@@ -30,33 +30,11 @@ namespace kspp {
             })) {
   }
 
-
-//commit_chain::commit_chain()
-//  : _cb(nullptr)
-//  , _size(0)
-//  , _next(autocommit_marker::initialize([this](int64_t offset, int32_t ec) { handle_result(offset, ec); })) {
-//}
-
-/*
-void commit_chain::set_handler(std::function <void(int64_t offset, int32_t ec)> callback) {
-  _cb = callback;
-}
-*/
-
-//std::shared_ptr<commit_chain::autocommit_marker> commit_chain::create(int64_t offset) {
-//  ++_size;
-//
-//  auto next = autocommit_marker::initialize([this](int64_t offset, int32_t ec) { handle_result(offset, ec); });
-//
-//  _next->init(offset, next);
-//  auto res = _next;
-//  _next = next;
-//  return res;
-//}
-
   std::shared_ptr<commit_chain::autocommit_marker> commit_chain::create(int64_t offset) {
-    ++_size;
-
+    spinlock::scoped_lock xxx(_spinlock);
+    {
+      ++_size;
+    }
     auto next = std::make_shared<autocommit_marker>([this](int64_t offset, int32_t ec) {
       handle_result(offset, ec);
     });
@@ -74,7 +52,10 @@ void commit_chain::set_handler(std::function <void(int64_t offset, int32_t ec)> 
       if (_first_ec) // we never continue after first failure
         return;
       if (!ec) {
-        --_size;
+        spinlock::scoped_lock xxx(_spinlock);
+        {
+          --_size;
+        }
         _last_good_offset = offset;
       } else {
         _first_ec = ec;

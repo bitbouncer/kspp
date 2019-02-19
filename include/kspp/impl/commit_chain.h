@@ -2,6 +2,7 @@
 #include <memory>
 #include <ctype.h>
 #include <string>
+#include <kspp/utils/spinlock.h>
 
 #pragma once
 
@@ -70,7 +71,8 @@ namespace kspp {
 
     const std::string _topic;
     const int32_t _partition;
-    size_t _size;
+    mutable spinlock _spinlock;
+    volatile size_t _size;
     int64_t _last_good_offset;
     int32_t _first_ec;
     std::shared_ptr<autocommit_marker> _next;
