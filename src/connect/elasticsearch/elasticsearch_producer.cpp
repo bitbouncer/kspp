@@ -21,6 +21,7 @@ namespace kspp {
       , _table_exists(false)
       , _table_create_pending(false)
       , _insert_in_progress(false)
+      , _skip_delete_of_non_active(cp.assume_beginning_of_stream)
       , _request_time("http_request_time", "ms", { 0.9, 0.99 })
       , _timeout("http_timeout", "msg")
       , _http_2xx("http_request", "msg")
@@ -131,7 +132,15 @@ namespace kspp {
       //auto key_string = avro2elastic_key_values(*value->valid_schema(), _id_column, *value->generic_datum());
       //key_string.erase(std::remove_if(key_string.begin(), key_string.end(), avro2elastic_IsChars("\"")), key_string.end()); // TODO there should be a key extractor that does not add '' around strings...
       body = avro2elastic_json(*value->valid_schema(), *value->generic_datum());
+      _active_ids.insert(key_string);
       //std::string url = _cp.url + "/" + _index_name + "/" + "_doc" + "/" + key_string;
+    } else {
+      if (_active_ids.find(key_string)!=_active_ids.end()) {
+        _active_ids.erase(key_string);
+      } else {
+        if (_skip_delete_of_non_active)
+          return nullptr;
+      }
     }
 
     //std::cerr << body << std::endl;

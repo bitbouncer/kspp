@@ -22,6 +22,9 @@ namespace kspp {
       std::string database_name;
 
       std::string http_header;
+
+      // drop deletes of never-seen id's
+      bool assume_beginning_of_stream=false;
     };
 
     struct table_params {

@@ -92,6 +92,9 @@ namespace kspp {
     metric_counter _http_5xx;
     metric_counter _msg_bytes;
     metric_summary _request_time;
+
+    bool _skip_delete_of_non_active;
+    std::set<std::string> _active_ids;
   };
 }
 
