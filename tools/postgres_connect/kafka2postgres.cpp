@@ -275,10 +275,19 @@ int main(int argc, char **argv) {
 
   {
     auto metrics_reporter = std::make_shared<kspp::prometheus_pushgateway_reporter>(metrics_namespace, pushgateway_uri) << topology;
+    int64_t next_exit_check = kspp::milliseconds_since_epoch() + 10000;
     while (run) {
       if (topology->process(kspp::milliseconds_since_epoch()) == 0) {
         std::this_thread::sleep_for(10ms);
         topology->commit(false);
+      }
+
+      if (kspp::milliseconds_since_epoch()>next_exit_check){
+        if (!topology->good()){
+          LOG(ERROR) << "NODES IN ERROR STATE - EXITING";
+          run=false;
+        }
+        next_exit_check = kspp::milliseconds_since_epoch() + 10000;
       }
     }
   }

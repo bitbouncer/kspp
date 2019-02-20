@@ -27,11 +27,15 @@ namespace kspp {
       , _id_column(id_column)
       , _client_encoding(client_encoding)
       , _max_items_in_insert(max_items_in_insert)
-      , _msg_cnt(0)
-      , _msg_bytes(0)
       , _table_checked(false)
       , _table_exists(false)
-      , _skip_delete2(skip_delete){
+      , _skip_delete2(skip_delete)
+      , _current_error_streak(0)
+      , _request_time("pg_request_time", "ms", { 0.9, 0.99 })
+      , _connection_errors("connection_errors", "msg")
+      , _insert_errors("insert_errors", "msg")
+      , _msg_cnt("inserted", "msg")
+      , _msg_bytes("bytes_sent", "bytes"){
     initialize();
   }
 
@@ -44,6 +48,14 @@ namespace kspp {
     _connection = nullptr;
   }
 
+  void postgres_producer::register_metrics(kspp::processor* parent){
+    parent->add_metric(&_connection_errors);
+    parent->add_metric(&_insert_errors);
+    parent->add_metric(&_msg_cnt);
+    parent->add_metric(&_msg_bytes);
+    parent->add_metric(&_request_time);
+  }
+
   void postgres_producer::close(){
     if (_closed)
       return;
@@ -51,7 +63,7 @@ namespace kspp {
 
     if (_connection) {
       _connection->close();
-      LOG(INFO) << "postgres_producer table:" << _table << ", closed - producer " << _msg_cnt << " messages (" << _msg_bytes << " bytes)";
+      LOG(INFO) << "postgres_producer table:" << _table << ", closed - producer " << (int64_t)_msg_cnt.value() << " messages (" << (int64_t) _msg_bytes.value() << " bytes)";
     }
 
     _connected = false;
@@ -127,6 +139,8 @@ namespace kspp {
       if (!_connection->connected()) {
         if (!_connection->connect(cp_))
         {
+          ++_connection_errors;
+          ++_current_error_streak;
           std::this_thread::sleep_for(10s);
           continue;
         }
@@ -148,7 +162,7 @@ namespace kspp {
         if (msg->record()->value()) {
           //TODO verify that the data actually has the _id_column(s)
           std::string statement = pq::avro2sql_create_table_statement(_table, _id_column,
-                                                                  *msg->record()->value()->valid_schema());
+                                                                      *msg->record()->value()->valid_schema());
           LOG(INFO) << "exec(" + statement + ")";
           auto res = _connection->exec(statement);
 
@@ -201,7 +215,7 @@ namespace kspp {
           // we cannot have the id columns of this update more than once
           // postgres::exec failed ERROR:  ON CONFLICT DO UPDATE command cannot affect row a second time
           auto key_string = pq::avro2sql_key_values(*msg->record()->value()->valid_schema(), _id_column,
-                                                *msg->record()->value()->generic_datum());
+                                                    *msg->record()->value()->generic_datum());
 
           auto res0 = unique_keys_in_batch2.find(key_string);
           if (res0 != unique_keys_in_batch2.end()){
@@ -242,6 +256,8 @@ namespace kspp {
 
         // if we failed we have to push back messages to the _incomming_msg and retry
         if (res.first){
+          ++_insert_errors;
+          ++_current_error_streak;
           // should we just exit here ??? - it depends if we trust stored offsets.
           //DLOG(INFO) << statement;
 
@@ -252,10 +268,13 @@ namespace kspp {
             in_update_batch.pop_back();
           }
         } else {
+          _current_error_streak=0;
+
           while (!in_update_batch.empty()) {
             _done.push_back(in_update_batch.back());
             in_update_batch.pop_back();
           }
+          _request_time.observe(ts1-ts0);
           _msg_cnt += msg_in_batch;
           _msg_bytes += bytes_in_batch;
         }
@@ -282,7 +301,7 @@ namespace kspp {
         }
         statement += "\n";
 
-         // special case - no need to delete stuff from n on existent table
+        // special case - no need to delete stuff from n on existent table
         if (_table_exists) {
           //LOG(INFO) << statement;
           bytes_in_batch += statement.size();
@@ -291,6 +310,7 @@ namespace kspp {
           auto ts1 = kspp::milliseconds_since_epoch();
           // if we failed we have to push back messages to the _incomming_msg and retry
           if (res.first) {
+            ++_current_error_streak;
             // should we just exit here ??? - it depends if we trust stored offsets.
             while (!in_delete_batch.empty()) {
               LOG(INFO) << "pushing back failed delete to queue";
@@ -298,10 +318,12 @@ namespace kspp {
               in_delete_batch.pop_back();
             }
           } else {
+            _current_error_streak=0;
             while (!in_delete_batch.empty()) {
               _done.push_back(in_delete_batch.back());
               in_delete_batch.pop_back();
             }
+            _request_time.observe(ts1-ts0);
             _msg_cnt += msg_in_batch;
             _msg_bytes += bytes_in_batch;
           }
@@ -315,15 +337,15 @@ namespace kspp {
           LOG(ERROR) << "in_batch should be empty here";
       }
     }
-  DLOG(INFO) << "exiting thread";
-}
-
-
-void postgres_producer::poll() {
-  while (!_done.empty()) {
-    _done.pop_front();
+    DLOG(INFO) << "exiting thread";
   }
-}
+
+
+  void postgres_producer::poll() {
+    while (!_done.empty()) {
+      _done.pop_front();
+    }
+  }
 
 }
 

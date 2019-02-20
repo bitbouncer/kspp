@@ -29,6 +29,8 @@ namespace kspp {
 
     void for_each_metrics(std::function<void(kspp::metric &)> f);
 
+    bool good() const;
+
     bool eof();
 
     std::size_t process_1s();

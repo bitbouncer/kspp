@@ -147,6 +147,22 @@ namespace kspp {
     return true;
   }
 
+  bool topology::good() const{
+    bool good=true;
+    for (auto&& i : _partition_processors)
+      if (!i->good()) {
+        LOG(INFO) << "processor: " << i->log_name() << " good()==false";
+        good = false;
+      }
+
+    for (auto&& i : _sinks)
+      if (!i->good()) {
+        LOG(INFO) << "processor: " << i->log_name() << " good()==false";
+        good = false;
+      }
+    return good;
+  }
+
   std::size_t topology::process(int64_t ts) {
     auto ev_count = 0u;
     if (_allow_commit_chain_gc)

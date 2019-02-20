@@ -10,6 +10,7 @@ namespace kspp {
   class postgres_producer : public generic_producer<kspp::generic_avro, kspp::generic_avro>
   {
   public:
+    enum { MAX_ERROR_BEFORE_BAD=200 };
     postgres_producer(std::string table,
                       const kspp::connect::connection_params& cp,
                       std::string id_column,
@@ -18,10 +19,13 @@ namespace kspp {
                       bool skip_delete=false);
     ~postgres_producer();
 
-    void register_metrics(kspp::processor* parent) override {
-    }
+    void register_metrics(kspp::processor* parent) override;
 
     void close() override;
+
+    bool good() const {
+      return (_current_error_streak < MAX_ERROR_BEFORE_BAD);
+    }
 
     bool eof() const override {
       return (_incomming_msg.empty() && _done.empty());
@@ -71,12 +75,18 @@ namespace kspp {
     event_queue<kspp::generic_avro, kspp::generic_avro> _incomming_msg;
     event_queue<kspp::generic_avro, kspp::generic_avro> _done;  // waiting to be deleted in poll();
     size_t _max_items_in_insert;
-    uint64_t _msg_cnt;
-    uint64_t _msg_bytes;
 
     bool _table_checked;
     bool _table_exists;
     bool _skip_delete2;
+
+    size_t _current_error_streak;
+
+    metric_counter _connection_errors;
+    metric_counter _insert_errors;
+    metric_counter _msg_cnt;
+    metric_counter _msg_bytes;
+    metric_summary _request_time;
   };
 }
 

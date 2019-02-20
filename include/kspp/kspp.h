@@ -38,6 +38,11 @@ namespace kspp {
   public:
     virtual ~processor() {}
 
+
+    virtual bool good() const {
+      return true;
+    }
+
     /**
      *
      * @return true if all upstream processors are considered at eof

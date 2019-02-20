@@ -24,6 +24,10 @@ namespace kspp {
 
     ~elasticsearch_producer();
 
+    bool good() const {
+      return _good;
+    }
+
     void register_metrics(kspp::processor* parent) override;
 
     void close() override;
@@ -38,10 +42,7 @@ namespace kspp {
 
     void stop();
 
-    //void subscribe();
-
     bool is_connected() const { return _connected; }
-    //bool is_query_running() const { return !_eof; }
 
     void insert(std::shared_ptr<kevent<kspp::generic_avro, kspp::generic_avro>> p) override{
       _incomming_msg.push_back(p);

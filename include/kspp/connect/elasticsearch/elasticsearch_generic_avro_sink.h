@@ -18,6 +18,10 @@ namespace kspp {
       this->register_metrics(this);
     }
 
+    bool good() const override {
+      return this->good();
+    }
+
     std::string log_name() const override {
       return PROCESSOR_NAME;
     }

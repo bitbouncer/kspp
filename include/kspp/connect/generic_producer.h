@@ -13,6 +13,8 @@ namespace kspp {
 
     }
 
+    virtual bool good() const = 0;
+
     virtual void register_metrics(kspp::processor* parent)=0;
 
     virtual void close() =0;

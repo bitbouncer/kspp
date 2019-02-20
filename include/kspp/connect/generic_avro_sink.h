@@ -19,6 +19,10 @@ namespace kspp {
       close();
     }
 
+    bool good() const {
+      return _impl->good();
+    }
+
     void register_metrics(kspp::processor* parent){
       _impl->register_metrics(parent);
     }
