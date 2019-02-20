@@ -138,8 +138,8 @@ namespace kspp {
       if (_active_ids.find(key_string)!=_active_ids.end()) {
         _active_ids.erase(key_string);
       } else {
-        if (_skip_delete_of_non_active)
-          return nullptr;
+        //if (_skip_delete_of_non_active)
+        // return nullptr;
       }
     }
 
