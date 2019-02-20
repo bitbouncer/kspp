@@ -77,12 +77,6 @@ namespace kspp {
   }
 
   static void run_work(std::deque<kspp::async::work<elasticsearch_producer::work_result_t>::async_function>& work, size_t batch_size) {
-    size_t parse_errors = 0;
-    //size_t timeouts = 0;
-
-    const size_t max_parse_error_per_batch = std::max<size_t>(5, work.size() / 10); // if we get more that 10% per batch there is something seriously wrong (just guessing figures)
-    //const size_t max_timeouts_per_batch = std::max<size_t>(5, work.size() / 3);    // if we get more that 30% per batch there is something seriously wrong (just guessing figures)
-
     while (work.size()) {
       kspp::async::work<elasticsearch_producer::work_result_t> batch(kspp::async::PARALLEL, kspp::async::ALL);
       size_t nr_of_items_in_batch = std::min<size_t>(work.size(), batch_size);
@@ -103,21 +97,12 @@ namespace kspp {
             // therre are a number of es codes that means it's overloaded - we should back off Todo
             work.push_front(batch.get_function(i));
             break;
-          case elasticsearch_producer::PARSE_ERROR:
-            if (++parse_errors < max_parse_error_per_batch)
-              work.push_front(batch.get_function(i));
-            break;
           case elasticsearch_producer::HTTP_BAD_REQUEST_ERROR:
             // nothing to do - no point of retrying this
             break;
         }
       }
     }
-
-    if (parse_errors > max_parse_error_per_batch)
-      LOG(WARNING) << "parse error threshold exceeded, skipped " << parse_errors - max_parse_error_per_batch << " items";
-    //if (timeouts > max_timeouts_per_batch)
-    //  LOG(WARNING) << "timeouts threshold exceeded, skipped " << timeouts - max_timeouts_per_batch << " items";
   }
 
   kspp::async::work<elasticsearch_producer::work_result_t>::async_function  elasticsearch_producer::create_one_http_work(const kspp::generic_avro& key, const kspp::generic_avro* value) {
@@ -158,7 +143,7 @@ namespace kspp {
           request,
           [this, cb](std::shared_ptr<kspp::http::request> h) {
 
-            // only observes sunncessful roundtrips
+            // only observes sucessful roundtrips
             if (h->transport_result())
               _request_time.observe(h->milliseconds());
 
@@ -188,7 +173,7 @@ namespace kspp {
                 LOG(ERROR) << "http " << kspp::http::to_string(h->method()) << ", "  << h->uri() << " HTTPRES = " << h->http_result() << " - retrying, reponse:" << h->rx_content();
 
                 if (ec==400) {
-                  LOG(ERROR) << "http(500) content: " << h->tx_content();
+                  LOG(ERROR) << "http(400) content: " << h->tx_content();
                   cb(HTTP_BAD_REQUEST_ERROR);
                   return;
                 }
@@ -206,7 +191,6 @@ namespace kspp {
             ++_http_2xx;
             _msg_bytes += h->tx_content_length();
             cb(SUCCESS);
-            // TBD store metrics on request time
           }); // perform_async
     }; // work
     return f;

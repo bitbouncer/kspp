@@ -16,7 +16,7 @@ namespace kspp {
   class elasticsearch_producer : public generic_producer<kspp::generic_avro, kspp::generic_avro>
   {
   public:
-    enum work_result_t { SUCCESS = 0, TIMEOUT = -1, HTTP_ERROR = -2, PARSE_ERROR = -3 , HTTP_BAD_REQUEST_ERROR = -4};
+    enum work_result_t { SUCCESS = 0, TIMEOUT = -1, HTTP_ERROR = -2, HTTP_BAD_REQUEST_ERROR = -4};
 
     elasticsearch_producer(const kspp::connect::connection_params& cp,
                            std::string id_column,
