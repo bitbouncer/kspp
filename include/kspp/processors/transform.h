@@ -20,7 +20,6 @@ namespace kspp {
       _source->add_sink([this](auto r) {
         this->_queue.push_back(r);
       });
-      //this->add_metric(&_lag);
       this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
       this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(source->partition()));
     }
@@ -40,22 +39,6 @@ namespace kspp {
     void close() override {
       _source->close();
     }
-
-    /*
-     * size_t process(int64_t tick) override {
-      _source->process(tick);
-      size_t processed = 0;
-      while (this->_queue.size()) {
-        auto trans = this->_queue.front();
-        this->_lag.add_event_time(tick, trans->event_time());
-        this->_queue.pop_front();
-        _extractor(trans>record(), this);
-        ++(this->_processed_count);
-        ++processed;
-      }
-      return processed;
-    }
-     */
 
     size_t process(int64_t tick) override {
       _source->process(tick);
@@ -118,7 +101,6 @@ namespace kspp {
       _source->add_sink([this](auto r) {
         this->_queue.push_back(r);
       });
-      //this->add_metric(&_lag);
       this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
       this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(source->partition()));
     }

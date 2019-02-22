@@ -55,21 +55,6 @@ namespace kspp {
       return _incomming_msg.next_event_time();
     }
 
-    //TBD return up to timestamp
-    /*
-    size_t process(int64_t tick) override {
-      if (_incomming_msg.size() == 0)
-        return 0;
-      auto p = _incomming_msg.front();
-      _incomming_msg.pop_front();
-      ++(this->_processed_count);
-
-      this->_lag.add_event_time(tick, p->event_time());
-      this->send_to_sinks(p);
-      return 1;
-    }
-     */
-
     size_t process(int64_t tick) override {
       if (_incomming_msg.size() == 0)
         return 0;
@@ -112,10 +97,11 @@ namespace kspp {
         , _val_codec(val_codec)
         , _commit_chain(topic, partition)
         , _start_point_ms(std::chrono::time_point_cast<std::chrono::milliseconds>(start_point).time_since_epoch().count())
-        , _parse_errors("parse_errors", "err")
+        , _parse_errors("parse_errors", "msg")
         , _commit_chain_size("commit_chain_size", "msg")
     {
       this->add_metric(&_commit_chain_size);
+      this->add_metric(&_parse_errors);
       this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
       this->add_metrics_tag(KSPP_TOPIC_TAG, topic);
       this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(partition));
