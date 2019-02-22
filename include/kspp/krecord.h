@@ -63,6 +63,12 @@ namespace kspp {
     return std::make_shared<krecord<K, V >>(k, v, ts);
   }
 
+  template<class K, class V>
+  inline std::shared_ptr<krecord<K,V>> make_krecord(const K &k, std::shared_ptr<const V> p, int64_t ts = milliseconds_since_epoch()){
+    return std::make_shared<krecord<K, V >>(k, p, ts);
+  }
+
+
   template<class V>
   class krecord<void, V> {
   public:

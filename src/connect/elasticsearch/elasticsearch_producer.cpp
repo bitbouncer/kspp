@@ -5,13 +5,12 @@
 namespace kspp {
   using namespace std::chrono_literals;
 
-  elasticsearch_producer::elasticsearch_producer(const kspp::connect::connection_params& cp, std::string id_column, size_t batch_size)
+  elasticsearch_producer::elasticsearch_producer(const kspp::connect::connection_params& cp, size_t batch_size)
       : _work(new boost::asio::io_service::work(_ios))
       , _fg([this] { _process_work(); })
       , _bg(boost::bind(&boost::asio::io_service::run, &_ios))
       , _http_handler(_ios, batch_size)
       , _cp(cp)
-      , _id_column(id_column)
       , _batch_size(batch_size)
       , _http_timeout(std::chrono::seconds(2))
       , _good(true)

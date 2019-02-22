@@ -9,7 +9,6 @@
 #include <boost/bind.hpp>
 #include <boost/make_shared.hpp>
 #include <kspp/connect/elasticsearch/elasticsearch_generic_avro_sink.h>
-#include <kspp/connect/elasticsearch/elasticsearch_sink.h>
 #include <kspp/processors/transform.h>
 #include <kspp/processors/flat_map.h>
 #include <kspp/metrics/prometheus_pushgateway_reporter.h>
@@ -156,7 +155,7 @@ int main(int argc, char **argv) {
   connection_params.password = es_password;
 
   // since we always seems to start with OFFSET_BEGINNING
-  connection_params.assume_beginning_of_stream = true;
+  // connection_params.assume_beginning_of_stream = true;
 
   auto nr_of_partitions = kspp::kafka::get_number_partitions(config, topic);
   if (partition_list.size() == 0 || partition_list[0] == -1)
@@ -168,10 +167,7 @@ int main(int argc, char **argv) {
 
   auto source0 = topology->create_processors<kspp::kafka_source<kspp::generic_avro, kspp::generic_avro, kspp::avro_serdes, kspp::avro_serdes>>(partition_list, topic, config->avro_serdes(), config->avro_serdes());
 
-  topology->create_sink<kspp::elasticsearch_generic_avro_sink>(source0, connection_params, "id", config->get_schema_registry());
-
-  //topology->create_sink<kspp::elasticsearch_sink>(source0, es_index, connection_params, "id", 3, 30s);
-  //topology->create_sink<kspp::elasticsearch_sink>(source0, es_index, connection_params, "id",10, 1s);
+  topology->create_sink<kspp::elasticsearch_generic_avro_sink>(source0, connection_params);
 
   std::vector<metrics20::avro::metrics20_key_tags_t> tags;
   tags.push_back(kspp::make_metrics_tag("app_name", SERVICE_NAME));

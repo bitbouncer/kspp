@@ -18,9 +18,7 @@ namespace kspp {
   public:
     enum work_result_t { SUCCESS = 0, TIMEOUT = -1, HTTP_ERROR = -2, HTTP_BAD_REQUEST_ERROR = -4};
 
-    elasticsearch_producer(const kspp::connect::connection_params& cp,
-                           std::string id_column,
-                           size_t http_batch_size);
+    elasticsearch_producer(const kspp::connect::connection_params& cp, size_t http_batch_size);
 
     ~elasticsearch_producer();
 
