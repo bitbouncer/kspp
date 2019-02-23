@@ -2,6 +2,13 @@
 #include <avro/Specific.hh>
 #include <glog/logging.h>
 
+
+namespace kspp {
+  std::string generic_avro::generic_record::to_json() const {
+    return "not implemented";
+  }
+}
+
 std::string to_json(const kspp::generic_avro& src) {
   /* JSON encoder */
   avro::EncoderPtr json_encoder = avro::jsonEncoder(*src.valid_schema());

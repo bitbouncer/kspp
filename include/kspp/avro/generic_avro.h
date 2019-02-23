@@ -15,6 +15,13 @@ namespace kspp {
           : record_(record){
       }
 
+      inline const avro::GenericDatum& getGenericDatum(std::string name) const {
+        if (!record_.hasField(name))
+          throw std::invalid_argument(std::string("no such member: ") + name +  ", actual: " + to_json());
+
+        return record_.field(name);
+      }
+
       template<class T>
       T get(std::string name) const {
         if (!record_.hasField(name))
@@ -155,7 +162,7 @@ namespace kspp {
       }
        */
 
-
+      std::string to_json() const;
 
     private:
       const avro::GenericRecord& record_;
@@ -208,8 +215,6 @@ namespace kspp {
     std::shared_ptr<const avro::ValidSchema> _valid_schema;
     int32_t                                  _schema_id;
   };
-
-
 }
 
 std::string to_json(const kspp::generic_avro& src);

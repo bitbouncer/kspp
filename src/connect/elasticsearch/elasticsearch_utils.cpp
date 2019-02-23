@@ -6,7 +6,19 @@
 #include <kspp/utils/string_utils.h>
 
 namespace kspp {
-// only maps simple types to value
+  static avro::Type avro2elastic_simple_column_type(const avro::GenericDatum &column) {
+    auto t = column.type();
+    // nullable columns are represented as union of NULL and value
+    // parse those recursive
+    if (t == avro::AVRO_UNION) {
+      const avro::GenericUnion &au(column.value<avro::GenericUnion>());
+      return avro2elastic_simple_column_type(au.datum());
+    } else {
+      return t;
+    }
+  }
+
+  // only maps simple types to value
   std::string avro_2_json_simple_column_value(const avro::GenericDatum &column) {
     auto t = column.type();
     switch (t) {
@@ -59,13 +71,35 @@ namespace kspp {
         return s;
       }
         break;
-      case avro::AVRO_RECORD:
+
+      case avro::AVRO_RECORD: {
+        const avro::GenericRecord &record(column.value<avro::GenericRecord>());
+        size_t nFields = record.fieldCount();
+        std::string s = "{";
+        bool has_previous = false;
+        for (int i = 0; i < nFields; i++) {
+          // null columns should nbot be exported to elastic search
+          if (avro2elastic_simple_column_type(record.fieldAt(i)) != avro::AVRO_NULL) {
+            if (has_previous)
+              s += ", ";
+            s += "\"" + record.schema()->nameAt(i) + "\": " + avro_2_json_simple_column_value(record.fieldAt(i));
+            has_previous = true;
+          }
+        }
+        s += "}";
+        return s;
+      }
+      break;
+
+
       case avro::AVRO_ENUM:
       case avro::AVRO_MAP:
       case avro::AVRO_FIXED:
       default:
         LOG(FATAL) << "unexpected / non supported type e:" << column.type();
     }
+    return "NULL";
+
   }
 
   std::string avro_2_raw_column_value(const avro::GenericDatum &column) {
@@ -112,17 +146,6 @@ namespace kspp {
     }
   }
 
-  static avro::Type avro2elastic_simple_column_type(const avro::GenericDatum &column) {
-    auto t = column.type();
-    // nullable columns are represented as union of NULL and value
-    // parse those recursive
-    if (t == avro::AVRO_UNION) {
-      const avro::GenericUnion &au(column.value<avro::GenericUnion>());
-      return avro2elastic_simple_column_type(au.datum());
-    } else {
-      return t;
-    }
-  }
 
 // handles both nullable and non nullable columns
   std::string avro2elastic_json(const avro::ValidSchema &schema, const avro::GenericDatum &datum) {
