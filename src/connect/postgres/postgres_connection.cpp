@@ -44,9 +44,9 @@ namespace kspp_postgres {
                                  " user=" + cp.user +
                                  " password=" + cp.password +
                                  " dbname=" + cp.database_name +
-                                 " tcp_keepalives_count=5" +      /* test for aws RDS that saeems to have connection issues */
-                                 " tcp_keepalives_idle=200" +
-                                 " tcp_keepalives_interval=200";
+                                 " keepalives_count=5" +      /* test for aws RDS that saeems to have connection issues */
+                                 " keepalives_idle=200" +
+                                 " keepalives_interval=200";
 
     _pg_conn = PQconnectdb(connect_string.c_str());
     auto status = PQstatus(_pg_conn); //
