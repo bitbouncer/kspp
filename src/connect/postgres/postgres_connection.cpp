@@ -43,7 +43,11 @@ namespace kspp_postgres {
                                  " port=" + std::to_string(cp.port) +
                                  " user=" + cp.user +
                                  " password=" + cp.password +
-                                 " dbname=" + cp.database_name;
+                                 " dbname=" + cp.database_name +
+                                 " tcp_keepalives_count=5" +      /* test for aws RDS that saeems to have connection issues */
+                                 " tcp_keepalives_idle=200" +
+                                 " tcp_keepalives_interval=200";
+
     _pg_conn = PQconnectdb(connect_string.c_str());
     auto status = PQstatus(_pg_conn); //
     int32_t duration = (int32_t) (kspp::milliseconds_since_epoch() - t0);
