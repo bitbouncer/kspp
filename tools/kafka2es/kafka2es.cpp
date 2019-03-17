@@ -35,6 +35,7 @@ int main(int argc, char **argv) {
       ("broker", boost::program_options::value<std::string>()->default_value(kspp::default_kafka_broker_uri()), "broker")
       ("schema_registry", boost::program_options::value<std::string>()->default_value(kspp::default_schema_registry_uri()), "schema_registry")
       ("partition_list", boost::program_options::value<std::string>()->default_value("[-1]"), "partition_list")
+      ("start_offset", boost::program_options::value<std::string>()->default_value("OFFSET_BEGINNING"), "start_offset")
       ("topic", boost::program_options::value<std::string>(), "topic")
       ("es_url", boost::program_options::value<std::string>()->default_value(get_env_and_log("ES_URL")), "es_url")
       ("es_user", boost::program_options::value<std::string>()->default_value(get_env_and_log("ES_USER")), "es_user")
@@ -81,6 +82,21 @@ int main(int argc, char **argv) {
   if (vm.count("partition_list")) {
     auto s = vm["partition_list"].as<std::string>();
     partition_list = kspp::parse_partition_list(s);
+  }
+
+  kspp::start_offset_t start_offset=kspp::OFFSET_BEGINNING;
+  if (vm.count("start_offset")) {
+    auto s = vm["start_offset"].as<std::string>();
+    if (boost::iequals(s, "OFFSET_BEGINNING"))
+      start_offset=kspp::OFFSET_BEGINNING;
+    else if (boost::iequals(s, "OFFSET_END"))
+      start_offset=kspp::OFFSET_END;
+    else if (boost::iequals(s, "OFFSET_STORED"))
+      start_offset=kspp::OFFSET_STORED;
+    else {
+      std::cerr << "start_offset must be one of OFFSET_BEGINNING / OFFSET_END / OFFSET_STORED";
+      return -1;
+    }
   }
 
   std::string es_url;
@@ -139,6 +155,7 @@ int main(int argc, char **argv) {
 
   LOG(INFO) << "app_realm         : " << app_realm;
   LOG(INFO) << "topic             : " << topic;
+  LOG(INFO) << "start_offset      : " << kspp::to_string(start_offset);
   LOG(INFO) << "es_url            : " << es_url;
   LOG(INFO) << "es_user           : " << es_user;
   LOG(INFO) << "es_password       : " << "[hidden]";
@@ -177,8 +194,7 @@ int main(int argc, char **argv) {
   tags.push_back(kspp::make_metrics_tag("es_index", es_index));
   topology->set_labels(tags);
 
-  //topology->start(kspp::OFFSET_STORED);
-  topology->start(kspp::OFFSET_BEGINNING);
+  topology->start(start_offset);
 
   std::signal(SIGINT, sigterm);
   std::signal(SIGTERM, sigterm);

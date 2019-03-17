@@ -36,6 +36,7 @@ int main(int argc, char **argv) {
       ("app_realm", boost::program_options::value<std::string>()->default_value(get_env_and_log("APP_REALM", "DEV")), "app_realm")
       ("topic", boost::program_options::value<std::string>(), "topic")
       ("partition_list", boost::program_options::value<std::string>()->default_value("[-1]"), "partition_list")
+      ("start_offset", boost::program_options::value<std::string>()->default_value("OFFSET_BEGINNING"), "start_offset")
       ("postgres_host", boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_HOST")), "postgres_host")
       ("postgres_port", boost::program_options::value<int32_t>()->default_value(5432), "postgres_port")
       ("postgres_user", boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_USER")), "postgres_user")
@@ -89,6 +90,21 @@ int main(int argc, char **argv) {
   if (vm.count("partition_list")) {
     auto s = vm["partition_list"].as<std::string>();
     partition_list = kspp::parse_partition_list(s);
+  }
+
+  kspp::start_offset_t start_offset=kspp::OFFSET_BEGINNING;
+  if (vm.count("start_offset")) {
+    auto s = vm["start_offset"].as<std::string>();
+    if (boost::iequals(s, "OFFSET_BEGINNING"))
+      start_offset=kspp::OFFSET_BEGINNING;
+    else if (boost::iequals(s, "OFFSET_END"))
+      start_offset=kspp::OFFSET_END;
+    else if (boost::iequals(s, "OFFSET_STORED"))
+      start_offset=kspp::OFFSET_STORED;
+    else {
+      std::cerr << "start_offset must be one of OFFSET_BEGINNING / OFFSET_END / OFFSET_STORED";
+      return -1;
+    }
   }
 
   std::string postgres_host;
@@ -194,6 +210,7 @@ int main(int argc, char **argv) {
 
   LOG(INFO) << "app_realm                    : " << app_realm;
   LOG(INFO) << "topic                        : " << topic;
+  LOG(INFO) << "start_offset                 : " << kspp::to_string(start_offset);
   LOG(INFO) << "postgres_host                : " << postgres_host;
   LOG(INFO) << "postgres_port                : " << postgres_port;
   LOG(INFO) << "postgres_dbname              : " << postgres_dbname;
@@ -265,7 +282,7 @@ int main(int argc, char **argv) {
   tags.push_back(kspp::make_metrics_tag("dst_table", table_name));
 
   topology->set_labels(tags);
-  topology->start(kspp::OFFSET_BEGINNING);
+  topology->start(start_offset);
 
   std::signal(SIGINT, sigterm);
   std::signal(SIGTERM, sigterm);
