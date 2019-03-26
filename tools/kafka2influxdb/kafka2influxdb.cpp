@@ -36,6 +36,7 @@ int main(int argc, char** argv) {
       ("broker", boost::program_options::value<std::string>()->default_value(default_kafka_broker_uri()), "broker")
       ("src_topic", boost::program_options::value<std::string>()->default_value(get_env_and_log("SRC_TOPIC", DEFAULT_METRICS_TOPIC)), "src_topic")
       ("partition_list", boost::program_options::value<std::string>()->default_value("[-1]"), "partition_list")
+      ("start_offset", boost::program_options::value<std::string>()->default_value("OFFSET_STORED"), "start_offset")
       ("dst_uri", boost::program_options::value<std::string>()->default_value(get_env_and_log("DST_URI", DEFAULT_URI)), "dst_uri")
       ("dst_database", boost::program_options::value<std::string>()->default_value(get_env_and_log("DST_DATABASE", "telegraf")), "dst_database")
       ("schema_registry", boost::program_options::value<std::string>()->default_value(default_schema_registry_uri()), "schema_registry")
@@ -100,6 +101,21 @@ int main(int argc, char** argv) {
     partition_list = kspp::parse_partition_list(s);
   }
 
+  kspp::start_offset_t start_offset=kspp::OFFSET_BEGINNING;
+  if (vm.count("start_offset")) {
+    auto s = vm["start_offset"].as<std::string>();
+    if (boost::iequals(s, "OFFSET_BEGINNING"))
+      start_offset=kspp::OFFSET_BEGINNING;
+    else if (boost::iequals(s, "OFFSET_END"))
+      start_offset=kspp::OFFSET_END;
+    else if (boost::iequals(s, "OFFSET_STORED"))
+      start_offset=kspp::OFFSET_STORED;
+    else {
+      std::cerr << "start_offset must be one of OFFSET_BEGINNING / OFFSET_END / OFFSET_STORED";
+      return -1;
+    }
+  }
+
   std::string pushgateway_uri;
   if (vm.count("pushgateway_uri")) {
     pushgateway_uri = vm["pushgateway_uri"].as<std::string>();
@@ -128,6 +144,7 @@ int main(int argc, char** argv) {
   config->log();
 
   LOG(INFO) << "src_topic         : " << src_topic;
+  LOG(INFO) << "start_offset      : " << kspp::to_string(start_offset);
   LOG(INFO) << "dst_uri           : " << dst_uri;
   LOG(INFO) << "dst_database      : " << dst_database;
   LOG(INFO) << "http_batch_size   : " << http_batch_size;
@@ -162,9 +179,7 @@ int main(int argc, char** argv) {
   tags.push_back(kspp::make_metrics_tag("dst_uri",   dst_uri));
   tags.push_back(kspp::make_metrics_tag("dst_database",  dst_database));
   topology->set_labels(tags);
-
-  //topology->start(kspp::OFFSET_STORED);
-  topology->start(kspp::OFFSET_END);
+  topology->start(start_offset);
 
   LOG(INFO) << "status is up";
 
