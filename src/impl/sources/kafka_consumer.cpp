@@ -149,17 +149,6 @@ namespace kspp {
     update_eof();
   }
 
-  /*void kafka_consumer::start() {
-    if (kspp::kafka::group_exists2(_config, _consumer_group)) {
-      DLOG(INFO) << "kafka_consumer::start group_exists: " <<  _consumer_group;
-      start(RdKafka::Topic::OFFSET_STORED);
-    }
-    else {
-      start(RdKafka::Topic::OFFSET_BEGINNING);
-    }
-  }
-   */
-
   void kafka_consumer::stop() {
     if (_consumer) {
       RdKafka::ErrorCode err = _consumer->unassign();

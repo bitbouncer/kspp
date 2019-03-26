@@ -132,21 +132,18 @@ namespace kspp {
           // for now skip the error and contine as if it worked
           //std::this_thread::sleep_for(10s);
           //continue;
-          }
-
-          // OK...
-          auto ts1 = kspp::milliseconds_since_epoch();
-          //LOG(INFO) << "HTTP call nr of msg: " << msg_in_batch  << ", (" << ts1 - ts0 << ") ms";
-          //DLOG_EVERY_N(INFO, 1000) << "influx_sink, http post: " << h->uri() << " got " << h->rx_content_length() << " bytes, time=" << h->milliseconds() << " ms";
-
-          while (!in_batch.empty()) {
-            _pending_for_delete.push_back(in_batch.pop_and_get());
-          }
-
-          //_msg_cnt += msg_in_batch;
-          _http_bytes += bytes_in_batch;
-          break;
         }
+
+        // OK...
+        auto ts1 = kspp::milliseconds_since_epoch();
+        while (!in_batch.empty()) {
+          _pending_for_delete.push_back(in_batch.pop_and_get());
+        }
+
+        //_msg_cnt += msg_in_batch;
+        _http_bytes += bytes_in_batch;
+        break;
+      }
     } // while (!exit)
     DLOG(INFO) << "exiting thread";
   }

@@ -25,18 +25,6 @@ namespace kspp
   template<> inline avro::Type cpp_to_avro_type<avro::GenericArray>() { return avro::AVRO_ARRAY; }
   template<> inline avro::Type cpp_to_avro_type<avro::GenericRecord>() { return avro::AVRO_RECORD; }
 
-
-  /*
-   * template<typename T> bool is_convertable(avro::Type);
-  template<> inline bool is_convertable<std::string>(avro::Type t) { return (t == avro::AVRO_STRING); }
-  template<> inline bool is_convertable<std::vector<uint8_t>>(avro::Type t) { return (t == avro::AVRO_BYTES); }
-  template<> inline bool is_convertable<int32_t>(avro::Type t) { return (t == avro::AVRO_INT); }
-  template<> inline bool is_convertable<int64_t>(avro::Type t) { return ((t == avro::AVRO_LONG) || (t ==avro::AVRO_INT)); }
-  template<> inline bool is_convertable<float>(avro::Type t) { return (t == avro::AVRO_FLOAT); }
-  template<> inline bool is_convertable<double>(avro::Type t) { return ((t == avro::AVRO_DOUBLE) || (t == avro::AVRO_FLOAT)); }
-  template<> inline bool is_convertable<bool>(avro::Type t) { return t == avro::AVRO_BOOL; }
-   */
-
   template<typename T> T convert(const avro::GenericDatum& datum){
     if (cpp_to_avro_type<T>() == datum.type())
       return datum.value<T>();
@@ -53,6 +41,4 @@ namespace kspp
         throw std::invalid_argument(std::string("avro convert: wrong type, expected: [LONG, INT], actual: ") + to_string(datum.type()));
     }
   }
-
-
 }

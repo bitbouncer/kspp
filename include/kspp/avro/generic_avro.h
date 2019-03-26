@@ -153,15 +153,6 @@ namespace kspp {
         return false;
       }
 
-      /*std::vector<avro::GenericDatum>& array() const {
-        if (_generic_datum->type() == avro::AVRO_ARRAY) {
-          return _generic_datum->value<avro:: GenericArray>();
-        } else {
-          throw std::invalid_argument(std::string("wrong type, expected: ") + to_string(avro::AVRO_ARRAY) + " actual: " + to_string(_generic_datum->type()));
-        }
-      }
-       */
-
       std::string to_json() const;
 
     private:

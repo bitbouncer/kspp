@@ -33,16 +33,12 @@ namespace kspp {
 
     enum status_type {
       undefined = 0,
-
-      //1xx informational
-          continue_with_request = 100,
+      continue_with_request = 100, /* 1xx informational */
       switching_protocols = 101,
       processing = 102,
       checkpoint = 103,
       uri_to_long = 122,
-
-      //2xx success
-          ok = 200,
+      ok = 200,                    /*2xx success */
       created = 201,
       accepted = 202,
       processed_non_authorative = 203,
@@ -52,9 +48,7 @@ namespace kspp {
       multi_status = 207,
       already_reported = 208,
       im_used = 226,
-
-      //3xx redirection
-          multiple_choices = 300,
+      multiple_choices = 300,       /* 3xx redirection */
       moved_permanently = 301,
       moved_temporarily = 302,
       see_other = 303, // ??? bad name....
@@ -63,16 +57,12 @@ namespace kspp {
       switch_proxy = 306,
       temporary_redirect = 307,
       resume_incomplete = 308,
-
-      //4xx client error
-          bad_request = 400,
+      bad_request = 400,            /* 4xx client error */
       unauthorized = 401,
       forbidden = 403,
       not_found = 404,
       precondition_failed = 412,
-
-      //5xx server error
-          internal_server_error = 500,
+      internal_server_error = 500,  /* 5xx server error */
       not_implemented = 501,
       bad_gateway = 502,
       service_unavailable = 503
@@ -149,13 +139,6 @@ namespace kspp {
     private:
       std::vector<uint8_t> _data;
     };
-
-    /*struct put_cursor
-    {
-      const char *data=nullptr;
-      size_t len=0;
-    };
-     */
 
     class request {
       friend class kspp::http::client;
@@ -262,10 +245,7 @@ namespace kspp {
 
       inline kspp::http::method_t method() const { return _method; }
 
-      // use this with care
-      //CURL* get_curl() { return _curl_easy; }
-
-    private:
+     private:
 
       void curl_start(std::shared_ptr<request> self);
 
@@ -290,12 +270,10 @@ namespace kspp {
 
       // logging stuff
       std::string _request_id;
-      //bool _curl_verbose = { false };
       trace_log_level _log_level = TRACE_LOG_NONE;
 
       callback _callback;
       //TX
-      //std::stringstream _tx_stream; // temporary for test...
       std::string _tx_buffer;
       //RX
       buffer _rx_buffer;

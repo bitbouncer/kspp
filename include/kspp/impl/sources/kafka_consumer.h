@@ -54,8 +54,8 @@ namespace kspp {
     int64_t                                 _can_be_committed;
     int64_t                                 _last_committed;
     size_t                                  _max_pending_commits;
-    uint64_t                                _msg_cnt;
-    uint64_t                                _msg_bytes;
+    uint64_t                                _msg_cnt;    // TODO move to metrics
+    uint64_t                                _msg_bytes;  // TODO move to metrics
     bool                                    _eof;
     bool                                    _closed;
     MyEventCb                               _event_cb;

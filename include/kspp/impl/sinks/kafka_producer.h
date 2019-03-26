@@ -81,8 +81,8 @@ namespace kspp {
     std::unique_ptr<RdKafka::Producer> _producer;
     bool                               _closed;
     size_t                             _nr_of_partitions;
-    uint64_t                           _msg_cnt;
-    uint64_t                           _msg_bytes;
+    uint64_t                           _msg_cnt;    // TODO move to metrics
+    uint64_t                           _msg_bytes;  // TODO move to metrics
     MyHashPartitionerCb                _default_partitioner;
     MyDeliveryReportCb                 _delivery_report_cb;
     MyEventCb                          _event_cb;

@@ -196,21 +196,4 @@ namespace kspp {
     const std::vector<double> _buckets;
     prometheus::Histogram* _histgram;
   };
-
-
-  /*
-   * struct metric_evaluator : public metric {
-    using evaluator = std::function<int64_t(void)>;
-
-    metric_evaluator(std::string what,  mtype mt, std::string unit, evaluator f)
-        : metric(what, mt, unit), _f(f) {}
-
-    virtual double value() const {
-      return _f();
-    }
-
-  private:
-    evaluator _f;
-  };
-   */
 }

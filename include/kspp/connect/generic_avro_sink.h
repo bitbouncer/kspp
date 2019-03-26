@@ -91,7 +91,6 @@ namespace kspp {
     }
 
   protected:
-    //bool _started;
     bool _exit;
     std::shared_ptr<generic_producer<kspp::generic_avro, kspp::generic_avro>> _impl;
   };

@@ -29,7 +29,6 @@ namespace kspp {
       , _http_404("http_request", "msg")
       , _http_5xx("http_request", "msg")
       , _msg_bytes("bytes_sent", "bytes"){
-    //_request_time.add_tag(KSPP_COMPONENT_TYPE_TAG, "elasticsearch_producer");
     _request_time.add_tag(KSPP_DESTINATION_HOST, _cp.host);
     _http_2xx.add_tag("code", "2xx");
     _http_3xx.add_tag("code", "3xx");
@@ -113,17 +112,12 @@ namespace kspp {
     std::string body;
 
     if (value) {
-      //auto key_string = avro2elastic_key_values(*value->valid_schema(), _id_column, *value->generic_datum());
-      //key_string.erase(std::remove_if(key_string.begin(), key_string.end(), avro2elastic_IsChars("\"")), key_string.end()); // TODO there should be a key extractor that does not add '' around strings...
       body = avro2elastic_json(*value->valid_schema(), *value->generic_datum());
       _active_ids.insert(key_string);
-      //std::string url = _cp.url + "/" + _index_name + "/" + "_doc" + "/" + key_string;
     } else {
       if (_active_ids.find(key_string)!=_active_ids.end()) {
         _active_ids.erase(key_string);
       } else {
-        //if (_skip_delete_of_non_active)
-        // return nullptr;
       }
     }
 
@@ -181,9 +175,6 @@ namespace kspp {
                 return;
               }
             }
-
-
-
             LOG_EVERY_N(INFO, 1000) << "http PUT: " << h->uri() << " got " << h->rx_content_length() << " bytes, time="
                                     << h->milliseconds() << " ms (" << h->rx_kb_per_sec() << " KB/s), #"
                                     << google::COUNTER;

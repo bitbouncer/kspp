@@ -111,7 +111,7 @@ namespace kspp {
     int32_t val_schema_id_;
     event_queue<kspp::generic_avro, kspp::generic_avro> _incomming_msg;
 
-    uint64_t _msg_cnt;
+    uint64_t _msg_cnt; // TODO move to metrics
   };
 }
 

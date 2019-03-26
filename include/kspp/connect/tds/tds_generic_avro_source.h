@@ -35,6 +35,7 @@ namespace kspp {
     }
 
     void close() override {
+      // TODO should this be here ??
       /*
        * if (_commit_chain.last_good_offset() >= 0 && _impl.commited() < _commit_chain.last_good_offset())
         _impl.commit(_commit_chain.last_good_offset(), true);

@@ -56,37 +56,27 @@ namespace kspp {
     int parse_response(std::shared_ptr<PGresult>);
     std::string get_where_clause() const;
 
-    //int64_t parse_ts(DBPROCESS *stream);
-    //int parse_avro(DBPROCESS* stream, COL* columns, size_t ncols);
-    //int parse_response(DBPROCESS* stream);
     void _thread();
     bool _exit;
     bool _start_running;
     bool _good;
     bool _eof;
     bool _closed;
-
     std::thread _bg;
     std::shared_ptr<kspp_postgres::connection> _connection;
-
-    //const std::string _table;
     const std::string _logical_name;
     const std::string _query;
     const int32_t _partition;
     const std::string _consumer_group;
-
     const kspp::connect::connection_params cp_;
     const kspp::connect::table_params tp_;
-
     const std::string _id_column;
     const std::string _ts_column;
-
     // this holds the read cursor (should be abstracted)
     int id_column_index_;
     int ts_column_index_;
     std::string last_id_;
     std::string last_ts_;
-
 
     std::shared_ptr<kspp::avro_schema_registry> schema_registry_;
     std::shared_ptr<avro::ValidSchema> key_schema_;
@@ -95,8 +85,8 @@ namespace kspp {
     int32_t key_schema_id_;
     int32_t value_schema_id_;
     event_queue<kspp::generic_avro, kspp::generic_avro> _incomming_msg;
-
-    uint64_t _msg_cnt;
+    // move
+    uint64_t _msg_cnt; // TODO move to metrics
   };
 }
 

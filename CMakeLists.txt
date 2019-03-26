@@ -122,7 +122,6 @@ file(GLOB KSPP_INCLUDE_FILES
         include/kspp/*.h
         include/kspp/avro/*.h
         include/kspp/connect/avro_file/*.h
-        include/kspp/connect/kafka_rest/*.h
         include/kspp/utils/*
         include/kspp/utils.h
         include/kspp/metrics/*.h
