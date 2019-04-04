@@ -274,14 +274,14 @@ int main(int argc, char **argv) {
     topology->create_sink<kspp::postgres_generic_avro_sink>(transform, table_name, connection_params, id_column, config->get_schema_registry(), character_encoding, postgres_max_items_in_insert, postgres_disable_delete);
   }
 
-  std::vector<metrics20::avro::metrics20_key_tags_t> tags;
-  tags.push_back(kspp::make_metrics_tag("app_name", SERVICE_NAME));
-  tags.push_back(kspp::make_metrics_tag("app_realm", app_realm));
-  tags.push_back(kspp::make_metrics_tag("hostname", default_hostname()));
-  tags.push_back(kspp::make_metrics_tag("db_host", postgres_host));
-  tags.push_back(kspp::make_metrics_tag("dst_table", table_name));
+  topology->add_labels( {
+                            { "app_name", SERVICE_NAME },
+                            { "app_realm", app_realm },
+                            { "hostname", default_hostname() },
+                            { "db_host", postgres_host },
+                            { "dst_table", table_name }
+                        });
 
-  topology->set_labels(tags);
   topology->start(start_offset);
 
   std::signal(SIGINT, sigterm);

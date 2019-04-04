@@ -260,7 +260,7 @@ int main(int argc, char **argv) {
   table_params.ts_multiplier=timetamp_multiplier;
 
   if (filename.size()) {
-     LOG(INFO) << "using avro file..";
+    LOG(INFO) << "using avro file..";
     LOG(INFO) << "filename                   : " << filename;
   }
 
@@ -274,24 +274,23 @@ int main(int argc, char **argv) {
   std::string query_name = topic;
   auto source0 = topology->create_processors<kspp::tds_generic_avro_source>({0}, query_name, connection_params, table_params, query, id_column, timestamp_column, config->get_schema_registry());
 
-   if (filename.size()) {
+  if (filename.size()) {
     //topology->create_sink<kspp::avro_file_sink>(source0, "/tmp/" + topic + ".avro");
   } else {
     topology->create_sink<kspp::kafka_sink<kspp::generic_avro, kspp::generic_avro, kspp::avro_serdes, kspp::avro_serdes>>(source0, topic, config->avro_serdes(), config->avro_serdes());
   }
 
-  std::vector<metrics20::avro::metrics20_key_tags_t> tags;
-  tags.push_back(kspp::make_metrics_tag("app_name", SERVICE_NAME));
-  tags.push_back(kspp::make_metrics_tag("app_realm", app_realm));
-  tags.push_back(kspp::make_metrics_tag("hostname", default_hostname()));
-  tags.push_back(kspp::make_metrics_tag("db_host", db_host));
-
+  topology->add_labels( {
+                            { "app_name", SERVICE_NAME },
+                            { "app_realm", app_realm },
+                            { "hostname", default_hostname() },
+                            { "db_host", db_host }
+                        });
   if (query.size()>0)
-    tags.push_back(kspp::make_metrics_tag("source", "query"));
+    topology->add_labels( { { "source", "query" } }); // TODO check if we can use arbitrary query as value here
   else
-    tags.push_back(kspp::make_metrics_tag("source", table));
+    topology->add_labels( { { "source", table } });
 
-  topology->set_labels(tags);
   topology->start(start_offset);
 
   std::signal(SIGINT, sigterm);

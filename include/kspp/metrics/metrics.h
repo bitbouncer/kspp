@@ -2,7 +2,6 @@
 #include <chrono>
 #include <cmath>
 #include <functional>
-#include "metric20_key_t.h"
 #include <prometheus/registry.h>
 #pragma once
 
@@ -14,14 +13,6 @@
 #define KSPP_TOPIC_TAG "topic"
 
 namespace kspp {
-
-  inline metrics20::avro::metrics20_key_tags_t make_metrics_tag(std::string k, std::string v){
-    metrics20::avro::metrics20_key_tags_t t;
-    t.key=k;
-    t.value=v;
-    return t;
-  }
-
   struct metric {
     enum mtype { RATE, COUNT, GAUGE, COUNTER, TIMESTAMP, SUMMARY, HISTOGRAM }; // http://metrics20.org/spec/ and some prometheus
 

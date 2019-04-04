@@ -78,9 +78,7 @@ int main(int argc, char **argv) {
     produce_stream1(*streamA);
     produce_stream2(*streamB);
 
-    std::vector<metrics20::avro::metrics20_key_tags_t> tags;
-    tags.push_back(kspp::make_metrics_tag("app_realm", "test"));
-    topology->set_labels(tags);
+    topology->add_labels( { { "app_name", "test" } });
 
     topology->start(kspp::OFFSET_BEGINNING);
 

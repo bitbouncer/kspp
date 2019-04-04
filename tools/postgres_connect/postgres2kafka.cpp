@@ -330,14 +330,14 @@ int main(int argc, char **argv) {
     }
   }
 
-  std::vector<metrics20::avro::metrics20_key_tags_t> tags;
-  tags.push_back(kspp::make_metrics_tag("app_name", SERVICE_NAME));
-  tags.push_back(kspp::make_metrics_tag("app_realm", app_realm));
-  tags.push_back(kspp::make_metrics_tag("hostname", default_hostname()));
-  tags.push_back(kspp::make_metrics_tag("db_host", db_host));
-  tags.push_back(kspp::make_metrics_tag("dst_topic", topic));
+  topology->add_labels( {
+                            { "app_name", SERVICE_NAME },
+                            { "app_realm", app_realm },
+                            { "hostname", default_hostname() },
+                            { "db_host", db_host },
+                            { "dst_topic", topic }
+                        });
 
-  topology->set_labels(tags);
   topology->start(start_offset);
 
   std::signal(SIGINT, sigterm);

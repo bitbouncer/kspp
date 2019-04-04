@@ -220,6 +220,12 @@ namespace kspp {
     produce(dst, std::make_shared<const krecord<void, V>>(value, ts), callback);
   }
 
+  template<class K>
+  inline void
+  produce(kspp::event_consumer<K, void>& dst, const K &key, int64_t ts, std::function<void(int64_t offset, int32_t ec)> callback) {
+    produce(dst, std::make_shared<const krecord<K, void>>(key, ts), callback);
+  }
+
   template<class K, class V>
   inline void
   produce(kspp::event_consumer<K, V>& dst, uint32_t partition_hash, const K &key, const V &value, int64_t ts,

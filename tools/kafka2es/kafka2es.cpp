@@ -186,13 +186,13 @@ int main(int argc, char **argv) {
 
   topology->create_sink<kspp::elasticsearch_generic_avro_sink>(source0, connection_params);
 
-  std::vector<metrics20::avro::metrics20_key_tags_t> tags;
-  tags.push_back(kspp::make_metrics_tag("app_name", SERVICE_NAME));
-  tags.push_back(kspp::make_metrics_tag("app_realm", app_realm));
-  tags.push_back(kspp::make_metrics_tag("hostname", default_hostname()));
-  tags.push_back(kspp::make_metrics_tag("es_url", es_url));
-  tags.push_back(kspp::make_metrics_tag("es_index", es_index));
-  topology->set_labels(tags);
+  topology->add_labels( {
+                            { "app_name", SERVICE_NAME },
+                            { "app_realm", app_realm },
+                            { "hostname", default_hostname() },
+                            { "es_url", es_url },
+                            { "es_index", es_index }
+                        });
 
   topology->start(start_offset);
 

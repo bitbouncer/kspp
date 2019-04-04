@@ -171,14 +171,15 @@ int main(int argc, char** argv) {
   std::signal(SIGTERM, sigterm);
   std::signal(SIGPIPE, SIG_IGN);
 
-  std::vector<metrics20::avro::metrics20_key_tags_t> tags;
-  tags.push_back(kspp::make_metrics_tag("app_name", SERVICE_NAME));
-  tags.push_back(kspp::make_metrics_tag("app_realm", app_realm));
-  tags.push_back(kspp::make_metrics_tag("hostname",  default_hostname()));
-  tags.push_back(kspp::make_metrics_tag("src_topic", src_topic));
-  tags.push_back(kspp::make_metrics_tag("dst_uri",   dst_uri));
-  tags.push_back(kspp::make_metrics_tag("dst_database",  dst_database));
-  topology->set_labels(tags);
+  topology->add_labels( {
+                            { "app_name", SERVICE_NAME },
+                            { "app_realm", app_realm },
+                            { "hostname", default_hostname() },
+                            { "src_topic", src_topic },
+                            { "dst_uri", dst_uri },
+                            { "dst_database", dst_database }
+                        });
+
   topology->start(start_offset);
 
   LOG(INFO) << "status is up";

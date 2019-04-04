@@ -142,13 +142,13 @@ int main(int argc, char** argv) {
   std::signal(SIGTERM, sigterm);
   std::signal(SIGPIPE, SIG_IGN);
 
-  std::vector<metrics20::avro::metrics20_key_tags_t> tags;
-  tags.push_back(kspp::make_metrics_tag("app_name", SERVICE_NAME));
-  tags.push_back(kspp::make_metrics_tag("app_realm", app_realm));
-  tags.push_back(kspp::make_metrics_tag("hostname",  default_hostname()));
-  tags.push_back(kspp::make_metrics_tag("src_topic", src_topic));
-  tags.push_back(kspp::make_metrics_tag("dst_path",  dst_path));
-  topology->set_labels(tags);
+  topology->add_labels( {
+                            { "app_name", SERVICE_NAME },
+                            { "app_realm", app_realm },
+                            { "hostname", default_hostname() },
+                            { "src_topic", src_topic },
+                            { "dst_path", dst_path }
+                        });
 
   topology->start(start_offset);
 

@@ -31,11 +31,8 @@ namespace kspp {
     boost::asio::io_service _ios;
     std::unique_ptr<boost::asio::io_service::work> _work;
     std::thread _asio_thread; // internal to http client
-
     std::thread _bg; // performs the send loop
-
     event_queue<void, std::string> _pending_for_delete;
-
     const kspp::connect::connection_params _cp;
     kspp::http::client _http_handler;
     size_t _batch_size;
