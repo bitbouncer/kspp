@@ -39,11 +39,11 @@ namespace kspp {
     virtual void finalize_labels(std::shared_ptr<prometheus::Registry> registry)=0;
 
     void add_label(std::string key, std::string val) {
-      _real_tags[key]=val;
+      _labels[key]=val;
     }
 
     std::string _name; // what
-    std::map<std::string, std::string> _real_tags;
+    std::map<std::string, std::string> _labels;
   };
 
   struct metric_counter : public metric {
@@ -54,7 +54,7 @@ namespace kspp {
 
     void finalize_labels(std::shared_ptr<prometheus::Registry> registry) override {
       auto& counter_family = prometheus::BuildCounter().Name(_name).Register(*registry);
-      _counter = &counter_family.Add(_real_tags);
+      _counter = &counter_family.Add(_labels);
     }
 
     virtual double value() const {
@@ -82,7 +82,7 @@ namespace kspp {
 
     void finalize_labels(std::shared_ptr<prometheus::Registry> registry) override {
       auto& family = prometheus::BuildGauge().Name(_name).Register(*registry);
-      _gauge = &family.Add(_real_tags);
+      _gauge = &family.Add(_labels);
     }
 
     void set(double v) {
@@ -109,7 +109,7 @@ namespace kspp {
 
     void finalize_labels(std::shared_ptr<prometheus::Registry> registry) override {
       auto& family = prometheus::BuildGauge().Name(_name).Register(*registry);
-      _gauge = &family.Add(_real_tags);
+      _gauge = &family.Add(_labels);
     }
 
     inline void add_event_time(int64_t tick, int64_t event_time) {
@@ -140,7 +140,7 @@ namespace kspp {
       for (auto i : _quantiles)
         q.emplace_back(i, 0.05);
       auto& family = prometheus::BuildSummary().Name(_name).Register(*registry);
-      _summary = &family.Add(_real_tags, q, std::chrono::seconds{600}, 5);
+      _summary = &family.Add(_labels, q, std::chrono::seconds{600}, 5);
     }
 
     inline void observe(double v) {
@@ -166,7 +166,7 @@ namespace kspp {
 
     void finalize_labels(std::shared_ptr<prometheus::Registry> registry) override {
       auto& family = prometheus::BuildHistogram().Name(_name).Register(*registry);
-      _histgram = &family.Add(_real_tags, _buckets);
+      _histgram = &family.Add(_labels, _buckets);
     }
 
     inline void observe(double v) {
