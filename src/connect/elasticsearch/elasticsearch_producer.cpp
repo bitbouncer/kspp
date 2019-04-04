@@ -29,12 +29,12 @@ namespace kspp {
       , _http_404("http_request", "msg")
       , _http_5xx("http_request", "msg")
       , _msg_bytes("bytes_sent", "bytes"){
-    _request_time.add_tag(KSPP_DESTINATION_HOST, _cp.host);
-    _http_2xx.add_tag("code", "2xx");
-    _http_3xx.add_tag("code", "3xx");
-    _http_404.add_tag("code", "404_NO_ERROR");
-    _http_4xx.add_tag("code", "4xx");
-    _http_5xx.add_tag("code", "5xx");
+    _request_time.add_label(KSPP_DESTINATION_HOST, _cp.host);
+    _http_2xx.add_label("code", "2xx");
+    _http_3xx.add_label("code", "3xx");
+    _http_404.add_label("code", "404_NO_ERROR");
+    _http_4xx.add_label("code", "4xx");
+    _http_5xx.add_label("code", "5xx");
      curl_global_init(CURL_GLOBAL_NOTHING); /* minimal */
     _http_handler.set_user_agent("Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36");
     connect_async();

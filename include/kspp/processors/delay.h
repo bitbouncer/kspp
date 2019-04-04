@@ -10,8 +10,8 @@ namespace kspp {
     delay(std::shared_ptr<cluster_config> config, std::shared_ptr <partition_source<K, V>> source, int ms)
             : partition_source<K, V>(source->partition()), _source(source), _delay(ms) {
       _source->add_sink([this](auto r) { this->_queue.push_back(r); });
-      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "delay");
-      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(source->partition()));
+      this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "delay");
+      this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(source->partition()));
     }
 
     ~delay() {

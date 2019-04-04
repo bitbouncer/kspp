@@ -102,9 +102,9 @@ namespace kspp {
     {
       this->add_metric(&_commit_chain_size);
       this->add_metric(&_parse_errors);
-      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
-      this->add_metrics_tag(KSPP_TOPIC_TAG, topic);
-      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(partition));
+      this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
+      this->add_metrics_label(KSPP_TOPIC_TAG, topic);
+      this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(partition));
     }
 
     virtual std::shared_ptr<kevent<K, V>> parse(const std::unique_ptr<RdKafka::Message> &ref) = 0;

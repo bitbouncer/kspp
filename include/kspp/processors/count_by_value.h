@@ -19,8 +19,8 @@ namespace kspp {
                     punctuate_intervall.count()) // tbd we should use intervalls since epoch similar to windowed
               , _next_punctuate(0), _dirty(false), _in_count("in_count"), _lag() {
       source->add_sink([this](auto e) { this->_queue.push_back(e); });
-      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "count_by_value");
-      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(source->partition()));
+      this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "count_by_value");
+      this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(source->partition()));
     }
 
     ~count_by_value() {

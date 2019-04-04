@@ -152,9 +152,9 @@ namespace kspp {
       return "";
     }
 
-    void add_metrics_tag(std::string key, std::string value) {
+    void add_metrics_label(std::string key, std::string value) {
        for (auto i : _metrics)
-         i->add_tag(key, value);
+         i->add_label(key, value);
     }
 
     // must be valid for processor lifetime  (cannot be removed)

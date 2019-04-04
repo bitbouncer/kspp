@@ -32,7 +32,7 @@ namespace kspp {
     this->add_metric(&_http_timeouts);
     this->add_metric(&_http_error);
     this->add_metric(&_http_ok);
-    this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "influx_sink");
+    this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "influx_sink");
 
     curl_global_init(CURL_GLOBAL_NOTHING); /* minimal */
     _http_handler.set_user_agent(

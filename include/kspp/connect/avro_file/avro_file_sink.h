@@ -11,7 +11,7 @@ namespace kspp {
     avro_file_sink(std::shared_ptr<cluster_config> config, std::string path)
         : topic_sink<void, kspp::generic_avro>()
         , _path(path) {
-      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
+      this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
     }
 
     ~avro_file_sink() override {

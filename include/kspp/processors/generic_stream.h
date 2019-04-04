@@ -13,8 +13,8 @@ namespace kspp {
     generic_stream(std::shared_ptr<cluster_config> config, int32_t partition)
         : event_consumer<K, V>()
         , partition_source<K, V>(nullptr, partition) {
-      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
-      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(partition));
+      this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
+      this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(partition));
     }
 
     generic_stream(std::shared_ptr<cluster_config> config, std::shared_ptr<kspp::partition_source<K, V>> upstream)
@@ -23,8 +23,8 @@ namespace kspp {
       upstream->add_sink([this](auto e) {
         this->_queue.push_back(e);
       });
-      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
-      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(upstream->partition()));
+      this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
+      this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(upstream->partition()));
     }
 
     generic_stream(std::shared_ptr<cluster_config> config, std::vector<std::shared_ptr<kspp::partition_source<K, V>>> upstream, int32_t partition)
@@ -36,8 +36,8 @@ namespace kspp {
           this->_queue.push_back(e);
         });
       }
-      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
-      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(partition));
+      this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
+      this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(partition));
     }
 
     std::string log_name() const override {
@@ -88,8 +88,8 @@ namespace kspp {
     generic_stream(std::shared_ptr<cluster_config> config, int32_t partition)
         : event_consumer<void, V>()
         , partition_source<void, V>(nullptr, partition) {
-      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
-      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(partition));
+      this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
+      this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(partition));
     }
 
     generic_stream(std::shared_ptr<cluster_config> config, std::shared_ptr<kspp::partition_source<void, V>> upstream)
@@ -98,8 +98,8 @@ namespace kspp {
         upstream->add_sink([this](auto e) {
           this->_queue.push_back(e);
         });
-      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
-      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(upstream->partition()));
+      this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
+      this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(upstream->partition()));
     }
 
     generic_stream(std::shared_ptr<cluster_config> config, std::vector<std::shared_ptr<kspp::partition_source<void, V>>> upstream, int32_t partition)
@@ -111,8 +111,8 @@ namespace kspp {
           this->_queue.push_back(e);
         });
       }
-      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
-      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(partition));
+      this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
+      this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(partition));
     }
 
     std::string log_name() const override {
@@ -162,8 +162,8 @@ namespace kspp {
     generic_stream(std::shared_ptr<cluster_config> config, int32_t partition)
         : event_consumer<K, void>()
         , partition_source<K, void>(nullptr, partition) {
-      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
-      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(partition));
+      this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
+      this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(partition));
     }
 
     generic_stream(std::shared_ptr<cluster_config> config, std::shared_ptr<kspp::partition_source<K, void>> upstream)
@@ -173,14 +173,14 @@ namespace kspp {
         upstream->add_sink([this](std::shared_ptr<kevent<K, void>> e) {
           this->_queue.push_back(e);
         });
-      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
-      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(upstream->partition()));
+      this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
+      this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(upstream->partition()));
     }
 
     generic_stream(std::shared_ptr<cluster_config> config, std::vector<std::shared_ptr<kspp::partition_source<K, void>>> upstream, int32_t partition)
         : event_consumer<K, void>()
         , partition_source<K, void>(nullptr, partition) {
-      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
+      this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
       for (auto i : upstream) {
         this->add_upstream(i.get());
         i->add_sink([this](auto e) {

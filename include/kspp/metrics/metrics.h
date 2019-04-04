@@ -19,15 +19,15 @@ namespace kspp {
     metric(std::string what, mtype mt, std::string unit)
         : _name("kspp_" + what) {
       switch (mt) {
-        case RATE: add_tag("mtype", "rate"); break;
-        case COUNT: add_tag("mtype", "count"); break;
-        case GAUGE: add_tag("mtype", "gauge"); break;
-        case COUNTER: add_tag("mtype", "counter"); break;
-        case TIMESTAMP: add_tag("mtype", "timestamp"); break;
-        case SUMMARY: add_tag("mtype", "summary"); break;
-        case HISTOGRAM: add_tag("mtype", "histogram"); break;
+        case RATE: add_label("mtype", "rate"); break;
+        case COUNT: add_label("mtype", "count"); break;
+        case GAUGE: add_label("mtype", "gauge"); break;
+        case COUNTER: add_label("mtype", "counter"); break;
+        case TIMESTAMP: add_label("mtype", "timestamp"); break;
+        case SUMMARY: add_label("mtype", "summary"); break;
+        case HISTOGRAM: add_label("mtype", "histogram"); break;
       }
-      add_tag("unit", unit);
+      add_label("unit", unit);
     }
 
     virtual double value() const = 0;
@@ -36,10 +36,9 @@ namespace kspp {
       return _name;
     }
 
-    virtual void finalize_tags(std::shared_ptr<prometheus::Registry> registry)=0;
+    virtual void finalize_labels(std::shared_ptr<prometheus::Registry> registry)=0;
 
-    void add_tag(std::string key, std::string val)
-    {
+    void add_label(std::string key, std::string val) {
       _real_tags[key]=val;
     }
 
@@ -53,8 +52,7 @@ namespace kspp {
         ,  _counter(nullptr) {
     }
 
-    void finalize_tags(std::shared_ptr<prometheus::Registry> registry) override
-    {
+    void finalize_labels(std::shared_ptr<prometheus::Registry> registry) override {
       auto& counter_family = prometheus::BuildCounter().Name(_name).Register(*registry);
       _counter = &counter_family.Add(_real_tags);
     }
@@ -82,8 +80,7 @@ namespace kspp {
         ,  _gauge(nullptr) {
     }
 
-    void finalize_tags(std::shared_ptr<prometheus::Registry> registry) override
-    {
+    void finalize_labels(std::shared_ptr<prometheus::Registry> registry) override {
       auto& family = prometheus::BuildGauge().Name(_name).Register(*registry);
       _gauge = &family.Add(_real_tags);
     }
@@ -110,8 +107,7 @@ namespace kspp {
 
     }
 
-    void finalize_tags(std::shared_ptr<prometheus::Registry> registry) override
-    {
+    void finalize_labels(std::shared_ptr<prometheus::Registry> registry) override {
       auto& family = prometheus::BuildGauge().Name(_name).Register(*registry);
       _gauge = &family.Add(_real_tags);
     }
@@ -136,11 +132,10 @@ namespace kspp {
         : metric(what, SUMMARY, unit)
         ,  _quantiles(quantiles)
         ,  _summary(nullptr) {
-      add_tag("window", "60s");
+      add_label("window", "60s");
     }
 
-    void finalize_tags(std::shared_ptr<prometheus::Registry> registry) override
-    {
+    void finalize_labels(std::shared_ptr<prometheus::Registry> registry) override {
         std::vector<prometheus::detail::CKMSQuantiles::Quantile> q;
       for (auto i : _quantiles)
         q.emplace_back(i, 0.05);
@@ -169,8 +164,7 @@ namespace kspp {
         ,  _histgram(nullptr) {
     }
 
-    void finalize_tags(std::shared_ptr<prometheus::Registry> registry) override
-    {
+    void finalize_labels(std::shared_ptr<prometheus::Registry> registry) override {
       auto& family = prometheus::BuildHistogram().Name(_name).Register(*registry);
       _histgram = &family.Add(_real_tags, _buckets);
     }

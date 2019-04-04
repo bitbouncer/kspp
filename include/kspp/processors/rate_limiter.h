@@ -19,8 +19,8 @@ namespace kspp {
         , _source(source)
         , _token_bucket(std::make_shared<mem_token_bucket_store<K, size_t>>(agetime, capacity))
         , _rejection_count("rejection_count", "msg") {
-      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "rate_limiter");
-      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(source->partition()));
+      this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "rate_limiter");
+      this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(source->partition()));
       _source->add_sink([this](auto r) {
         this->_queue.push_back(r);
       });

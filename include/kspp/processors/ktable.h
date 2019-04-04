@@ -25,8 +25,8 @@ namespace kspp {
         this->send_to_sinks(ev);
       });
       this->add_metric(&_state_store_count);
-      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
-      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(source->partition()));
+      this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
+      this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(source->partition()));
     }
 
     ~ktable() override {

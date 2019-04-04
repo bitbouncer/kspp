@@ -45,7 +45,7 @@ public:
   , _os (*os)
   , _codec(std::make_shared<kspp::text_serdes>()) {
     source->add_sink(this);
-    this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "stream_sink");
+    this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "stream_sink");
   }
 
   ~stream_sink() override {

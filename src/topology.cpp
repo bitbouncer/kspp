@@ -41,25 +41,25 @@ namespace kspp {
   void topology::init_metrics() {
     for (auto &&i : _partition_processors) {
       for (auto j : _labels)
-        i->add_metrics_tag(j.first, j.second);
+        i->add_metrics_label(j.first, j.second);
 
-      i->add_metrics_tag(KSPP_KEY_TYPE_TAG, escape_influx(i->key_type_name()));
-      i->add_metrics_tag(KSPP_VALUE_TYPE_TAG, escape_influx(i->value_type_name()));
-      i->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(i->partition()));
+      i->add_metrics_label(KSPP_KEY_TYPE_TAG, escape_influx(i->key_type_name()));
+      i->add_metrics_label(KSPP_VALUE_TYPE_TAG, escape_influx(i->value_type_name()));
+      i->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(i->partition()));
 
       for (auto &&j : i->get_metrics()) {
-        j->finalize_tags(_prom_registry); // maybe add string escape function here...
+        j->finalize_labels(_prom_registry); // maybe add string escape function here...
       }
     }
 
     for (auto &&i : _sinks) {
       for (auto j : _labels)
-        i->add_metrics_tag(j.first, j.second);
-      i->add_metrics_tag(KSPP_KEY_TYPE_TAG, escape_influx(i->key_type_name()));
-      i->add_metrics_tag(KSPP_VALUE_TYPE_TAG, escape_influx(i->value_type_name()));
+        i->add_metrics_label(j.first, j.second);
+      i->add_metrics_label(KSPP_KEY_TYPE_TAG, escape_influx(i->key_type_name()));
+      i->add_metrics_label(KSPP_VALUE_TYPE_TAG, escape_influx(i->value_type_name()));
 
       for (auto &&j : i->get_metrics()) {
-        j->finalize_tags(_prom_registry);
+        j->finalize_labels(_prom_registry);
       }
     }
   }

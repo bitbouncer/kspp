@@ -108,8 +108,8 @@ namespace kspp {
     , partition_source<KEY, value_type>(left.get(), left->partition())
     , _left_stream (left)
     , _right_table(right) {
-      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "kstream_left_join");
-      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(left->partition()));
+      this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "kstream_left_join");
+      this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(left->partition()));
       _left_stream->add_sink([this](auto r) { this->_queue.push_back(r); });
     }
 
@@ -201,8 +201,8 @@ namespace kspp {
     : event_consumer<KEY, LEFT>(), partition_source<KEY, value_type>(left.get(), left->partition())
     , _left_stream (left)
     , _right_table(right) {
-      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "kstream_inner_join");
-      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(left->partition()));
+      this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "kstream_inner_join");
+      this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(left->partition()));
       _left_stream->add_sink([this](auto r) { this->_queue.push_back(r); });
     }
 
@@ -295,8 +295,8 @@ namespace kspp {
     , partition_source<KEY, value_type>(left.get(), left->partition())
     , _left_table (left)
     , _right_table(right) {
-      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "ktable_left_join");
-      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(left->partition()));
+      this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "ktable_left_join");
+      this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(left->partition()));
       _left_table->add_sink([this](auto r) { this->_queue.push_back(r); });
       _right_table->add_sink([this](auto r) { this->_queue.push_back(r); });
     }
@@ -398,8 +398,8 @@ namespace kspp {
     , partition_source<KEY, value_type>(left.get(), left->partition())
     , _left_table (left)
     , _right_table(right) {
-      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "ktable_inner_join");
-      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(left->partition()));
+      this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "ktable_inner_join");
+      this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(left->partition()));
       _left_table->add_sink([this](auto r) { this->_queue.push_back(r); });
       _right_table->add_sink([this](auto r) { this->_queue.push_back(r); });
     }
@@ -493,8 +493,8 @@ namespace kspp {
     , partition_source<KEY, value_type>(left.get(), left->partition())
     , _left_table (left)
     , _right_table(right) {
-      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "ktable_outer_join");
-      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(left->partition()));
+      this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "ktable_outer_join");
+      this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(left->partition()));
       _left_table->add_sink([this](auto r) { this->_queue.push_back(r); });
       _right_table->add_sink([this](auto r) { this->_queue.push_back(r); });
     }

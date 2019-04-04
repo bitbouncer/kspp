@@ -15,7 +15,7 @@ namespace kspp {
     array_topic_sink(std::shared_ptr<cluster_config> config, std::vector<std::shared_ptr<const krecord <K, V>>>* a)
         : topic_sink<K, V>()
         , _array(a) {
-      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "array_sink");
+      this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "array_sink");
     }
 
     ~array_topic_sink() override {

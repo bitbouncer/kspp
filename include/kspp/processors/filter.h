@@ -17,8 +17,8 @@ namespace kspp {
         this->_queue.push_back(r);
       });
       this->add_metric(&_predicate_false);
-      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "filter");
-      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(source->partition()));
+      this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "filter");
+      this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(source->partition()));
     }
 
     ~filter() {

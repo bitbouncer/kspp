@@ -100,8 +100,8 @@ namespace kspp {
         , _val_schema_id(-1)
         , _impl(cconfig, topic)
         , _partitioner(p) {
-      this->add_metrics_tag(KSPP_TOPIC_TAG, topic);
-      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "kafka_sink");
+      this->add_metrics_label(KSPP_TOPIC_TAG, topic);
+      this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "kafka_sink");
     }
 
     kafka_sink_base(std::shared_ptr<cluster_config> cconfig,
@@ -114,8 +114,8 @@ namespace kspp {
         , _key_schema_id(-1)
         , _val_schema_id(-1)
         , _impl(cconfig, topic) {
-      this->add_metrics_tag(KSPP_TOPIC_TAG, topic);
-      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "kafka_sink");
+      this->add_metrics_label(KSPP_TOPIC_TAG, topic);
+      this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "kafka_sink");
     }
 
     virtual int handle_event(std::shared_ptr<kevent<K, V>>) = 0;

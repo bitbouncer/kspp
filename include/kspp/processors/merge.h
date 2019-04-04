@@ -13,7 +13,7 @@ namespace kspp {
     merge(std::shared_ptr<cluster_config> config, int32_t partition=-1)
         : event_consumer<K, V>()
         , partition_source<K, V>(nullptr, partition) {
-      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
+      this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
     }
 
     void add(partition_source<K, V>& upstream){
@@ -71,7 +71,7 @@ namespace kspp {
     merge(std::shared_ptr<cluster_config> config, int32_t partition=-1)
     : event_consumer<void, V>()
     , partition_source<void, V>(nullptr, partition) {
-      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
+      this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
     }
 
     std::string log_name() const override {
@@ -133,7 +133,7 @@ namespace kspp {
     merge(std::shared_ptr<cluster_config> config, int32_t partition=-1)
     : event_consumer<K, void>()
     , partition_source<K, void>(nullptr, partition) {
-      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
+      this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
     }
 
     std::string log_name() const override {

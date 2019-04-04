@@ -13,7 +13,7 @@ namespace kspp {
     null_sink(std::shared_ptr<cluster_config> config, handler f)
         : topic_sink<K, V>()
         , _handler(f) {
-      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "null_sink");
+      this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "null_sink");
     }
 
     ~null_sink() override {

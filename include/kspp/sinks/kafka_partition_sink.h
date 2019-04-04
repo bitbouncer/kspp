@@ -27,9 +27,9 @@ namespace kspp {
         ,_val_schema_id(-1)
         , _impl(cconfig, topic)
         , _fixed_partition(partition) {
-      this->add_metrics_tag(KSPP_PROCESSOR_TYPE_TAG, "kafka_partition_sink");
-      this->add_metrics_tag(KSPP_TOPIC_TAG, topic);
-      this->add_metrics_tag(KSPP_PARTITION_TAG, std::to_string(partition));
+      this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "kafka_partition_sink");
+      this->add_metrics_label(KSPP_TOPIC_TAG, topic);
+      this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(partition));
     }
 
     std::string log_name() const override {
