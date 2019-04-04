@@ -18,20 +18,9 @@ namespace kspp {
 
     std::chrono::milliseconds max_buffering_time() const;
 
-    void set_labels(const std::map<std::string, std::string>& labels){
-      _labels = labels;
-    }
-
     void add_labels(const std::map<std::string, std::string>& labels){
       _labels.insert(labels.begin(), labels.end());
     }
-
-    /*void set_labels(std::vector<metrics20::avro::metrics20_key_tags_t> tags){
-      for(auto i : tags)
-        _labels[i.key] = i.value;
-    }
-    */
-
 
     void for_each_metrics(std::function<void(kspp::metric &)> f);
 
