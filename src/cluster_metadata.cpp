@@ -51,7 +51,7 @@ namespace kspp{
     auto rd_conf = rd_kafka_conf_new();
     try {
       set_broker_config(rd_conf, config);
-      set_config(rd_conf, "api.version.request", "true");
+      //set_config(rd_conf, "api.version.request", "true");
     } catch (std::exception& e) {
       LOG(FATAL) << "could not set rd kafka config : " << e.what();
     }
@@ -71,7 +71,7 @@ namespace kspp{
       //
       try {
         ::set_broker_config(conf.get(), config);
-        ::set_config(conf.get(), "api.version.request", "true");
+        //::set_config(conf.get(), "api.version.request", "true");
       }
       catch (std::invalid_argument &e) {
         LOG(FATAL) << " bad config: " << e.what();
@@ -101,7 +101,7 @@ namespace kspp{
  */
     try {
       ::set_broker_config(conf.get(), _debug_cc);
-      ::set_config(conf.get(), "api.version.request", "true");
+      //::set_config(conf.get(), "api.version.request", "true");
     }
     catch (std::invalid_argument &e) {
       LOG(FATAL) << "init: " << " bad config " << e.what();
@@ -372,7 +372,7 @@ namespace kspp{
  */
     try {
       ::set_broker_config(conf.get(), cconfig);
-      ::set_config(conf.get(), "api.version.request", "true");
+      //::set_config(conf.get(), "api.version.request", "true");
     }
     catch (std::invalid_argument &e) {
       LOG(FATAL) << "get_number_partitions: " << topic << " bad config " << e.what();

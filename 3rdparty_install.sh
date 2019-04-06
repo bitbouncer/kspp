@@ -48,7 +48,7 @@ cd ../.. && \
 rm rapidjson.tar.gz && \
 rm -rf rapidjson
 
-wget -O rocksdb.tar.gz "https://github.com/facebook/rocksdb/archive/v5.14.3.tar.gz" && \
+wget -O rocksdb.tar.gz "https://github.com/facebook/rocksdb/archive/v5.18.3.tar.gz" && \
 mkdir -p rocksdb && \
 tar \
     --extract \
@@ -132,7 +132,7 @@ rm prometheus-cpp.tar.gz && \
 rm -rf prometheus-cpp
 
 
-wget -O librdkafka.tar.gz "https://github.com/edenhill/librdkafka/archive/v0.11.6.tar.gz" && \
+wget -O librdkafka.tar.gz "https://github.com/edenhill/librdkafka/archive/v1.0.0.tar.gz" && \
 mkdir -p librdkafka && \
 tar \
   --extract \

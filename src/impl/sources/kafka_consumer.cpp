@@ -63,7 +63,7 @@ namespace kspp {
     try {
       set_broker_config(conf.get(), _config.get());
 
-      set_config(conf.get(), "api.version.request", "true");
+      //set_config(conf.get(), "api.version.request", "true");
       set_config(conf.get(), "socket.nagle.disable", "true");
       set_config(conf.get(), "fetch.wait.max.ms", std::to_string(_config->get_consumer_buffering_time().count()));
       //set_config(conf.get(), "queue.buffering.max.ms", "100");
