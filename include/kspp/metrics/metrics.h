@@ -105,6 +105,14 @@ namespace kspp {
       _gauge->Set(v);
     }
 
+    void incr(double v) {
+      _gauge->Increment(v);
+    }
+
+    void decr(double v) {
+      _gauge->Decrement(v);
+    }
+
     virtual double value() const {
      _gauge->Value();
     }
