@@ -9,7 +9,8 @@ namespace kspp {
   class flat_map : public event_consumer<SK, SV>, public partition_source<RK, RV> {
     static constexpr const char* PROCESSOR_NAME = "flat_map";
   public:
-    typedef std::function<void(std::shared_ptr<const krecord <SK, SV>> record, flat_map *self)> extractor;
+    //typedef std::function<void(std::shared_ptr<const krecord <SK, SV>> record, flat_map *self)> extractor;
+    typedef std::function<void(const krecord <SK, SV>& record, flat_map *self)> extractor;
 
     flat_map(std::shared_ptr<cluster_config> config, std::shared_ptr<partition_source < SK, SV>> source,  extractor f)
     : event_consumer<SK, SV>()
@@ -46,7 +47,8 @@ namespace kspp {
         this->_lag.add_event_time(tick, trans->event_time());
         ++(this->_processed_count);
         _current_id = trans->id(); // we capture this to have it in push_back callback
-        _extractor(trans->record(), this);
+        if (trans->record())
+          _extractor(*trans->record(), this);
         _current_id.reset(); // must be freed otherwise we continue to hold the last ev
       }
       return processed;
@@ -73,6 +75,14 @@ namespace kspp {
     */
     inline void push_back(std::shared_ptr<const krecord<RK, RV>>record) {
       this->send_to_sinks(std::make_shared<kevent<RK, RV>>(record, _current_id));
+    }
+
+    /**
+     * use from from extractor callback
+    */
+    inline void push_back(const krecord<RK, RV>& record) {
+      auto pr = std::make_shared<krecord<RK, RV>>(record);
+      this->send_to_sinks(std::make_shared<kevent<RK, RV>>(pr, _current_id));
     }
 
     /**

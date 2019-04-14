@@ -314,12 +314,12 @@ int main(int argc, char **argv) {
       auto extracted= topology->create_processors<kspp::flat_map<kspp::generic_avro, kspp::generic_avro, std::string, std::string>>(
           source0,
           [id_column, val_column](const auto record, auto flat_map) {
-          std::string key = *record->key().record().get_optional_as_string(id_column);
-            if (record->value()==nullptr){
+          std::string key = *record.key().record().get_optional_as_string(id_column);
+            if (record.value()==nullptr){
               flat_map->push_back(std::make_shared<kspp::krecord<std::string, std::string>>(key, nullptr));
           //TODO
         } else {
-          auto val = record->value()->record().get_optional_as_string(val_column);
+          auto val = record.value()->record().get_optional_as_string(val_column);
           if (val)
             flat_map->push_back(std::make_shared<kspp::krecord<std::string, std::string>>(key, *val));
           else

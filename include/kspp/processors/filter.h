@@ -5,7 +5,8 @@ namespace kspp {
   class filter : public event_consumer<K, V>, public partition_source<K, V> {
     static constexpr const char* PROCESSOR_NAME = "filter";
   public:
-    typedef std::function<bool(std::shared_ptr<const krecord <K, V>> record)> predicate; // return true to keep
+    //typedef std::function<bool(std::shared_ptr<const krecord <K, V>> record)> predicate; // return true to keep
+    typedef std::function<bool(const krecord <K, V>& record)> predicate; // return true to keep
 
     filter(std::shared_ptr<cluster_config> config, std::shared_ptr<partition_source < K, V>> source, predicate f)
     : event_consumer<K, V>()
@@ -46,10 +47,12 @@ namespace kspp {
         ++processed;
        this->_lag.add_event_time(tick, trans->event_time());
         ++(this->_processed_count);
-        if (_predicate(trans->record())) {
-          this->send_to_sinks(trans);
-        } else {
-          ++_predicate_false;
+        if (trans->record()) {
+          if (_predicate(*trans->record())) {
+            this->send_to_sinks(trans);
+          } else {
+            ++_predicate_false;
+          }
         }
       }
       return processed;
@@ -70,7 +73,6 @@ namespace kspp {
     int64_t next_event_time() const override {
       return event_consumer<K, V>::next_event_time();
     }
-
 
   private:
     std::shared_ptr<partition_source < K, V>> _source;

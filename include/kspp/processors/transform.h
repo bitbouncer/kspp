@@ -10,7 +10,8 @@ namespace kspp {
   class transform_value : public event_consumer<K, SV>, public partition_source<K, RV> {
     static constexpr const char* PROCESSOR_NAME = "transform_value";
   public:
-    typedef std::function<void(std::shared_ptr<const krecord <K, SV>> record, transform_value *self)> extractor;
+    //typedef std::function<void(std::shared_ptr<const krecord <K, SV>> record, transform_value *self)> extractor;
+    typedef std::function<void(const krecord <K, SV>& record, transform_value *self)> extractor;
 
     transform_value(std::shared_ptr<cluster_config> config, std::shared_ptr <partition_source<K, SV>> source, extractor f)
         : event_consumer<K, SV>()
@@ -49,7 +50,8 @@ namespace kspp {
         this->_lag.add_event_time(tick, trans->event_time());
         ++(this->_processed_count);
         _currrent_id = trans->id(); // we capture this to have it in push_back callback
-        _extractor(trans->record(), this);
+        if (trans->record())
+          _extractor(*trans->record(), this);
         _currrent_id.reset(); // must be freed otherwise we continue to hold the last ev
       }
       return processed;
@@ -91,7 +93,8 @@ namespace kspp {
   class transform : public event_consumer<K, V>, public partition_source<K, V> {
     static constexpr const char* PROCESSOR_NAME = "transform";
   public:
-    typedef std::function<void(std::shared_ptr<const krecord <K, V>> record, transform *self)> extractor;
+    //typedef std::function<void(std::shared_ptr<const krecord <K, V>> record, transform *self)> extractor;
+    typedef std::function<void(const krecord <K, V>& record, transform *self)> extractor;
 
     transform(topology &unused, std::shared_ptr <partition_source<K, V>> source, extractor f)
         : event_consumer<K, V>()
@@ -130,7 +133,8 @@ namespace kspp {
         this->_lag.add_event_time(tick, trans->event_time());
         ++(this->_processed_count);
         _currrent_id = trans->id(); // we capture this to have it in push_back callback
-        _extractor(trans->record(), this);
+        if (trans->record())
+          _extractor(*trans->record(), this);
         _currrent_id.reset(); // must be freed otherwise we continue to hold the last ev
       }
       return processed;

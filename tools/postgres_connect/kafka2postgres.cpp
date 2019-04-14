@@ -257,17 +257,17 @@ int main(int argc, char **argv) {
   // if file we have to drop the key
   if (filename.size()) {
     auto transform = topology->create_processors<kspp::flat_map<kspp::generic_avro, kspp::generic_avro, void, kspp::generic_avro>>(
-        source0, [](std::shared_ptr<const kspp::krecord<kspp::generic_avro, kspp::generic_avro>> in, auto self) {
-          if (in->value()) {
-            auto krecord = std::make_shared<kspp::krecord<void, kspp::generic_avro>>(*in->value(), in->event_time());
+        source0, [](const kspp::krecord<kspp::generic_avro, kspp::generic_avro>& in, auto self) {
+          if (in.value()) {
+            auto krecord = std::make_shared<kspp::krecord<void, kspp::generic_avro>>(*in.value(), in.event_time());
             self->push_back(krecord);
           }
         });
     topology->create_sink<kspp::avro_file_sink>(transform, "/tmp/" + table_prefix + topic + ".avro");
   } else {
     auto transform = topology->create_processors<kspp::flat_map<kspp::generic_avro, kspp::generic_avro, kspp::generic_avro, kspp::generic_avro>>(
-        source0, [](std::shared_ptr<const kspp::krecord<kspp::generic_avro, kspp::generic_avro>> in, auto self) {
-          //auto krecord = std::make_shared<const kspp::krecord<kspp::generic_avro, kspp::generic_avro>>(in->key(), nullptr, in->event_time());
+        source0, [](const kspp::krecord<kspp::generic_avro, kspp::generic_avro>& in, auto self) {
+          //auto krecord = std::make_shared<const kspp::krecord<kspp::generic_avro, kspp::generic_avro>>(in.key(), in.value(), in.event_time());
           //self->push_back(krecord);
           self->push_back(in);
         });

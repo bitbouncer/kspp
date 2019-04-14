@@ -35,7 +35,7 @@ int main(int argc, char **argv) {
     auto sources = topology->create_processors<kspp::kafka_source<void, std::string, void, kspp::text_serdes>>(partition_list, "kspp_test_text");
     std::regex rgx("\\s+");
     auto word_streams = topology->create_processors<kspp::flat_map<void, std::string, std::string, void>>(sources, [&rgx](const auto record, auto flat_map) {
-      std::sregex_token_iterator iter(record->value()->begin(), record->value()->end(), rgx, -1);
+      std::sregex_token_iterator iter(record.value()->begin(), record.value()->end(), rgx, -1);
       std::sregex_token_iterator end;
       for (; iter != end; ++iter) {
         flat_map->push_back(std::make_shared<kspp::krecord<std::string, void>>(*iter));

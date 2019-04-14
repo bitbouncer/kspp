@@ -9,7 +9,7 @@ namespace kspp {
   class visitor : public partition_sink<K, V> {
     static constexpr const char* PROCESSOR_NAME = "visitor";
   public:
-    typedef std::function<void(std::shared_ptr<const krecord <K, V>> record)> extractor;
+    typedef std::function<void(const krecord <K, V>& record)> extractor;
 
     visitor(std::shared_ptr<cluster_config> config, std::shared_ptr<partition_source<K, V>> source,  extractor f)
     : partition_sink<K, V>(source->partition())
@@ -44,7 +44,8 @@ namespace kspp {
         ++processed;
         this->_lag.add_event_time(tick, trans->event_time());
         ++(this->_processed_count);
-        _extractor(trans->record());
+        if (trans->record())
+          _extractor(*trans->record());
       }
       return processed;
     }
