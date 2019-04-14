@@ -11,9 +11,9 @@ namespace kspp {
 
   class cluster_config {
   public:
-    enum flags_t { NONE=0x0, KAFKA=0x01, SCHEMA_REGISTRY=0x02, REST_PROXY=0x04, BB_STREAMING=0x08 };
+    enum flags_t { NONE=0x0, KAFKA=0x01, SCHEMA_REGISTRY=0x02, PUSHGATEWAY=0x04, BB_STREAMING=0x08 };
 
-    cluster_config(std::string consumer_group, uint64_t flags = KAFKA | SCHEMA_REGISTRY );
+    cluster_config(std::string consumer_group, uint64_t flags = KAFKA | SCHEMA_REGISTRY | PUSHGATEWAY );
 
     inline bool has_feature(flags_t f) const {  return (flags_ & f); }
 
@@ -50,8 +50,11 @@ namespace kspp {
     void set_schema_registry_uri(std::string);
     std::string get_schema_registry_uri() const;
 
-    void set_kafka_rest_uri(std::string);
-    std::string get_kafka_rest_uri() const;
+    //void set_kafka_rest_uri(std::string);
+    //std::string get_kafka_rest_uri() const;
+
+    void set_pushgateway_uri(std::string);
+    std::string get_pushgateway_uri() const;
 
     void set_schema_registry_timeout(std::chrono::milliseconds timeout);
     std::chrono::milliseconds get_schema_registry_timeout() const;
@@ -96,7 +99,8 @@ namespace kspp {
     size_t max_pending_sink_messages_;
     std::string root_path_;
     std::string schema_registry_uri_;
-    std::string kafka_rest_uri_;
+    std::string pushgateway_uri_;
+
     bool fail_fast_;
     mutable std::shared_ptr<cluster_metadata> meta_data_;
     mutable std::shared_ptr<kspp::avro_schema_registry> avro_schema_registry_;

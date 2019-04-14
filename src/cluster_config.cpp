@@ -36,8 +36,8 @@ namespace kspp {
     if (has_feature(cluster_config::SCHEMA_REGISTRY))
       set_schema_registry_uri(default_schema_registry_uri());
 
-    if (has_feature(cluster_config::REST_PROXY))
-      set_kafka_rest_uri(default_kafka_rest_uri());
+    if (has_feature(cluster_config::PUSHGATEWAY))
+      set_pushgateway_uri(default_pushgateway_uri());
     //set_schema_registry_timeout()
     //set_fail_fast()
   }
@@ -128,14 +128,12 @@ namespace kspp {
     return schema_registry_uri_;
   }
 
-  void cluster_config::set_kafka_rest_uri(std::string urls) {
-    auto v = kspp::split_url_list(urls, "http");
-    LOG_IF(FATAL, v.size() == 0) << "cluster_config, bad kafka_rest urls: " << urls;
-    kafka_rest_uri_ = urls;
+  void cluster_config::set_pushgateway_uri(std::string s){
+    pushgateway_uri_ = s;
   }
 
-  std::string cluster_config::get_kafka_rest_uri() const {
-    return kafka_rest_uri_;
+  std::string cluster_config::get_pushgateway_uri() const{
+    return pushgateway_uri_;
   }
 
   void cluster_config::set_schema_registry_timeout(std::chrono::milliseconds timeout) {

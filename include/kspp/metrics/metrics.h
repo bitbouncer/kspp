@@ -52,9 +52,17 @@ namespace kspp {
         ,  _counter(nullptr) {
     }
 
+    metric_counter(std::string what, std::string unit, const std::map<std::string, std::string>& labels, std::shared_ptr<prometheus::Registry> registry)
+        : metric(what, COUNTER, unit)
+        ,  _counter(nullptr) {
+      _labels.insert(labels.begin(), labels.end());
+      auto& family = prometheus::BuildCounter().Name(_name).Register(*registry);
+      _counter = &family.Add(_labels);
+    }
+
     void finalize_labels(std::shared_ptr<prometheus::Registry> registry) override {
-      auto& counter_family = prometheus::BuildCounter().Name(_name).Register(*registry);
-      _counter = &counter_family.Add(_labels);
+      auto& family = prometheus::BuildCounter().Name(_name).Register(*registry);
+      _counter = &family.Add(_labels);
     }
 
     virtual double value() const {
@@ -78,6 +86,14 @@ namespace kspp {
     metric_gauge(std::string what, std::string unit)
         : metric(what, GAUGE, unit)
         ,  _gauge(nullptr) {
+    }
+
+    metric_gauge(std::string what, std::string unit, const std::map<std::string, std::string>& labels, std::shared_ptr<prometheus::Registry> registry)
+    : metric(what, GAUGE, unit)
+    ,  _gauge(nullptr) {
+      _labels.insert(labels.begin(), labels.end());
+      auto& family = prometheus::BuildGauge().Name(_name).Register(*registry);
+      _gauge = &family.Add(_labels);
     }
 
     void finalize_labels(std::shared_ptr<prometheus::Registry> registry) override {
@@ -133,6 +149,17 @@ namespace kspp {
         ,  _quantiles(quantiles)
         ,  _summary(nullptr) {
       add_label("window", "60s");
+    }
+
+    metric_summary(std::string what, std::string unit, const std::map<std::string, std::string>& labels, std::shared_ptr<prometheus::Registry> registry, const std::vector<float>& quantiles={0.99})
+    : metric(what, SUMMARY, unit)
+    ,  _summary(nullptr) {
+      _labels.insert(labels.begin(), labels.end());
+      std::vector<prometheus::detail::CKMSQuantiles::Quantile> q;
+      for (auto i : _quantiles)
+        q.emplace_back(i, 0.05);
+      auto& family = prometheus::BuildSummary().Name(_name).Register(*registry);
+      _summary = &family.Add(_labels, q, std::chrono::seconds{600}, 5);
     }
 
     void finalize_labels(std::shared_ptr<prometheus::Registry> registry) override {

@@ -45,9 +45,9 @@ namespace kspp {
         ++processed;
         this->_lag.add_event_time(tick, trans->event_time());
         ++(this->_processed_count);
-        _currrent_id = trans->id(); // we capture this to have it in push_back callback
+        _current_id = trans->id(); // we capture this to have it in push_back callback
         _extractor(trans->record(), this);
-        _currrent_id.reset(); // must be freed otherwise we continue to hold the last ev
+        _current_id.reset(); // must be freed otherwise we continue to hold the last ev
       }
       return processed;
     }
@@ -72,20 +72,20 @@ namespace kspp {
     * use from from extractor callback
     */
     inline void push_back(std::shared_ptr<const krecord<RK, RV>>record) {
-      this->send_to_sinks(std::make_shared<kevent<RK, RV>>(record, _currrent_id));
+      this->send_to_sinks(std::make_shared<kevent<RK, RV>>(record, _current_id));
     }
 
     /**
     * use from from extractor callback to force a custom partition hash
     */
     inline void push_back(std::shared_ptr<const krecord<RK, RV>> record, uint32_t partition_hash) {
-      this->send_to_sinks(std::make_shared<kevent<RK, RV>>(record, _currrent_id, partition_hash));
+      this->send_to_sinks(std::make_shared<kevent<RK, RV>>(record, _current_id, partition_hash));
     }
 
   private:
     std::shared_ptr<partition_source < SK, SV>> _source;
     extractor _extractor;
-    std::shared_ptr<commit_chain::autocommit_marker> _currrent_id; // used to briefly hold the commit open during process one
+    std::shared_ptr<commit_chain::autocommit_marker> _current_id; // used to briefly hold the commit open during process one
   };
 }
 

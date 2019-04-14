@@ -62,6 +62,10 @@ namespace kspp {
   }
 #else
 
+  std::string default_pushgateway_uri() {
+    return get_env_and_log("KSPP_PUSHGATEWAY_URL", "http://localhost:9091");
+  }
+
   std::string default_ca_cert_path() {
     return get_env_and_log("KSPP_CA_CERT", "/etc/kspp/credentials/cacert.pem");
   }
