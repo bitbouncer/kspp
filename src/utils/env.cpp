@@ -1,5 +1,6 @@
 #include <kspp/utils/env.h>
 #include <boost/filesystem.hpp>
+#include <boost/asio/ip/host_name.hpp>
 #include <glog/logging.h>
 
 namespace kspp {
@@ -84,18 +85,25 @@ namespace kspp {
 
 #endif
 
-  std::string default_hostname() {
+  /*
+   * std::string default_hostname() {
 #ifdef _WIN32
     if (const char* env_p = std::getenv("COMPUTERNAME"))
       return std::string(env_p);
     else
       return "unknown";
 #else
-    char s[256];
-    sprintf(s, "unknown");
-    gethostname(s, 256);
-    return std::string(s);
+    char buf[256];
+    sprintf(buf, "unknown");
+    gethostname(buf, 256);
+    std::string hostname = buf;
+    return hostname;
 #endif
+  }
+  */
+  std::string default_hostname() {
+    auto host_name = boost::asio::ip::host_name();
+    return host_name;
   }
 }
 
