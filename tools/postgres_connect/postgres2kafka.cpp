@@ -313,17 +313,17 @@ int main(int argc, char **argv) {
   } else if (codec == "text" ){
       auto extracted= topology->create_processors<kspp::flat_map<kspp::generic_avro, kspp::generic_avro, std::string, std::string>>(
           source0,
-          [id_column, val_column](const auto record, auto flat_map) {
+          [id_column, val_column](const auto record, auto stream) {
           std::string key = *record.key().record().get_optional_as_string(id_column);
             if (record.value()==nullptr){
-              flat_map->push_back(std::make_shared<kspp::krecord<std::string, std::string>>(key, nullptr));
+              erase(stream, key);
           //TODO
         } else {
           auto val = record.value()->record().get_optional_as_string(val_column);
           if (val)
-            flat_map->push_back(std::make_shared<kspp::krecord<std::string, std::string>>(key, *val));
+            insert(stream, key, *val);
           else
-            flat_map->push_back(std::make_shared<kspp::krecord<std::string, std::string>>(key, nullptr));
+            erase(stream, key);
         }
       });
       topology->create_sink<kspp::kafka_sink<std::string, std::string, kspp::text_serdes, kspp::text_serdes>>(extracted, topic);

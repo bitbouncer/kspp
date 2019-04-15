@@ -73,9 +73,21 @@ namespace kspp {
     /**
     * use from from extractor callback
     */
-    inline void push_back(std::shared_ptr<const krecord<RK, RV>>record) {
+    inline void push_back2(std::shared_ptr<const krecord<RK, RV>>record) {
       this->send_to_sinks(std::make_shared<kevent<RK, RV>>(record, _current_id));
     }
+
+    /*
+     * inline void push_back(const RK& key, std::shared_ptr<RV> row, int64_t ts = milliseconds_since_epoch()) {
+      auto pr = std::make_shared<krecord<RK, RV>>(key, row, ts);
+      this->send_to_sinks(std::make_shared<kevent<RK, RV>>(pr, _current_id));
+    }
+
+    inline void push_back(const RK& key, const RV& row, int64_t ts = milliseconds_since_epoch()) {
+      auto pr = std::make_shared<krecord<RK, RV>>(key, row, ts);
+      this->send_to_sinks(std::make_shared<kevent<RK, RV>>(pr, _current_id));
+    }
+     */
 
     /**
      * use from from extractor callback
@@ -97,5 +109,47 @@ namespace kspp {
     extractor _extractor;
     std::shared_ptr<commit_chain::autocommit_marker> _current_id; // used to briefly hold the commit open during process one
   };
+
+  template<class SK, class SV, class RK, class RV>
+  void insert(flat_map<SK, SV, RK, RV>* fm, const RK &k, const RV &v, int64_t ts = milliseconds_since_epoch()){
+    auto kr = std::make_shared<krecord<RK, RV >>(k, v, ts);
+    fm->push_back2(kr);
+  }
+
+  template<class SK, class SV, class RK, class RV>
+  void insert(flat_map<SK, SV, RK, RV>* fm, const RK &k, std::shared_ptr<const RV> p, int64_t ts = milliseconds_since_epoch()){
+    auto kr = std::make_shared<krecord<RK, RV >>(k, p, ts);
+    fm->push_back2(kr);
+  }
+
+  template<class SK, class SV, class RK, class RV>
+  void insert(flat_map<SK, SV, RK, RV>* fm, const RK &k, std::shared_ptr<RV> p, int64_t ts = milliseconds_since_epoch()){
+    auto kr = std::make_shared<krecord<RK, RV >>(k, p, ts);
+    fm->push_back2(kr);
+  }
+
+  template<class SK, class SV, class RK, class RV>
+  void erase(flat_map<SK, SV, RK, RV>* fm, const RK &k, int64_t ts = milliseconds_since_epoch()){
+    auto kr = std::make_shared<krecord<RK, RV >>(k, nullptr, ts);
+    fm->push_back2(kr);
+  }
+
+  template<class SK, class SV, class RK>
+  void insert(flat_map<SK, SV, RK, void>* fm, const RK &k, int64_t ts = milliseconds_since_epoch()){
+    auto kr = std::make_shared<krecord<RK, void>>(k, ts);
+    fm->push_back2(kr);
+  }
+
+  template<class SK, class SV, class RV>
+  void insert(flat_map<SK, SV, void, RV>* fm, const RV &v, int64_t ts = milliseconds_since_epoch()){
+    auto kr = std::make_shared<krecord<void, RV >>(v, ts);
+    fm->push_back2(kr);
+  }
+
+  template<class SK, class SV, class RV>
+  void insert(flat_map<SK, SV, void, RV>* fm, std::shared_ptr<const RV> p, int64_t ts = milliseconds_since_epoch()){
+    auto kr = std::make_shared<krecord<void, RV >>(p, ts);
+    fm->push_back2(kr);
+  }
 }
 

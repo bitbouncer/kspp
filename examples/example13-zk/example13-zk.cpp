@@ -42,7 +42,7 @@ int main(int argc, char **argv) {
   auto topology = builder.create_topology();
   auto sources = topology->create_processors<kspp::kafka_source<void, kspp::GenericAvro, kspp::avro_serdes>>(
           partition_list, "postgres_mqtt_device_auth_view", avro_serdes);
-  auto parsed = topology->create_processors<kspp::flat_map<void, kspp::GenericAvro, int, std::string>>(sources, [](std::shared_ptr<const kspp::krecord<void, kspp::GenericAvro>> in, auto flat_map) {
+  auto parsed = topology->create_processors<kspp::flat_map<void, kspp::GenericAvro, int, std::string>>(sources, [](std::shared_ptr<const kspp::krecord<void, kspp::GenericAvro>> in, auto stream) {
     std::shared_ptr<avro::GenericDatum> datum = in->value()->generic_datum();
     if (datum->type()==avro::AVRO_RECORD) {
       const avro::GenericRecord& r = datum->value<avro::GenericRecord>();

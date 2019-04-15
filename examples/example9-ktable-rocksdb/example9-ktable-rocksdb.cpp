@@ -57,11 +57,11 @@ int main(int argc, char **argv) {
 
       std::regex rgx("\\s+");
       auto word_streams = topology->create_processors<kspp::flat_map<void, std::string, std::string, void>>(
-          sources, [&rgx](const auto record, auto flat_map) {
+          sources, [&rgx](const auto record, auto stream) {
             std::sregex_token_iterator iter(record.value()->begin(), record.value()->end(), rgx,-1);
             std::sregex_token_iterator end;
             for (; iter != end; ++iter) {
-              flat_map->push_back(std::make_shared<kspp::krecord<std::string, void>>(*iter));
+              insert(stream, (std::string) *iter);
             }
           });
 
@@ -75,8 +75,7 @@ int main(int argc, char **argv) {
 
       auto ex1 = topology->create_processors<kspp::ktable<std::string, int64_t, kspp::rocksdb_store, kspp::binary_serdes>>(word_counts);
       auto ex2 = topology->create_processors<kspp::ktable<std::string, int64_t, kspp::mem_store>>(word_counts);
-      auto ex3 = topology->create_processors<kspp::ktable<std::string, int64_t, kspp::mem_windowed_store>>(word_counts
-          , 500ms, 10);
+      auto ex3 = topology->create_processors<kspp::ktable<std::string, int64_t, kspp::mem_windowed_store>>(word_counts, 500ms, 10);
 
       topology->start(kspp::OFFSET_STORED);
       topology->flush();

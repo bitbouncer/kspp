@@ -10,11 +10,11 @@
 #include <kspp/state_stores/mem_store.h>
 #include <kspp/utils/kafka_utils.h>
 #include <kspp/utils/env.h>
-//#include <kspp/avro/avro_serdes.h>
 #include <kspp/avro/avro_text.h>
 #include <kspp/utils/kspp_utils.h>
 
 using namespace std::chrono_literals;
+using namespace std::string_literals;
 
 int main(int argc, char **argv) {
   FLAGS_logtostderr = 1;
@@ -34,7 +34,7 @@ int main(int argc, char **argv) {
   auto topology = builder.create_topology();
   auto sources = topology->create_processors<kspp::kafka_source<void, kspp::generic_avro, void, kspp::avro_serdes>>(
           partition_list, "postgres_mqtt_device_auth_view", config->avro_serdes());
-  auto parsed = topology->create_processors<kspp::flat_map<void, kspp::generic_avro, int, std::string>>(sources, [](const kspp::krecord<void, kspp::generic_avro>& in, auto flat_map) {
+  auto parsed = topology->create_processors<kspp::flat_map<void, kspp::generic_avro, int, std::string>>(sources, [](const kspp::krecord<void, kspp::generic_avro>& in, auto stream) {
       try {
         auto record = in.value()->record();
         auto id = record.get_optional<int32_t>("id");
@@ -42,8 +42,7 @@ int main(int argc, char **argv) {
         auto hash = record.get_optional<std::string>("api_key_hash");
         auto broker_uri = record.get_optional<std::string>("broker_url");
         if (id) {
-          flat_map->push_back(
-              std::make_shared<kspp::krecord<int, std::string>>(*id, "nisse"));
+          insert(stream, *id, "nisse"s);
         }
       }
       catch (std::exception& e){

@@ -259,8 +259,9 @@ int main(int argc, char **argv) {
     auto transform = topology->create_processors<kspp::flat_map<kspp::generic_avro, kspp::generic_avro, void, kspp::generic_avro>>(
         source0, [](const kspp::krecord<kspp::generic_avro, kspp::generic_avro>& in, auto self) {
           if (in.value()) {
-            auto krecord = std::make_shared<kspp::krecord<void, kspp::generic_avro>>(*in.value(), in.event_time());
-            self->push_back(krecord);
+            insert(self, *in.value());
+            //auto krecord = std::make_shared<kspp::krecord<void, kspp::generic_avro>>(*in.value(), in.event_time());
+            //self->push_back(krecord);
           }
         });
     topology->create_sink<kspp::avro_file_sink>(transform, "/tmp/" + table_prefix + topic + ".avro");

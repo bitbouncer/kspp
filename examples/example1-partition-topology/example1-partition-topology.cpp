@@ -234,14 +234,13 @@ int main(int argc, char **argv) {
         int64_t, kspp::left_join<page_view_data, user_profile_data>::value_type,
         int64_t, page_view_decorated>>(
         join,
-        [](const auto record, auto flat_map) {
+        [](const auto record, auto stream) {
           auto value = std::make_shared<page_view_decorated>();
           value->user_id = record.key();
           value->email = record.value()->second->email;
           value->time = record.value()->first.time;
           value->url = record.value()->first.url;
-          auto r = std::make_shared<kspp::krecord<int64_t, page_view_decorated>>(record.key(), value);
-          flat_map->push_back(r);
+          insert(stream, record.key(), value);
         });
 
     auto sink = topology->create_sink<kspp::kafka_partition_sink<int64_t, page_view_decorated, kspp::binary_serdes, kspp::binary_serdes>>(

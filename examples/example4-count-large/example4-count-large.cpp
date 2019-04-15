@@ -34,12 +34,11 @@ int main(int argc, char **argv) {
     auto topology = builder.create_topology();
     auto sources = topology->create_processors<kspp::kafka_source<void, std::string, void, kspp::text_serdes>>(partition_list, "kspp_test_text");
     std::regex rgx("\\s+");
-    auto word_streams = topology->create_processors<kspp::flat_map<void, std::string, std::string, void>>(sources, [&rgx](const auto record, auto flat_map) {
+    auto word_streams = topology->create_processors<kspp::flat_map<void, std::string, std::string, void>>(sources, [&rgx](const auto record, auto stream) {
       std::sregex_token_iterator iter(record.value()->begin(), record.value()->end(), rgx, -1);
       std::sregex_token_iterator end;
-      for (; iter != end; ++iter) {
-        flat_map->push_back(std::make_shared<kspp::krecord<std::string, void>>(*iter));
-      }
+      for (; iter != end; ++iter)
+        insert(stream, (std::string) *iter);
     });
 
     auto word_sink = topology->create_sink<kspp::kafka_sink<std::string, void, kspp::text_serdes, void>>("kspp_test_words");

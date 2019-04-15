@@ -44,12 +44,11 @@ int main(int argc, char **argv) {
     std::regex rgx("\\s+");
     auto word_stream = topology->create_processors<kspp::flat_map<void, std::string, std::string, void>>(
         source,
-        [&rgx](const auto record, auto flat_map) {
+        [&rgx](const auto record, auto stream) {
           std::sregex_token_iterator iter(record.value()->begin(), record.value()->end(), rgx, -1);
           std::sregex_token_iterator end;
-          for (; iter != end; ++iter) {
-            flat_map->push_back(std::make_shared<kspp::krecord<std::string, void>>(*iter));
-          }
+          for (; iter != end; ++iter)
+            insert(stream, (std::string) *iter);
         });
 
     auto word_counts = topology->create_processors<kspp::count_by_key<std::string, int, kspp::mem_counter_store>>(
