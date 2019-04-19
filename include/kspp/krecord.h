@@ -48,6 +48,10 @@ namespace kspp {
       return _value.get();
     }
 
+    inline std::shared_ptr<const V> shared_ptr_value() const {
+      return _value;
+    }
+
     inline int64_t event_time() const {
       return _event_time;
     }
