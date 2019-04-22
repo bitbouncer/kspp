@@ -5,22 +5,26 @@
 namespace kspp {
   inline int64_t milliseconds_since_epoch() {
     return std::chrono::duration_cast<std::chrono::milliseconds>
-            (std::chrono::system_clock::now().time_since_epoch()).count();
+        (std::chrono::system_clock::now().time_since_epoch()).count();
   }
 
   template<class K, class V>
   class krecord {
   public:
     krecord(const K &k, const V &v, int64_t ts = milliseconds_since_epoch())
-            : _event_time(ts), _key(k), _value(std::make_shared<V>(v)) {
+        : _event_time(ts), _key(k), _value(std::make_shared<V>(v)) {
     }
 
     krecord(const K &k, std::shared_ptr<const V> v, int64_t ts = milliseconds_since_epoch())
-            : _event_time(ts), _key(k), _value(v) {
+        : _event_time(ts), _key(k), _value(v) {
     }
 
     krecord(const K &k, std::nullptr_t nullp, int64_t ts = milliseconds_since_epoch())
-            : _event_time(ts), _key(k), _value(nullptr) {
+        : _event_time(ts), _key(k), _value(nullptr) {
+    }
+
+    krecord(const krecord& a)
+        : _event_time(a._event_time), _key(a._key), _value(a._value) {
     }
 
     inline bool operator==(const krecord<K,V>& other) const
@@ -34,7 +38,7 @@ namespace kspp {
       if (_value.get() == nullptr)
         if (other._value.get() == nullptr)
           return true;
-      else
+        else
           return false;
 
       return (*_value.get() == *other._value.get());
@@ -48,9 +52,10 @@ namespace kspp {
       return _value.get();
     }
 
-    inline std::shared_ptr<const V> shared_ptr_value() const {
+    /*inline std::shared_ptr<const V> shared_ptr_value() const {
       return _value;
     }
+    */
 
     inline int64_t event_time() const {
       return _event_time;
@@ -67,11 +72,15 @@ namespace kspp {
   class krecord<void, V> {
   public:
     krecord(const V &v, int64_t ts = milliseconds_since_epoch())
-            : _event_time(ts), _value(std::make_shared<V>(v)) {
+        : _event_time(ts), _value(std::make_shared<V>(v)) {
     }
 
     krecord(std::shared_ptr<const V> v, int64_t ts = milliseconds_since_epoch())
-            : _event_time(ts), _value(v) {
+        : _event_time(ts), _value(v) {
+    }
+
+    krecord(const krecord& a)
+        : _event_time(a._event_time), _value(a._value) {
     }
 
     inline const V *value() const {
@@ -92,7 +101,11 @@ namespace kspp {
   class krecord<K, void> {
   public:
     krecord(const K &k, int64_t ts = milliseconds_since_epoch())
-            : _event_time(ts), _key(k) {
+        : _event_time(ts), _key(k) {
+    }
+
+    krecord(const krecord& a)
+        : _event_time(a._event_time), _key(a._key) {
     }
 
     inline const K &key() const {
