@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+option java_package = "bbstreaming.grpc";
+option objc_class_prefix = "BB";
+
+package ksppstreaming;
+
+// The greeting service definition.
+service streamprovider {
+  // Sends multiple greetings
+  rpc Subscribe (SubscriptionRequest) returns (stream SubscriptionData) {}
+  rpc GetSchema (GetSchemaRequest) returns (GetSchemaReply) {}
+}
+
+// The request message containing the user's name and how many greetings
+// they want.
+message SubscriptionRequest {
+  string topic = 1;
+  int32 partition = 2;
+  int64 offset = 3;
+}
+
+// A 
+message SubscriptionData {
+  int32 key_schema=1;
+  int32 value_schema=2;
+  bytes key = 3;
+  bytes value = 4;
+  int64 offset = 5;
+  int64 timestamp = 6;
+  bool  eof = 7;
+}
+
+// The request message containing the schema id
+message GetSchemaRequest {
+ int32 schema_id = 1;
+}
+
+// json encoded schema
+message GetSchemaReply {
+  string schema = 1;
+}
