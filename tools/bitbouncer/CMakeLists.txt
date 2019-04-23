@@ -1,4 +1,4 @@
-add_executable(bb2pg bb2pg.cpp)
+add_executable(bb2pg bb2pg.cpp grpc_db_streamer.h)
 
 if (LINK_SHARED)
     target_link_libraries(bb2pg ${BBSTREAMING_LIBS_SHARED} kspp_pg ${CSI_LIBS_SHARED})

@@ -2,11 +2,11 @@
 #include <csignal>
 #include <boost/program_options.hpp>
 #include <kspp/utils/env.h>
-#include <kspp/utils/kafka_utils.h>
+#include <kspp/processors/generic_stream.h>
 #include <kspp/processors/visitor.h>
+#include <kspp/connect/postgres/postgres_generic_avro_sink.h>
 #include <kspp/topology_builder.h>
-#include <kspp/processors/visitor.h>
-#include <kspp/connect/bitbouncer/grpc_streaming_source.h>
+#include "grpc_db_streamer.h"
 
 #define SERVICE_NAME     "bb2pg"
 #define DEFAULT_SRC_URI  "lb.bitbouncer.com:10063"
@@ -30,8 +30,22 @@ int main(int argc, char** argv) {
       ("api_key", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("API_KEY", "")), "api_key")
       ("api_secret", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("API_SECRET", "")), "api_secret")
       ("topic", boost::program_options::value<std::string>()->default_value("logs"), "topic")
-      ("partition_list", boost::program_options::value<std::string>()->default_value("[-1]"), "partition_list")
       ("offset_storage", boost::program_options::value<std::string>(), "offset_storage")
+      ("start_offset", boost::program_options::value<std::string>()->default_value("OFFSET_BEGINNING"), "start_offset")
+      ("postgres_host", boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_HOST")), "postgres_host")
+      ("postgres_port", boost::program_options::value<int32_t>()->default_value(5432), "postgres_port")
+      ("postgres_user", boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_USER")), "postgres_user")
+      ("postgres_password", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("POSTGRES_PASSWORD")), "postgres_password")
+      ("postgres_dbname", boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_DBNAME")), "postgres_dbname")
+      ("postgres_tablename", boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_TABLENAME")), "postgres_tablename")
+      ("postgres_max_items_in_insert", boost::program_options::value<int32_t>()->default_value(1000), "postgres_max_items_in_insert")
+      ("postgres_warning_timeout", boost::program_options::value<int32_t>()->default_value(1000), "postgres_warning_timeout")
+      ("postgres_disable_delete", boost::program_options::value<int32_t>(), "postgres_disable_delete")
+      ("id_column", boost::program_options::value<std::string>()->default_value("id"), "id_column")
+      ("table_prefix", boost::program_options::value<std::string>()->default_value("kafka_"), "table_prefix")
+      ("character_encoding", boost::program_options::value<std::string>()->default_value("UTF8"), "character_encoding")
+      ("pushgateway_uri", boost::program_options::value<std::string>()->default_value(get_env_and_log("PUSHGATEWAY_URI", "localhost:9091")),"pushgateway_uri")
+      ("metrics_namespace", boost::program_options::value<std::string>()->default_value(get_env_and_log("METRICS_NAMESPACE", "bb")),"metrics_namespace")
       ("oneshot", "run to eof and exit")
       ;
 
@@ -76,59 +90,186 @@ int main(int argc, char** argv) {
     topic = vm["topic"].as<std::string>();
   }
 
-  std::vector<int> partition_list;
-  if (vm.count("partition_list")) {
-    auto s = vm["partition_list"].as<std::string>();
-    partition_list = kspp::parse_partition_list(s);
+  kspp::start_offset_t start_offset=kspp::OFFSET_BEGINNING;
+  if (vm.count("start_offset")) {
+    auto s = vm["start_offset"].as<std::string>();
+    if (boost::iequals(s, "OFFSET_BEGINNING"))
+      start_offset=kspp::OFFSET_BEGINNING;
+    else if (boost::iequals(s, "OFFSET_END"))
+      start_offset=kspp::OFFSET_END;
+    else if (boost::iequals(s, "OFFSET_STORED"))
+      start_offset=kspp::OFFSET_STORED;
+    else {
+      std::cerr << "start_offset must be one of OFFSET_BEGINNING / OFFSET_END / OFFSET_STORED";
+      return -1;
+    }
   }
+
+  std::string postgres_host;
+  if (vm.count("postgres_host")) {
+    postgres_host = vm["postgres_host"].as<std::string>();
+  }
+
+  int postgres_port;
+  if (vm.count("postgres_port")) {
+    postgres_port = vm["postgres_port"].as<int>();
+  }
+
+  std::string postgres_dbname;
+  if (vm.count("postgres_dbname")) {
+    postgres_dbname = vm["postgres_dbname"].as<std::string>();
+  }
+
+  std::string postgres_tablename;
+  if (vm.count("postgres_tablename")) {
+    postgres_tablename = vm["postgres_tablename"].as<std::string>();
+  }
+
+  std::string postgres_user;
+  if (vm.count("postgres_user")) {
+    postgres_user = vm["postgres_user"].as<std::string>();
+  }
+
+  std::string postgres_password;
+  if (vm.count("postgres_password")) {
+    postgres_password = vm["postgres_password"].as<std::string>();
+  }
+
+  int postgres_max_items_in_insert;
+  if (vm.count("postgres_max_items_in_insert")) {
+    postgres_max_items_in_insert = vm["postgres_max_items_in_insert"].as<int>();
+  }
+
+  int postgres_warning_timeout;
+  if (vm.count("postgres_warning_timeout")) {
+    postgres_warning_timeout = vm["postgres_warning_timeout"].as<int>();
+  }
+
+  std::string id_column;
+  if (vm.count("id_column")) {
+    id_column = vm["id_column"].as<std::string>();
+  }
+
+  std::string table_prefix;
+  if (vm.count("table_prefix")) {
+    table_prefix = vm["table_prefix"].as<std::string>();
+  }
+
+  std::string table_name_override;
+  if (vm.count("table_name_override")) {
+    table_name_override = vm["table_name_override"].as<std::string>();
+  }
+
+  std::string character_encoding;
+  if (vm.count("character_encoding")) {
+    character_encoding = vm["character_encoding"].as<std::string>();
+  } else {
+    std::cout << "--character_encoding must be specified" << std::endl;
+    return 0;
+  }
+
+  std::string filename;
+  if (vm.count("filename")) {
+    filename = vm["filename"].as<std::string>();
+  }
+
+
+  bool postgres_disable_delete=false;
+  if (vm.count("postgres_disable_delete")) {
+    postgres_disable_delete = (vm["postgres_disable_delete"].as<int>() > 0);
+  }
+
+  std::string pushgateway_uri;
+  if (vm.count("pushgateway_uri")) {
+    pushgateway_uri = vm["pushgateway_uri"].as<std::string>();
+  }
+
+  std::string metrics_namespace;
+  if (vm.count("metrics_namespace")) {
+    metrics_namespace = vm["metrics_namespace"].as<std::string>();
+  }
+
 
   bool oneshot=false;
   if (vm.count("oneshot"))
     oneshot=true;
 
-  LOG(INFO) << "src_uri          : " << src_uri;
-  LOG(INFO) << "api_key          : [hidden]";
-  LOG(INFO) << "offset_storage   : " << offset_storage;
-  LOG(INFO) << "topic            : " << topic;
+  LOG(INFO) << "src_uri                      : " << src_uri;
+  LOG(INFO) << "api_key                      : [hidden]";
+  LOG(INFO) << "offset_storage               : " << offset_storage;
+  LOG(INFO) << "topic                        : " << topic;
+  LOG(INFO) << "start_offset                 : " << kspp::to_string(start_offset);
+  LOG(INFO) << "postgres_host                : " << postgres_host;
+  LOG(INFO) << "postgres_port                : " << postgres_port;
+  LOG(INFO) << "postgres_dbname              : " << postgres_dbname;
+  LOG(INFO) << "postgres_user                : " << postgres_user;
+  LOG(INFO) << "postgres_password            : " << "[hidden]";
+  LOG(INFO) << "postgres_max_items_in_insert : " << postgres_max_items_in_insert;
+  LOG(INFO) << "id_column                    : " << id_column;
+  LOG(INFO) << "postgres_warning_timeout     : " << postgres_warning_timeout;
+  LOG(INFO) << "table_prefix                 : " << table_prefix;
+  LOG(INFO) << "postgres_tablename           : " << postgres_tablename;
+  LOG(INFO) << "character_encoding           : " << character_encoding;
+  LOG(INFO) << "postgres_disable_delete      : " << postgres_disable_delete;
+  LOG(INFO) << "pushgateway_uri              : " << pushgateway_uri;
+  LOG(INFO) << "metrics_namespace            : " << metrics_namespace;
+
+  kspp::connect::connection_params connection_params;
+  connection_params.host = postgres_host;
+  connection_params.port = postgres_port;
+  connection_params.user = postgres_user;
+  connection_params.password = postgres_password;
+  connection_params.database_name = postgres_dbname;
+
+
+
   LOG(INFO) << "discovering facts...";
   if (oneshot)
     LOG(INFO) << "oneshot          : TRUE";
 
-  kspp::topology_builder generic_builder(config);
+  kspp::topology_builder builder(config);
   grpc::ChannelArguments channelArgs;
-  channelArgs.SetInt(GRPC_ARG_KEEPALIVE_TIME_MS, 10000);
-  channelArgs.SetInt(GRPC_ARG_KEEPALIVE_TIMEOUT_MS, 10000);
-  channelArgs.SetInt(GRPC_ARG_KEEPALIVE_PERMIT_WITHOUT_CALLS, 1);
-  channelArgs.SetInt(GRPC_ARG_HTTP2_MIN_SENT_PING_INTERVAL_WITHOUT_DATA_MS, 10000);
-  channelArgs.SetInt(GRPC_ARG_HTTP2_MAX_PINGS_WITHOUT_DATA, 0);
-  auto channel_creds = grpc::SslCredentials(grpc::SslCredentialsOptions());
-  auto channel = grpc::CreateCustomChannel(src_uri, channel_creds, channelArgs);
 
-  auto live = generic_builder.create_topology();
-  auto source = live->create_processor<kspp::grpc_streaming_source<kspp::generic_avro, kspp::generic_avro>>(0, topic, offset_storage, channel, api_key);
-  live->create_processor<kspp::visitor<kspp::generic_avro,kspp::generic_avro>>(source, [](auto ev){
-    if (ev.value())
-      std::cout << to_json(*ev.value()) << std::endl;
+  auto t = builder.create_topology();
+  auto stream = t->create_processor<kspp::generic_stream<kspp::generic_avro,kspp::generic_avro>>(0);
+  auto sink = t->create_sink<kspp::postgres_generic_avro_sink>(stream, postgres_tablename, connection_params, id_column, character_encoding, postgres_max_items_in_insert, postgres_disable_delete);
+
+  std::map<std::string, std::string> labels = {
+      { "app_name", SERVICE_NAME },
+      //{ "app_realm", app_realm },
+      { "hostname", default_hostname() },
+      { "src_topic", topic },
+      { "dst_uri", postgres_host },
+      { "dst_database", postgres_dbname },
+      { "dst_table", postgres_tablename }
+  };
+
+  t->add_labels(labels);
+
+  t->start(kspp::OFFSET_END); // does not matter since this is in memeory an we control starting point with the source
+
+  grpc_db_streamer<kspp::generic_avro,kspp::generic_avro> streamer(config, offset_storage, src_uri, api_key, topic, [stream](const auto &in){
+    insert(*stream, in);
   });
-
-  live->start(kspp::OFFSET_END);
 
   std::signal(SIGINT, sigterm);
   std::signal(SIGTERM, sigterm);
   std::signal(SIGPIPE, SIG_IGN);
 
-  while (run && source->good()) {
-    auto sz = live->process(kspp::milliseconds_since_epoch());
+  while (run) {
+    auto sz = t->process(kspp::milliseconds_since_epoch());
 
-    if (sz == 0) {
+    int64_t sz0 = 0;
+    if (sink->outbound_queue_len()<10000) {
+      sz0 = streamer.process();
+    }
+
+    if (sz == 0 && sz0==0) {
       std::this_thread::sleep_for(100ms);
       continue;
     }
-
     }
 
   LOG(INFO) << "exiting";
-
-
   return 0;
 }

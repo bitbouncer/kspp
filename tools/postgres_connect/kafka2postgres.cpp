@@ -260,19 +260,15 @@ int main(int argc, char **argv) {
         source0, [](const kspp::krecord<kspp::generic_avro, kspp::generic_avro>& in, auto self) {
           if (in.value()) {
             insert(self, *in.value());
-            //auto krecord = std::make_shared<kspp::krecord<void, kspp::generic_avro>>(*in.value(), in.event_time());
-            //self->push_back(krecord);
           }
         });
     topology->create_sink<kspp::avro_file_sink>(transform, "/tmp/" + table_prefix + topic + ".avro");
   } else {
     auto transform = topology->create_processors<kspp::flat_map<kspp::generic_avro, kspp::generic_avro, kspp::generic_avro, kspp::generic_avro>>(
         source0, [](const kspp::krecord<kspp::generic_avro, kspp::generic_avro>& in, auto self) {
-          //auto krecord = std::make_shared<const kspp::krecord<kspp::generic_avro, kspp::generic_avro>>(in.key(), in.value(), in.event_time());
-          //self->push_back(krecord);
-          self->push_back(in);
+          insert(self, in);
         });
-    topology->create_sink<kspp::postgres_generic_avro_sink>(transform, table_name, connection_params, id_column, config->get_schema_registry(), character_encoding, postgres_max_items_in_insert, postgres_disable_delete);
+    topology->create_sink<kspp::postgres_generic_avro_sink>(transform, table_name, connection_params, id_column, character_encoding, postgres_max_items_in_insert, postgres_disable_delete);
   }
 
   topology->add_labels( {

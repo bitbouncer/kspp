@@ -112,44 +112,50 @@ namespace kspp {
 }
 
 template<class SK, class SV, class RK, class RV>
-void insert(kspp::flat_map<SK, SV, RK, RV>* fm, const RK &k, const RV &v, int64_t ts = kspp::milliseconds_since_epoch()){
+void insert(kspp::flat_map<SK, SV, RK, RV>* flatMap, const kspp::krecord<RK, RV >& r){
+  auto kr = std::make_shared<kspp::krecord<RK, RV >>(r);
+  flatMap->push_back(kr);
+}
+
+template<class SK, class SV, class RK, class RV>
+void insert(kspp::flat_map<SK, SV, RK, RV>* flatMap, const RK &k, const RV &v, int64_t ts = kspp::milliseconds_since_epoch()){
   auto kr = std::make_shared<kspp::krecord<RK, RV >>(k, v, ts);
-  fm->push_back(kr);
+  flatMap->push_back(kr);
 }
 
 template<class SK, class SV, class RK, class RV>
-void insert(kspp::flat_map<SK, SV, RK, RV>* fm, const RK &k, std::shared_ptr<const RV> p, int64_t ts = kspp::milliseconds_since_epoch()){
+void insert(kspp::flat_map<SK, SV, RK, RV>* flatMap, const RK &k, std::shared_ptr<const RV> p, int64_t ts = kspp::milliseconds_since_epoch()){
   auto kr = std::make_shared<kspp::krecord<RK, RV >>(k, p, ts);
-  fm->push_back(kr);
+  flatMap->push_back(kr);
 }
 
 template<class SK, class SV, class RK, class RV>
-void insert(kspp::flat_map<SK, SV, RK, RV>* fm, const RK &k, std::shared_ptr<RV> p, int64_t ts = kspp::milliseconds_since_epoch()){
+void insert(kspp::flat_map<SK, SV, RK, RV>* flatMap, const RK &k, std::shared_ptr<RV> p, int64_t ts = kspp::milliseconds_since_epoch()){
   auto kr = std::make_shared<kspp::krecord<RK, RV >>(k, p, ts);
-  fm->push_back(kr);
+  flatMap->push_back(kr);
 }
 
 template<class SK, class SV, class RK, class RV>
-void erase(kspp::flat_map<SK, SV, RK, RV>* fm, const RK &k, int64_t ts = kspp::milliseconds_since_epoch()){
+void erase(kspp::flat_map<SK, SV, RK, RV>* flatMap, const RK &k, int64_t ts = kspp::milliseconds_since_epoch()){
   auto kr = std::make_shared<kspp::krecord<RK, RV >>(k, nullptr, ts);
-  fm->push_back(kr);
+  flatMap->push_back(kr);
 }
 
 template<class SK, class SV, class RK>
-void insert(kspp::flat_map<SK, SV, RK, void>* fm, const RK &k, int64_t ts = kspp::milliseconds_since_epoch()){
+void insert(kspp::flat_map<SK, SV, RK, void>* flatMap, const RK &k, int64_t ts = kspp::milliseconds_since_epoch()){
   auto kr = std::make_shared<kspp::krecord<RK, void>>(k, ts);
-  fm->push_back(kr);
+  flatMap->push_back(kr);
 }
 
 template<class SK, class SV, class RV>
-void insert(kspp::flat_map<SK, SV, void, RV>* fm, const RV &v, int64_t ts = kspp::milliseconds_since_epoch()){
+void insert(kspp::flat_map<SK, SV, void, RV>* flatMap, const RV &v, int64_t ts = kspp::milliseconds_since_epoch()){
   auto kr = std::make_shared<kspp::krecord<void, RV >>(v, ts);
-  fm->push_back(kr);
+  flatMap->push_back(kr);
 }
 
 template<class SK, class SV, class RV>
-void insert(kspp::flat_map<SK, SV, void, RV>* fm, std::shared_ptr<const RV> p, int64_t ts = kspp::milliseconds_since_epoch()){
+void insert(kspp::flat_map<SK, SV, void, RV>* flatMap, std::shared_ptr<const RV> p, int64_t ts = kspp::milliseconds_since_epoch()){
   auto kr = std::make_shared<kspp::krecord<void, RV >>(p, ts);
-  fm->push_back(kr);
+  flatMap->push_back(kr);
 }
 
