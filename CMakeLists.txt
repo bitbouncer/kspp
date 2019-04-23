@@ -1,7 +1,8 @@
-cmake_minimum_required(VERSION 2.8.11)
+cmake_minimum_required(VERSION 3.5)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
+option(ENABLE_BITBOUNCER_STREAMING "enable bitbouncer streaming support" ON)
 option(ENABLE_ROCKSDB "enable rocksdb support" ON)
 option(ENABLE_ZK "enable zk support" OFF)
 option(ENABLE_POSTGRES "enable postgres support" ON)
@@ -81,6 +82,47 @@ if (ENABLE_ZK)
     add_library(csi-zk STATIC ${zk_lib_files})
     SET(LIBZK_LIBS csi-zk)
 endif () #ZK
+
+
+
+if (ENABLE_BITBOUNCER_STREAMING)
+    find_package(Protobuf REQUIRED)
+    message(STATUS "Using protobuf ${protobuf_VERSION}")
+    find_package(GRPC REQUIRED)
+
+    SET(PROTOS ./proto/bitbouncer_streaming.proto)
+    set(PROTO_SRC_DIR ${CMAKE_CURRENT_BINARY_DIR})
+
+    PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${PROTOS})
+
+    # Print path to generated files
+    message ("PROTO_SRCS = ${PROTO_SRCS}")
+    message ("PROTO_HDRS = ${PROTO_HDRS}")
+
+    grpc_generate_cpp(GRPC_SRCS GRPC_HDRS ${PROTO_SRC_DIR} ${PROTOS})
+    message ("GRPC_SRCS = ${GRPC_SRCS}")
+    message ("GRPC_HDRS = ${GRPC_HDRS}")
+
+    if (BUILD_STATIC_LIBS)
+        ADD_LIBRARY(kspp_grpc_s STATIC ${PROTO_SRCS}  ${GRPC_SRCS})
+        INSTALL(TARGETS kspp_grpc_s
+                LIBRARY DESTINATION lib
+                ARCHIVE DESTINATION lib
+                )
+    endif ()
+
+    if (BUILD_SHARED_LIBS)
+        ADD_LIBRARY(kspp_grpc SHARED ${PROTO_SRCS}  ${GRPC_SRCS})
+        INSTALL(TARGETS kspp_grpc
+                LIBRARY DESTINATION lib
+                ARCHIVE DESTINATION lib
+                )
+    endif ()
+
+    SET(BBSTREAMING_LIBS_STATIC kspp_grpc_s gRPC::grpc++_reflection gRPC::grpc++  gRPC::grpc protobuf::libprotobuf)
+    SET(BBSTREAMING_LIBS_SHARED kspp_grpc gRPC::grpc++_reflection gRPC::grpc++  gRPC::grpc protobuf::libprotobuf)
+
+endif () #ENABLE_BITBOUNCER_STREAMING
 
 
 SET(LIBRDKAFKA_LIBS rdkafka++ rdkafka)

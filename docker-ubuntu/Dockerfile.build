@@ -9,6 +9,7 @@ COPY include     include
 COPY src         src
 COPY tests       tests
 COPY tools       tools
+COPY proto       proto
 
 COPY avrogen.sh        .
 COPY CMakeLists.txt    .

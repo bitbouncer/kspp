@@ -7,10 +7,10 @@ MAINTAINER sk svante.karlsson@csi.se
 COPY cmake 	 cmake
 COPY examples    examples
 COPY include     include
-COPY schemas 	 schemas
 COPY src         src
 COPY tests       tests
 COPY tools       tools
+COPY proto       proto
 
 COPY avrogen.sh        .
 COPY CMakeLists.txt    .
