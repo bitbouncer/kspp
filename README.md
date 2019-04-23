@@ -8,12 +8,16 @@ A high performance / realtime C++ (14) Kafka stream-processing framework based o
 Sources:
 - kafka
 - postgres
-- ms sqlserver
+- microsoft sqlserver
+- memory stream
  
 Sinks:
 - kafka
 - postgres
-- influxdb  
+- influxdb
+- elastic search
+- avro files
+- memory stream
 
 Statestores:
 - rocksdb
