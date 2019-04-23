@@ -194,15 +194,16 @@ namespace kspp {
   };
 
   //EXTENSIONS
+  /*
   template<class K, class V>
   inline void
-  produce(kspp::event_consumer<K, V>& dst, std::shared_ptr<const krecord<K, V>> r, std::function<void(int64_t offset, int32_t ec)> callback) {
+  produce2(kspp::event_consumer<K, V>& dst, std::shared_ptr<const krecord<K, V>> r, std::function<void(int64_t offset, int32_t ec)> callback) {
     auto am = std::make_shared<commit_chain::autocommit_marker>(callback);
     dst.push_back(std::make_shared<kevent<K, V>>(r, am));
   }
 
   template<class K, class V>
-  inline void produce(kspp::event_consumer<K, V>& dst, uint32_t partition_hash, std::shared_ptr<const krecord<K, V>> r,
+  inline void produce2(kspp::event_consumer<K, V>& dst, uint32_t partition_hash, std::shared_ptr<const krecord<K, V>> r,
                       std::function<void(int64_t offset, int32_t ec)> callback) {
     auto am = std::make_shared<commit_chain::autocommit_marker>(callback);
     dst.push_back(std::make_shared<kevent<K, V>>(r, am, partition_hash));
@@ -210,26 +211,75 @@ namespace kspp {
 
   template<class K, class V>
   inline void
-  produce(kspp::event_consumer<K, V>& dst, const K &key, const V &value, int64_t ts, std::function<void(int64_t offset, int32_t ec)> callback) {
-    produce(dst, std::make_shared<const krecord<K, V>>(key, value, ts), callback);
+  produce2(kspp::event_consumer<K, V>& dst, const K &key, const V &value, int64_t ts, std::function<void(int64_t offset, int32_t ec)> callback) {
+    produce2(dst, std::make_shared<const krecord<K, V>>(key, value, ts), callback);
   }
 
   template<class V>
   inline void
-  produce(kspp::event_consumer<void, V>& dst, const V &value, int64_t ts, std::function<void(int64_t offset, int32_t ec)> callback) {
-    produce(dst, std::make_shared<const krecord<void, V>>(value, ts), callback);
+  produce2(kspp::event_consumer<void, V>& dst, const V &value, int64_t ts, std::function<void(int64_t offset, int32_t ec)> callback) {
+    produce2(dst, std::make_shared<const krecord<void, V>>(value, ts), callback);
   }
 
   template<class K>
   inline void
-  produce(kspp::event_consumer<K, void>& dst, const K &key, int64_t ts, std::function<void(int64_t offset, int32_t ec)> callback) {
-    produce(dst, std::make_shared<const krecord<K, void>>(key, ts), callback);
+  produce2(kspp::event_consumer<K, void>& dst, const K &key, int64_t ts, std::function<void(int64_t offset, int32_t ec)> callback) {
+    produce2(dst, std::make_shared<const krecord<K, void>>(key, ts), callback);
   }
 
   template<class K, class V>
   inline void
-  produce(kspp::event_consumer<K, V>& dst, uint32_t partition_hash, const K &key, const V &value, int64_t ts,
+  produce2(kspp::event_consumer<K, V>& dst, uint32_t partition_hash, const K &key, const V &value, int64_t ts,
           std::function<void(int64_t offset, int32_t ec)> callback) {
-    produce(dst, partition_hash, std::make_shared<const krecord<K, V>>(key, value, ts), callback);
+    produce2(dst, partition_hash, std::make_shared<const krecord<K, V>>(key, value, ts), callback);
   }
+  */
+}
+
+template<class K, class V>
+void insert(kspp::event_consumer<K, V>& eventConsumer, const kspp::krecord<K, V >& r){
+  auto kr = std::make_shared<kspp::krecord<K, V >>(r);
+  eventConsumer.push_back(kr);
+}
+
+template<class K, class V>
+void insert(kspp::event_consumer<K, V>& eventConsumer, const K &k, const V &v, int64_t ts = kspp::milliseconds_since_epoch()){
+  auto kr = std::make_shared<kspp::krecord<K, V >>(k, v, ts);
+  eventConsumer.push_back(kr);
+}
+
+template<class K, class V>
+void insert(kspp::event_consumer<K, V>& eventConsumer, const K &k, std::shared_ptr<const V> p, int64_t ts = kspp::milliseconds_since_epoch()){
+  auto kr = std::make_shared<kspp::krecord<K, V >>(k, p, ts);
+  eventConsumer.push_back(kr);
+}
+
+template<class K, class V>
+void insert(kspp::event_consumer<K, V>& eventConsumer, const K &k, std::shared_ptr<V> p, int64_t ts = kspp::milliseconds_since_epoch()){
+  auto kr = std::make_shared<kspp::krecord<K, V >>(k, p, ts);
+  eventConsumer.push_back(kr);
+}
+
+template<class K, class V>
+void erase(kspp::event_consumer<K, V>& eventConsumer, const K &k, int64_t ts = kspp::milliseconds_since_epoch()){
+  auto kr = std::make_shared<kspp::krecord<K, V >>(k, nullptr, ts);
+  eventConsumer.push_back(kr);
+}
+
+template<class K>
+void insert(kspp::event_consumer<K, void>& eventConsumer, const K &k, int64_t ts = kspp::milliseconds_since_epoch()){
+  auto kr = std::make_shared<kspp::krecord<K, void>>(k, ts);
+  eventConsumer.push_back(kr);
+}
+
+template<class V>
+void insert(kspp::event_consumer<void, V>& eventConsumer, const V &v, int64_t ts = kspp::milliseconds_since_epoch()){
+  auto kr = std::make_shared<kspp::krecord<void, V >>(v, ts);
+  eventConsumer.push_back(kr);
+}
+
+template<class V>
+void insert(kspp::event_consumer<void, V>& eventConsumer, std::shared_ptr<const V> p, int64_t ts = kspp::milliseconds_since_epoch()){
+  auto kr = std::make_shared<kspp::krecord<void, V >>(p, ts);
+  eventConsumer.push_back(kr);
 }

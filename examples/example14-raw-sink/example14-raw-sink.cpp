@@ -35,15 +35,8 @@ int main(int argc, char **argv) {
 
   std::cerr << "creating " << avro_stream->log_name() << std::endl;
   for (int64_t update_nr = 0; update_nr != 10; ++update_nr) {
-    for (auto &i : ids) {
-
-      kspp::produce(*avro_stream, i, update_nr, kspp::milliseconds_since_epoch(), [](int64_t offset, int32_t ec) {
-        if (ec)
-          LOG(ERROR) << "produce failed ec:" << ec;
-        else
-          LOG(INFO) << "produce done - data in kafka @offset: " << offset;
-      });
-    }
+    for (auto &i : ids)
+      insert(*avro_stream, i, update_nr);
   }
 
   avro_stream->flush();
