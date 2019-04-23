@@ -19,3 +19,9 @@ ENDIF()
 IF (ENABLE_ROCKSDB)
 add_subdirectory(kafka2rocksdb)
 ENDIF()
+
+if (ENABLE_BITBOUNCER_STREAMING)
+add_subdirectory(bitbouncer)
+ENDIF()
+
+

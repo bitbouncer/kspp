@@ -84,47 +84,6 @@ if (ENABLE_ZK)
 endif () #ZK
 
 
-
-if (ENABLE_BITBOUNCER_STREAMING)
-    find_package(Protobuf REQUIRED)
-    message(STATUS "Using protobuf ${protobuf_VERSION}")
-    find_package(GRPC REQUIRED)
-
-    SET(PROTOS ./proto/bitbouncer_streaming.proto)
-    set(PROTO_SRC_DIR ${CMAKE_CURRENT_BINARY_DIR})
-
-    PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${PROTOS})
-
-    # Print path to generated files
-    message ("PROTO_SRCS = ${PROTO_SRCS}")
-    message ("PROTO_HDRS = ${PROTO_HDRS}")
-
-    grpc_generate_cpp(GRPC_SRCS GRPC_HDRS ${PROTO_SRC_DIR} ${PROTOS})
-    message ("GRPC_SRCS = ${GRPC_SRCS}")
-    message ("GRPC_HDRS = ${GRPC_HDRS}")
-
-    if (BUILD_STATIC_LIBS)
-        ADD_LIBRARY(kspp_grpc_s STATIC ${PROTO_SRCS}  ${GRPC_SRCS})
-        INSTALL(TARGETS kspp_grpc_s
-                LIBRARY DESTINATION lib
-                ARCHIVE DESTINATION lib
-                )
-    endif ()
-
-    if (BUILD_SHARED_LIBS)
-        ADD_LIBRARY(kspp_grpc SHARED ${PROTO_SRCS}  ${GRPC_SRCS})
-        INSTALL(TARGETS kspp_grpc
-                LIBRARY DESTINATION lib
-                ARCHIVE DESTINATION lib
-                )
-    endif ()
-
-    SET(BBSTREAMING_LIBS_STATIC kspp_grpc_s gRPC::grpc++_reflection gRPC::grpc++  gRPC::grpc protobuf::libprotobuf)
-    SET(BBSTREAMING_LIBS_SHARED kspp_grpc gRPC::grpc++_reflection gRPC::grpc++  gRPC::grpc protobuf::libprotobuf)
-
-endif () #ENABLE_BITBOUNCER_STREAMING
-
-
 SET(LIBRDKAFKA_LIBS rdkafka++ rdkafka)
 SET(PROMETHEUS_CPP_LIBS prometheus-cpp-core prometheus-cpp-pull prometheus-cpp-push)
 
@@ -308,6 +267,70 @@ IF (ENABLE_INFLUXDB)
                 )
     endif ()
 ENDIF ()
+
+
+if (ENABLE_BITBOUNCER_STREAMING)
+    find_package(Protobuf REQUIRED)
+    message(STATUS "Using protobuf ${protobuf_VERSION}")
+    find_package(GRPC REQUIRED)
+
+    SET(PROTOS ./proto/bitbouncer_streaming.proto)
+    set(PROTO_SRC_DIR ${CMAKE_CURRENT_BINARY_DIR})
+
+    PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${PROTOS})
+
+    # Print path to generated files
+    message ("PROTO_SRCS = ${PROTO_SRCS}")
+    message ("PROTO_HDRS = ${PROTO_HDRS}")
+
+    grpc_generate_cpp(GRPC_SRCS GRPC_HDRS ${PROTO_SRC_DIR} ${PROTOS})
+    message ("GRPC_SRCS = ${GRPC_SRCS}")
+    message ("GRPC_HDRS = ${GRPC_HDRS}")
+
+    if (BUILD_STATIC_LIBS)
+        ADD_LIBRARY(kspp_grpc_s STATIC ${PROTO_SRCS}  ${GRPC_SRCS})
+        INSTALL(TARGETS kspp_grpc_s
+                LIBRARY DESTINATION lib
+                ARCHIVE DESTINATION lib
+                )
+    endif ()
+
+    if (BUILD_SHARED_LIBS)
+        ADD_LIBRARY(kspp_grpc SHARED ${PROTO_SRCS}  ${GRPC_SRCS})
+        INSTALL(TARGETS kspp_grpc
+                LIBRARY DESTINATION lib
+                ARCHIVE DESTINATION lib
+                )
+    endif ()
+
+    file(GLOB BITBOUNCER_LIB_SRCS
+            include/connect/bitbouncer/*.h
+            src/connect/bitbouncer/*.cpp)
+
+    if (BUILD_STATIC_LIBS)
+        ADD_LIBRARY(kspp_bitbouncer_s STATIC ${BITBOUNCER_LIB_SRCS})
+        INSTALL(TARGETS kspp_bitbouncer_s
+                LIBRARY DESTINATION lib
+                ARCHIVE DESTINATION lib
+                )
+    endif ()
+
+    if (BUILD_SHARED_LIBS)
+        ADD_LIBRARY(kspp_bitbouncer SHARED ${BITBOUNCER_LIB_SRCS})
+        INSTALL(TARGETS kspp_bitbouncer
+                LIBRARY DESTINATION lib
+                ARCHIVE DESTINATION lib
+                )
+    endif ()
+
+    SET(BBSTREAMING_LIBS_STATIC kspp_bitbouncer_s kspp_grpc_s gRPC::grpc++_reflection gRPC::grpc++  gRPC::grpc protobuf::libprotobuf)
+    SET(BBSTREAMING_LIBS_SHARED kspp_bitbouncer kspp_grpc gRPC::grpc++_reflection gRPC::grpc++  gRPC::grpc protobuf::libprotobuf)
+
+endif () #ENABLE_BITBOUNCER_STREAMING
+
+
+
+
 
 
 INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/include/ DESTINATION include)
