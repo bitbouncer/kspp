@@ -13,7 +13,7 @@ namespace kspp {
 
     void close();
 
-    std::unique_ptr<RdKafka::Message> consume();
+    std::unique_ptr<RdKafka::Message> consume(int librdkafka_timeout=0);
 
     inline bool eof() const {
       return _eof;

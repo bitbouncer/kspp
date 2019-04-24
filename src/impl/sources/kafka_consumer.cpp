@@ -188,7 +188,7 @@ namespace kspp {
     return 0;
   }
 
-  std::unique_ptr<RdKafka::Message> kafka_consumer::consume() {
+  std::unique_ptr<RdKafka::Message> kafka_consumer::consume(int librdkafka_timeout) {
     if (_closed || _consumer == nullptr) {
       LOG(ERROR) << "topic:" << _topic << ":" << _partition << ", consume failed: closed()";
       return nullptr; // already closed

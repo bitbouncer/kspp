@@ -168,15 +168,6 @@ namespace kspp {
 
           _next_offset = reply.offset(); // TODO this will reconsume last read offset on disconnect but do we know what happens if we ask for an offert that does not yet exists?
 
-
-          if (reply.key_schema()==0)
-            LOG(INFO) << "opps";
-
-
-          int64_t vs = reply.value().size();
-          if (reply.value_schema()==0)
-            LOG(INFO) << "opps";
-
           K key;
           std::shared_ptr<V> val;
           size_t r0 = _serdes->decode(reply.key_schema(), reply.key().data(), reply.key().size(), key);
