@@ -9,12 +9,13 @@ template<class K, class V>
 class grpc_db_streamer{
 public:
   typedef std::function<void(const kspp::krecord <K, V>& record)> extractor;
-  grpc_db_streamer(std::shared_ptr<kspp::cluster_config> config, std::string offset_storage, std::string uri, std::string api_key, std::string topic, extractor f)
+  grpc_db_streamer(std::shared_ptr<kspp::cluster_config> config, std::string offset_storage, std::string uri, std::string api_key, std::string secret_access_key, std::string topic, extractor f)
       : _config(config)
       ,_offset_storage(offset_storage)
       , _builder(config)
       , _uri(uri)
       , _api_key(api_key)
+      , _secret_access_key(secret_access_key)
       , _topic(topic)
       , _f(f)
       , _connected(false)
@@ -49,7 +50,7 @@ private:
     auto channel_creds = grpc::SslCredentials(grpc::SslCredentialsOptions());
     _channel = grpc::CreateCustomChannel(_uri, channel_creds, channelArgs);
     _main = _builder.create_topology();
-    _main_source = _main->create_processor<kspp::grpc_streaming_source<K, V>>(0, _topic, _offset_storage, _channel, _api_key);
+    _main_source = _main->create_processor<kspp::grpc_streaming_source<K, V>>(0, _topic, _offset_storage, _channel, _api_key, _secret_access_key);
     _main->create_processor<kspp::visitor<K, V>>(_main_source, [&](const auto &in) {
       _f(in);
     });
@@ -62,6 +63,7 @@ private:
   kspp::topology_builder _builder;
   std::string _uri;
   std::string _api_key;
+  std::string _secret_access_key;
   std::string _topic;
   extractor _f;
   bool _connected;

@@ -27,10 +27,9 @@ int main(int argc, char** argv) {
   desc.add_options()
       ("help", "produce help message")
       ("src_uri", boost::program_options::value<std::string>()->default_value(get_env_and_log("SRC_URI", DEFAULT_SRC_URI)), "src_uri")
-      ("api_key", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("API_KEY", "")), "api_key")
-      ("api_secret", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("API_SECRET", "")), "api_secret")
+      ("bb_api_key", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("BB_API_KEY", "")), "bb_api_key")
+      ("bb_secret_access_key", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("BB_SECRET_ACCESS_KEY", "")), "bb_secret_access_key")
       ("topic", boost::program_options::value<std::string>()->default_value("logs"), "topic")
-      ("partition_list", boost::program_options::value<std::string>()->default_value("[-1]"), "partition_list")
       ("offset_storage", boost::program_options::value<std::string>(), "offset_storage")
       ("oneshot", "run to eof and exit")
       ;
@@ -56,12 +55,19 @@ int main(int argc, char** argv) {
     return -1;
   }
 
-  std::string api_key;
-  if (vm.count("api_key")) {
-    api_key = vm["api_key"].as<std::string>();
-  } else {
-    std::cerr << "--api_key must specified" << std::endl;
+  std::string bb_api_key;
+  if (vm.count("bb_api_key")) {
+    bb_api_key = vm["bb_api_key"].as<std::string>();
+  }
+
+  if (bb_api_key.size()==0){
+    std::cerr << "--bb_api_key must be defined" << std::endl;
     return -1;
+  }
+
+  std::string bb_secret_access_key;
+  if (vm.count("bb_secret_access_key")) {
+    bb_secret_access_key = vm["bb_secret_access_key"].as<std::string>();
   }
 
   std::string offset_storage;
@@ -76,29 +82,19 @@ int main(int argc, char** argv) {
     topic = vm["topic"].as<std::string>();
   }
 
-  std::vector<int> partition_list;
-  if (vm.count("partition_list")) {
-    auto s = vm["partition_list"].as<std::string>();
-    partition_list = kspp::parse_partition_list(s);
-  }
-
   bool oneshot=false;
   if (vm.count("oneshot"))
     oneshot=true;
 
-  LOG(INFO) << "src_uri          : " << src_uri;
-  LOG(INFO) << "api_key          : [hidden]";
-  LOG(INFO) << "offset_storage   : " << offset_storage;
-  LOG(INFO) << "topic            : " << topic;
+  LOG(INFO) << "src_uri                : " << src_uri;
+  LOG(INFO) << "bb_api_key             : " << bb_api_key;
+  if (bb_secret_access_key.size()>0)
+    LOG(INFO) << "bb_secret_access_key   : " << "[hidden]";
+  LOG(INFO) << "offset_storage         : " << offset_storage;
+  LOG(INFO) << "topic                  : " << topic;
   LOG(INFO) << "discovering facts...";
   if (oneshot)
     LOG(INFO) << "oneshot          : TRUE";
-
-
-  //auto nr_of_partitions = kspp::kafka::get_number_partitions(config, src_topic);
-  //if (partition_list.size() == 0 || partition_list[0] == -1)
-  //  partition_list = kspp::get_partition_list(nr_of_partitions);
-  //LOG(INFO) << "partition_list   : " << kspp::partition_list_to_string(partition_list);
 
   kspp::topology_builder generic_builder(config);
 
@@ -109,7 +105,6 @@ int main(int argc, char** argv) {
   channelArgs.SetInt(GRPC_ARG_HTTP2_MIN_SENT_PING_INTERVAL_WITHOUT_DATA_MS, 10000);
   channelArgs.SetInt(GRPC_ARG_HTTP2_MAX_PINGS_WITHOUT_DATA, 0);
 
-
   auto channel_creds = grpc::SslCredentials(grpc::SslCredentialsOptions());
   auto channel = grpc::CreateCustomChannel(src_uri, channel_creds, channelArgs);
 
@@ -118,7 +113,7 @@ int main(int argc, char** argv) {
   //auto channel = grpc::CreateCustomChannel(src_uri, grpc::InsecureChannelCredentials(), channelArgs);
 
   auto live = generic_builder.create_topology();
-  auto source = live->create_processor<kspp::grpc_streaming_source<kspp::generic_avro, kspp::generic_avro>>(0, topic, offset_storage, channel, api_key);
+  auto source = live->create_processor<kspp::grpc_streaming_source<kspp::generic_avro, kspp::generic_avro>>(0, topic, offset_storage, channel, bb_api_key, bb_secret_access_key);
   live->create_processor<kspp::visitor<kspp::generic_avro,kspp::generic_avro>>(source, [](auto ev){
     if (ev.value())
       std::cout << to_json(*ev.value()) << std::endl;

@@ -20,23 +20,19 @@ namespace kspp {
                        std::string consumer_group,
                        std::string offset_storage_path,
                        std::shared_ptr<grpc::Channel> streaming_channel,
-                       std::string api_key)
-        :  _exit(false)
-        , _start_running(false)
-        , _offset_storage_path(offset_storage_path)
-        , _good(true)
-        , _eof(false)
-        , _closed(false)
+                       std::string api_key,
+                       std::string secret_access_key)
+        : _offset_storage_path(offset_storage_path)
         , _topic_name(topic_name)
         , _partition(partition)
         , _consumer_group(consumer_group)
         , _commit_chain(topic_name, partition)
         , _bg([this](){_thread();})
-        , _msg_cnt(0)
         , _resolver(std::make_shared<grpc_avro_schema_resolver>(streaming_channel, api_key))
         , _serdes(std::make_unique<kspp::grpc_avro_serdes>(_resolver))
-        , stub_(ksppstreaming::streamprovider::NewStub(streaming_channel))
+        , _stub(ksppstreaming::streamprovider::NewStub(streaming_channel))
         , _api_key(api_key)
+        , _secret_access_key(secret_access_key)
         , _log_name(consumer_group + "::" + topic_name + ":" + std::to_string(partition)){
       if (_offset_storage_path.size()){
         boost::filesystem::create_directories(boost::filesystem::path(_offset_storage_path).parent_path());
@@ -151,7 +147,7 @@ namespace kspp {
       request.set_partition(_partition);
       request.set_offset(_start_offset);
 
-      std::shared_ptr<grpc::ClientReader<ksppstreaming::SubscriptionData> > stream(stub_->Subscribe(&context, request));
+      std::shared_ptr<grpc::ClientReader<ksppstreaming::SubscriptionData> > stream(_stub->Subscribe(&context, request));
       ksppstreaming::SubscriptionData reply;
       while (!_exit && stream->Read(&reply)) {
         // empty message - read again
@@ -192,11 +188,11 @@ namespace kspp {
       LOG(INFO) << "exiting thread";
     }
 
-    volatile bool _exit;
-    volatile bool _start_running;
-    volatile bool _good;
-    volatile bool _eof;
-    bool _closed;
+    volatile bool _exit=false;
+    volatile bool _start_running=false;
+    volatile bool _good=true;
+    volatile bool _eof=false;
+    bool _closed=false;
 
     std::thread _bg;
     const std::string _topic_name;
@@ -204,16 +200,17 @@ namespace kspp {
     const std::string _consumer_group;
     const std::string _log_name;
 
-    int64_t _start_offset;
+    int64_t _start_offset = kspp::OFFSET_BEGINNING;
     boost::filesystem::path _offset_storage_path;
     commit_chain _commit_chain;
     int64_t _last_commited_ts_ticks=0;
     int64_t _last_flushed_ticks=0;
     event_queue<K, V> _incomming_msg;
-    uint64_t _msg_cnt;
+    uint64_t _msg_cnt=0;
     std::shared_ptr<grpc_avro_schema_resolver> _resolver;
-    std::unique_ptr<ksppstreaming::streamprovider::Stub> stub_;
+    std::unique_ptr<ksppstreaming::streamprovider::Stub> _stub;
     std::string _api_key;
+    std::string _secret_access_key;
     std::unique_ptr<grpc_avro_serdes> _serdes;
   };
 }

@@ -17,9 +17,10 @@ namespace kspp {
                           std::string topic,
                           std::string offset_storage_path,
                           std::shared_ptr<grpc::Channel> streaming_channel,
-                          std::string api_key)
+                          std::string api_key,
+                          std::string secret_access_key)
         : partition_source<K, V>(nullptr, partition)
-        , _impl(partition, topic, config->get_consumer_group(), offset_storage_path, streaming_channel, api_key) {
+        , _impl(partition, topic, config->get_consumer_group(), offset_storage_path, streaming_channel, api_key, secret_access_key) {
     }
 
     virtual ~grpc_streaming_source() {

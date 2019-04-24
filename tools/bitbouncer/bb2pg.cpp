@@ -27,8 +27,8 @@ int main(int argc, char** argv) {
   desc.add_options()
       ("help", "produce help message")
       ("src_uri", boost::program_options::value<std::string>()->default_value(get_env_and_log("SRC_URI", DEFAULT_SRC_URI)), "src_uri")
-      ("api_key", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("API_KEY", "")), "api_key")
-      ("api_secret", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("API_SECRET", "")), "api_secret")
+      ("bb_api_key", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("BB_API_KEY", "")), "bb_api_key")
+      ("bb_secret_access_key", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("BB_SECRET_ACCESS_KEY", "")), "bb_secret_access_key")
       ("topic", boost::program_options::value<std::string>()->default_value("logs"), "topic")
       ("offset_storage", boost::program_options::value<std::string>(), "offset_storage")
       ("start_offset", boost::program_options::value<std::string>()->default_value("OFFSET_BEGINNING"), "start_offset")
@@ -70,13 +70,22 @@ int main(int argc, char** argv) {
     return -1;
   }
 
-  std::string api_key;
-  if (vm.count("api_key")) {
-    api_key = vm["api_key"].as<std::string>();
-  } else {
-    std::cerr << "--api_key must specified" << std::endl;
+  std::string bb_api_key;
+  if (vm.count("bb_api_key")) {
+    bb_api_key = vm["bb_api_key"].as<std::string>();
+  }
+
+  if (bb_api_key.size()==0){
+    std::cerr << "--bb_api_key must be defined" << std::endl;
     return -1;
   }
+
+  std::string bb_secret_access_key;
+  if (vm.count("bb_secret_access_key")) {
+    bb_secret_access_key = vm["bb_secret_access_key"].as<std::string>();
+  }
+
+
 
   std::string offset_storage;
   if (vm.count("offset_storage")) {
@@ -195,7 +204,9 @@ int main(int argc, char** argv) {
     oneshot=true;
 
   LOG(INFO) << "src_uri                      : " << src_uri;
-  LOG(INFO) << "api_key                      : [hidden]";
+  LOG(INFO) << "bb_api_key                   : " << bb_api_key;
+  if (bb_secret_access_key.size()>0)
+    LOG(INFO) << "bb_secret_access_key         : [hidden]";
   LOG(INFO) << "offset_storage               : " << offset_storage;
   LOG(INFO) << "topic                        : " << topic;
   LOG(INFO) << "start_offset                 : " << kspp::to_string(start_offset);
@@ -220,8 +231,6 @@ int main(int argc, char** argv) {
   connection_params.user = postgres_user;
   connection_params.password = postgres_password;
   connection_params.database_name = postgres_dbname;
-
-
 
   LOG(INFO) << "discovering facts...";
   if (oneshot)
@@ -248,7 +257,7 @@ int main(int argc, char** argv) {
 
   t->start(kspp::OFFSET_END); // does not matter since this is in memeory an we control starting point with the source
 
-  grpc_db_streamer<kspp::generic_avro,kspp::generic_avro> streamer(config, offset_storage, src_uri, api_key, topic, [stream](const auto &in){
+  grpc_db_streamer<kspp::generic_avro,kspp::generic_avro> streamer(config, offset_storage, src_uri, bb_api_key, bb_secret_access_key, topic, [stream](const auto &in){
     insert(*stream, in);
   });
 
