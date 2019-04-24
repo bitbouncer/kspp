@@ -4,9 +4,10 @@
 #include <kspp/utils/env.h>
 #include <kspp/processors/generic_stream.h>
 #include <kspp/processors/visitor.h>
+#include <kspp/connect/bitbouncer/grpc_avro_source.h>
 #include <kspp/connect/postgres/postgres_generic_avro_sink.h>
 #include <kspp/topology_builder.h>
-#include "grpc_db_streamer.h"
+//#include "grpc_db_streamer.h"
 
 #define SERVICE_NAME     "bb2pg"
 #define DEFAULT_SRC_URI  "lb.bitbouncer.com:10063"
@@ -240,7 +241,7 @@ int main(int argc, char** argv) {
   grpc::ChannelArguments channelArgs;
 
   auto t = builder.create_topology();
-  auto stream = t->create_processor<kspp::generic_stream<kspp::generic_avro,kspp::generic_avro>>(0);
+  auto stream = t->create_processor<kspp::grpc_avro_source<kspp::generic_avro,kspp::generic_avro>>(0, topic, offset_storage, src_uri, bb_api_key, bb_secret_access_key);
   auto sink = t->create_sink<kspp::postgres_generic_avro_sink>(stream, postgres_tablename, connection_params, id_column, character_encoding, postgres_max_items_in_insert, postgres_disable_delete);
 
   std::map<std::string, std::string> labels = {
@@ -254,12 +255,7 @@ int main(int argc, char** argv) {
   };
 
   t->add_labels(labels);
-
-  t->start(kspp::OFFSET_END); // does not matter since this is in memeory an we control starting point with the source
-
-  grpc_db_streamer<kspp::generic_avro,kspp::generic_avro> streamer(config, offset_storage, src_uri, bb_api_key, bb_secret_access_key, topic, [stream](const auto &in){
-    insert(*stream, in);
-  });
+  t->start(start_offset);
 
   std::signal(SIGINT, sigterm);
   std::signal(SIGTERM, sigterm);
@@ -267,16 +263,16 @@ int main(int argc, char** argv) {
 
   while (run) {
     auto sz = t->process(kspp::milliseconds_since_epoch());
-
-    int64_t sz0 = 0;
-    if (sink->outbound_queue_len()<10000) {
-      sz0 = streamer.process();
-    }
-
-    if (sz == 0 && sz0==0) {
+    if (sz == 0) {
       std::this_thread::sleep_for(100ms);
       continue;
     }
+
+    // commit offsets
+
+
+    // send metrics
+
     }
 
   LOG(INFO) << "exiting";

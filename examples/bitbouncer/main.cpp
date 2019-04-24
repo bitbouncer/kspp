@@ -6,7 +6,7 @@
 #include <kspp/processors/visitor.h>
 #include <kspp/topology_builder.h>
 #include <kspp/processors/visitor.h>
-#include <kspp/connect/bitbouncer/grpc_streaming_source.h>
+#include <kspp/connect/bitbouncer/grpc_avro_source.h>
 
 #define SERVICE_NAME     "bb_generic_avro_console_exporter"
 #define DEFAULT_SRC_URI  "lb.bitbouncer.com:10063"
@@ -98,28 +98,14 @@ int main(int argc, char** argv) {
 
   kspp::topology_builder generic_builder(config);
 
-  grpc::ChannelArguments channelArgs;
-  channelArgs.SetInt(GRPC_ARG_KEEPALIVE_TIME_MS, 10000);
-  channelArgs.SetInt(GRPC_ARG_KEEPALIVE_TIMEOUT_MS, 10000);
-  channelArgs.SetInt(GRPC_ARG_KEEPALIVE_PERMIT_WITHOUT_CALLS, 1);
-  channelArgs.SetInt(GRPC_ARG_HTTP2_MIN_SENT_PING_INTERVAL_WITHOUT_DATA_MS, 10000);
-  channelArgs.SetInt(GRPC_ARG_HTTP2_MAX_PINGS_WITHOUT_DATA, 0);
-
-  auto channel_creds = grpc::SslCredentials(grpc::SslCredentialsOptions());
-  auto channel = grpc::CreateCustomChannel(src_uri, channel_creds, channelArgs);
-
-  //TEST code
-  //grpc::ChannelArguments args;
-  //auto channel = grpc::CreateCustomChannel(src_uri, grpc::InsecureChannelCredentials(), channelArgs);
-
   auto live = generic_builder.create_topology();
-  auto source = live->create_processor<kspp::grpc_streaming_source<kspp::generic_avro, kspp::generic_avro>>(0, topic, offset_storage, channel, bb_api_key, bb_secret_access_key);
+  auto source = live->create_processor<kspp::grpc_avro_source<kspp::generic_avro, kspp::generic_avro>>(0, topic, offset_storage, src_uri, bb_api_key, bb_secret_access_key);
   live->create_processor<kspp::visitor<kspp::generic_avro,kspp::generic_avro>>(source, [](auto ev){
     if (ev.value())
       std::cout << to_json(*ev.value()) << std::endl;
   });
 
-  live->start(kspp::OFFSET_END);
+  live->start(kspp::OFFSET_BEGINNING);
 
   std::signal(SIGINT, sigterm);
   std::signal(SIGTERM, sigterm);

@@ -9,21 +9,21 @@
 
 namespace kspp {
   template<class K, class V>
-  class grpc_streaming_source : public partition_source<K, V> {
-    static constexpr const char *PROCESSOR_NAME = "grpc_streaming_source";
+  class grpc_avro_source : public partition_source<K, V> {
+    static constexpr const char *PROCESSOR_NAME = "bb_grpc_avro_source";
   public:
-    grpc_streaming_source(std::shared_ptr<cluster_config> config,
+    grpc_avro_source(std::shared_ptr<cluster_config> config,
                           int32_t partition,
                           std::string topic,
                           std::string offset_storage_path,
-                          std::shared_ptr<grpc::Channel> streaming_channel,
+                          std::string uri,
                           std::string api_key,
                           std::string secret_access_key)
         : partition_source<K, V>(nullptr, partition)
-        , _impl(partition, topic, config->get_consumer_group(), offset_storage_path, streaming_channel, api_key, secret_access_key) {
+        , _impl(partition, topic, offset_storage_path, uri, api_key, secret_access_key) {
     }
 
-    virtual ~grpc_streaming_source() {
+    virtual ~grpc_avro_source() {
       close();
     }
 

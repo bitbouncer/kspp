@@ -9,8 +9,7 @@ namespace kspp {
   class flat_map : public event_consumer<SK, SV>, public partition_source<RK, RV> {
     static constexpr const char* PROCESSOR_NAME = "flat_map";
   public:
-    //typedef std::function<void(std::shared_ptr<const krecord <SK, SV>> record, flat_map *self)> extractor;
-    typedef std::function<void(const krecord <SK, SV>& record, flat_map *self)> extractor;
+    typedef std::function<void(const krecord <SK, SV>& record, flat_map* self)> extractor;
 
     flat_map(std::shared_ptr<cluster_config> config, std::shared_ptr<partition_source < SK, SV>> source,  extractor f)
     : event_consumer<SK, SV>()
@@ -18,7 +17,7 @@ namespace kspp {
     , _source(source)
     , _extractor(f) {
       _source->add_sink([this](auto r) { this->_queue.push_back(r); });
-      this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "flat_map");
+      this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
       this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(source->partition()));
     }
 

@@ -271,10 +271,12 @@ int main(int argc, char **argv) {
     topology->create_sink<kspp::postgres_generic_avro_sink>(transform, table_name, connection_params, id_column, character_encoding, postgres_max_items_in_insert, postgres_disable_delete);
   }
 
+  std::string hostname = default_hostname();
+
   topology->add_labels( {
                             { "app_name", SERVICE_NAME },
                             { "app_realm", app_realm },
-                            { "hostname", default_hostname() },
+                            { "hostname", hostname },
                             { "db_host", postgres_host },
                             { "dst_table", table_name }
                         });
