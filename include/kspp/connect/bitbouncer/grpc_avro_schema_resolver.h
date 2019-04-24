@@ -14,6 +14,9 @@ namespace kspp {
     }
 
     std::shared_ptr<const avro::ValidSchema> get_schema(int32_t schema_id) {
+      if (schema_id==0)
+        return nullptr;
+
       {
         kspp::spinlock::scoped_lock xxx(_spinlock);
         auto item = _cache.find(schema_id);
@@ -43,7 +46,7 @@ namespace kspp {
         }
         return schema;
       } catch (std::exception &e) {
-        LOG(ERROR) << "failed to parse schema " << e.what();
+        LOG(ERROR) << "failed to parse schema id:" << schema_id << ", " << e.what() << ", raw schema: " << reply.schema();
       }
       return nullptr;
     }

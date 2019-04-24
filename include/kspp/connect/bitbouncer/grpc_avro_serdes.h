@@ -467,7 +467,7 @@ namespace kspp {
 
   template<> inline size_t grpc_avro_serdes::decode(int schema_id, const char* payload, size_t size, kspp::generic_avro& dst) {
     // this should net be in the stream - not possible to decode
-    if (schema_id<0) {
+    if (schema_id<=0) {
       LOG(ERROR) << "schema id invalid: " <<  schema_id;
       return 0;
     }
