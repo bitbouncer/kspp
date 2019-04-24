@@ -194,7 +194,7 @@ namespace kspp {
       return nullptr; // already closed
     }
 
-    std::unique_ptr<RdKafka::Message> msg(_consumer->consume(0));
+    std::unique_ptr<RdKafka::Message> msg(_consumer->consume(librdkafka_timeout));
 
     switch (msg->err()) {
       case RdKafka::ERR_NO_ERROR:
