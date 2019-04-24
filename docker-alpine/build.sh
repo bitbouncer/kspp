@@ -27,8 +27,8 @@ docker cp $EXTRACT_CONTAINER:/usr/local/bin/kafka2postgres              ./extrac
 docker cp $EXTRACT_CONTAINER:/usr/local/bin/postgres2kafka              ./extract/bin
 docker cp $EXTRACT_CONTAINER:/usr/local/bin/tds2kafka                   ./extract/bin
 
-docker cp $EXTRACT_CONTAINER:/usr/local/bin/bb2pg                             ./extract/bin
-docker cp $EXTRACT_CONTAINER:/usr/local/bin/bb_generic_avro_console_exporter  ./extract/bin
+docker cp $EXTRACT_CONTAINER:/usr/local/bin/bb2pg                       ./extract/bin
+docker cp $EXTRACT_CONTAINER:/usr/local/bin/bb2console                  ./extract/bin
 
 docker cp $EXTRACT_CONTAINER:/src/runDeps                               ./extract/runDeps
 

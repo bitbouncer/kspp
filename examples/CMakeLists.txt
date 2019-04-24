@@ -21,9 +21,9 @@ add_subdirectory(example12-generic-avro)
 
 add_subdirectory(example14-raw-sink)
 
-if (ENABLE_BITBOUNCER_STREAMING)
-add_subdirectory(bitbouncer)
-ENDIF()
+#if (ENABLE_BITBOUNCER_STREAMING)
+#add_subdirectory(bitbouncer)
+#ENDIF()
 
 
 

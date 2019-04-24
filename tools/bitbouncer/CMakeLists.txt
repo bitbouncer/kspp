@@ -9,3 +9,14 @@ endif ()
 INSTALL(TARGETS bb2pg RUNTIME DESTINATION bin)
 
 
+add_executable(bb2console bb2console.cpp)
+
+if (LINK_SHARED)
+    target_link_libraries(bb2console ${BBSTREAMING_LIBS_SHARED} ${CSI_LIBS_SHARED})
+else ()
+    target_link_libraries(bb2console ${BBSTREAMING_LIBS_STATIC} ${CSI_LIBS_STATIC})
+endif ()
+
+INSTALL(TARGETS bb2console RUNTIME DESTINATION bin)
+
+
