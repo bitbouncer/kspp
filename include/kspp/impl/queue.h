@@ -29,6 +29,14 @@ namespace kspp {
       }
     }
 
+    inline void push_front(ITEM i) {
+      spinlock::scoped_lock xxx(_spinlock);
+      {
+        _empty = false;
+        _queue.push_front(i);
+      }
+    }
+
     inline ITEM front() {
       spinlock::scoped_lock xxx(_spinlock);
       return _queue.front();
