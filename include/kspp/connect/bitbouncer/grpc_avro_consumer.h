@@ -163,6 +163,7 @@ namespace kspp {
           // empty message - read again
           if ((reply.value().size() == 0) && reply.key().size() == 0) {
             _eof = reply.eof();
+            LOG(INFO) << "EOF";
             continue;
           }
 
@@ -180,11 +181,6 @@ namespace kspp {
             if (r1==0)
               continue;
           }
-
-          _eof = reply.eof();
-
-          if (reply.eof())
-            LOG(INFO) << "EOF";
 
           auto record = std::make_shared<krecord<K, V>>(key, val, reply.timestamp());
           // do we have one...

@@ -18,6 +18,7 @@ message SubscriptionRequest {
   string topic = 1;
   int32 partition = 2;
   int64 offset = 3;
+  int32 max_poll_time = 4;
 }
 
 // A 
