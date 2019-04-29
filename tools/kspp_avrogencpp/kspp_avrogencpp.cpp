@@ -399,7 +399,7 @@ static void generateGetterAndSetter(ostream &os,
 
   os << type << sn << "get_" << name << "() const {\n"
      << "  if (idx_ != " << idx << ") {\n"
-     << "    throw avro::Exception(\"Invalid type for "
+     << "    throw ::avro::Exception(\"Invalid type for "
      << "union\");\n"
      << "  }\n"
      << "  return boost::any_cast<" << type << " >(value_);\n"
@@ -579,7 +579,7 @@ void CodeGen::generateEnumTraits(const NodePtr &n) {
       << "	{\n"
       << "    std::ostringstream error;\n"
       << "		error << \"enum value \" << v << \" is out of bound for " << fn << " and cannot be encoded\";\n"
-      << "		throw avro::Exception(error.str());\n"
+      << "		throw ::avro::Exception(error.str());\n"
       << "  }\n"
       << "  e.encodeEnum(v);\n"
       << "  }\n"
@@ -589,7 +589,7 @@ void CodeGen::generateEnumTraits(const NodePtr &n) {
       << "	{\n"
       << "	  std::ostringstream error;\n"
       << "		error << \"enum value \" << index << \" is out of bound for " << fn << " and cannot be decoded\";\n"
-      << "		throw avro::Exception(error.str());\n"
+      << "		throw ::avro::Exception(error.str());\n"
       << "	}\n"
       << "  v = static_cast<" << fn << ">(index);\n"
       << "  }\n"
@@ -607,19 +607,19 @@ void CodeGen::generateRecordTraits(const NodePtr &n) {
       << "  static void encode(Encoder& e, const " << fn << "& v) {\n";
 
   for (size_t i = 0; i < c; ++i) {
-    os_ << "    avro::encode(e, v." << n->nameAt(i) << ");\n";
+    os_ << "    ::avro::encode(e, v." << n->nameAt(i) << ");\n";
   }
 
   os_ << "  }\n"
       << "  static void decode(Decoder& d, " << fn << "& v) {\n";
-  os_ << "    if (avro::ResolvingDecoder *rd =\n";
-  os_ << "      dynamic_cast<avro::ResolvingDecoder *>(&d)) {\n";
+  os_ << "    if (::avro::ResolvingDecoder *rd =\n";
+  os_ << "      dynamic_cast<::avro::ResolvingDecoder *>(&d)) {\n";
   os_ << "        const std::vector<size_t> fo = rd->fieldOrder();\n";
   os_ << "        for (std::vector<size_t>::const_iterator it = fo.begin(); it != fo.end(); ++it) {\n";
   os_ << "          switch (*it) {\n";
   for (size_t i = 0; i < c; ++i) {
     os_ << "          case " << i << ":\n";
-    os_ << "          avro::decode(d, v." << n->nameAt(i) << ");\n";
+    os_ << "          ::avro::decode(d, v." << n->nameAt(i) << ");\n";
     os_ << "          break;\n";
   }
   os_ << "            default:\n";
@@ -629,7 +629,7 @@ void CodeGen::generateRecordTraits(const NodePtr &n) {
   os_ << "    } else {\n";
 
   for (size_t i = 0; i < c; ++i) {
-    os_ << "      avro::decode(d, v." << n->nameAt(i) << ");\n";
+    os_ << "      ::avro::decode(d, v." << n->nameAt(i) << ");\n";
   }
   os_ << "    }\n";
 
@@ -659,7 +659,7 @@ void CodeGen::generateUnionTraits(const NodePtr &n) {
     if (nn->type() == avro::AVRO_NULL) {
       os_ << "      e.encodeNull();\n";
     } else {
-      os_ << "      avro::encode(e, v.get_" << cppNameOf(nn)
+      os_ << "      ::avro::encode(e, v.get_" << cppNameOf(nn)
           << "());\n";
     }
     os_ << "     break;\n";
@@ -669,7 +669,7 @@ void CodeGen::generateUnionTraits(const NodePtr &n) {
       << "  }\n"
       << "  static void decode(Decoder& d, " << fn << "& v) {\n"
       << "    size_t n = d.decodeUnionIndex();\n"
-      << "    if (n >= " << c << ") { throw avro::Exception(\""
+      << "    if (n >= " << c << ") { throw ::avro::Exception(\""
               "Union index too big\"); }\n"
       << "    switch (n) {\n";
 
@@ -682,7 +682,7 @@ void CodeGen::generateUnionTraits(const NodePtr &n) {
     } else {
       os_ << "      {\n"
           << "          " << cppTypeOf(nn) << " vv;\n"
-          << "          avro::decode(d, vv);\n"
+          << "          ::avro::decode(d, vv);\n"
           << "          v.set_" << cppNameOf(nn) << "(vv);\n"
           << "      }\n";
     }
