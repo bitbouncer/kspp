@@ -64,7 +64,7 @@ cd .. && \
 rm rocksdb.tar.gz && \
 rm -rf rocksdb
 
-wget -O avro.tar.gz "https://github.com/apache/avro/archive/release-1.8.2.tar.gz" && \
+wget -O avro.tar.gz "https://github.com/apache/avro/archive/release-1.9.0-rc2.tar.gz" && \
 mkdir -p avro && \
 tar \
   --extract \
