@@ -11,8 +11,6 @@ COPY src         src
 COPY tests       tests
 COPY tools       tools
 COPY proto       proto
-
-COPY avrogen.sh        .
 COPY CMakeLists.txt    .
 COPY kspp_config.h.in  .
 
