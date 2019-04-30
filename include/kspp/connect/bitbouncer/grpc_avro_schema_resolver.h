@@ -10,7 +10,7 @@ namespace kspp {
   class grpc_avro_schema_resolver {
   public:
     grpc_avro_schema_resolver(std::shared_ptr<grpc::Channel> channel, const std::string &api_key)
-        : stub_(ksppstreaming::streamprovider::NewStub(channel)), _api_key(api_key) {
+        : stub_(bitbouncer::streaming::streamprovider::NewStub(channel)), _api_key(api_key) {
     }
 
     std::shared_ptr<const avro::ValidSchema> get_schema(int32_t schema_id) {
@@ -27,9 +27,9 @@ namespace kspp {
 
       grpc::ClientContext context;
       add_api_key(context, _api_key);
-      ksppstreaming::GetSchemaRequest request;
+      bitbouncer::streaming::GetSchemaRequest request;
       request.set_schema_id(schema_id);
-      ksppstreaming::GetSchemaReply reply;
+      bitbouncer::streaming::GetSchemaReply reply;
       grpc::Status status = stub_->GetSchema(&context, request, &reply);
       if (!status.ok()) {
         LOG(ERROR) << "avro_schema_resolver rpc failed, schema id: " << schema_id;
@@ -53,7 +53,7 @@ namespace kspp {
 
   private:
     kspp::spinlock _spinlock;
-    std::unique_ptr<ksppstreaming::streamprovider::Stub> stub_;
+    std::unique_ptr<bitbouncer::streaming::streamprovider::Stub> stub_;
     std::map<int32_t, std::shared_ptr<const avro::ValidSchema>> _cache;
     std::string _api_key;
   };

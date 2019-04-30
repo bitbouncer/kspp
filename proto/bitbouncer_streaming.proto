@@ -1,19 +1,15 @@
 syntax = "proto3";
 
-option java_package = "bbstreaming.grpc";
-option objc_class_prefix = "BB";
+option java_package = "com.bitbouncer.streaming.grpc";
+option objc_class_prefix = "bitbouncer_streaming";
 
-package ksppstreaming;
+package bitbouncer.streaming;
 
-// The greeting service definition.
 service streamprovider {
-  // Sends multiple greetings
-  rpc Subscribe (SubscriptionRequest) returns (stream SubscriptionData) {}
+  rpc Subscribe (SubscriptionRequest) returns (stream SubscriptionBundle) {}
   rpc GetSchema (GetSchemaRequest) returns (GetSchemaReply) {}
 }
 
-// The request message containing the user's name and how many greetings
-// they want.
 message SubscriptionRequest {
   string topic = 1;
   int32 partition = 2;
@@ -21,7 +17,10 @@ message SubscriptionRequest {
   int32 max_poll_time = 4;
 }
 
-// A 
+message SubscriptionBundle {
+  repeated SubscriptionData data = 1;
+}
+
 message SubscriptionData {
   int32 key_schema=1;
   int32 value_schema=2;

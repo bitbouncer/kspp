@@ -148,49 +148,60 @@ namespace kspp {
 
         _resolver = std::make_shared<grpc_avro_schema_resolver>(_channel, _api_key);
         _serdes = std::make_unique<kspp::grpc_avro_serdes>(_resolver);
-        _stub = ksppstreaming::streamprovider::NewStub(_channel);
+        _stub = bitbouncer::streaming::streamprovider::NewStub(_channel);
 
         grpc::ClientContext context;
         add_api_key_secret(context, _api_key, _secret_access_key);
-        ksppstreaming::SubscriptionRequest request;
+        bitbouncer::streaming::SubscriptionRequest request;
         request.set_topic(_topic_name);
         request.set_partition(_partition);
         request.set_offset(_next_offset);
 
-        std::shared_ptr<grpc::ClientReader<ksppstreaming::SubscriptionData> > stream(_stub->Subscribe(&context, request));
-        ksppstreaming::SubscriptionData reply;
-        while (!_exit && stream->Read(&reply)) {
-          // empty message - read again
-          if ((reply.value().size() == 0) && reply.key().size() == 0) {
-            _eof = reply.eof();
-            LOG(INFO) << "EOF";
-            continue;
-          }
-
-          _next_offset = reply.offset(); // TODO this will reconsume last read offset on disconnect but do we know what happens if we ask for an offert that does not yet exists?
-
-          K key;
-          std::shared_ptr<V> val;
-          size_t r0 = _serdes->decode(reply.key_schema(), reply.key().data(), reply.key().size(), key);
-          if (r0==0)
-            continue;
-
-          if (reply.value().size()>0) {
-            val = std::make_shared<V>();
-            auto r1 = _serdes->decode(reply.value_schema(), reply.value().data(), reply.value().size(), *val);
-            if (r1==0)
-              continue;
-          }
-
-          auto record = std::make_shared<krecord<K, V>>(key, val, reply.timestamp());
-          // do we have one...
-          auto e = std::make_shared<kevent<K, V>>(record, _commit_chain.create(reply.offset()));
-          assert(e.get() != nullptr);
-          ++_msg_cnt;
-          // TODO - backpressure here... stopp reading if wueue gets to big...
-          _incomming_msg.push_back(e);
-          if (_incomming_msg.size() > 50000)
+        std::shared_ptr<grpc::ClientReader<bitbouncer::streaming::SubscriptionBundle>> stream(_stub->Subscribe(&context, request));
+        bitbouncer::streaming::SubscriptionBundle reply;
+        while (!_exit) {
+          //backpressure
+          if (_incomming_msg.size() > 50000) {
             std::this_thread::sleep_for(100ms);
+            continue;
+          }
+
+          // if read failed the stream is bad.
+          if (!stream->Read(&reply))
+            break;
+
+          size_t sz = reply.data().size();
+          for (size_t i = 0; i != sz; ++i) {
+            const auto &record = reply.data(i);
+
+            // empty message - read again
+            if ((record.value().size() == 0) && record.key().size() == 0) {
+              _eof = record.eof();
+              continue;
+            }
+
+            _next_offset = record.offset(); // TODO this will reconsume last read offset on disconnect but do we know what happens if we ask for an offert that does not yet exists?
+
+            K key;
+            std::shared_ptr<V> val;
+            size_t r0 = _serdes->decode(record.key_schema(), record.key().data(), record.key().size(), key);
+            if (r0 == 0)
+              continue;
+
+            if (record.value().size() > 0) {
+              val = std::make_shared<V>();
+              auto r1 = _serdes->decode(record.value_schema(), record.value().data(), record.value().size(), *val);
+              if (r1 == 0)
+                continue;
+            }
+
+            auto krec = std::make_shared<krecord<K, V>>(key, val, record.timestamp());
+            // do we have one...
+            auto e = std::make_shared<kevent<K, V>>(krec, _commit_chain.create(record.offset()));
+            assert(e.get() != nullptr);
+            ++_msg_cnt;
+            _incomming_msg.push_back(e);
+          }
         }
 
         if (!_exit) {
@@ -225,7 +236,7 @@ namespace kspp {
     uint64_t _msg_cnt=0;
     std::shared_ptr<grpc::Channel> _channel;
     std::shared_ptr<grpc_avro_schema_resolver> _resolver;
-    std::unique_ptr<ksppstreaming::streamprovider::Stub> _stub;
+    std::unique_ptr<bitbouncer::streaming::streamprovider::Stub> _stub;
     std::string _api_key;
     std::string _secret_access_key;
     std::unique_ptr<grpc_avro_serdes> _serdes;
