@@ -112,8 +112,23 @@ namespace kspp {
         }
           break;
 
-        case tds::SYBUNIQUE:
-          avro_item.value<std::string>() = "cannot parse, type: " + std::to_string(dbcoltype(stream, src_column + 1));
+        case tds::SYBUNIQUE: {
+          boost::uuids::uuid u;
+          assert(16 == dbdatlen(stream, src_column + 1));
+          memcpy(&u, dbdata(stream, src_column + 1), 16);
+          // this is the same swap as you do beteen java & .net binary representation
+          // I dont know which is big or little endian - but a swap is good.
+          boost::uuids::uuid swapped = u;
+          swapped.data[0] = u.data[3];
+          swapped.data[1] = u.data[2];
+          swapped.data[2] = u.data[1];
+          swapped.data[3] = u.data[0];
+          swapped.data[4] = u.data[5];
+          swapped.data[5] = u.data[4];
+          swapped.data[6] = u.data[7];
+          swapped.data[7] = u.data[6];
+          avro_item.value<std::string>() = boost::uuids::to_string(swapped);
+        }
           break;
 
         case tds::SYBBIT: {
