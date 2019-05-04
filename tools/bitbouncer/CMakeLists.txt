@@ -20,3 +20,13 @@ endif ()
 INSTALL(TARGETS bb2console RUNTIME DESTINATION bin)
 
 
+add_executable(bb2avro bb2avro.cpp)
+
+if (LINK_SHARED)
+    target_link_libraries(bb2avro ${BBSTREAMING_LIBS_SHARED} ${CSI_LIBS_SHARED})
+else ()
+    target_link_libraries(bb2avro ${BBSTREAMING_LIBS_STATIC} ${CSI_LIBS_STATIC})
+endif ()
+
+INSTALL(TARGETS bb2avro RUNTIME DESTINATION bin)
+
