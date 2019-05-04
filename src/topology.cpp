@@ -240,7 +240,7 @@ namespace kspp {
     for (auto &&i : _sinks)
       ev_count += i->process(max_ts);
 
-    for (int64_t ts = min_ts; ts != max_ts; ++ts)
+    for (int64_t ts = min_ts; ts < max_ts; ++ts)
     for (auto &&i : _partition_processors)
       ev_count += i->process(ts);
 
@@ -297,7 +297,7 @@ namespace kspp {
     for (auto &&i : _sinks)
       ev_count += i->process(max_ts);
 
-    for (int64_t ts = min_ts; ts != max_ts; ++ts)
+    for (int64_t ts = min_ts; ts < max_ts; ++ts)
       for (auto &&i : _partition_processors)
         ev_count += i->process(ts);
 
