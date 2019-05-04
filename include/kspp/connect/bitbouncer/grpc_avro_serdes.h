@@ -466,6 +466,10 @@ namespace kspp {
   */
 
   template<> inline size_t grpc_avro_serdes::decode(int schema_id, const char* payload, size_t size, kspp::generic_avro& dst) {
+    // if there are empty data we conside that as a null (ie default to for kspp::generic_avro) so just return
+    if (size==0)
+      return 0;
+
     // this should net be in the stream - not possible to decode
     if (schema_id<=0) {
       LOG(ERROR) << "schema id invalid: " <<  schema_id;

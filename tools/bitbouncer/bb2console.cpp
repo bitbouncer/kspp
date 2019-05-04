@@ -31,6 +31,7 @@ int main(int argc, char** argv) {
       ("bb_secret_access_key", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("BB_SECRET_ACCESS_KEY", "")), "bb_secret_access_key")
       ("topic", boost::program_options::value<std::string>()->default_value("logs"), "topic")
       ("offset_storage", boost::program_options::value<std::string>(), "offset_storage")
+      ("start_offset", boost::program_options::value<std::string>()->default_value("OFFSET_END"), "start_offset")
       ("oneshot", "run to eof and exit")
       ;
 
@@ -77,6 +78,21 @@ int main(int argc, char** argv) {
     offset_storage = config->get_storage_root() + "/" + SERVICE_NAME + "-import-metrics.offset";
   }
 
+  kspp::start_offset_t start_offset=kspp::OFFSET_BEGINNING;
+  if (vm.count("start_offset")) {
+    auto s = vm["start_offset"].as<std::string>();
+    if (boost::iequals(s, "OFFSET_BEGINNING"))
+      start_offset=kspp::OFFSET_BEGINNING;
+    else if (boost::iequals(s, "OFFSET_END"))
+      start_offset=kspp::OFFSET_END;
+    else if (boost::iequals(s, "OFFSET_STORED"))
+      start_offset=kspp::OFFSET_STORED;
+    else {
+      std::cerr << "start_offset must be one of OFFSET_BEGINNING / OFFSET_END / OFFSET_STORED";
+      return -1;
+    }
+  }
+
   std::string topic;
   if (vm.count("topic")) {
     topic = vm["topic"].as<std::string>();
@@ -92,6 +108,7 @@ int main(int argc, char** argv) {
     LOG(INFO) << "bb_secret_access_key   : " << "[hidden]";
   LOG(INFO) << "offset_storage         : " << offset_storage;
   LOG(INFO) << "topic                  : " << topic;
+  LOG(INFO) << "start_offset           : " << kspp::to_string(start_offset);
   LOG(INFO) << "discovering facts...";
   if (oneshot)
     LOG(INFO) << "oneshot          : TRUE";
@@ -105,7 +122,7 @@ int main(int argc, char** argv) {
       std::cout << to_json(*ev.value()) << std::endl;
   });
 
-  live->start(kspp::OFFSET_BEGINNING);
+  live->start(start_offset);
 
   std::signal(SIGINT, sigterm);
   std::signal(SIGTERM, sigterm);

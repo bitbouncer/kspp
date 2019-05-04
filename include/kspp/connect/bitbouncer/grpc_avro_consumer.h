@@ -12,6 +12,8 @@
 #pragma once
 
 namespace kspp {
+  static auto s_null_schema = std::make_shared<const avro::ValidSchema>(avro::compileJsonSchemaFromString("{\"type\":\"null\"}"));
+
   template<class K, class V>
   class grpc_avro_consumer_base {
   public:
@@ -263,6 +265,43 @@ class grpc_avro_consumer : public grpc_avro_consumer_base<K, V> {
      return std::make_shared<krecord<K, V>>(key, val, record.timestamp());
    }
   };
+
+  // this is a special case of generic stuff where the key might be null
+  template<class V>
+  class grpc_avro_consumer<kspp::generic_avro, V> : public grpc_avro_consumer_base<kspp::generic_avro, V> {
+  public:
+    grpc_avro_consumer(int32_t partition,
+                       std::string topic_name,
+                       std::string offset_storage_path,
+                       std::string uri,
+                       std::string api_key,
+                       std::string secret_access_key)
+        : grpc_avro_consumer_base<kspp::generic_avro,V>(partition, topic_name, offset_storage_path, uri, api_key, secret_access_key) {
+    }
+
+
+    std::shared_ptr<kspp::krecord<kspp::generic_avro, V>> decode(const bitbouncer::streaming::SubscriptionData& record) override{
+      kspp::generic_avro key;
+      std::shared_ptr<V> val;
+      if (record.key().size()==0) {
+        key.create(s_null_schema, 0);
+      } else {
+        size_t r0 = this->_serdes->decode(record.key_schema(), record.key().data(), record.key().size(), key);
+        if (r0 == 0)
+          return nullptr;
+      }
+
+      if (record.value().size() > 0) {
+        val = std::make_shared<V>();
+        auto r1 = this->_serdes->decode(record.value_schema(), record.value().data(), record.value().size(), *val);
+        if (r1 == 0)
+          return nullptr;
+      }
+      return std::make_shared<krecord<kspp::generic_avro, V>>(key, val, record.timestamp());
+    }
+  };
+
+
 
   template<class V>
   class grpc_avro_consumer<void, V> : public grpc_avro_consumer_base<void, V> {

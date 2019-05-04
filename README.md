@@ -3,12 +3,13 @@ kspp
 
 [![Join the chat at https://gitter.im/kspp/Lobby](https://badges.gitter.im/kspp/Lobby.svg)](https://gitter.im/kspp/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-A high performance / realtime C++ (14) Kafka stream-processing framework based on librdkafka. The design is based on the original Kafka Streams API (java)
+A high performance / realtime C++ (14) kafka stream-processing framework with avro support. The design is influenced on the original kafka streams API from confluent.
 
 Sources:
-- kafka
-- postgres
-- microsoft sqlserver
+- kafka (uses librdkafka)
+- kafka grpc proxy 
+- postgres (uses libpq)
+- microsoft sqlserver (uses freetds) 
 - memory stream
  
 Sinks:
@@ -22,6 +23,14 @@ Sinks:
 Statestores:
 - rocksdb
 - memory
+
+Codecs:
+- avro (with confluent schema registry or grpc proxy)
+- text
+- json
+
+Metrics:
+- prometheus
 
 It is intended to be run in kubernetes but works equally well standalone
 
