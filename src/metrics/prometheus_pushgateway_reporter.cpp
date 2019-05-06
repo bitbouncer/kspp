@@ -13,25 +13,34 @@ namespace kspp {
     return s.substr(i+1);
   }
 
-  prometheus_pushgateway_reporter::prometheus_pushgateway_reporter(std::string job_name, std::string uri)
+  prometheus_pushgateway_reporter::prometheus_pushgateway_reporter(std::string job_name, std::string uri, bool verbose)
           : _run(true)
-          , _gateway(hostname_part(uri), port_part(uri), job_name) {
+          , _gateway(hostname_part(uri), port_part(uri), job_name)
+          , _verbose(verbose) {
         _thread = std::make_shared<std::thread>([this]() {
 
        int64_t next_time_to_send = kspp::milliseconds_since_epoch() + 10 * 1000;
 
       while (_run) {
         //time for report
+
         if (next_time_to_send <= kspp::milliseconds_since_epoch()) {
           uint64_t measurement_time = milliseconds_since_epoch();
-          _gateway.Push();
+          int http_result = _gateway.Push();
+          uint64_t push_time = milliseconds_since_epoch();
+          if (http_result!=200){
+            LOG(WARNING) << "metrics push failed, elapsed: " << push_time - measurement_time;
+          } else {
+            if (_verbose)
+              LOG(INFO) << "metrics sent OK, elapsed: " << push_time - measurement_time;
+          }
           //schedule nex reporting event
           next_time_to_send += 10000;
-          // if we are reaaly out of sync lets sleep at least 10 more seconds
+          // if we are really out of sync lets sleep at least 10 more seconds
           if (next_time_to_send <= kspp::milliseconds_since_epoch())
             next_time_to_send = kspp::milliseconds_since_epoch() + 10000;
         }
-        std::this_thread::sleep_for(500ms);
+        std::this_thread::sleep_for(100ms);
       } // while
     });//thread
   }

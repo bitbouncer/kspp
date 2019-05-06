@@ -9,7 +9,7 @@
 namespace kspp {
   class prometheus_pushgateway_reporter {
   public:
-    prometheus_pushgateway_reporter(std::string job_name, std::string uri);
+    prometheus_pushgateway_reporter(std::string job_name, std::string uri, bool verbose=false);
 
     ~prometheus_pushgateway_reporter();
 
@@ -20,6 +20,7 @@ namespace kspp {
     const std::string _uri;
     std::shared_ptr<std::thread> _thread;
     prometheus::Gateway _gateway;
+    bool _verbose;
   };
 
   std::shared_ptr<prometheus_pushgateway_reporter>
