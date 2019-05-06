@@ -37,11 +37,9 @@ namespace kspp {
     }
 
     virtual ~grpc_avro_consumer_base() {
-      _exit = true;
       if (!_closed)
         close();
-      if (_start_running)
-        _bg.join();
+      //stop_thread();
       LOG(INFO) << "grpc_avro_consumer " << _topic_name << " exiting";
     }
 
@@ -120,6 +118,12 @@ namespace kspp {
     }
 
   protected:
+    void stop_thread(){
+      _exit = true;
+      if (_bg.joinable())
+        _bg.join();
+    }
+
     void commit(int64_t offset, bool flush) {
       _last_commited_offset = offset;
       if (flush || ((_last_commited_offset - _last_flushed_offset) > 10000)) {
@@ -201,7 +205,9 @@ namespace kspp {
             LOG(ERROR) << "grpc_avro_consumer rpc failed: " << status.error_message();
           }
         }
-        std::this_thread::sleep_for(10000ms);
+        if (!exit) {
+          std::this_thread::sleep_for(1000ms);
+        }
       } // while /!exit) -> try to connect again
       _good = false;
       LOG(INFO) << "grpc_avro_consumer exiting thread";
@@ -248,8 +254,11 @@ class grpc_avro_consumer : public grpc_avro_consumer_base<K, V> {
         : grpc_avro_consumer_base<K,V>(partition, topic_name, offset_storage_path, uri, api_key, secret_access_key) {
     }
 
+  virtual ~grpc_avro_consumer(){
+    this->stop_thread();
+  }
 
-   std::shared_ptr<kspp::krecord<K, V>> decode(const bitbouncer::streaming::SubscriptionData& record) override{
+  std::shared_ptr<kspp::krecord<K, V>> decode(const bitbouncer::streaming::SubscriptionData& record) override{
      K key;
      std::shared_ptr<V> val;
      size_t r0 = this->_serdes->decode(record.key_schema(), record.key().data(), record.key().size(), key);
@@ -279,6 +288,9 @@ class grpc_avro_consumer : public grpc_avro_consumer_base<K, V> {
         : grpc_avro_consumer_base<kspp::generic_avro,V>(partition, topic_name, offset_storage_path, uri, api_key, secret_access_key) {
     }
 
+    virtual ~grpc_avro_consumer(){
+      this->stop_thread();
+    }
 
     std::shared_ptr<kspp::krecord<kspp::generic_avro, V>> decode(const bitbouncer::streaming::SubscriptionData& record) override{
       kspp::generic_avro key;
@@ -315,6 +327,9 @@ class grpc_avro_consumer : public grpc_avro_consumer_base<K, V> {
         : grpc_avro_consumer_base<void,V>(partition, topic_name, offset_storage_path, uri, api_key, secret_access_key) {
     }
 
+    virtual ~grpc_avro_consumer(){
+      this->stop_thread();
+    }
 
     std::shared_ptr<kspp::krecord<void, V>> decode(const bitbouncer::streaming::SubscriptionData& record) override{
       std::shared_ptr<V> val;

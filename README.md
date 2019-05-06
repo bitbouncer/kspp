@@ -3,7 +3,7 @@ kspp
 
 [![Join the chat at https://gitter.im/kspp/Lobby](https://badges.gitter.im/kspp/Lobby.svg)](https://gitter.im/kspp/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-A high performance / realtime C++ (14) kafka stream-processing framework with avro support. The design is influenced on the original kafka streams API from confluent.
+A high performance / realtime C++ (14) stream-processing framework with avro support. The design is influenced by apache kafka streams library
 
 Sources:
 - kafka (uses librdkafka)

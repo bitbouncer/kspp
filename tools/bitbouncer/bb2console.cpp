@@ -137,6 +137,7 @@ int main(int argc, char** argv) {
     }
 
     }
+  live->close();
 
   LOG(INFO) << "exiting";
 
