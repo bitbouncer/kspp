@@ -145,15 +145,9 @@ namespace kspp {
 
         LOG(INFO) << "grpc_avro_consumer connecting";
         grpc::ChannelArguments channelArgs;
-        channelArgs.SetInt(GRPC_ARG_KEEPALIVE_TIME_MS, 10000);
-        channelArgs.SetInt(GRPC_ARG_KEEPALIVE_TIMEOUT_MS, 10000);
-        channelArgs.SetInt(GRPC_ARG_HTTP2_MIN_SENT_PING_INTERVAL_WITHOUT_DATA_MS, 10000);
-        channelArgs.SetInt(GRPC_ARG_HTTP2_MAX_PINGS_WITHOUT_DATA, 0); // unlimited
-        channelArgs.SetInt(GRPC_ARG_KEEPALIVE_PERMIT_WITHOUT_CALLS, 1);
-
+        kspp::set_channel_args(channelArgs);
         auto channel_creds = grpc::SslCredentials(grpc::SslCredentialsOptions());
         _channel = grpc::CreateCustomChannel(_uri, channel_creds, channelArgs);
-
         _resolver = std::make_shared<grpc_avro_schema_resolver>(_channel, _api_key);
         _serdes = std::make_unique<kspp::grpc_avro_serdes>(_resolver);
         _stub = bitbouncer::streaming::streamprovider::NewStub(_channel);

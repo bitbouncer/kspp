@@ -4,6 +4,7 @@
 namespace kspp {
   void add_api_key(grpc::ClientContext &client_context, const std::string &api_key);
   void add_api_key_secret(grpc::ClientContext &client_context, const std::string &api_key, const std::string &secret_access_key);
+  void set_channel_args(grpc::ChannelArguments& channelArgs);
 }
 
 
