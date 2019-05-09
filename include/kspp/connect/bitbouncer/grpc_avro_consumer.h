@@ -141,13 +141,14 @@ namespace kspp {
       while (!_start_running && !_exit)
         std::this_thread::sleep_for(100ms);
 
-      while(!_exit) {
+      grpc::ChannelArguments channelArgs;
+      kspp::set_channel_args(channelArgs);
+      auto channel_creds = grpc::SslCredentials(grpc::SslCredentialsOptions());
+      _channel = grpc::CreateCustomChannel(_uri, channel_creds, channelArgs);
 
-        LOG(INFO) << "grpc_avro_consumer connecting";
-        grpc::ChannelArguments channelArgs;
-        kspp::set_channel_args(channelArgs);
-        auto channel_creds = grpc::SslCredentials(grpc::SslCredentialsOptions());
-        _channel = grpc::CreateCustomChannel(_uri, channel_creds, channelArgs);
+      while(!_exit) {
+        size_t msg_in_rpc=0;
+        LOG(INFO) << "new rpc";
         _resolver = std::make_shared<grpc_avro_schema_resolver>(_channel, _api_key);
         _serdes = std::make_unique<kspp::grpc_avro_serdes>(_resolver);
         _stub = bitbouncer::streaming::streamprovider::NewStub(_channel);
@@ -168,9 +169,11 @@ namespace kspp {
             continue;
           }
 
-          // if read failed the stream is bad.
+          // if read failed the stream is bad - expected every 30s
           if (!stream->Read(&reply))
             break;
+
+          ++msg_in_rpc;
 
           size_t sz = reply.data().size();
           for (size_t i = 0; i != sz; ++i) {
@@ -197,10 +200,14 @@ namespace kspp {
           grpc::Status status = stream->Finish();
           if (!status.ok()) {
             LOG(ERROR) << "grpc_avro_consumer rpc failed: " << status.error_message();
+          } else {
+            LOG(INFO) << "grpc_avro_consumer rpc done ";
           }
         }
         if (!exit) {
-          std::this_thread::sleep_for(1000ms);
+          if (msg_in_rpc==0)
+            std::this_thread::sleep_for(1000ms);
+
         }
       } // while /!exit) -> try to connect again
       _good = false;
