@@ -46,6 +46,8 @@ namespace kspp {
       if (!_closed)
         close();
       //stop_thread();
+      LOG(INFO) << "grpc_avro_consumer " << _topic_name << " killing channel";
+      _channel.reset();
       LOG(INFO) << "grpc_avro_consumer " << _topic_name << " exiting";
     }
 
@@ -200,14 +202,14 @@ namespace kspp {
           }
         }
 
-        if (!_exit) {
+        //if (!_exit) {
           grpc::Status status = stream->Finish();
           if (!status.ok()) {
             LOG(ERROR) << "grpc_avro_consumer rpc failed: " << status.error_message();
           } else {
             LOG(INFO) << "grpc_avro_consumer rpc done ";
           }
-        }
+        //}
         if (!exit) {
           if (msg_in_rpc==0)
             std::this_thread::sleep_for(1000ms);
