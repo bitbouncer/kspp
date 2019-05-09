@@ -5,7 +5,7 @@
 #include <kspp/avro/generic_avro.h>
 #include <grpcpp/grpcpp.h>
 #include <glog/logging.h>
-#include <bitbouncer_streaming.grpc.pb.h>
+#include <bb_streaming.grpc.pb.h>
 #include "grpc_avro_schema_resolver.h"
 #include "grpc_avro_serdes.h"
 

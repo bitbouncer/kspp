@@ -274,7 +274,7 @@ if (ENABLE_BITBOUNCER_STREAMING)
     message(STATUS "Using protobuf ${protobuf_VERSION}")
     find_package(GRPC REQUIRED)
 
-    SET(PROTOS ./proto/bitbouncer_streaming.proto)
+    SET(PROTOS ./proto/bb_streaming.proto)
     set(PROTO_SRC_DIR ${CMAKE_CURRENT_BINARY_DIR})
 
     PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${PROTOS})

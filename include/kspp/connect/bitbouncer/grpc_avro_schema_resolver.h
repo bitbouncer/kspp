@@ -3,7 +3,7 @@
 #include <grpcpp/grpcpp.h>
 #include <kspp/utils/spinlock.h>
 #include <kspp/connect/bitbouncer/grpc_utils.h>
-#include <bitbouncer_streaming.grpc.pb.h>
+#include <bb_streaming.grpc.pb.h>
 #pragma once
 
 namespace kspp {
