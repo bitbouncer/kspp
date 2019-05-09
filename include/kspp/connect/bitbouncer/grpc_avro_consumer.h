@@ -193,7 +193,7 @@ namespace kspp {
 
             _next_offset = record.offset(); // TODO this will reconsume last read offset on disconnect but do we know what happens if we ask for an offert that does not yet exists?
             auto krec = decode(record);
-            if (krec==nullptr)
+            if (krec == nullptr)
               continue;
             auto e = std::make_shared<kevent<K, V>>(krec, _commit_chain.create(_next_offset));
             assert(e.get() != nullptr);
@@ -202,14 +202,21 @@ namespace kspp {
           }
         }
 
-        //if (!_exit) {
+        if (_exit){
+          context.TryCancel();
+          grpc::Status status = stream->Finish();
+          break;
+        }
+
+        if (!_exit) {
           grpc::Status status = stream->Finish();
           if (!status.ok()) {
             LOG(ERROR) << "grpc_avro_consumer rpc failed: " << status.error_message();
           } else {
             LOG(INFO) << "grpc_avro_consumer rpc done ";
           }
-        //}
+        }
+
         if (!exit) {
           if (msg_in_rpc==0)
             std::this_thread::sleep_for(1000ms);
