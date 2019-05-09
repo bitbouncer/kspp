@@ -232,7 +232,7 @@ namespace kspp {
         if (kspp::milliseconds_since_epoch()<next_ping)
           continue;
 
-        LOG(INFO) << "new ping";
+        //LOG(INFO) << "new ping";
         next_ping = kspp::milliseconds_since_epoch() + 15000;
         _stub = bitbouncer::streaming::streamprovider::NewStub(_channel);
 
@@ -251,7 +251,7 @@ namespace kspp {
         }
         int64_t t1 = kspp::milliseconds_since_epoch();
         int64_t t_avg = (t0 + t1) / 2;
-        LOG(INFO) << "ping took: " << t1 - t0 << " ms estmated ts diff of server: " << reply.timestamp() - t_avg;
+        //LOG(INFO) << "ping took: " << t1 - t0 << " ms estmated ts diff of server: " << reply.timestamp() - t_avg;
       }
       LOG(INFO) << "grpc_avro_consumer exiting ping thread";
     }
