@@ -38,8 +38,14 @@ namespace kspp {
 
       grpc::ChannelArguments channelArgs;
       kspp::set_channel_args(channelArgs);
-      auto channel_creds = grpc::SslCredentials(grpc::SslCredentialsOptions());
-      _channel = grpc::CreateCustomChannel(_uri, channel_creds, channelArgs);
+
+      // special for easier debugging
+      if (uri == "localhost:50063") {
+        _channel = grpc::CreateCustomChannel(uri, grpc::InsecureChannelCredentials(), channelArgs);
+      } else {
+        auto channel_creds = grpc::SslCredentials(grpc::SslCredentialsOptions());
+        _channel = grpc::CreateCustomChannel(uri, channel_creds, channelArgs);
+      }
     }
 
     virtual ~grpc_avro_consumer_base() {

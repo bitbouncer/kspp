@@ -17,7 +17,7 @@ cd .. && \
 rm protobuf.tar.gz && \
 rm -rf protobuf
 
-wget -O grpc.tar.gz "https://github.com/grpc/grpc/archive/v1.16.0.tar.gz" && \
+wget -O grpc.tar.gz "https://github.com/grpc/grpc/archive/v1.20.1.tar.gz" && \
 mkdir -p grpc && \
 tar \
   --extract \
