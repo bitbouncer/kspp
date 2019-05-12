@@ -32,7 +32,7 @@ namespace kspp {
     }
   }
 
-  kafka_consumer::kafka_consumer(std::shared_ptr<cluster_config> config, std::string topic, int32_t partition, std::string consumer_group)
+  kafka_consumer::kafka_consumer(std::shared_ptr<cluster_config> config, std::string topic, int32_t partition, std::string consumer_group, bool check_cluster)
       : _config(config)
       , _topic(topic)
       , _partition(partition)
@@ -46,10 +46,12 @@ namespace kspp {
       , _closed(false) {
     // really try to make sure the partition & group exist before we continue
 
-    LOG_IF(FATAL, config->get_cluster_metadata()->wait_for_topic_partition(topic, _partition, config->get_cluster_state_timeout())==false)
-    <<  "failed to wait for topic leaders, topic:" << topic << ":" << _partition;
-    //wait_for_partition(_consumer.get(), _topic, _partition);
-    //kspp::kafka::wait_for_group(brokers, consumer_group); something seems to wrong in rdkafka master.... TODO
+    if (check_cluster) {
+      LOG_IF(FATAL, config->get_cluster_metadata()->wait_for_topic_partition(topic, _partition, config->get_cluster_state_timeout()) == false)
+      << "failed to wait for topic leaders, topic:" << topic << ":" << _partition;
+      //wait_for_partition(_consumer.get(), _topic, _partition);
+      //kspp::kafka::wait_for_group(brokers, consumer_group); something seems to wrong in rdkafka master.... TODO
+    }
 
     _topic_partition.push_back(RdKafka::TopicPartition::create(_topic, _partition));
 

@@ -8,7 +8,7 @@ namespace kspp {
   class kafka_consumer
   {
   public:
-    kafka_consumer(std::shared_ptr<cluster_config> config, std::string topic, int32_t partition, std::string consumer_group);
+    kafka_consumer(std::shared_ptr<cluster_config> config, std::string topic, int32_t partition, std::string consumer_group, bool check_cluster=true);
     ~kafka_consumer();
 
     void close();

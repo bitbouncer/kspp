@@ -14,6 +14,7 @@ message SubscriptionRequest {
 
 message SubscriptionBundle {
   repeated SubscriptionData data = 1;
+  bool  eof = 2;
 }
 
 message SubscriptionData {

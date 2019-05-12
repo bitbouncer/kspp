@@ -28,7 +28,6 @@ namespace kspp {
         , _partition(partition)
         , _commit_chain(topic_name, partition)
         , _bg([this](){_thread();})
-        , _bg_ping([this](){_thread2();})
         , _uri(uri)
         , _api_key(api_key)
         , _secret_access_key(secret_access_key) {
@@ -52,8 +51,8 @@ namespace kspp {
       if (!_closed)
         close();
       //stop_thread();
-      LOG(INFO) << "grpc_avro_consumer " << _topic_name << " killing channel";
-      _channel.reset();
+      //LOG(INFO) << "grpc_avro_consumer " << _topic_name << " killing channel";
+      //_channel.reset();
       LOG(INFO) << "grpc_avro_consumer " << _topic_name << " exiting";
     }
 
@@ -135,9 +134,6 @@ namespace kspp {
     void stop_thread(){
       _exit = true;
 
-      if (_bg_ping.joinable())
-        _bg_ping.join();
-
       if (_bg.joinable())
         _bg.join();
     }
@@ -197,11 +193,11 @@ namespace kspp {
               continue;
             }
 
-            _next_offset = record.offset(); // TODO this will reconsume last read offset on disconnect but do we know what happens if we ask for an offert that does not yet exists?
+            _next_offset = record.offset()+1;
             auto krec = decode(record);
             if (krec == nullptr)
               continue;
-            auto e = std::make_shared<kevent<K, V>>(krec, _commit_chain.create(_next_offset));
+            auto e = std::make_shared<kevent<K, V>>(krec, _commit_chain.create(record.offset()));
             assert(e.get() != nullptr);
             ++_msg_cnt;
             _incomming_msg.push_back(e);
@@ -209,21 +205,25 @@ namespace kspp {
         }
 
         if (_exit){
+          LOG(INFO) << "TRY CANCEL";
           context.TryCancel();
           grpc::Status status = stream->Finish();
+          LOG(INFO) << "STREAM FINISHED status :" << status.error_message();
           break;
         }
 
         if (!_exit) {
+          LOG(INFO) << "FINISHING STREAM, nr_of_msg: " << msg_in_rpc;
           grpc::Status status = stream->Finish();
+          LOG(INFO) << "STREAM FINISHED status :" << status.error_message();
           if (!status.ok()) {
             LOG(ERROR) << "grpc_avro_consumer rpc failed: " << status.error_message();
           } else {
-            LOG(INFO) << "grpc_avro_consumer rpc done ";
+            LOG(INFO) << "grpc_avro_consumer rpc";
           }
         }
 
-        if (!exit) {
+        if (!_exit) {
           if (msg_in_rpc==0)
             std::this_thread::sleep_for(1000ms);
 
@@ -233,6 +233,7 @@ namespace kspp {
       LOG(INFO) << "grpc_avro_consumer exiting thread";
     }
 
+    /*
     void _thread2() {
       using namespace std::chrono_literals;
       while (!_start_running && !_exit)
@@ -269,7 +270,7 @@ namespace kspp {
         //LOG(INFO) << "ping took: " << t1 - t0 << " ms estmated ts diff of server: " << reply.timestamp() - t_avg;
       }
       LOG(INFO) << "grpc_avro_consumer exiting ping thread";
-    }
+    }*/
 
     virtual std::shared_ptr<kspp::krecord<K, V>> decode(const bitbouncer::streaming::SubscriptionData& record)=0;
 
@@ -280,7 +281,7 @@ namespace kspp {
     bool _closed=false;
 
     std::thread _bg;
-    std::thread _bg_ping;
+    //std::thread _bg_ping;
     const std::string _uri;
     const std::string _topic_name;
     const int32_t _partition;
