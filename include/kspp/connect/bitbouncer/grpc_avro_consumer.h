@@ -50,9 +50,6 @@ namespace kspp {
     virtual ~grpc_avro_consumer_base() {
       if (!_closed)
         close();
-      //stop_thread();
-      //LOG(INFO) << "grpc_avro_consumer " << _topic_name << " killing channel";
-      //_channel.reset();
       LOG(INFO) << "grpc_avro_consumer " << _topic_name << " exiting";
     }
 
@@ -157,7 +154,7 @@ namespace kspp {
 
       while(!_exit) {
         size_t msg_in_rpc=0;
-        LOG(INFO) << "new rpc";
+        //DLOG(INFO) << "new rpc";
         _resolver = std::make_shared<grpc_avro_schema_resolver>(_channel, _api_key);
         _serdes = std::make_unique<kspp::grpc_avro_serdes>(_resolver);
         _stub = bitbouncer::streaming::streamprovider::NewStub(_channel);
@@ -205,21 +202,21 @@ namespace kspp {
         }
 
         if (_exit){
-          LOG(INFO) << "TRY CANCEL";
+          //DLOG(INFO) << "TRY CANCEL";
           context.TryCancel();
           grpc::Status status = stream->Finish();
-          LOG(INFO) << "STREAM FINISHED status :" << status.error_message();
+          //DLOG(INFO) << "STREAM FINISHED status :" << status.error_message();
           break;
         }
 
         if (!_exit) {
-          LOG(INFO) << "FINISHING STREAM, nr_of_msg: " << msg_in_rpc;
+          //DLOG(INFO) << "FINISHING STREAM, nr_of_msg: " << msg_in_rpc;
           grpc::Status status = stream->Finish();
-          LOG(INFO) << "STREAM FINISHED status :" << status.error_message();
+          //DLOG(INFO) << "STREAM FINISHED status :" << status.error_message();
           if (!status.ok()) {
-            LOG(ERROR) << "grpc_avro_consumer rpc failed: " << status.error_message();
+            LOG(ERROR) << "rpc failed: " << status.error_message();
           } else {
-            LOG(INFO) << "grpc_avro_consumer rpc";
+            //LOG(INFO) << "grpc_avro_consumer rpc";
           }
         }
 
@@ -233,45 +230,6 @@ namespace kspp {
       LOG(INFO) << "grpc_avro_consumer exiting thread";
     }
 
-    /*
-    void _thread2() {
-      using namespace std::chrono_literals;
-      while (!_start_running && !_exit)
-        std::this_thread::sleep_for(100ms);
-
-      int64_t next_ping = kspp::milliseconds_since_epoch() + 15000;
-
-      while(true) {
-        std::this_thread::sleep_for(500ms);
-        if (_exit)
-          break;
-        if (kspp::milliseconds_since_epoch()<next_ping)
-          continue;
-
-        //LOG(INFO) << "new ping";
-        next_ping = kspp::milliseconds_since_epoch() + 15000;
-        _stub = bitbouncer::streaming::streamprovider::NewStub(_channel);
-
-        grpc::ClientContext context;
-        add_api_key_secret(context, _api_key, _secret_access_key);
-
-        bitbouncer::streaming::PingRequest request;
-        int64_t t0 = kspp::milliseconds_since_epoch();
-        request.set_timestamp(t0);
-        bitbouncer::streaming::PingReply reply;
-        grpc::Status status = _stub->Ping(&context, request, &reply);
-
-        if (!status.ok()) {
-          LOG(WARNING) << "ping failed";
-          continue;
-        }
-        int64_t t1 = kspp::milliseconds_since_epoch();
-        int64_t t_avg = (t0 + t1) / 2;
-        //LOG(INFO) << "ping took: " << t1 - t0 << " ms estmated ts diff of server: " << reply.timestamp() - t_avg;
-      }
-      LOG(INFO) << "grpc_avro_consumer exiting ping thread";
-    }*/
-
     virtual std::shared_ptr<kspp::krecord<K, V>> decode(const bitbouncer::streaming::SubscriptionData& record)=0;
 
     volatile bool _exit=false;
@@ -281,7 +239,6 @@ namespace kspp {
     bool _closed=false;
 
     std::thread _bg;
-    //std::thread _bg_ping;
     const std::string _uri;
     const std::string _topic_name;
     const int32_t _partition;
