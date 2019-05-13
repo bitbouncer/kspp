@@ -31,6 +31,7 @@ int main(int argc, char** argv) {
       ("topic", boost::program_options::value<std::string>()->default_value("logs"), "topic")
       ("offset_storage", boost::program_options::value<std::string>(), "offset_storage")
       ("dst_dir", boost::program_options::value<std::string>()->default_value(get_env_and_log("DST_DIR", "/tmp")), "dst_dir")
+      ("window_size_s", boost::program_options::value<std::string>()->default_value(get_env_and_log("WINDOW_SIZE_S", "3600")), "window_size_s")
       ("oneshot", "run to eof and exit")
       ;
 
@@ -87,7 +88,19 @@ int main(int argc, char** argv) {
     offset_storage = config->get_storage_root() + "/" + SERVICE_NAME + "-" + topic + ".offset";
   }
 
-  bool oneshot=false;
+  int window_size_s;
+  if (vm.count("window_size_s")) {
+    auto s = vm["window_size_s"].as<std::string>();
+    window_size_s = atoi(s.c_str());
+  }
+
+  if (window_size_s<=0) {
+    std::cerr << "window_size_s muist be >0";
+    return -1;
+  }
+
+
+bool oneshot=false;
   if (vm.count("oneshot"))
     oneshot=true;
 
@@ -98,6 +111,7 @@ int main(int argc, char** argv) {
   LOG(INFO) << "offset_storage         : " << offset_storage;
   LOG(INFO) << "topic                  : " << topic;
   LOG(INFO) << "dst_dir                : " << dst_dir;
+  LOG(INFO) << "window_size_s          : " << window_size_s << " s";
   LOG(INFO) << "discovering facts...";
   if (oneshot)
     LOG(INFO) << "oneshot          : TRUE";
@@ -107,21 +121,34 @@ int main(int argc, char** argv) {
   auto t = generic_builder.create_topology();
   auto source = t->create_processor<kspp::grpc_avro_source<void, kspp::generic_avro>>(0, topic, offset_storage, src_uri, bb_api_key, bb_secret_access_key);
   auto sink = t->create_sink<kspp::avro_rotating_file_sink>(source, dst_dir, topic, 1h);
-  t->start(kspp::OFFSET_BEGINNING);
+  t->start(kspp::OFFSET_STORED);
 
   std::signal(SIGINT, sigterm);
   std::signal(SIGTERM, sigterm);
   std::signal(SIGPIPE, SIG_IGN);
 
+  int64_t next_commit = kspp::milliseconds_since_epoch() + 10000;
+
   while (run && source->good()) {
     auto sz = t->process(kspp::milliseconds_since_epoch());
+
+    if (kspp::milliseconds_since_epoch()>next_commit){
+      t->commit(false);
+      next_commit = kspp::milliseconds_since_epoch() + 10000;
+    }
+
+    if (oneshot && t->eof()){
+      LOG(INFO) << "at eof - flushing";
+      t->flush(true);
+      LOG(INFO) << "at eof - exiting";
+      break;
+    }
 
     if (sz == 0) {
       std::this_thread::sleep_for(100ms);
       continue;
     }
-
-    }
+  }
 
   LOG(INFO) << "exiting";
 
