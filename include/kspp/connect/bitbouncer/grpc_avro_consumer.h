@@ -152,22 +152,23 @@ namespace kspp {
       while (!_start_running && !_exit)
         std::this_thread::sleep_for(100ms);
 
+      _resolver = std::make_shared<grpc_avro_schema_resolver>(_channel, _api_key);
+      _serdes = std::make_unique<kspp::grpc_avro_serdes>(_resolver);
+
       while(!_exit) {
         size_t msg_in_rpc=0;
         //DLOG(INFO) << "new rpc";
-        _resolver = std::make_shared<grpc_avro_schema_resolver>(_channel, _api_key);
-        _serdes = std::make_unique<kspp::grpc_avro_serdes>(_resolver);
         _stub = bitbouncer::streaming::streamprovider::NewStub(_channel);
-
         grpc::ClientContext context;
         add_api_key_secret(context, _api_key, _secret_access_key);
+
         bitbouncer::streaming::SubscriptionRequest request;
         request.set_topic(_topic_name);
         request.set_partition(_partition);
         request.set_offset(_next_offset);
-
         std::shared_ptr<grpc::ClientReader<bitbouncer::streaming::SubscriptionBundle>> stream(_stub->Subscribe(&context, request));
         bitbouncer::streaming::SubscriptionBundle reply;
+
         while (!_exit) {
           //backpressure
           if (_incomming_msg.size() > 50000) {
