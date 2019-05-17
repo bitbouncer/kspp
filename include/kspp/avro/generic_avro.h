@@ -202,9 +202,9 @@ namespace kspp {
     }
 
   private:
-    std::shared_ptr<avro::GenericDatum>      _generic_datum;
+    std::shared_ptr<avro::GenericDatum> _generic_datum;
     std::shared_ptr<const avro::ValidSchema> _valid_schema;
-    int32_t                                  _schema_id;
+    int32_t _schema_id;
   };
 }
 
@@ -218,10 +218,17 @@ template <> struct avro::codec_traits<kspp::generic_avro> {
   }
 };
 
+//TODO
+template<>
+inline std::string kspp::avro_utils<kspp::generic_avro>::schema_as_string(const kspp::generic_avro& dummy){
+  return normalize(*dummy.valid_schema());
+}
+
 template<>
 inline std::shared_ptr<const avro::ValidSchema> kspp::avro_utils<kspp::generic_avro>::valid_schema(const kspp::generic_avro& dummy){
   return dummy.valid_schema();
 }
+
 
 std::string to_json(const kspp::generic_avro& src);
 

@@ -1,5 +1,17 @@
 #include <kspp/avro/avro_utils.h>
+#include <sstream>
+
 namespace kspp{
+  std::string normalize(const avro::ValidSchema &vs) {
+    std::stringstream ss;
+    vs.toJson(ss);
+    std::string s = ss.str();
+    // TBD we should strip type : string to string
+    // strip whitespace
+    s.erase(remove_if(s.begin(), s.end(), ::isspace), s.end());  // c version does not use locale...
+    return s;
+  }
+
   std::string to_string(avro::Type t){
     switch (t)
     {
@@ -23,8 +35,33 @@ namespace kspp{
   }
 
   template<>
+  std::string avro_utils<std::string>::schema_as_string(const std::string& dummy){ return "{\"type\":\"string\"}"; }
+
+  template<>
+  std::string avro_utils<int64_t>::schema_as_string(const int64_t& dummy){ return "{\"type\":\"long\"}"; }
+
+  template<>
+  std::string avro_utils<int32_t>::schema_as_string(const int32_t& dummy){ return "{\"type\":\"int\"}"; }
+
+  template<>
+  std::string avro_utils<bool>::schema_as_string(const bool& dummy){ return "{\"type\":\"boolean\"}"; }
+
+  template<>
+  std::string avro_utils<float>::schema_as_string(const float& dummy){ return "{\"type\":\"float\"}"; }
+
+  template<>
+  std::string avro_utils<double>::schema_as_string(const double& dummy){ return "{\"type\":\"double\"}"; }
+
+  template<>
+  std::string avro_utils<std::vector<uint8_t>>::schema_as_string(const std::vector<uint8_t>& dummy){ return "{\"type\":\"bytes\"}"; }
+
+  template<>
+  std::string avro_utils< boost::uuids::uuid>::schema_as_string(const  boost::uuids::uuid& dummy){ return "{\"type\":\"string\"}"; }
+
+
+  /*template<>
   std::shared_ptr<const avro::ValidSchema> avro_utils<std::string>::valid_schema(const std::string& dummy){
-    static const std::shared_ptr<const ::avro::ValidSchema> _validSchema(std::make_shared<const ::avro::ValidSchema>(::avro::compileJsonSchemaFromString("{\"type\":\"string\"}")));
+    static const std::shared_ptr<const ::avro::ValidSchema> _validSchema(std::make_shared<const ::avro::ValidSchema>(::avro::compileJsonSchemaFromString(schema_as_string(dummy))));
     return _validSchema;
   }
 
@@ -69,4 +106,5 @@ namespace kspp{
     static const std::shared_ptr<const ::avro::ValidSchema> _validSchema(std::make_shared<const ::avro::ValidSchema>(::avro::compileJsonSchemaFromString("{\"type\":\"string\"}")));
     return _validSchema;
   }
+   */
 }

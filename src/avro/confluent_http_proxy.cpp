@@ -8,19 +8,10 @@
 #include <boost/uuid/uuid_generators.hpp> // generators
 #include <boost/uuid/uuid_io.hpp>
 #include <kspp/cluster_config.h>
+#include <kspp/avro/avro_utils.h>
 
 using namespace std::chrono_literals;
 namespace kspp {
-  static inline std::string normalize(const avro::ValidSchema &vs) {
-    std::stringstream ss;
-    vs.toJson(ss);
-    std::string s = ss.str();
-    // TBD we should strip type : string to string
-    // strip whitespace
-    s.erase(remove_if(s.begin(), s.end(), ::isspace), s.end());  // c version does not use locale...
-    return s;
-  }
-
   static inline void add_member(std::shared_ptr<rapidjson::Document> document, std::string key, std::string value) {
     rapidjson::Document::AllocatorType &allocator = document->GetAllocator();
     rapidjson::Value ks;

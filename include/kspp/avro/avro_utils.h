@@ -5,6 +5,7 @@
 
 namespace kspp
 {
+  std::string normalize(const avro::ValidSchema &vs);
   std::string to_string(avro::Type t);
 
 // not implemented for
@@ -48,7 +49,13 @@ namespace kspp
   template<typename T>
   class avro_utils{
   public:
-    static std::shared_ptr<const avro::ValidSchema> valid_schema(const T& dummy);
+    static std::string schema_as_string(const T& dummy);
+
+    static std::shared_ptr<const avro::ValidSchema> valid_schema(const T& dummy) {
+      static const std::shared_ptr<const ::avro::ValidSchema> _validSchema(std::make_shared<const ::avro::ValidSchema>(
+          ::avro::compileJsonSchemaFromString(schema_as_string(dummy))));
+      return _validSchema;
+    }
   };
 
 
