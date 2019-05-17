@@ -220,6 +220,11 @@ template <> struct avro::codec_traits<kspp::generic_avro> {
 
 //TODO
 template<>
+inline std::string kspp::avro_utils<kspp::generic_avro>::schema_name(const kspp::generic_avro& dummy){
+  return normalize(*dummy.valid_schema());
+}
+
+template<>
 inline std::string kspp::avro_utils<kspp::generic_avro>::schema_as_string(const kspp::generic_avro& dummy){
   return normalize(*dummy.valid_schema());
 }

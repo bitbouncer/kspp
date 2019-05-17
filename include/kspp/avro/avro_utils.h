@@ -49,6 +49,8 @@ namespace kspp
   template<typename T>
   class avro_utils{
   public:
+    static std::string schema_name(const T& dummy);
+
     static std::string schema_as_string(const T& dummy);
 
     static std::shared_ptr<const avro::ValidSchema> valid_schema(const T& dummy) {

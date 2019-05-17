@@ -14,6 +14,7 @@
 #include <glog/logging.h>
 #include <kspp/avro/generic_avro.h>
 #include <kspp/avro/avro_schema_registry.h>
+#include <kspp/avro/avro_utils.h>
 #pragma once
 
 namespace kspp {
@@ -31,8 +32,18 @@ namespace kspp {
 
     template<class T>
     int32_t register_schema(std::string name, const T& dummy){
+      int32_t schema_id=0;
+      std::shared_ptr<const avro::ValidSchema> not_used;
+      std::tie(schema_id, not_used) = _put_schema(name, avro_utils<T>::schema_as_string(dummy));
+      return schema_id;
+    }
+
+    /*
+    int32_t register_schema(std::string name, const T& dummy){
       return _registry->put_schema(name, dummy.valid_schema());
     }
+     */
+
 
     /*
     * confluent avro encoded data
@@ -166,12 +177,14 @@ namespace kspp {
     bool _relaxed_parsing=false;
   };
 
+  /*
   template<> inline  int32_t avro_serdes::register_schema(std::string name, const std::string& dummy){
     int32_t schema_id=0;
     std::shared_ptr<const avro::ValidSchema> not_used;
-    std::tie(schema_id, not_used) = _put_schema(name, "{\"type\":\"string\"}");
+    std::tie(schema_id, not_used) = _put_schema(name, avro_utils<std::string>::schema_name(dummy));
     return schema_id;
   }
+   */
 
   template<> inline size_t avro_serdes::encode(const std::string& src, std::ostream& dst) {
     static int32_t schema_id = -1;
@@ -197,12 +210,14 @@ namespace kspp {
       return 0;
   }
 
+  /*
   template<> inline  int32_t avro_serdes::register_schema(std::string name, const int64_t& dummy){
     int32_t schema_id=0;
     std::shared_ptr<const avro::ValidSchema> not_used;
     std::tie(schema_id, not_used) = _put_schema(name,  "{\"type\":\"long\"}");
     return schema_id;
   }
+   */
 
   template<> inline size_t avro_serdes::encode(const int64_t& src, std::ostream& dst) {
     static int32_t schema_id = -1;
@@ -228,12 +243,14 @@ namespace kspp {
       return 0;
   }
 
+  /*
   template<> inline  int32_t avro_serdes::register_schema(std::string name, const int32_t&){
     int32_t schema_id=0;
     std::shared_ptr<const avro::ValidSchema> not_used;
     std::tie(schema_id, not_used) = _put_schema(name,  "{\"type\":\"int\"}");
     return schema_id;
   }
+   */
 
   template<> inline size_t avro_serdes::encode(const int32_t& src, std::ostream& dst) {
     static int32_t schema_id = -1;
@@ -259,12 +276,14 @@ namespace kspp {
       return 0;
   }
 
+  /*
   template<> inline  int32_t avro_serdes::register_schema(std::string name, const bool& dummy){
     int32_t schema_id=0;
     std::shared_ptr<const avro::ValidSchema> not_used;
     std::tie(schema_id, not_used) = _put_schema(name,  "{\"type\":\"boolean\"}");
     return schema_id;
-  }
+  }*/
+
 
   template<> inline size_t avro_serdes::encode(const bool& src, std::ostream& dst) {
     static int32_t schema_id = -1;
@@ -290,12 +309,13 @@ namespace kspp {
       return 0;
   }
 
+  /*
   template<> inline  int32_t avro_serdes::register_schema(std::string name, const float& dummy){
     int32_t schema_id=0;
     std::shared_ptr<const avro::ValidSchema> not_used;
     std::tie(schema_id, not_used) = _put_schema(name,  "{\"type\":\"float\"}");
     return schema_id;
-  }
+  }*/
 
   template<> inline size_t avro_serdes::encode(const float& src, std::ostream& dst) {
     static int32_t schema_id = -1;
@@ -321,12 +341,13 @@ namespace kspp {
       return 0;
   }
 
+  /*
   template<> inline int32_t avro_serdes::register_schema(std::string name, const double& dummy){
     int32_t schema_id=0;
     std::shared_ptr<const avro::ValidSchema> not_used;
     std::tie(schema_id, not_used) = _put_schema(name,  "{\"type\":\"double\"}");
     return schema_id;
-  }
+  }*/
 
   template<> inline size_t avro_serdes::encode(const double& src, std::ostream& dst) {
     static int32_t schema_id = -1;
@@ -352,12 +373,13 @@ namespace kspp {
       return 0;
   }
 
+  /*
   template<> inline  int32_t avro_serdes::register_schema(std::string name, const std::vector<uint8_t>& dummy){
     int32_t schema_id=0;
     std::shared_ptr<const avro::ValidSchema> not_used;
     std::tie(schema_id, not_used) = _put_schema(name,  "{\"type\":\"bytes\"}");
     return schema_id;
-  }
+  }*/
 
   template<> inline size_t avro_serdes::encode(const std::vector<uint8_t>& src, std::ostream& dst) {
     static int32_t schema_id = -1;
@@ -383,12 +405,13 @@ namespace kspp {
       return 0;
   }
 
+  /*
   template<> inline  int32_t avro_serdes::register_schema(std::string name, const boost::uuids::uuid& dummy){
     int32_t schema_id=0;
     std::shared_ptr<const avro::ValidSchema> not_used;
     std::tie(schema_id, not_used) = _put_schema(name,  "{\"type\":\"string\"}");
     return schema_id;
-  }
+  }*/
 
   template<> inline size_t avro_serdes::encode(const boost::uuids::uuid& src, std::ostream& dst) {
     static int32_t schema_id = -1;
@@ -474,9 +497,10 @@ namespace kspp {
     return 0; // should never get here
   }
 
-  template<> inline  int32_t avro_serdes::register_schema(std::string name, const kspp::generic_avro& dummy) {
+
+  /*template<> inline  int32_t avro_serdes::register_schema(std::string name, const kspp::generic_avro& dummy) {
     return _registry->put_schema(name, dummy.valid_schema());
-  }
+  }*/
 
   template<> inline size_t avro_serdes::encode(const kspp::generic_avro& src, std::ostream& dst) {
     assert(src.schema_id()>=0);
