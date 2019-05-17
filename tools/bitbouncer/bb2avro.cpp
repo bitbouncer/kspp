@@ -4,7 +4,7 @@
 #include <kspp/utils/env.h>
 #include <kspp/utils/kafka_utils.h>
 #include <kspp/topology_builder.h>
-#include <kspp/connect/avro_file/avro_rotating_file_sink.h>
+#include <kspp/connect/avro_file/avro_file_sink.h>
 #include <kspp/connect/bitbouncer/grpc_avro_source.h>
 
 #define SERVICE_NAME     "bb2avro"
@@ -100,7 +100,7 @@ int main(int argc, char** argv) {
   }
 
 
-bool oneshot=false;
+  bool oneshot=false;
   if (vm.count("oneshot"))
     oneshot=true;
 
@@ -120,7 +120,8 @@ bool oneshot=false;
 
   auto t = generic_builder.create_topology();
   auto source = t->create_processor<kspp::grpc_avro_source<void, kspp::generic_avro>>(0, topic, offset_storage, src_uri, bb_api_key, bb_secret_access_key);
-  auto sink = t->create_sink<kspp::avro_rotating_file_sink>(source, dst_dir, topic, 1h);
+  auto sink = t->create_sink<kspp::avro_file_sink<kspp::generic_avro>>(source, dst_dir, topic, 1h);
+
   t->start(kspp::OFFSET_STORED);
 
   std::signal(SIGINT, sigterm);

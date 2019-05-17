@@ -1,4 +1,6 @@
 #include <avro/Generic.hh>
+#include <avro/Compiler.hh>
+#include <boost/uuid/uuid.hpp>
 #pragma once
 
 namespace kspp
@@ -41,4 +43,13 @@ namespace kspp
         throw std::invalid_argument(std::string("avro convert: wrong type, expected: [LONG, INT], actual: ") + to_string(datum.type()));
     }
   }
+
+
+  template<typename T>
+  class avro_utils{
+  public:
+    static std::shared_ptr<const avro::ValidSchema> valid_schema(const T& dummy);
+  };
+
+
 }

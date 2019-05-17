@@ -49,7 +49,6 @@ int main(int argc, char **argv) {
       ("table_prefix", boost::program_options::value<std::string>()->default_value("kafka_"), "table_prefix")
       ("character_encoding", boost::program_options::value<std::string>()->default_value("UTF8"), "character_encoding")
       ("table_name_override", boost::program_options::value<std::string>(), "table_name_override")
-      ("filename", boost::program_options::value<std::string>(), "filename")
       ("pushgateway_uri", boost::program_options::value<std::string>()->default_value(get_env_and_log("PUSHGATEWAY_URI", "localhost:9091")),"pushgateway_uri")
       ("metrics_namespace", boost::program_options::value<std::string>()->default_value(get_env_and_log("METRICS_NAMESPACE", "bb")),"metrics_namespace")
       ;
@@ -165,12 +164,6 @@ int main(int argc, char **argv) {
     return 0;
   }
 
-  std::string filename;
-  if (vm.count("filename")) {
-    filename = vm["filename"].as<std::string>();
-  }
-
-
   bool postgres_disable_delete=false;
   if (vm.count("postgres_disable_delete")) {
     postgres_disable_delete = (vm["postgres_disable_delete"].as<int>() > 0);
@@ -234,13 +227,7 @@ int main(int argc, char **argv) {
   connection_params.password = postgres_password;
   connection_params.database_name = postgres_dbname;
 
-  if (filename.size()) {
-    LOG(INFO) << "using avro file..";
-    LOG(INFO) << "filename                   : " << filename;
-  }
-
   LOG(INFO) << "discovering facts...";
-
 
   auto nr_of_partitions = kspp::kafka::get_number_partitions(config, topic);
   if (partition_list.size() == 0 || partition_list[0] == -1)
@@ -252,24 +239,12 @@ int main(int argc, char **argv) {
 
   auto source0 = topology->create_processors<kspp::kafka_source<kspp::generic_avro, kspp::generic_avro, kspp::avro_serdes, kspp::avro_serdes>>(partition_list, topic, config->avro_serdes(), config->avro_serdes());
   /*https://www.postgresql.org/docs/9.3/static/multibyte.html*/
-
-
-  // if file we have to drop the key
-  if (filename.size()) {
-    auto transform = topology->create_processors<kspp::flat_map<kspp::generic_avro, kspp::generic_avro, void, kspp::generic_avro>>(
-        source0, [](const kspp::krecord<kspp::generic_avro, kspp::generic_avro>& in, auto self) {
-          if (in.value()) {
-            insert(self, *in.value());
-          }
-        });
-    topology->create_sink<kspp::avro_file_sink>(transform, "/tmp/" + table_prefix + topic + ".avro");
-  } else {
-    auto transform = topology->create_processors<kspp::flat_map<kspp::generic_avro, kspp::generic_avro, kspp::generic_avro, kspp::generic_avro>>(
-        source0, [](const kspp::krecord<kspp::generic_avro, kspp::generic_avro>& in, auto self) {
-          insert(self, in);
-        });
-    topology->create_sink<kspp::postgres_generic_avro_sink>(transform, table_name, connection_params, id_column, character_encoding, postgres_max_items_in_insert, postgres_disable_delete);
-  }
+  /*auto transform = topology->create_processors<kspp::flat_map<kspp::generic_avro, kspp::generic_avro, kspp::generic_avro, kspp::generic_avro>>(
+      source0, [](const kspp::krecord<kspp::generic_avro, kspp::generic_avro>& in, auto self) {
+        insert(self, in);
+      });
+  */
+  topology->create_sink<kspp::postgres_generic_avro_sink>(source0, table_name, connection_params, id_column, character_encoding, postgres_max_items_in_insert, postgres_disable_delete);
 
   std::string hostname = default_hostname();
 

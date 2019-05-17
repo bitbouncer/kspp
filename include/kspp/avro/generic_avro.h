@@ -208,4 +208,20 @@ namespace kspp {
   };
 }
 
+template <> struct avro::codec_traits<kspp::generic_avro> {
+  static void encode(avro::Encoder& e, const kspp::generic_avro& ga) {
+    avro::GenericWriter::write(e, *ga.generic_datum(), *ga.valid_schema());
+  }
+
+  static void decode(Decoder& d, kspp::generic_avro& ga) {
+    GenericReader::read(d, *ga.generic_datum(), *ga.valid_schema());
+  }
+};
+
+template<>
+inline std::shared_ptr<const avro::ValidSchema> kspp::avro_utils<kspp::generic_avro>::valid_schema(const kspp::generic_avro& dummy){
+  return dummy.valid_schema();
+}
+
 std::string to_json(const kspp::generic_avro& src);
+

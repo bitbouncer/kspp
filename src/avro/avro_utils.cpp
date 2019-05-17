@@ -1,5 +1,5 @@
 #include <kspp/avro/avro_utils.h>
-namespace kspp {
+namespace kspp{
   std::string to_string(avro::Type t){
     switch (t)
     {
@@ -20,5 +20,53 @@ namespace kspp {
       default:
         return "AVRO_UNKNOWN";
     };
+  }
+
+  template<>
+  std::shared_ptr<const avro::ValidSchema> avro_utils<std::string>::valid_schema(const std::string& dummy){
+    static const std::shared_ptr<const ::avro::ValidSchema> _validSchema(std::make_shared<const ::avro::ValidSchema>(::avro::compileJsonSchemaFromString("{\"type\":\"string\"}")));
+    return _validSchema;
+  }
+
+  template<>
+  std::shared_ptr<const avro::ValidSchema> avro_utils<int64_t>::valid_schema(const int64_t& dummy){
+    static const std::shared_ptr<const ::avro::ValidSchema> _validSchema(std::make_shared<const ::avro::ValidSchema>(::avro::compileJsonSchemaFromString("{\"type\":\"long\"}")));
+    return _validSchema;
+  }
+
+  template<>
+  std::shared_ptr<const avro::ValidSchema> avro_utils<int32_t>::valid_schema(const int32_t& dummy){
+    static const std::shared_ptr<const ::avro::ValidSchema> _validSchema(std::make_shared<const ::avro::ValidSchema>(::avro::compileJsonSchemaFromString("{\"type\":\"int\"}")));
+    return _validSchema;
+  }
+
+  template<>
+  std::shared_ptr<const avro::ValidSchema> avro_utils<bool>::valid_schema(const bool& dummy){
+    static const std::shared_ptr<const ::avro::ValidSchema> _validSchema(std::make_shared<const ::avro::ValidSchema>(::avro::compileJsonSchemaFromString("{\"type\":\"boolean\"}")));
+    return _validSchema;
+  }
+
+  template<>
+  std::shared_ptr<const avro::ValidSchema> avro_utils<float>::valid_schema(const float& dummy){
+    static const std::shared_ptr<const ::avro::ValidSchema> _validSchema(std::make_shared<const ::avro::ValidSchema>(::avro::compileJsonSchemaFromString("{\"type\":\"float\"}")));
+    return _validSchema;
+  }
+
+  template<>
+  std::shared_ptr<const avro::ValidSchema> avro_utils<double>::valid_schema(const double& dummy){
+    static const std::shared_ptr<const ::avro::ValidSchema> _validSchema(std::make_shared<const ::avro::ValidSchema>(::avro::compileJsonSchemaFromString("{\"type\":\"double\"}")));
+    return _validSchema;
+  }
+
+  template<>
+  std::shared_ptr<const avro::ValidSchema> avro_utils<std::vector<uint8_t>>::valid_schema(const std::vector<uint8_t>& dummy){
+    static const std::shared_ptr<const ::avro::ValidSchema> _validSchema(std::make_shared<const ::avro::ValidSchema>(::avro::compileJsonSchemaFromString("{\"type\":\"bytes\"}")));
+    return _validSchema;
+  }
+
+  template<>
+  std::shared_ptr<const avro::ValidSchema> avro_utils<boost::uuids::uuid>::valid_schema(const boost::uuids::uuid& dummy){
+    static const std::shared_ptr<const ::avro::ValidSchema> _validSchema(std::make_shared<const ::avro::ValidSchema>(::avro::compileJsonSchemaFromString("{\"type\":\"string\"}")));
+    return _validSchema;
   }
 }
