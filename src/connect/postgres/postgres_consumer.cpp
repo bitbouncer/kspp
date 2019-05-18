@@ -20,12 +20,15 @@ namespace kspp {
     size_t nFields = record.fieldCount();
     for (int j = 0; j < nFields; j++)
     {
-      if (record.fieldAt(j).type() != avro::AVRO_UNION) // this should not hold - but we fail to create correct schemas for not null columns
+      avro::GenericDatum& col = record.fieldAt(j); // expected union
+      if (!record.fieldAt(j).isUnion()) // this should not hold - but we fail to create correct schemas for not null columns
       {
+        LOG(INFO) << avro->valid_schema()->toJson();
         LOG(FATAL) << "unexpected schema - bailing out, type:" << record.fieldAt(j).type();
         break;
       }
-      avro::GenericUnion& au(record.fieldAt(j).value<avro::GenericUnion>());
+
+      //avro::GenericUnion& au(record.fieldAt(j).value<avro::GenericUnion>());
 
       const std::string& column_name = record.schema()->nameAt(j);
 
@@ -39,37 +42,38 @@ namespace kspp {
 
       if (PQgetisnull(pgres, row, column_index) == 1)
       {
-        au.selectBranch(0); // NULL branch - we hope..
-        assert(au.datum().type() == avro::AVRO_NULL);
+        col.selectBranch(0); // NULL branch - we hope..
+        assert(col.type() == avro::AVRO_NULL);
       }
       else
       {
-        au.selectBranch(1);
-        avro::GenericDatum& avro_item(au.datum());
+        col.selectBranch(1);
+        //au.selectBranch(1);
+        //avro::GenericDatum& avro_item(au.datum());
         const char* val = PQgetvalue(pgres, row, j);
 
-        switch (avro_item.type())
+        switch (col.type())
         {
           case avro::AVRO_STRING:
-            avro_item.value<std::string>() = val;
+            col.value<std::string>() = val;
             break;
           case avro::AVRO_BYTES:
-            avro_item.value<std::string>() = val;
+            col.value<std::string>() = val;
             break;
           case avro::AVRO_INT:
-            avro_item.value<int32_t>() = atoi(val);
+            col.value<int32_t>() = atoi(val);
             break;
           case avro::AVRO_LONG:
-            avro_item.value<int64_t>() = std::stoull(val);
+            col.value<int64_t>() = std::stoull(val);
             break;
           case avro::AVRO_FLOAT:
-            avro_item.value<float>() = (float)atof(val);
+            col.value<float>() = (float)atof(val);
             break;
           case avro::AVRO_DOUBLE:
-            avro_item.value<double>() = atof(val);
+            col.value<double>() = atof(val);
             break;
           case avro::AVRO_BOOL:
-            avro_item.value<bool>() = (val[0]=='t' || val[0]=='T' || val[0]=='1');
+            col.value<bool>() = (val[0]=='t' || val[0]=='T' || val[0]=='1');
             break;
           case avro::AVRO_RECORD:
           case avro::AVRO_ENUM:
@@ -79,7 +83,7 @@ namespace kspp {
           case avro::AVRO_FIXED:
           case avro::AVRO_NULL:
           default:
-            LOG(FATAL) << "unexpected / non supported type e:" << avro_item.type();
+            LOG(FATAL) << "unexpected / non supported type e:" << col.type();
         }
       }
     }

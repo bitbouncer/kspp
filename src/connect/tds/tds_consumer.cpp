@@ -21,7 +21,7 @@ namespace kspp {
     // this checks the requested fields - should only be done once
     for (int i = 0; i < nFields; i++)
     {
-      if (record.fieldAt(i).type() != avro::AVRO_UNION) // TODO this should not hold - but we fail to create correct schemas for not null columns
+      if (!record.fieldAt(i).isUnion()) // TODO this should not hold - but we fail to create correct schemas for not null columns
       {
         LOG(FATAL) << "unexpected schema - bailing out, type:" << record.fieldAt(i).type();
         break;
@@ -33,11 +33,12 @@ namespace kspp {
       if (src_column < 0)
         LOG(FATAL) << "cannot find column, name: " << record.schema()->nameAt(dst_column);
 
-      avro::GenericUnion &au(record.fieldAt(dst_column).value<avro::GenericUnion>());
+      avro::GenericDatum& col = record.fieldAt(dst_column); // expected union
+      //avro::GenericUnion &au(record.fieldAt(dst_column).value<avro::GenericUnion>());
 
       if (dbdata(stream, src_column + 1) == nullptr) {
-        au.selectBranch(0); // NULL branch - we hope..
-        assert(au.datum().type() == avro::AVRO_NULL);
+        col.selectBranch(0); // NULL branch - we hope..
+        assert(col.type() == avro::AVRO_NULL);
         continue;
       }
 
@@ -45,27 +46,24 @@ namespace kspp {
       COL *pcol = &columns[src_column];
       if (pcol->buffer) {
         if (pcol->status == -1) {
-          au.selectBranch(0); // NULL branch - we hope..
-          assert(au.datum().type() == avro::AVRO_NULL);
+          col.selectBranch(0); // NULL branch - we hope..
+          assert(col.type() == avro::AVRO_NULL);
         } else {
-          au.selectBranch(1);
-          avro::GenericDatum &avro_item(au.datum());
-          std::string s = pcol->buffer;
-          avro_item.value<std::string>() = s;
+          col.selectBranch(1);
+          col.value<std::string>() = pcol->buffer;
         }
         continue;
       }
 
       // normal parsing and not null
-      au.selectBranch(1);
-      avro::GenericDatum &avro_item(au.datum());
+      col.selectBranch(1);
 
       switch (dbcoltype(stream, src_column + 1)){
         case tds::SYBINT2: {
           int16_t v;
           assert(sizeof(v) == dbdatlen(stream, src_column + 1));
           memcpy(&v, dbdata(stream, src_column + 1), sizeof(v));
-          avro_item.value<int32_t>() = v;
+          col.value<int32_t>() = v;
         }
           break;
 
@@ -73,7 +71,7 @@ namespace kspp {
           int32_t v;
           assert(sizeof(v) == dbdatlen(stream, src_column + 1));
           memcpy(&v, dbdata(stream, src_column + 1), sizeof(v));
-          avro_item.value<int32_t>() = v;
+          col.value<int32_t>() = v;
         }
           break;
 
@@ -81,7 +79,7 @@ namespace kspp {
           int64_t v;
           assert(sizeof(v) == dbdatlen(stream, src_column + 1));
           memcpy(&v, dbdata(stream, src_column + 1), sizeof(v));
-          avro_item.value<int64_t>() = v;
+          col.value<int64_t>() = v;
         }
           break;
 
@@ -89,7 +87,7 @@ namespace kspp {
           double v;
           assert(sizeof(v) == dbdatlen(stream, src_column + 1));
           memcpy(&v, dbdata(stream, src_column + 1), sizeof(v));
-          avro_item.value<double>() = v;
+          col.value<double>() = v;
         }
           break;
 
@@ -98,7 +96,7 @@ namespace kspp {
           int sz = dbdatlen(stream, src_column + 1);
           s.reserve(sz);
           s.assign((const char *) dbdata(stream, src_column + 1), sz);
-          avro_item.value<std::string>() = s;
+          col.value<std::string>() = s;
         }
           break;
 
@@ -108,7 +106,7 @@ namespace kspp {
           //s.reserve(sz);
           //s.assign((const char *) dbdata(stream, i + 1), sz);
           //avro_item.value<std::string>() = s;
-          avro_item.value<std::string>() = "cannot parse, type:" + std::to_string(dbcoltype(stream, src_column + 1));
+          col.value<std::string>() = "cannot parse, type:" + std::to_string(dbcoltype(stream, src_column + 1));
         }
           break;
 
@@ -127,7 +125,7 @@ namespace kspp {
           swapped.data[5] = u.data[4];
           swapped.data[6] = u.data[7];
           swapped.data[7] = u.data[6];
-          avro_item.value<std::string>() = boost::uuids::to_string(swapped);
+          col.value<std::string>() = boost::uuids::to_string(swapped);
         }
           break;
 
@@ -141,7 +139,7 @@ namespace kspp {
           else
             v=true;
 
-          avro_item.value<bool>() = v;
+          col.value<bool>() = v;
         }
           break;
 
@@ -172,8 +170,8 @@ namespace kspp {
         default:{
           const char* cname = dbcolname(stream, src_column + 1);
           int ctype = dbcoltype(stream, src_column + 1);
-          au.selectBranch(0); // NULL branch - we hope..
-          assert(au.datum().type() == avro::AVRO_NULL);
+          col.selectBranch(0); // NULL branch - we hope..
+          assert(col.type() == avro::AVRO_NULL);
           //avro_item.value<std::string>() = "cannot_parse:" + std::to_string(dbcoltype(stream, i + 1));
           LOG(ERROR) << "unexpected / non supported type, column: " << cname << ", type:" << ctype;
         }
@@ -199,14 +197,14 @@ namespace kspp {
       , _partition(partition)
       , _consumer_group(consumer_group)
       , _offset_storage_path(tp.offset_storage)
-      , cp_(cp)
-      , tp_(tp)
+      , _cp(cp)
+      , _tp(tp)
       , _read_cursor(tp, id_column, ts_column)
       , _id_column(id_column)
-      , schema_registry_(schema_registry)
+      , _schema_registry(schema_registry)
       , _commit_chain(logical_name, partition)
-      , key_schema_id_(-1)
-      , val_schema_id_(-1)
+      , _key_schema_id(-1)
+      , _val_schema_id(-1)
       , _msg_cnt(0)
       , _good(true)
       , _closed(false)
@@ -216,7 +214,7 @@ namespace kspp {
     if (_offset_storage_path.size()){
       boost::filesystem::create_directories(boost::filesystem::path(_offset_storage_path).parent_path());
     }
-    std::string top_part(" TOP " + std::to_string(tp_.max_items_in_fetch));
+    std::string top_part(" TOP " + std::to_string(_tp.max_items_in_fetch));
     // assumed to start with "SELECT"
     _query.insert(6,top_part);
     LOG(INFO) << " REAL QUERY: "  << _query;
@@ -271,7 +269,7 @@ namespace kspp {
 
   bool tds_consumer::initialize() {
     if (!_connection->connected())
-      _connection->connect(cp_);
+      _connection->connect(_cp);
 
     // should we check more thing in database
 
@@ -317,35 +315,35 @@ namespace kspp {
     //TODO what name should we segister this under.. source/database/table ? table seems to week
 
     // first time?
-    if (!this->val_schema_) {
+    if (!this->_val_schema) {
 
       _read_cursor.init(stream);
 
       auto ncols = dbnumcols(stream);
-      if (!key_schema_) {
+      if (!_key_schema) {
         if (_id_column.size() == 0)
-          key_schema_ = std::make_shared<avro::ValidSchema>(avro::NullSchema());
+          _key_schema = std::make_shared<avro::ValidSchema>(avro::NullSchema());
         else
-          key_schema_ = tds::schema_for_table_key(_logical_name + "_key", {_id_column}, stream);
+          _key_schema = tds::schema_for_table_key(_logical_name + "_key", {_id_column}, stream);
 
 
-        if (schema_registry_) {
-          key_schema_id_ = schema_registry_->put_schema(_logical_name + "-key", key_schema_);
+        if (_schema_registry) {
+          _key_schema_id = _schema_registry->put_schema(_logical_name + "-key", _key_schema);
         }
 
         std::stringstream ss0;
-        key_schema_->toJson(ss0);
+        _key_schema->toJson(ss0);
         LOG(INFO) << "key_schema: \n" << ss0.str();
       }
 
-      this->val_schema_ = tds::schema_for_table_row(_logical_name + "_value", stream);
-      if (schema_registry_) {
-        val_schema_id_ = schema_registry_->put_schema(_logical_name + "-value", val_schema_); // we should probably prepend the name with a prefix (like _my_db_table_name)
+      this->_val_schema = tds::schema_for_table_row(_logical_name + "_value", stream);
+      if (_schema_registry) {
+        _val_schema_id = _schema_registry->put_schema(_logical_name + "-value", _val_schema); // we should probably prepend the name with a prefix (like _my_db_table_name)
       }
 
       // print schema first time...
       std::stringstream ss;
-      this->val_schema_->toJson(ss);
+      this->_val_schema->toJson(ss);
       LOG(INFO) << "schema:";
       LOG(INFO) << ss.str();
     }
@@ -355,15 +353,15 @@ namespace kspp {
     // it could be stronger if we generated the select from schema instead of relying on select *
     // for now this should be ok if the schema is not changed between queries...
 
-    auto key = std::make_shared<kspp::generic_avro>(key_schema_, key_schema_id_);
+    auto key = std::make_shared<kspp::generic_avro>(_key_schema, _key_schema_id);
     load_avro_by_name(key.get(), stream, columns);
-    auto val = std::make_shared<kspp::generic_avro>(val_schema_, val_schema_id_);
+    auto val = std::make_shared<kspp::generic_avro>(_val_schema, _val_schema_id);
     load_avro_by_name(val.get(), stream, columns);
 
     // could be done from the shared_ptr key?
-    if (!last_key_)
-      last_key_ = std::make_unique<kspp::generic_avro>(key_schema_, key_schema_id_);
-    load_avro_by_name(last_key_.get(), stream, columns);
+    if (!_last_key)
+      _last_key = std::make_unique<kspp::generic_avro>(_key_schema, _key_schema_id);
+    load_avro_by_name(_last_key.get(), stream, columns);
 
     _read_cursor.parse(stream);
     int64_t tick_ms = _read_cursor.last_ts_ms();
@@ -493,7 +491,7 @@ namespace kspp {
       // have we lost connection ?
       if (!_connection->connected()) {
         //_eof = false;
-        if (!_connection->connect(cp_))
+        if (!_connection->connect(_cp))
         {
           std::this_thread::sleep_for(10s);
           continue;
@@ -536,10 +534,10 @@ namespace kspp {
 
       commit(false);
 
-      if (messages_in_batch<tp_.max_items_in_fetch) {
+      if (messages_in_batch<_tp.max_items_in_fetch) {
         _eof = true;
         _read_cursor.set_eof(_eof);
-        int count = tp_.poll_intervall.count();
+        int count = _tp.poll_intervall.count();
         if (count>61) {
           LOG(INFO) << "sleeping POLL INTERVALL: " << count;
         }

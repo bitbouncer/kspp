@@ -95,20 +95,20 @@ namespace kspp {
     int64_t _last_commited_ts_ticks=0;
     int64_t _last_flushed_ticks=0;
 
-    const kspp::connect::connection_params cp_;
-    const kspp::connect::table_params tp_;
+    const kspp::connect::connection_params _cp;
+    const kspp::connect::table_params _tp;
 
     std::string _query;
     tds_read_cursor _read_cursor;
 
     const std::string _id_column;
 
-    std::shared_ptr<kspp::avro_schema_registry> schema_registry_;
-    std::shared_ptr<avro::ValidSchema> val_schema_;
-    std::shared_ptr<avro::ValidSchema> key_schema_;
-    std::unique_ptr<kspp::generic_avro> last_key_;
-    int32_t key_schema_id_;
-    int32_t val_schema_id_;
+    std::shared_ptr<kspp::avro_schema_registry> _schema_registry;
+    std::shared_ptr<avro::ValidSchema> _val_schema;
+    std::shared_ptr<avro::ValidSchema> _key_schema;
+    std::unique_ptr<kspp::generic_avro> _last_key;
+    int32_t _key_schema_id;
+    int32_t _val_schema_id;
     event_queue<kspp::generic_avro, kspp::generic_avro> _incomming_msg;
 
     uint64_t _msg_cnt; // TODO move to metrics
