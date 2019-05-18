@@ -32,17 +32,6 @@ namespace kspp {
         if(field.type() == cpp_to_avro_type<T>())
           return field.value<T>();
 
-        if (field.isUnion()) {
-          const avro::GenericUnion &generic_union(field.value<avro::GenericUnion>());
-          if(generic_union.datum().type() == cpp_to_avro_type<T>()) {
-            return generic_union.datum().value<T>();
-          } else if (generic_union.datum().type() == avro::AVRO_NULL) {
-            throw std::invalid_argument(std::string("wrong type, expected:") + to_string(cpp_to_avro_type<T>())+ ", actual: " + to_string(generic_union.datum().type()));
-          } else {
-            //bad type - throw...
-            throw std::invalid_argument(std::string("wrong type, expected:") + to_string(cpp_to_avro_type<T>())+ ", actual: " + to_string(generic_union.datum().type()));
-          }
-        }
         throw std::invalid_argument(std::string("wrong type, expected:") + to_string(cpp_to_avro_type<T>()) +  ", actual: " + to_string(field.type()));
       }
 
@@ -50,18 +39,15 @@ namespace kspp {
       boost::optional<T> get_optional(const std::string& name) const{
         if (!record_.hasField(name))
           throw std::invalid_argument("no such member: " + name);
-
         const avro::GenericDatum &field = record_.field(name);
 
-        if (field.isUnion()) {
-          const avro::GenericUnion &generic_union(field.value<avro::GenericUnion>());
-          if (generic_union.datum().type() == avro::AVRO_NULL)
+        if (field.type() == avro::AVRO_NULL)
             return boost::none;
-          else
-            return convert<T>(generic_union.datum());
-        } else {
+
+        if(field.type() == cpp_to_avro_type<T>())
           return convert<T>(field);
-        }
+
+        throw std::invalid_argument(std::string("wrong type, expected:") + to_string(cpp_to_avro_type<T>()) +  ", actual: " + to_string(field.type()));
       }
 
       boost::optional<std::string> get_optional_as_string(const std::string& name) const{
@@ -70,26 +56,7 @@ namespace kspp {
 
         const avro::GenericDatum &field = record_.field(name);
 
-        if (field.isUnion()) {
-          const avro::GenericUnion &generic_union(field.value<avro::GenericUnion>());
-          switch (generic_union.datum().type()) {
-            case avro::AVRO_NULL:
-              return boost::none;
-            case avro::AVRO_STRING :
-              return convert<std::string>(generic_union.datum());
-            case avro::AVRO_INT:
-              return std::to_string(convert<int32_t>(generic_union.datum()));
-            case avro::AVRO_LONG:
-              return std::to_string(convert<int64_t>(generic_union.datum()));
-            case avro::AVRO_FLOAT:
-              return std::to_string(convert<float>(generic_union.datum()));
-            case avro::AVRO_DOUBLE:
-              return std::to_string(convert<double>(generic_union.datum()));
-            case avro::AVRO_BOOL:
-              return std::to_string(convert<bool>(generic_union.datum()));
-          }
-        } else {
-          switch (field.type()) {
+        switch (field.type()) {
             case avro::AVRO_NULL:
               return boost::none;
             case avro::AVRO_STRING :
@@ -105,7 +72,6 @@ namespace kspp {
             case avro::AVRO_BOOL:
               return std::to_string(convert<bool>(field));
           }
-        }
         return boost::none; // TODO not a good default - throw exception
       }
 
@@ -120,19 +86,9 @@ namespace kspp {
         if(field.type() == cpp_to_avro_type<T>())
           return field.value<T>();
 
-        if (field.isUnion()) {
-          const avro::GenericUnion &generic_union(field.value<avro::GenericUnion>());
-          if(generic_union.datum().type() == cpp_to_avro_type<T>()) {
-            return generic_union.datum().value<T>();
-          } else if (generic_union.datum().type() == avro::AVRO_NULL) {
-            return default_value; // should we do this? no value -> default  but null -> null????
-            // we could have a default value here....
-            //return null or T
-          } else {
-            //bad type - throw...
-            throw std::invalid_argument(std::string("wrong type, expected:") + to_string(cpp_to_avro_type<T>())+ ", actual: " + to_string(generic_union.datum().type()));
-          }
-        }
+        if(field.type() == avro::AVRO_NULL)
+          return default_value;
+
         throw std::invalid_argument(std::string("wrong type, expected:") + to_string(cpp_to_avro_type<T>()) +  ", actual: " + to_string(field.type()));
       }
 
@@ -141,16 +97,7 @@ namespace kspp {
           throw std::invalid_argument("no such member: " + name);
 
         const avro::GenericDatum &field = record_.field(name);
-
-        if(field.type() == avro::AVRO_NULL) // can this ever happen???
-          return true;
-
-        if (field.isUnion()) {
-          const avro::GenericUnion &generic_union(field.value<avro::GenericUnion>());
-          return (generic_union.datum().type() == avro::AVRO_NULL);
-        }
-
-        return false;
+        return field.type() == avro::AVRO_NULL;
       }
 
       std::string to_json() const;

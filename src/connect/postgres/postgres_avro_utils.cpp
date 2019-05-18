@@ -375,8 +375,9 @@ namespace kspp {
         // nullable columns are represented as union of NULL and value
         // parse those recursive
         case avro::AVRO_UNION: {
-          const avro::GenericUnion &au(column.value<avro::GenericUnion>());
-          return avro_2_sql_simple_column_value(au.datum());
+          LOG(FATAL) << "avro union";
+          //const avro::GenericUnion &au(column.value<avro::GenericUnion>());
+          //return avro_2_sql_simple_column_value(au.datum());
         }
         case avro::AVRO_NULL:
           return "NULL";

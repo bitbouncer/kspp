@@ -6,7 +6,7 @@
 #include <kspp/utils/string_utils.h>
 
 namespace kspp {
-  static avro::Type avro2elastic_simple_column_type(const avro::GenericDatum &column) {
+  /*static avro::Type avro2elastic_simple_column_type(const avro::GenericDatum &column) {
     auto t = column.type();
     // nullable columns are represented as union of NULL and value
     // parse those recursive
@@ -17,6 +17,7 @@ namespace kspp {
       return t;
     }
   }
+   */
 
   // only maps simple types to value
   std::string avro_2_json_simple_column_value(const avro::GenericDatum &column) {
@@ -25,8 +26,11 @@ namespace kspp {
       // nullable columns are represented as union of NULL and value
       // parse those recursive
       case avro::AVRO_UNION: {
-        const avro::GenericUnion &au(column.value<avro::GenericUnion>());
-        return avro_2_json_simple_column_value(au.datum());
+        assert(false);
+        LOG(FATAL) << "unexpected / non supported type e:" << column.type();
+        return "UNION!!!";
+        //const avro::GenericUnion &au(column.value<avro::GenericUnion>());
+        //return avro_2_json_simple_column_value(au.datum());
       }
       case avro::AVRO_NULL:
         return "NULL";
@@ -79,7 +83,7 @@ namespace kspp {
         bool has_previous = false;
         for (int i = 0; i < nFields; i++) {
           // null columns should nbot be exported to elastic search
-          if (avro2elastic_simple_column_type(record.fieldAt(i)) != avro::AVRO_NULL) {
+          if (record.fieldAt(i).type() != avro::AVRO_NULL) {
             if (has_previous)
               s += ", ";
             s += "\"" + record.schema()->nameAt(i) + "\": " + avro_2_json_simple_column_value(record.fieldAt(i));
@@ -90,7 +94,6 @@ namespace kspp {
         return s;
       }
       break;
-
 
       case avro::AVRO_ENUM:
       case avro::AVRO_MAP:
@@ -108,8 +111,11 @@ namespace kspp {
       // nullable columns are represented as union of NULL and value
       // parse those recursive
       case avro::AVRO_UNION: {
-        const avro::GenericUnion &au(column.value<avro::GenericUnion>());
-        return avro_2_raw_column_value(au.datum());
+        assert(false);
+        LOG(FATAL) << "unexpected / non supported type e:" << column.type();
+        //const avro::GenericUnion &au(column.value<avro::GenericUnion>());
+        //return avro_2_raw_column_value(au.datum());
+        return "UNION!!!";
       }
       case avro::AVRO_NULL:
         return "NULL";
@@ -158,7 +164,7 @@ namespace kspp {
     bool has_previous = false;
     for (int i = 0; i < nFields; i++) {
       // null columns should nbot be exported to elastic search
-      if (avro2elastic_simple_column_type(record.fieldAt(i)) != avro::AVRO_NULL) {
+      if (record.fieldAt(i).type() != avro::AVRO_NULL) {
         if (has_previous)
           result += ", ";
         result += "\"" + r->nameAt(i) + "\": " + avro_2_json_simple_column_value(record.fieldAt(i));
