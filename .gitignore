@@ -2,5 +2,6 @@ cmake-build-*
 bin
 build
 lib
+tmp
 .idea
 *~
