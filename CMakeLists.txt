@@ -62,14 +62,24 @@ endif ()
 find_package(rapidjson REQUIRED)
 find_package(AvroCPP REQUIRED)
 
+find_package(Snappy)
+if (SNAPPY_FOUND)
+    set(SNAPPY_PKG libsnappy)
+    add_definitions(-DSNAPPY_CODEC_AVAILABLE)
+    message("Enabled snappy codec")
+else (SNAPPY_FOUND)
+    set(SNAPPY_PKG "")
+    set(SNAPPY_LIBRARIES "")
+    message("Disabled snappy codec. libsnappy not found.")
+endif (SNAPPY_FOUND)
+
 SET(CSI_INCLUDE_PATH
         ${CSI_INCLUDE_PATH}
         ${RAPIDJSON_INCLUDEDIR}
         ${AVRO_INCLUDE_DIRS})
 
 #        SET(AVRO_LIBS avrocpp_s curl)
-SET(AVRO_LIBS ${AVRO_LIBRARIES} curl)
-
+SET(AVRO_LIBS ${AVRO_LIBRARIES} curl ${SNAPPY_LIBRARIES})
 
 if (ENABLE_ZK)
     SET(CSI_INCLUDE_PATH

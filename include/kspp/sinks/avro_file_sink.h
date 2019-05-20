@@ -77,8 +77,11 @@ namespace kspp {
           _current_file_name = _parent_path + "/" + _base_name + "-" + std::to_string(r->event_time()) + ".avro";
           _end_of_windows_ts =  r->event_time() + (_window_size.count() * 1000); // should we make another kind of window that plays nice with 24h?
           _messages_in_file = 0;
-          //_file_writer = std::make_shared<avro::DataFileWriter<avro::GenericDatum>>(_current_file_name.c_str(), *schema, 16 * 1024, avro::DEFLATE_CODEC);
+#ifdef SNAPPY_CODEC_AVAILABLE
+          _file_writer = std::make_shared<avro::DataFileWriter<V>>(_current_file_name.c_str(), *schema, 16 * 1024, avro::SNAPPY_CODEC);
+#else
           _file_writer = std::make_shared<avro::DataFileWriter<V>>(_current_file_name.c_str(), *schema, 16 * 1024, avro::DEFLATE_CODEC);
+#endif
         }
 
         // null value protection
