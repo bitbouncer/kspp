@@ -1,4 +1,5 @@
 add_subdirectory(kspp_avrogencpp)
+add_subdirectory(kafka2avro)
 
 IF (ENABLE_INFLUXDB)
 	add_subdirectory(kafka2influxdb)

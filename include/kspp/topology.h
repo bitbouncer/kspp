@@ -109,7 +109,7 @@ namespace kspp {
       return p;
     }
 
-    // create from vector of sources - return one (kafka sink)
+    // create from single source - return one (kafka sink)
     template<class pp, class source, typename... Args>
     typename std::enable_if<std::is_base_of<kspp::processor, pp>::value, std::shared_ptr<pp>>::type
     create_sink(std::shared_ptr<source> src, Args... args) {

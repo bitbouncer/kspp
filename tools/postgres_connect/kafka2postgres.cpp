@@ -8,7 +8,7 @@
 #include <boost/bind.hpp>
 #include <boost/make_shared.hpp>
 #include <kspp/connect/postgres/postgres_generic_avro_sink.h>
-#include <kspp/connect/avro_file/avro_file_sink.h>
+#include <kspp/sinks/avro_file_sink.h>
 #include <kspp/processors/transform.h>
 #include <kspp/processors/flat_map.h>
 #include <kspp/metrics/prometheus_pushgateway_reporter.h>

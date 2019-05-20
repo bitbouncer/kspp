@@ -9,7 +9,7 @@
 #include <kspp/utils/env.h>
 #include <kspp/connect/tds/tds_connection.h>
 #include <kspp/connect/tds/tds_generic_avro_source.h>
-#include <kspp/connect/avro_file/avro_file_sink.h>
+#include <kspp/sinks/avro_file_sink.h>
 #include <kspp/processors/transform.h>
 #include <kspp/processors/flat_map.h>
 #include <clocale>
