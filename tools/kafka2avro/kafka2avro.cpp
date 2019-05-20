@@ -1,6 +1,9 @@
 #include <iostream>
 #include <csignal>
 #include <boost/program_options.hpp>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
 #include <kspp/utils/env.h>
 #include <kspp/utils/kafka_utils.h>
 #include <kspp/topology_builder.h>
@@ -44,11 +47,16 @@ int main(int argc, char** argv) {
     return 0;
   }
 
-  std::string consumer_group(SERVICE_NAME);
-
+  std::string consumer_group;
   if (vm.count("consumer_group")) {
     consumer_group = vm["consumer_group"].as<std::string>();
   }
+  if (consumer_group.empty()){
+    boost::uuids::random_generator gen;
+    boost::uuids::uuid id = gen();
+    consumer_group = boost::uuids::to_string(id);
+  }
+
   auto config = std::make_shared<kspp::cluster_config>(consumer_group);
 
   config->load_config_from_env();
@@ -137,8 +145,8 @@ int main(int argc, char** argv) {
   kspp::topology_builder generic_builder(config);
 
   auto t = generic_builder.create_topology();
-  auto source = t->create_processors<kspp::kafka_source<kspp::generic_avro, kspp::generic_avro, kspp::avro_serdes, kspp::avro_serdes>>(partition_list, topic, config->avro_serdes(), config->avro_serdes());
-  auto sink = t->create_sink<kspp::avro_file_sink<kspp::generic_avro>>(dst_dir, topic, 1h);
+  auto source = t->create_processors<kspp::kafka_source<void, kspp::generic_avro, void, kspp::avro_serdes>>(partition_list, topic, config->avro_serdes());
+  auto sink = t->create_sink<kspp::avro_file_sink<kspp::generic_avro>>(source, dst_dir, topic, 1h);
   t->start(start_offset);
 
   std::signal(SIGINT, sigterm);
