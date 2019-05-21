@@ -84,7 +84,7 @@ namespace kspp {
     bool _closed;
 
     std::thread _bg;
-    std::shared_ptr<kspp_tds::connection> _connection;
+    std::unique_ptr<kspp_tds::connection> _connection;
 
     const std::string _logical_name;
     const int32_t _partition;

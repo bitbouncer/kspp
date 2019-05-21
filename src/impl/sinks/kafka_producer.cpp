@@ -196,8 +196,8 @@ namespace kspp {
     }
     */
 
-    _rd_topic = nullptr;
-    _producer = nullptr;
+    _rd_topic.reset(nullptr);
+    _producer.reset(nullptr);
     LOG(INFO) << "topic:" << _topic << ", kafka producer closed - produced " << _msg_cnt << " messages (" << _msg_bytes << " bytes)";
   }
 

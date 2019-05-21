@@ -1,6 +1,7 @@
 #include <kspp/cluster_metadata.h>
 #include <thread>
 #include <glog/logging.h>
+#include <librdkafka/rdkafka.h> // for stuff that only exists in c code (in rdkafka)
 #include <kspp/cluster_config.h>
 #include <kspp/impl/rd_kafka_utils.h>
 
@@ -18,7 +19,7 @@ namespace kspp{
   // NEEDS TO BE REWRITTEN USING USING C++ API
 
   // copy of c++ code
-  static void set_config(rd_kafka_conf_t* rd_conf, std::string key, std::string value) {
+  /*static void set_config(rd_kafka_conf_t* rd_conf, std::string key, std::string value) {
     char errstr[128];
     if (rd_kafka_conf_set(rd_conf, key.c_str(), value.c_str(), errstr, sizeof(errstr)) !=  RD_KAFKA_CONF_OK) {
       throw std::invalid_argument("\"" + key + "\" -> " + value + ", error: " + errstr);
@@ -43,31 +44,22 @@ namespace kspp{
         set_config(rd_conf, "ssl.key.password", config->get_private_key_passphrase());
     }
   }
+   */
 
-
-  cluster_metadata::cluster_metadata(const cluster_config* config)
-      : rk_c_handle_(nullptr)
-      , _debug_cc(config) {
-    auto rd_conf = rd_kafka_conf_new();
+  cluster_metadata::cluster_metadata(const cluster_config* config) {
+    /*auto rd_conf = rd_kafka_conf_new();
     try {
       set_broker_config(rd_conf, config);
-      //set_config(rd_conf, "api.version.request", "true");
     } catch (std::exception& e) {
       LOG(FATAL) << "could not set rd kafka config : " << e.what();
-    }
-
-    {
-      char errstr[128];
-      rk_c_handle_ = rd_kafka_new(RD_KAFKA_PRODUCER, rd_conf, errstr, sizeof(errstr));
-      LOG_IF(FATAL, rk_c_handle_ == nullptr) << "rd_kafka_new failed err: " << errstr;
-    }
+    }*/
 
     {
       std::string errstr;
       std::unique_ptr<RdKafka::Conf> conf(RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL));
 
       //
-      // Set configuration properties
+      // Set configuration properties TODO should we not have SSL config like elsewhere??
       //
       try {
         ::set_broker_config(conf.get(), config);
@@ -77,42 +69,20 @@ namespace kspp{
         LOG(FATAL) << " bad config: " << e.what();
       }
 
-      rk_cpp_handle_ = std::unique_ptr<RdKafka::Producer>(RdKafka::Producer::create(conf.get(), errstr));
-      if (!rk_cpp_handle_) {
+      _rk_handle = std::unique_ptr<RdKafka::Producer>(RdKafka::Producer::create(conf.get(), errstr));
+      if (!_rk_handle) {
         LOG(FATAL) << ", failed to create producer:" << errstr;
       }
     }
 
-    init();
-  }
-
-  cluster_metadata::~cluster_metadata(){
-    if (rk_c_handle_)
-      rd_kafka_destroy(rk_c_handle_);
-  }
-
-  void cluster_metadata::init(){
-    auto expires = milliseconds_since_epoch() + 1000 * _debug_cc->get_cluster_state_timeout().count();
-
     std::string errstr;
     std::unique_ptr<RdKafka::Conf> conf(RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL));
-    /*
- * Set configuration properties
- */
-    try {
-      ::set_broker_config(conf.get(), _debug_cc);
-      //::set_config(conf.get(), "api.version.request", "true");
-    }
-    catch (std::invalid_argument &e) {
-      LOG(FATAL) << "init: " << " bad config " << e.what();
-    }
-    auto producer = std::unique_ptr<RdKafka::Producer>(RdKafka::Producer::create(conf.get(), errstr));
-    if (!producer) {
-      LOG(FATAL) << "failed to create producer:" << errstr;
-    }
 
     bool done = false;
     bool one_reply = false;
+
+    int64_t expires = milliseconds_since_epoch() + config->get_cluster_state_timeout().count()*1000;
+
     while (!done){
       if (expires < milliseconds_since_epoch()) {
         if (!one_reply)
@@ -121,7 +91,7 @@ namespace kspp{
       }
 
       RdKafka::Metadata *md = nullptr;
-      auto ec = producer->metadata(true, nullptr, &md, 5000);
+      auto ec = _rk_handle->metadata(true, nullptr, &md, 5000);
       if (ec == 0) {
         one_reply = true;
         done = true;
@@ -155,70 +125,25 @@ namespace kspp{
     }
   }
 
+  cluster_metadata::~cluster_metadata(){
+    close();
+  }
+
+  void cluster_metadata::close(){
+    _rk_handle.reset(nullptr);
+  }
+
   void cluster_metadata::validate()
   {
   }
 
-  bool group_exists2(const cluster_config* cconfig, std::string group_id) {
-    char errstr[128];
-    rd_kafka_t *rk = nullptr;
-    rd_kafka_conf_t *rd_conf = rd_kafka_conf_new();
-    set_broker_config(rd_conf, cconfig);
-
-    /* Create Kafka C handle */
-    if (!(rk = rd_kafka_new(RD_KAFKA_PRODUCER, rd_conf, errstr, sizeof(errstr)))) {
-      LOG(FATAL) << "rd_kafka_new failed";
-      rd_kafka_conf_destroy(rd_conf);
-    }
-
-    rd_kafka_resp_err_t err = RD_KAFKA_RESP_ERR_NO_ERROR;
-    const struct rd_kafka_group_list *grplist = nullptr;
-    int retries = 5; // 5 sec
-
-    /* FIXME: Wait for broker to come up. This should really be abstracted by librdkafka. */
-    do {
-
-      if (err) {
-        DLOG(ERROR) << "retrying group list in 1s, ec: " << rd_kafka_err2str(err);
-        std::this_thread::sleep_for(1s);
-      } else if (grplist) {
-        // the previous call must have succeded bu returned an empty list -
-        // bug in rdkafka when using ssl - we cannot separate this from a non existent group - we must retry...
-        LOG_IF(FATAL, grplist->group_cnt != 0) << "group list should be empty";
-        rd_kafka_group_list_destroy(grplist);
-        LOG(INFO) << "got empty group list - retrying in 1s";
-        std::this_thread::sleep_for(1s);
-      }
-      err = rd_kafka_list_groups(rk, group_id.c_str(), &grplist, 5000);
-      DLOG_IF(INFO, err != 0) << "rd_kafka_list_groups: " << group_id.c_str() << ", res: " << err;
-      DLOG_IF(INFO, err == 0) << "rd_kafka_list_groups: " << group_id.c_str() << ", res: OK" << " grplist->group_cnt: "
-                              << grplist->group_cnt;
-    } while ((err == RD_KAFKA_RESP_ERR__TRANSPORT ||
-              err == RD_KAFKA_RESP_ERR_GROUP_LOAD_IN_PROGRESS) || (err == 0 && grplist && grplist->group_cnt == 0) &&
-                                                                  retries-- > 0);
-
-    if (err) {
-      LOG(ERROR) << "failed to retrieve groups, ec: " << rd_kafka_err2str(err);
-      rd_kafka_destroy(rk);
-      throw std::runtime_error(rd_kafka_err2str(err));
-    }
-
-    bool found = (grplist->group_cnt > 0);
-    rd_kafka_group_list_destroy(grplist);
-    rd_kafka_destroy(rk);
-    return found;
-  }
-
-
   bool cluster_metadata::consumer_group_exists(std::string consumer_group, std::chrono::seconds timeout) const {
-    //bool s= group_exists2(_debug_cc, consumer_group);
+    std::lock_guard<std::mutex> guard(_mutex);
 
-    std::lock_guard<std::mutex> guard(mutex_);
-
-    if (available_consumer_groups_.find(consumer_group)!=available_consumer_groups_.end())
+    if (_available_consumer_groups.find(consumer_group)!=_available_consumer_groups.end())
       return true;
 
-    if (missing_consumer_groups_.find(consumer_group)!=missing_consumer_groups_.end())
+    if (_missing_consumer_groups.find(consumer_group)!=_missing_consumer_groups.end())
       return false;
 
     char errstr[128];
@@ -229,7 +154,7 @@ namespace kspp{
     /* FIXME: Wait for broker to come up. This should really be abstracted by librdkafka. */
     do {
       if (expires < milliseconds_since_epoch()) {
-        missing_consumer_groups_.insert(consumer_group);
+        _missing_consumer_groups.insert(consumer_group);
         return false;
       }
       if (err) {
@@ -244,7 +169,7 @@ namespace kspp{
         std::this_thread::sleep_for(1s);
       }
 
-      err = rd_kafka_list_groups(rk_c_handle_, consumer_group.c_str(), &grplist, 1000);
+      err = rd_kafka_list_groups(_rk_handle->c_ptr(), consumer_group.c_str(), &grplist, 1000);
 
       DLOG_IF(INFO, err!=0) << "rd_kafka_list_groups: " << consumer_group.c_str() << ", res: " << err;
       DLOG_IF(INFO, err==0) << "rd_kafka_list_groups: " << consumer_group.c_str() << ", res: OK" << " grplist->group_cnt: "
@@ -261,33 +186,30 @@ namespace kspp{
     bool found = (grplist->group_cnt > 0);
     rd_kafka_group_list_destroy(grplist);
 
-    available_consumer_groups_.insert(consumer_group);
+    _available_consumer_groups.insert(consumer_group);
     return found;
   }
 
 
   bool cluster_metadata::wait_for_consumer_group(std::string consumer_group, std::chrono::seconds timeout) const
   {
+    std::lock_guard<std::mutex> guard(_mutex);
     // right now there is now way to separate ssl groups existing and not yet gotten a reply...
     return consumer_group_exists(consumer_group, timeout);
   }
 
-
-
-
   bool cluster_metadata::wait_for_topic_leaders(std::string topic, std::chrono::seconds timeout) const {
-    std::lock_guard<std::mutex> guard(mutex_);
+    std::lock_guard<std::mutex> guard(_mutex);
     auto item = _topic_data.find(topic);
     if (item != _topic_data.end()) {
       return item->second.available();
     }
 
-
     auto expires = milliseconds_since_epoch() + 1000 * timeout.count();
 
     std::string errstr;
     // really try to make sure the partition exist before we continue
-    auto _rd_topic = std::unique_ptr<RdKafka::Topic>(RdKafka::Topic::create(rk_cpp_handle_.get(), topic, nullptr, errstr));
+    auto _rd_topic = std::unique_ptr<RdKafka::Topic>(RdKafka::Topic::create(_rk_handle.get(), topic, nullptr, errstr));
     int64_t nr_available = 0;
     int64_t nr_of_partitions = 0;
 
@@ -295,7 +217,7 @@ namespace kspp{
       if (expires < milliseconds_since_epoch())
         return false;
       RdKafka::Metadata *md = nullptr;
-      auto ec = rk_cpp_handle_->metadata(false, _rd_topic.get(), &md, 1000);
+      auto ec = _rk_handle->metadata(false, _rd_topic.get(), &md, 1000);
       if (ec == 0) {
         const RdKafka::Metadata::TopicMetadataVector *v = md->topics();
         for (auto &&i : *v) {
@@ -323,7 +245,7 @@ namespace kspp{
 
   bool cluster_metadata::wait_for_topic_partition(std::string topic, int32_t partition, std::chrono::seconds timeout) const {
     LOG_IF(FATAL, partition<0);
-    std::lock_guard<std::mutex> guard(mutex_);
+    std::lock_guard<std::mutex> guard(_mutex);
 
     // if all partitions are availble - per definition this one is also available...
     auto item = _topic_data.find(topic);
@@ -335,13 +257,13 @@ namespace kspp{
 
     std::string errstr;
     // make sure the partition exist before we continue
-    auto _rd_topic = std::unique_ptr<RdKafka::Topic>(RdKafka::Topic::create(rk_cpp_handle_.get(), topic, nullptr, errstr));
+    auto _rd_topic = std::unique_ptr<RdKafka::Topic>(RdKafka::Topic::create(_rk_handle.get(), topic, nullptr, errstr));
     bool is_available = false;
     while (!is_available) {
       if (expires < milliseconds_since_epoch())
         return false;
       RdKafka::Metadata *md = nullptr;
-      auto ec = rk_cpp_handle_->metadata(false, _rd_topic.get(), &md, 1000);
+      auto ec = _rk_handle->metadata(false, _rd_topic.get(), &md, 1000);
       if (ec == 0) {
         const RdKafka::Metadata::TopicMetadataVector *v = md->topics();
         for (auto &&i : *v) {
@@ -409,10 +331,7 @@ namespace kspp{
 
 
   int32_t cluster_metadata::get_number_partitions(std::string topic) {
-    //return get_number_partitions2(_debug_cc, topic);
-
-    std::lock_guard<std::mutex> guard(mutex_);
-
+    std::lock_guard<std::mutex> guard(_mutex);
     auto item = _topic_data.find(topic);
     if (item != _topic_data.end()) {
       return item->second.nr_of_partitions;
@@ -421,14 +340,14 @@ namespace kspp{
     std::string errstr;
     //std::unique_ptr<RdKafka::Conf> conf(RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL));
 
-    auto _rd_topic = std::unique_ptr<RdKafka::Topic>(RdKafka::Topic::create(rk_cpp_handle_.get(), topic, nullptr, errstr));
+    auto _rd_topic = std::unique_ptr<RdKafka::Topic>(RdKafka::Topic::create(_rk_handle.get(), topic, nullptr, errstr));
     if (!_rd_topic) {
       LOG(FATAL) << "failed to create RdKafka::Topic:" << errstr;
     }
     int32_t nr_of_partitions = 0;
     while (nr_of_partitions == 0) {
       RdKafka::Metadata *md = nullptr;
-      auto ec = rk_cpp_handle_->metadata(false, _rd_topic.get(), &md, 5000);
+      auto ec = _rk_handle->metadata(false, _rd_topic.get(), &md, 5000);
       if (ec == 0) {
         const RdKafka::Metadata::TopicMetadataVector *v = md->topics();
         for (auto &&i : *v) {

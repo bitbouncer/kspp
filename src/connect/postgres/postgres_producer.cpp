@@ -21,7 +21,7 @@ namespace kspp {
       , _connected(false)
       , _exit(false)
       , _bg([this] { _thread(); })
-      , _connection(std::make_shared<kspp_postgres::connection>())
+      , _connection(std::make_unique<kspp_postgres::connection>())
       , _table(table)
       , cp_(cp)
       , _id_column(id_column)
@@ -45,7 +45,7 @@ namespace kspp {
       close();
     _bg.join();
     _connection->close();
-    _connection = nullptr;
+    _connection.reset(nullptr);
   }
 
   void postgres_producer::register_metrics(kspp::processor* parent){

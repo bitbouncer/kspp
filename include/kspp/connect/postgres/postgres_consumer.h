@@ -63,7 +63,7 @@ namespace kspp {
     bool _eof;
     bool _closed;
     std::thread _bg;
-    std::shared_ptr<kspp_postgres::connection> _connection;
+    std::unique_ptr<kspp_postgres::connection> _connection;
     const std::string _logical_name;
     const std::string _query;
     const int32_t _partition;

@@ -39,6 +39,8 @@ namespace kspp {
 
     int update_eof();
 
+    bool consumer_group_exists(std::string consumer_group, std::chrono::seconds timeout) const;
+
   private:
     class MyEventCb : public RdKafka::EventCb {
     public:

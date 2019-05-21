@@ -191,7 +191,7 @@ namespace kspp {
                              std::string ts_column,
                              std::shared_ptr<kspp::avro_schema_registry> schema_registry)
       : _bg([this] { _thread(); })
-      , _connection(std::make_shared<kspp_tds::connection>())
+      , _connection(std::make_unique<kspp_tds::connection>())
       , _logical_name(logical_name)
       , _query(query)
       , _partition(partition)
@@ -226,7 +226,7 @@ namespace kspp {
       close();
     _bg.join();
     _connection->close();
-    _connection = nullptr;
+    _connection.reset(nullptr);
     LOG(INFO) << "closing, read cursor at " << _read_cursor.last_tick();
   }
 

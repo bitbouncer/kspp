@@ -64,7 +64,7 @@ namespace kspp {
 
 
     std::thread _bg;
-    std::shared_ptr<kspp_postgres::connection> _connection;
+    std::unique_ptr<kspp_postgres::connection> _connection;
 
     const std::string _table;
     const kspp::connect::connection_params cp_;

@@ -6,6 +6,7 @@
 #include <kspp/impl/rd_kafka_utils.h>
 #include <kspp/kspp.h>
 #include <kspp/cluster_metadata.h>
+#include <librdkafka/rdkafka.h> // for stuff that only exists in c code (in rdkafka)
 
 using namespace std::chrono_literals;
 namespace kspp {
@@ -107,6 +108,7 @@ namespace kspp {
       close();
     for (auto i : _topic_partition) // should be exactly 1
       delete i;
+    LOG(INFO) << "consumer deleted";
   }
 
   void kafka_consumer::close() {
@@ -117,7 +119,7 @@ namespace kspp {
       _consumer->close();
       LOG(INFO) << "kafka_consumer topic:" << _topic << ":" << _partition << ", closed - consumed " << _msg_cnt << " messages (" << _msg_bytes << " bytes)";
     }
-    _consumer = nullptr;
+    _consumer.reset(nullptr);
   }
 
   void kafka_consumer::start(int64_t offset) {
@@ -125,11 +127,11 @@ namespace kspp {
       //just make shure we're not in for any surprises since this is a runtime variable in rdkafka...
       assert(kspp::OFFSET_STORED == RdKafka::Topic::OFFSET_STORED);
 
-      if (_config->get_cluster_metadata()->consumer_group_exists(_consumer_group, 5s)) {
+      if (consumer_group_exists(_consumer_group, 5s)){
         DLOG(INFO) << "kafka_consumer::start topic:" << _topic << ":" << _partition  << " consumer group: " << _consumer_group << " starting from OFFSET_STORED";
       } else {
         //non existing consumer group means start from beginning
-        LOG(INFO) << "kafka_consumer::start topic:" << _topic << ":" << _partition  << " consumer group: " << _consumer_group << " missing, OFFSET_STORED failed -> starting from OFFSET_BEGINNING";
+        LOG(INFO) << "kafka_consumer::start topic:" << _topic << ":" << _partition  << " consumer group: " << _consumer_group << " missing -> starting from OFFSET_BEGINNING";
         offset = kspp::OFFSET_BEGINNING;
       }
     } else if (offset == kspp::OFFSET_BEGINNING) {
@@ -267,5 +269,45 @@ namespace kspp {
       }
     }
     return ec;
+  }
+
+  bool kafka_consumer::consumer_group_exists(std::string consumer_group, std::chrono::seconds timeout) const {
+    char errstr[128];
+    auto expires = milliseconds_since_epoch() + 1000 * timeout.count();
+    rd_kafka_resp_err_t err = RD_KAFKA_RESP_ERR_NO_ERROR;
+    const struct rd_kafka_group_list *grplist = nullptr;
+
+    /* FIXME: Wait for broker to come up. This should really be abstracted by librdkafka. */
+    do {
+      if (expires < milliseconds_since_epoch()) {
+        return false;
+      }
+      if (err) {
+        DLOG(ERROR) << "retrying group list in 1s, ec: " << rd_kafka_err2str(err);
+        std::this_thread::sleep_for(1s);
+      } else if (grplist) {
+        // the previous call must have succeded bu returned an empty list -
+        // bug in rdkafka when using ssl - we cannot separate this from a non existent group - we must retry...
+        LOG_IF(FATAL, grplist->group_cnt != 0) << "group list should be empty";
+        rd_kafka_group_list_destroy(grplist);
+        LOG(INFO) << "got empty group list - retrying in 1s";
+        std::this_thread::sleep_for(1s);
+      }
+
+      err = rd_kafka_list_groups(_consumer->c_ptr(), consumer_group.c_str(), &grplist, 1000);
+
+      DLOG_IF(INFO, err!=0) << "rd_kafka_list_groups: " << consumer_group.c_str() << ", res: " << err;
+      DLOG_IF(INFO, err==0) << "rd_kafka_list_groups: " << consumer_group.c_str() << ", res: OK" << " grplist->group_cnt: "
+                            << grplist->group_cnt;
+    } while (err == RD_KAFKA_RESP_ERR__TRANSPORT || err == RD_KAFKA_RESP_ERR_GROUP_LOAD_IN_PROGRESS);
+
+    if (err) {
+      LOG(ERROR) << "failed to retrieve groups, ec: " << rd_kafka_err2str(err);
+      return false;
+      //throw std::runtime_error(rd_kafka_err2str(err));
+    }
+    bool found = (grplist->group_cnt > 0);
+    rd_kafka_group_list_destroy(grplist);
+    return found;
   }
 } // namespace

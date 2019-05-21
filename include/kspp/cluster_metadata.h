@@ -4,7 +4,6 @@
 #include <memory>
 #include <set>
 #include <map>
-#include <librdkafka/rdkafka.h>
 #include <librdkafka/rdkafkacpp.h>
 #pragma once
 
@@ -16,6 +15,8 @@ namespace kspp {
     cluster_metadata(const cluster_config *);
 
     ~cluster_metadata();
+
+    void close();
 
     void validate();
 
@@ -30,8 +31,6 @@ namespace kspp {
     bool wait_for_topic_leaders(std::string, std::chrono::seconds timeout) const;
 
   private:
-    void init();
-
     struct topic_data
     {
       inline bool available() const { return nr_of_partitions == available_parititions.size(); }
@@ -39,16 +38,10 @@ namespace kspp {
       std::vector<int32_t> available_parititions;
     };
 
-    mutable std::mutex mutex_;
-    rd_kafka_t *rk_c_handle_;
-    std::unique_ptr<RdKafka::Producer> rk_cpp_handle_;
-
-    //mutable std::set<std::string> available_topics_cache_;
-    mutable std::set<std::string> available_consumer_groups_;
-    mutable std::set<std::string> missing_consumer_groups_;
-
+    mutable std::mutex _mutex;
+    std::unique_ptr<RdKafka::Producer> _rk_handle;
+    mutable std::set<std::string> _available_consumer_groups;
+    mutable std::set<std::string> _missing_consumer_groups;
     mutable std::map<std::string, topic_data> _topic_data;
-
-    const cluster_config* _debug_cc;
   };
 }

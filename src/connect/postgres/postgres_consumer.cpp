@@ -104,7 +104,7 @@ namespace kspp {
       , _start_running(false)
       , _exit(false)
       , _bg([this] { _thread(); })
-      , _connection(std::make_shared<kspp_postgres::connection>())
+      , _connection(std::make_unique<kspp_postgres::connection>())
       , _logical_name(logical_name)
       , _partition(partition)
       , _consumer_group(consumer_group)
@@ -127,7 +127,7 @@ namespace kspp {
       close();
     _bg.join();
     _connection->close();
-    _connection = nullptr;
+    _connection.reset(nullptr);
   }
 
   void postgres_consumer::close() {

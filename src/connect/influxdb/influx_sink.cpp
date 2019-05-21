@@ -46,7 +46,7 @@ namespace kspp {
       close();
     _exit = true;
     _http_handler.close();
-    _work = nullptr;
+    _work.reset(nullptr);
     _asio_thread.join();
     _bg.join();
   }
