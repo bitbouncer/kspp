@@ -1,3 +1,4 @@
+#include <librdkafka/rdkafka.h> // for stuff that only exists in c code (in rdkafka), must be included first
 #include <kspp/impl/sources/kafka_consumer.h>
 #include <thread>
 #include <chrono>
@@ -6,7 +7,7 @@
 #include <kspp/impl/rd_kafka_utils.h>
 #include <kspp/kspp.h>
 #include <kspp/cluster_metadata.h>
-#include <librdkafka/rdkafka.h> // for stuff that only exists in c code (in rdkafka)
+
 
 using namespace std::chrono_literals;
 namespace kspp {
@@ -271,6 +272,8 @@ namespace kspp {
     return ec;
   }
 
+  //virtual ErrorCode metadata (bool all_topics, const Topic *only_rkt,  Metadata **metadatap, int timeout_ms) = 0;
+
   bool kafka_consumer::consumer_group_exists(std::string consumer_group, std::chrono::seconds timeout) const {
     char errstr[128];
     auto expires = milliseconds_since_epoch() + 1000 * timeout.count();
@@ -299,7 +302,7 @@ namespace kspp {
       DLOG_IF(INFO, err!=0) << "rd_kafka_list_groups: " << consumer_group.c_str() << ", res: " << err;
       DLOG_IF(INFO, err==0) << "rd_kafka_list_groups: " << consumer_group.c_str() << ", res: OK" << " grplist->group_cnt: "
                             << grplist->group_cnt;
-    } while (err == RD_KAFKA_RESP_ERR__TRANSPORT || err == RD_KAFKA_RESP_ERR_GROUP_LOAD_IN_PROGRESS);
+    } while (err == RD_KAFKA_RESP_ERR__TRANSPORT || err == RD_KAFKA_RESP_ERR_GROUP_LOAD_IN_PROGRESS || err == RD_KAFKA_RESP_ERR__PARTIAL);
 
     if (err) {
       LOG(ERROR) << "failed to retrieve groups, ec: " << rd_kafka_err2str(err);
