@@ -180,7 +180,7 @@ namespace kspp {
     if (uri.size() < 2)
       return std::make_unique<fs_offset_storage>("/tmp/dummy.offset");
 
-    if (uri.substr(0, 5).compare("s3://") || uri.substr(0, 5).compare("S3://")) {
+    if (uri.substr(0, 5).compare("s3://")==0 || uri.substr(0, 5).compare("S3://")==0) {
       size_t host_start = 5;
       std::string host = uri.substr(host_start, uri.find("/", host_start)-host_start);
       if (host.empty()) {
