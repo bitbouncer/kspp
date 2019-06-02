@@ -29,7 +29,7 @@ int main(int argc, char** argv) {
       ("bb_api_key", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("BB_API_KEY", "")), "bb_api_key")
       ("bb_secret_access_key", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("BB_SECRET_ACCESS_KEY", "")), "bb_secret_access_key")
       ("topic", boost::program_options::value<std::string>()->default_value("logs"), "topic")
-      ("offset_storage", boost::program_options::value<std::string>(), "offset_storage")
+      ("offset_storage", boost::program_options::value<std::string>()->default_value(get_env_and_log("OFFSET_STORAGE", "")), "offset_storage")
       ("dst_dir", boost::program_options::value<std::string>()->default_value(get_env_and_log("DST_DIR", "/tmp")), "dst_dir")
       ("window_size_s", boost::program_options::value<std::string>()->default_value(get_env_and_log("WINDOW_SIZE_S", "3600")), "window_size_s")
       ("oneshot", "run to eof and exit")
@@ -82,11 +82,11 @@ int main(int argc, char** argv) {
   }
 
   std::string offset_storage;
-  if (vm.count("offset_storage")) {
+  if (vm.count("offset_storage"))
     offset_storage = vm["offset_storage"].as<std::string>();
-  } else {
-    offset_storage = config->get_storage_root() + "/" + SERVICE_NAME + "-" + topic + ".offset";
-  }
+
+  if (offset_storage.empty())
+    offset_storage = config->get_storage_root() + "/" + SERVICE_NAME + "-import-metrics.offset";
 
   int window_size_s;
   if (vm.count("window_size_s")) {
@@ -119,7 +119,8 @@ int main(int argc, char** argv) {
   kspp::topology_builder generic_builder(config);
 
   auto t = generic_builder.create_topology();
-  auto source = t->create_processor<kspp::grpc_avro_source<void, kspp::generic_avro>>(0, topic, offset_storage, src_uri, bb_api_key, bb_secret_access_key);
+  auto offset_provider = get_offset_provider(offset_storage);
+  auto source = t->create_processor<kspp::grpc_avro_source<void, kspp::generic_avro>>(0, topic, offset_provider, src_uri, bb_api_key, bb_secret_access_key);
   auto sink = t->create_sink<kspp::avro_file_sink<kspp::generic_avro>>(source, dst_dir, topic, 1h);
 
 

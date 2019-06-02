@@ -1,5 +1,7 @@
 #include <string>
 #include <boost/filesystem.hpp>
+#include <libs3.h>
+
 #pragma once
 
 namespace kspp {
@@ -21,6 +23,7 @@ namespace kspp {
     }
 
   protected:
+    virtual int64_t load_offset()=0;
     virtual void persist_offset(int64_t offset) = 0;
 
     int64_t _last_commited_offset=0;
@@ -35,9 +38,29 @@ namespace kspp {
     ~fs_offset_storage() override;
     int64_t start(int64_t offset) override;
   private:
+    int64_t load_offset() override;
     void persist_offset(int64_t offset) override;
     boost::filesystem::path _offset_storage_path;
   };
+
+
+  class s3_offset_storage : public offset_storage {
+  public:
+    s3_offset_storage(std::string host, std::string bucket, std::string key, std::string _access_key, std::string _secret_key);
+    ~s3_offset_storage() override;
+    int64_t start(int64_t offset) override;
+  private:
+    int64_t load_offset() override;
+    void persist_offset(int64_t offset) override;
+    const std::string _host;
+    const std::string _bucket;
+    const std::string _access_key;
+    const std::string _secret_key;
+    const std::string _key;
+    S3BucketContext _bucketContext;
+  };
+
+  std::shared_ptr<offset_storage> get_offset_provider(std::string uri);
 
 }
 

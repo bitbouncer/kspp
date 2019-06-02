@@ -15,12 +15,12 @@ namespace kspp {
     grpc_avro_source(std::shared_ptr<cluster_config> config,
                           int32_t partition,
                           std::string topic,
-                          std::string offset_storage_path,
+                          std::shared_ptr<offset_storage> offset_store,
                           std::string uri,
                           std::string api_key,
                           std::string secret_access_key)
         : partition_source<K, V>(nullptr, partition)
-        , _impl(partition, topic, offset_storage_path, uri, api_key, secret_access_key) {
+        , _impl(partition, topic, offset_store, uri, api_key, secret_access_key) {
     }
 
     virtual ~grpc_avro_source() {

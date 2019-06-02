@@ -30,7 +30,7 @@ int main(int argc, char** argv) {
       ("bb_api_key", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("BB_API_KEY", "")), "bb_api_key")
       ("bb_secret_access_key", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("BB_SECRET_ACCESS_KEY", "")), "bb_secret_access_key")
       ("topic", boost::program_options::value<std::string>()->default_value("logs"), "topic")
-      ("offset_storage", boost::program_options::value<std::string>(), "offset_storage")
+      ("offset_storage", boost::program_options::value<std::string>()->default_value(get_env_and_log("OFFSET_STORAGE", "")), "offset_storage")
       ("start_offset", boost::program_options::value<std::string>()->default_value("OFFSET_END"), "start_offset")
       ("oneshot", "run to eof and exit")
       ;
@@ -67,16 +67,15 @@ int main(int argc, char** argv) {
   }
 
   std::string bb_secret_access_key;
-  if (vm.count("bb_secret_access_key")) {
+  if (vm.count("bb_secret_access_key"))
     bb_secret_access_key = vm["bb_secret_access_key"].as<std::string>();
-  }
 
   std::string offset_storage;
-  if (vm.count("offset_storage")) {
+  if (vm.count("offset_storage"))
     offset_storage = vm["offset_storage"].as<std::string>();
-  } else {
+
+  if (offset_storage.empty())
     offset_storage = config->get_storage_root() + "/" + SERVICE_NAME + "-import-metrics.offset";
-  }
 
   kspp::start_offset_t start_offset=kspp::OFFSET_BEGINNING;
   if (vm.count("start_offset")) {
@@ -94,9 +93,8 @@ int main(int argc, char** argv) {
   }
 
   std::string topic;
-  if (vm.count("topic")) {
+  if (vm.count("topic"))
     topic = vm["topic"].as<std::string>();
-  }
 
   bool oneshot=false;
   if (vm.count("oneshot"))
@@ -116,7 +114,8 @@ int main(int argc, char** argv) {
   kspp::topology_builder generic_builder(config);
 
   auto live = generic_builder.create_topology();
-  auto source = live->create_processor<kspp::grpc_avro_source<kspp::generic_avro, kspp::generic_avro>>(0, topic, offset_storage, src_uri, bb_api_key, bb_secret_access_key);
+  auto offset_provider = get_offset_provider(offset_storage);
+  auto source = live->create_processor<kspp::grpc_avro_source<kspp::generic_avro, kspp::generic_avro>>(0, topic, offset_provider, src_uri, bb_api_key, bb_secret_access_key);
   live->create_processor<kspp::visitor<kspp::generic_avro,kspp::generic_avro>>(source, [](auto ev){
     if (ev.value())
       std::cout << to_json(*ev.value()) << std::endl;
@@ -133,6 +132,7 @@ int main(int argc, char** argv) {
 
     if (sz == 0) {
       std::this_thread::sleep_for(100ms);
+      live->commit(true);
       continue;
     }
 

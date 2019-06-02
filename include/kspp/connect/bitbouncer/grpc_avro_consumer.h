@@ -19,11 +19,11 @@ namespace kspp {
   public:
     grpc_avro_consumer_base(int32_t partition,
                             std::string topic_name,
-                            std::string offset_storage_path,
+                            std::shared_ptr<offset_storage> offset_store,
                             std::string uri,
                             std::string api_key,
                             std::string secret_access_key)
-        : _offset_storage(offset_storage_path)
+        : _offset_storage(offset_store)
         , _topic_name(topic_name)
         , _partition(partition)
         , _commit_chain(topic_name, partition)
@@ -70,7 +70,11 @@ namespace kspp {
     }
 
     void start(int64_t offset) {
-      _next_offset = _offset_storage.start(offset);
+      if (_offset_storage) {
+        _next_offset = _offset_storage->start(offset);
+      } else {
+        _next_offset = OFFSET_END;
+      }
       _start_running = true;
     }
 
@@ -84,8 +88,8 @@ namespace kspp {
 
     void commit(bool flush) {
       int64_t offset = _commit_chain.last_good_offset();
-      if (offset>0)
-          _offset_storage.commit(offset, flush);
+      if (offset>0 && _offset_storage)
+          _offset_storage->commit(offset, flush);
     }
 
     inline int64_t offset() const {
@@ -202,7 +206,7 @@ namespace kspp {
     const int32_t _partition;
 
     int64_t _next_offset = kspp::OFFSET_BEGINNING; // not same as commit
-    kspp::fs_offset_storage _offset_storage;
+    std::shared_ptr<offset_storage> _offset_storage;
     commit_chain _commit_chain;
     event_queue<K, V> _incomming_msg;
     uint64_t _msg_cnt=0;
@@ -214,17 +218,16 @@ namespace kspp {
     std::unique_ptr<grpc_avro_serdes> _serdes;
   };
 
-
   template<class K, class V>
   class grpc_avro_consumer : public grpc_avro_consumer_base<K, V> {
   public:
     grpc_avro_consumer(int32_t partition,
                        std::string topic_name,
-                       std::string offset_storage_path,
+                       std::shared_ptr<offset_storage> offset_store,
                        std::string uri,
                        std::string api_key,
                        std::string secret_access_key)
-        : grpc_avro_consumer_base<K,V>(partition, topic_name, offset_storage_path, uri, api_key, secret_access_key) {
+        : grpc_avro_consumer_base<K,V>(partition, topic_name, offset_store, uri, api_key, secret_access_key) {
     }
 
     virtual ~grpc_avro_consumer(){
@@ -254,11 +257,11 @@ namespace kspp {
   public:
     grpc_avro_consumer(int32_t partition,
                        std::string topic_name,
-                       std::string offset_storage_path,
+                       std::shared_ptr<offset_storage> offset_store,
                        std::string uri,
                        std::string api_key,
                        std::string secret_access_key)
-        : grpc_avro_consumer_base<kspp::generic_avro,V>(partition, topic_name, offset_storage_path, uri, api_key, secret_access_key) {
+        : grpc_avro_consumer_base<kspp::generic_avro,V>(partition, topic_name, offset_store, uri, api_key, secret_access_key) {
     }
 
     virtual ~grpc_avro_consumer(){
@@ -293,11 +296,11 @@ namespace kspp {
   public:
     grpc_avro_consumer(int32_t partition,
                        std::string topic_name,
-                       std::string offset_storage_path,
+                       std::shared_ptr<offset_storage> offset_store,
                        std::string uri,
                        std::string api_key,
                        std::string secret_access_key)
-        : grpc_avro_consumer_base<void,V>(partition, topic_name, offset_storage_path, uri, api_key, secret_access_key) {
+        : grpc_avro_consumer_base<void,V>(partition, topic_name, offset_store, uri, api_key, secret_access_key) {
     }
 
     virtual ~grpc_avro_consumer(){
@@ -321,11 +324,11 @@ namespace kspp {
   public:
     grpc_avro_consumer(int32_t partition,
                        std::string topic_name,
-                       std::string offset_storage_path,
+                       std::shared_ptr<offset_storage> offset_store,
                        std::string uri,
                        std::string api_key,
                        std::string secret_access_key)
-        : grpc_avro_consumer_base<K,void>(partition, topic_name, offset_storage_path, uri, api_key, secret_access_key) {
+        : grpc_avro_consumer_base<K,void>(partition, topic_name, offset_store, uri, api_key, secret_access_key) {
     }
 
     std::shared_ptr<kspp::krecord<K, void>> decode(const bitbouncer::streaming::SubscriptionData& record) override{

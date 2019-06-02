@@ -7,7 +7,6 @@
 #include <kspp/connect/bitbouncer/grpc_avro_source.h>
 #include <kspp/connect/postgres/postgres_generic_avro_sink.h>
 #include <kspp/topology_builder.h>
-//#include "grpc_db_streamer.h"
 
 #define SERVICE_NAME     "bb2pg"
 #define DEFAULT_SRC_URI  "lb.bitbouncer.com:10063"
@@ -31,7 +30,7 @@ int main(int argc, char** argv) {
       ("bb_api_key", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("BB_API_KEY", "")), "bb_api_key")
       ("bb_secret_access_key", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("BB_SECRET_ACCESS_KEY", "")), "bb_secret_access_key")
       ("topic", boost::program_options::value<std::string>()->default_value("logs"), "topic")
-      ("offset_storage", boost::program_options::value<std::string>(), "offset_storage")
+      ("offset_storage", boost::program_options::value<std::string>()->default_value(get_env_and_log("OFFSET_STORAGE", "")), "offset_storage")
       ("start_offset", boost::program_options::value<std::string>()->default_value("OFFSET_BEGINNING"), "start_offset")
       ("postgres_host", boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_HOST")), "postgres_host")
       ("postgres_port", boost::program_options::value<int32_t>()->default_value(5432), "postgres_port")
@@ -86,14 +85,12 @@ int main(int argc, char** argv) {
     bb_secret_access_key = vm["bb_secret_access_key"].as<std::string>();
   }
 
-
-
   std::string offset_storage;
-  if (vm.count("offset_storage")) {
+  if (vm.count("offset_storage"))
     offset_storage = vm["offset_storage"].as<std::string>();
-  } else {
+
+  if (offset_storage.empty())
     offset_storage = config->get_storage_root() + "/" + SERVICE_NAME + "-import-metrics.offset";
-  }
 
   std::string topic;
   if (vm.count("topic")) {
@@ -241,7 +238,8 @@ int main(int argc, char** argv) {
   grpc::ChannelArguments channelArgs;
 
   auto t = builder.create_topology();
-  auto stream = t->create_processor<kspp::grpc_avro_source<kspp::generic_avro,kspp::generic_avro>>(0, topic, offset_storage, src_uri, bb_api_key, bb_secret_access_key);
+  auto offset_provider = get_offset_provider(offset_storage);
+  auto stream = t->create_processor<kspp::grpc_avro_source<kspp::generic_avro,kspp::generic_avro>>(0, topic, offset_provider, src_uri, bb_api_key, bb_secret_access_key);
   auto sink = t->create_sink<kspp::postgres_generic_avro_sink>(stream, postgres_tablename, connection_params, id_column, character_encoding, postgres_max_items_in_insert, postgres_disable_delete);
 
   std::map<std::string, std::string> labels = {
