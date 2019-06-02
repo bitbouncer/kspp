@@ -8,7 +8,7 @@
 #include <bb_streaming.grpc.pb.h>
 #include "grpc_avro_schema_resolver.h"
 #include "grpc_avro_serdes.h"
-
+#include <kspp/utils/offset_storage_provider.h>
 #pragma once
 
 namespace kspp {
@@ -18,12 +18,12 @@ namespace kspp {
   class grpc_avro_consumer_base {
   public:
     grpc_avro_consumer_base(int32_t partition,
-                       std::string topic_name,
-                       std::string offset_storage_path,
-                       std::string uri,
-                       std::string api_key,
-                       std::string secret_access_key)
-        : _offset_storage_path(offset_storage_path)
+                            std::string topic_name,
+                            std::string offset_storage_path,
+                            std::string uri,
+                            std::string api_key,
+                            std::string secret_access_key)
+        : _offset_storage(offset_storage_path)
         , _topic_name(topic_name)
         , _partition(partition)
         , _commit_chain(topic_name, partition)
@@ -31,10 +31,6 @@ namespace kspp {
         , _uri(uri)
         , _api_key(api_key)
         , _secret_access_key(secret_access_key) {
-      if (_offset_storage_path.size()){
-        boost::filesystem::create_directories(boost::filesystem::path(_offset_storage_path).parent_path());
-      }
-
       grpc::ChannelArguments channelArgs;
       kspp::set_channel_args(channelArgs);
 
@@ -74,34 +70,7 @@ namespace kspp {
     }
 
     void start(int64_t offset) {
-      if (offset == kspp::OFFSET_STORED) {
-
-        if (boost::filesystem::exists(_offset_storage_path)) {
-          std::ifstream is(_offset_storage_path.generic_string(), std::ios::binary);
-          int64_t tmp;
-          is.read((char *) &tmp, sizeof(int64_t));
-          if (is.good()) {
-            // if we are rescraping we must assume that this offset were at eof
-            LOG(INFO) << "grpc_avro_consumer " << _topic_name  << ", start(OFFSET_STORED) - > ts:" << tmp;
-            _next_offset = tmp;
-          } else {
-            LOG(INFO) << "grpc_avro_consumer " << _topic_name  <<", start(OFFSET_STORED), bad file " << _offset_storage_path << ", starting from OFFSET_BEGINNING";
-            _next_offset = kspp::OFFSET_BEGINNING;
-          }
-        } else {
-          LOG(INFO) << "grpc_avro_consumer " << _topic_name  << ", start(OFFSET_STORED), missing file " << _offset_storage_path << ", starting from OFFSET_BEGINNING";
-          _next_offset = kspp::OFFSET_BEGINNING;
-        }
-      } else if (offset == kspp::OFFSET_BEGINNING) {
-        DLOG(INFO) << "grpc_avro_consumer " << _topic_name  << " starting from OFFSET_BEGINNING";
-        _next_offset = offset;
-      } else if (offset == kspp::OFFSET_END) {
-        DLOG(INFO) << "grpc_avro_consumer " << _topic_name  << " starting from OFFSET_END";
-        _next_offset = offset;
-      } else {
-        LOG(INFO) << "grpc_avro_consumer " << _topic_name  <<  " starting from fixed offset: " << offset;
-        _next_offset = offset;
-      }
+      _next_offset = _offset_storage.start(offset);
       _start_running = true;
     }
 
@@ -116,7 +85,7 @@ namespace kspp {
     void commit(bool flush) {
       int64_t offset = _commit_chain.last_good_offset();
       if (offset>0)
-        commit(offset, flush);
+          _offset_storage.commit(offset, flush);
     }
 
     inline int64_t offset() const {
@@ -133,18 +102,6 @@ namespace kspp {
 
       if (_bg.joinable())
         _bg.join();
-    }
-
-    void commit(int64_t offset, bool flush) {
-      _last_commited_offset = offset;
-      if (flush || ((_last_commited_offset - _last_flushed_offset) > 10000)) {
-        if (_last_flushed_offset != _last_commited_offset) {
-          std::ofstream os(_offset_storage_path.generic_string(), std::ios::binary);
-          os.write((char *) &_last_commited_offset, sizeof(int64_t));
-          _last_flushed_offset = _last_commited_offset;
-          os.flush();
-        }
-      }
     }
 
     void _thread() {
@@ -244,11 +201,9 @@ namespace kspp {
     const std::string _topic_name;
     const int32_t _partition;
 
-    int64_t _next_offset = kspp::OFFSET_BEGINNING; // not same as comit
-    boost::filesystem::path _offset_storage_path;
+    int64_t _next_offset = kspp::OFFSET_BEGINNING; // not same as commit
+    kspp::fs_offset_storage _offset_storage;
     commit_chain _commit_chain;
-    int64_t _last_commited_offset=0;
-    int64_t _last_flushed_offset=0;
     event_queue<K, V> _incomming_msg;
     uint64_t _msg_cnt=0;
     std::shared_ptr<grpc::Channel> _channel;
@@ -261,7 +216,7 @@ namespace kspp {
 
 
   template<class K, class V>
-class grpc_avro_consumer : public grpc_avro_consumer_base<K, V> {
+  class grpc_avro_consumer : public grpc_avro_consumer_base<K, V> {
   public:
     grpc_avro_consumer(int32_t partition,
                        std::string topic_name,
@@ -272,25 +227,25 @@ class grpc_avro_consumer : public grpc_avro_consumer_base<K, V> {
         : grpc_avro_consumer_base<K,V>(partition, topic_name, offset_storage_path, uri, api_key, secret_access_key) {
     }
 
-  virtual ~grpc_avro_consumer(){
-    this->stop_thread();
-  }
+    virtual ~grpc_avro_consumer(){
+      this->stop_thread();
+    }
 
-  std::shared_ptr<kspp::krecord<K, V>> decode(const bitbouncer::streaming::SubscriptionData& record) override{
-     K key;
-     std::shared_ptr<V> val;
-     size_t r0 = this->_serdes->decode(record.key_schema(), record.key().data(), record.key().size(), key);
-     if (r0 == 0)
-       return nullptr;
+    std::shared_ptr<kspp::krecord<K, V>> decode(const bitbouncer::streaming::SubscriptionData& record) override{
+      K key;
+      std::shared_ptr<V> val;
+      size_t r0 = this->_serdes->decode(record.key_schema(), record.key().data(), record.key().size(), key);
+      if (r0 == 0)
+        return nullptr;
 
-     if (record.value().size() > 0) {
-       val = std::make_shared<V>();
-       auto r1 = this->_serdes->decode(record.value_schema(), record.value().data(), record.value().size(), *val);
-       if (r1 == 0)
-         return nullptr;
-     }
-     return std::make_shared<krecord<K, V>>(key, val, record.timestamp());
-   }
+      if (record.value().size() > 0) {
+        val = std::make_shared<V>();
+        auto r1 = this->_serdes->decode(record.value_schema(), record.value().data(), record.value().size(), *val);
+        if (r1 == 0)
+          return nullptr;
+      }
+      return std::make_shared<krecord<K, V>>(key, val, record.timestamp());
+    }
   };
 
   // this is a special case of generic stuff where the key might be null
