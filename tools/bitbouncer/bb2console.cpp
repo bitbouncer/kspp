@@ -132,7 +132,7 @@ int main(int argc, char** argv) {
 
     if (sz == 0) {
       std::this_thread::sleep_for(100ms);
-      live->commit(true);
+      live->commit(false);
       continue;
     }
 

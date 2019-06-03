@@ -133,6 +133,19 @@ cd ../.. && \
 rm prometheus-cpp.tar.gz && \
 rm -rf prometheus-cpp
 
+wget -O libs3.tar.gz "https://github.com/bji/libs3/archive/master.tar.gz" && \
+mkdir -p libs3 && \
+tar \
+  --extract \
+  --file libs3.tar.gz \
+  --directory libs3 \
+  --strip-components 1 && \
+cd libs3 && \
+make DESTDIR=/usr/local -j "$(getconf _NPROCESSORS_ONLN)" && \
+sudo make DESTDIR=/usr/local install && \
+cd .. && \
+rm libs3.tar.gz && \
+rm -rf libs3
 
 wget -O librdkafka.tar.gz "https://github.com/edenhill/librdkafka/archive/v1.0.0.tar.gz" && \
 mkdir -p librdkafka && \
@@ -148,6 +161,8 @@ sudo make install && \
 cd .. && \
 rm librdkafka.tar.gz && \
 rm -rf librdkafka
+
+
 
 cd ..
 
