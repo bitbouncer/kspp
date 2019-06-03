@@ -224,8 +224,8 @@ namespace kspp {
       LOG(INFO) <<  "host: " << host << ", bucket: " << bucket << ", key: " << key;
 
       // todo get this from cluster config???
-      std::string access_key = getenv("KSPP_S3_ACCESSKEY");
-      std::string secret_key = getenv("KSPP_S3_SECRETKEY");
+      std::string access_key = getenv("S3_ACCESS_KEY_ID");
+      std::string secret_key = getenv("S3_SECRET_ACCESS_KEY");
 
       if (access_key.empty()){
         LOG(ERROR) << "bad s3 access_key";
