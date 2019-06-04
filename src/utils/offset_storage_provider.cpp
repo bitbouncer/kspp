@@ -227,13 +227,15 @@ namespace kspp {
       std::string access_key = getenv("S3_ACCESS_KEY_ID");
       std::string secret_key = getenv("S3_SECRET_ACCESS_KEY");
 
+      LOG(INFO) << "S3_ACCESS_KEY_ID: " << access_key;
+
       if (access_key.empty()){
-        LOG(ERROR) << "bad s3 access_key";
+        LOG(ERROR) << "S3_ACCESS_KEY_ID not defined";
         return nullptr;
       }
 
       if (secret_key.empty()){
-        LOG(ERROR) << "bad s3 secret_key";
+        LOG(ERROR) << "S3_SECRET_ACCESS_KEY not defined";
         return nullptr;
       }
 

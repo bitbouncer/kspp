@@ -2,7 +2,7 @@ mkdir tmp && cd tmp
 
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 
-wget -O protobuf.tar.gz "https://github.com/protocolbuffers/protobuf/releases/download/v3.6.1/protobuf-cpp-3.6.1.tar.gz" && \
+wget -O protobuf.tar.gz "https://github.com/protocolbuffers/protobuf/releases/download/v3.7.0/protobuf-cpp-3.7.0.tar.gz" && \
 mkdir -p protobuf && \
 tar \
   --extract \
@@ -17,7 +17,7 @@ cd .. && \
 rm protobuf.tar.gz && \
 rm -rf protobuf
 
-wget -O grpc.tar.gz "https://github.com/grpc/grpc/archive/v1.20.1.tar.gz" && \
+wget -O grpc.tar.gz "https://github.com/grpc/grpc/archive/v1.21.0.tar.gz" && \
 mkdir -p grpc && \
 tar \
   --extract \
