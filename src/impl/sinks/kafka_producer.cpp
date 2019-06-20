@@ -139,32 +139,6 @@ namespace kspp {
       exit(1);
     }
 
-    // really try to make sure the partition exist and all partitions has leaders before we continue
-//    RdKafka::Metadata* md = NULL;
-//    auto  _rd_topic = std::unique_ptr<RdKafka::Topic>(RdKafka::Topic::create(_producer.get(), _topic, nullptr, errstr));
-//    int64_t nr_available = 0;
-//    while (_nr_of_partitions == 0 || nr_available != _nr_of_partitions) {
-//      auto ec = _producer->metadata(false, _rd_topic.get(), &md, 5000);
-//      if (ec == 0) {
-//        const RdKafka::Metadata::TopicMetadataVector* v = md->topics();
-//        for (auto&& i : *v) {
-//          auto partitions = i->partitions();
-//          _nr_of_partitions = partitions->size();
-//          nr_available = 0;
-//          for (auto&& j : *partitions) {
-//            if ((j->err() == 0) && (j->leader() >= 0)) {
-//              ++nr_available;
-//            }
-//          }
-//        }
-//      }
-//      if (_nr_of_partitions == 0 || nr_available != _nr_of_partitions) {
-//        LOG(WARNING) << "topic:" << _topic << ", waiting for partitions leader to be available";
-//        std::this_thread::sleep_for(1s);
-//      }
-//    }
-//    delete md;
-
     LOG(INFO) << "topic:" << _topic << ", kafka producer created";
   }
 

@@ -24,8 +24,6 @@ namespace kspp {
 
     bool consumer_group_exists(std::string consumer_group, std::chrono::seconds timeout) const; // uses rd kafka c api
 
-    bool wait_for_consumer_group(std::string consumer_group, std::chrono::seconds timeout) const; // uses rd kafka c api
-
     bool wait_for_topic_partition(std::string topic, int32_t partition, std::chrono::seconds timeout) const;
 
     bool wait_for_topic_leaders(std::string, std::chrono::seconds timeout) const;
