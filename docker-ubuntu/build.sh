@@ -1,9 +1,12 @@
 #!/bin/bash
 set -ef
 
-export BUILD_CONTAINER_NAME=kspp-build-ubuntu
-export EXTRACT_CONTAINER=kspp-build-ubuntu-extract
-export TAG_NAME=kspp-sample-ubuntu
+IMAGE_TAG=${1:-latest}
+
+export BUILD_CONTAINER_NAME=kspp-build-ubuntu:${IMAGE_TAG}
+export EXTRACT_CONTAINER=kspp-build-ubuntu-extract-${IMAGE_TAG}
+export TAG_NAME=kspp-sample-ubuntu:${IMAGE_TAG}
+
 
 rm -rf ./extract
 mkdir -p ./extract/bin
@@ -13,8 +16,9 @@ echo "removing old extract container"
 docker rm -f $EXTRACT_CONTAINER || true
 
 pushd ..
-docker build -f docker-ubuntu/Dockerfile.build  --no-cache -t$BUILD_CONTAINER_NAME .
+  docker build --build-arg IMAGE_TAG=${IMAGE_TAG} --file docker-ubuntu/Dockerfile.build --tag $BUILD_CONTAINER_NAME .
 popd
+
 docker create --name $EXTRACT_CONTAINER $BUILD_CONTAINER_NAME
 
 docker cp $EXTRACT_CONTAINER:/usr/local/lib                                 ./extract
