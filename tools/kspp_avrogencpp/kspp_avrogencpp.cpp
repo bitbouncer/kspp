@@ -31,7 +31,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/program_options.hpp>
-#include <boost/filesystem.hpp>
+#include <experimental/filesystem>
 #include <avro/Compiler.hh>
 #include <avro/ValidSchema.hh>
 #include <avro/NodeImpl.hh>
@@ -886,11 +886,11 @@ int main(int argc, char **argv) {
 
     if (!outf.empty()) {
       //create out file directory
-      boost::filesystem::path p(outf);
-      boost::filesystem::path dir = p.parent_path();
+      std::experimental::filesystem::path p(outf);
+      std::experimental::filesystem::path dir = p.parent_path();
       if (!dir.empty()) {
-        boost::filesystem::create_directories(dir);
-        if (!boost::filesystem::is_directory(dir)) {
+        std::experimental::filesystem::create_directories(dir);
+        if (!std::experimental::filesystem::is_directory(dir)) {
           std::cerr << "Failed to create directories: " << dir << std::endl;
         }
       }

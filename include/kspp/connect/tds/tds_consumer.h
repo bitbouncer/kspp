@@ -90,7 +90,7 @@ namespace kspp {
     const int32_t _partition;
     const std::string _consumer_group;
 
-    boost::filesystem::path _offset_storage_path;
+    std::experimental::filesystem::path _offset_storage_path;
     commit_chain _commit_chain;
     int64_t _last_commited_ts_ticks=0;
     int64_t _last_flushed_ticks=0;

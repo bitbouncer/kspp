@@ -2,6 +2,7 @@
 #include <kspp/kspp.h>
 #include <chrono>
 #include <memory>
+#include <fstream>
 #include <glog/logging.h>
 #include <boost/bind.hpp>
 #include  <kspp/connect/tds/tds_avro_utils.h>
@@ -211,8 +212,8 @@ namespace kspp {
       , _eof(false)
       , _start_running(false)
       , _exit(false) {
-    if (_offset_storage_path.size()){
-      boost::filesystem::create_directories(boost::filesystem::path(_offset_storage_path).parent_path());
+    if (!_offset_storage_path.empty()){
+      std::experimental::filesystem::create_directories(_offset_storage_path.parent_path());
     }
     std::string top_part(" TOP " + std::to_string(_tp.max_items_in_fetch));
     // assumed to start with "SELECT"
@@ -253,7 +254,7 @@ namespace kspp {
   }
 
   void tds_consumer::commit(int64_t ticks, bool flush) {
-    if (_offset_storage_path.size()==0)
+    if (_offset_storage_path.empty())
       return;
 
     _last_commited_ts_ticks = ticks;
@@ -279,7 +280,7 @@ namespace kspp {
   void tds_consumer::start(int64_t offset) {
     if (offset == kspp::OFFSET_STORED) {
 
-      if (boost::filesystem::exists(_offset_storage_path)) {
+      if ( std::experimental::filesystem::exists(_offset_storage_path)) {
         std::ifstream is(_offset_storage_path.generic_string(), std::ios::binary);
         int64_t tmp;
         is.read((char *) &tmp, sizeof(int64_t));

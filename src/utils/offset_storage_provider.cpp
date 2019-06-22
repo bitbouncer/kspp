@@ -1,4 +1,5 @@
 #include <kspp/utils/offset_storage_provider.h>
+#include <fstream>
 #include <glog/logging.h>
 #include <kspp/kspp.h>
 
@@ -21,7 +22,7 @@ namespace kspp {
       : offset_storage()
       , _offset_storage_path(path){
     if (!_offset_storage_path.empty()){
-      boost::filesystem::create_directories(boost::filesystem::path(_offset_storage_path).parent_path());
+      std::experimental::filesystem::create_directories(_offset_storage_path.parent_path());
     }
   }
 
@@ -47,7 +48,7 @@ namespace kspp {
 
 
   int64_t fs_offset_storage::load_offset(int timeout_ms_not_used){
-    if (!boost::filesystem::exists(_offset_storage_path)){
+    if (!std::experimental::filesystem::exists(_offset_storage_path)){
       LOG(INFO) << "start(OFFSET_STORED), missing file " << _offset_storage_path << ", starting from OFFSET_BEGINNING";
       return kspp::OFFSET_BEGINNING;
     }

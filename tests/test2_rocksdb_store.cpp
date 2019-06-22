@@ -9,12 +9,11 @@ int main(int argc, char **argv) {
   FLAGS_logtostderr = 1;
   google::InitGoogleLogging(argv[0]);
 
-  boost::filesystem::path path = kspp::default_statestore_root();
+  std::experimental::filesystem::path path = kspp::default_statestore_root();
   path /= "test2_rocksdb_store";
 
-  if (boost::filesystem::exists(path))
-    boost::filesystem::remove_all(path);
-
+  if (std::experimental::filesystem::exists(path))
+    std::experimental::filesystem::remove_all(path);
   {
     // insert 3 check size
     kspp::rocksdb_store<int32_t, std::string, kspp::binary_serdes> store(path);
@@ -67,7 +66,7 @@ int main(int argc, char **argv) {
     }
   }
   // cleanup
-  boost::filesystem::remove_all(path);
+  std::experimental::filesystem::remove_all(path);
   return 0;
 }
 

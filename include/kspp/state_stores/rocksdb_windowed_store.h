@@ -1,7 +1,7 @@
 #include <memory>
 #include <strstream>
 #include <fstream>
-#include <boost/filesystem.hpp>
+#include <experimental/filesystem>
 #include <glog/logging.h>
 
 #include <kspp/kspp.h>
@@ -114,7 +114,7 @@ namespace kspp {
       std::shared_ptr<CODEC> _codec;
     };
 
-    rocksdb_windowed_store(boost::filesystem::path storage_path, std::chrono::milliseconds slot_width,
+    rocksdb_windowed_store(std::experimental::filesystem::path storage_path, std::chrono::milliseconds slot_width,
                            size_t nr_of_slots, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
             : _storage_path(storage_path)
             , _offset_storage_path(storage_path)
@@ -126,10 +126,10 @@ namespace kspp {
             , _last_flushed_offset(kspp::OFFSET_BEGINNING)
             , _oldest_kept_slot(-1) {
       LOG_IF(FATAL, storage_path.generic_string().size()==0);
-      boost::filesystem::create_directories(boost::filesystem::path(storage_path));
+      std::experimental::filesystem::create_directories(storage_path);
       _offset_storage_path /= "kspp_offset.bin";
 
-      if (boost::filesystem::exists(_offset_storage_path)) {
+      if (std::experimental::filesystem::exists(_offset_storage_path)) {
         std::ifstream is(_offset_storage_path.generic_string(), std::ios::binary);
         int64_t tmp;
         is.read((char *) &tmp, sizeof(int64_t));
@@ -205,7 +205,7 @@ namespace kspp {
           options.IncreaseParallelism(); // should be #cores
           options.OptimizeLevelStyleCompaction();
           options.create_if_missing = true;
-          boost::filesystem::path path(_storage_path);
+          std::experimental::filesystem::path path(_storage_path);
           path /= std::to_string(new_slot);
           rocksdb::DB *tmp = nullptr;
           auto s = rocksdb::DB::Open(options, path.generic_string(), &tmp);
@@ -360,8 +360,8 @@ namespace kspp {
       return timestamp / _slot_width;
     }
 
-    boost::filesystem::path _storage_path;
-    boost::filesystem::path _offset_storage_path;
+    std::experimental::filesystem::path _storage_path;
+    std::experimental::filesystem::path _offset_storage_path;
     std::map<int64_t, std::shared_ptr<rocksdb::DB>> _buckets;
     int64_t _slot_width;
     size_t _nr_of_slots;

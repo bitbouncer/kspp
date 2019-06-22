@@ -147,7 +147,7 @@ namespace kspp {
     bool _is_started;
     std::shared_ptr<cluster_config> _cluster_config;
     std::string _topology_id;
-    boost::filesystem::path _root_path;
+    std::experimental::filesystem::path _root_path;
     std::vector<std::shared_ptr<partition_processor>> _partition_processors;
     std::vector<std::shared_ptr<processor>> _sinks;
     std::vector<std::shared_ptr<partition_processor>> _top_partition_processors;

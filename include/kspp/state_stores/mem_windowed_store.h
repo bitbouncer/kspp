@@ -71,7 +71,7 @@ namespace kspp {
       typename std::map<K, std::shared_ptr<const krecord<K, V>>>::const_iterator _inner_it;
     };
 
-    mem_windowed_store(boost::filesystem::path storage_path, std::chrono::milliseconds slot_width, size_t nr_of_slots)
+    mem_windowed_store(std::experimental::filesystem::path storage_path, std::chrono::milliseconds slot_width, size_t nr_of_slots)
         : _slot_width(slot_width.count())
         , _nr_of_slots(nr_of_slots)
         , _oldest_kept_slot(0){

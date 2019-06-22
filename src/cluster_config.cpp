@@ -1,6 +1,6 @@
 #include <thread>
 #include <kspp/cluster_config.h>
-#include <boost/filesystem.hpp>
+#include <experimental/filesystem>
 #include <glog/logging.h>
 #include <kspp/utils/url_parser.h>
 #include <kspp/utils/env.h>
@@ -58,10 +58,10 @@ namespace kspp {
   }
 
   void cluster_config::set_storage_root(std::string root_path) {
-    if (!boost::filesystem::exists(root_path)) {
-      auto res = boost::filesystem::create_directories(root_path);
+    if (!std::experimental::filesystem::exists(root_path)) {
+      auto res = std::experimental::filesystem::create_directories(root_path);
       // seems to be a bug in boost - always return false...
-      if (!boost::filesystem::exists(root_path))
+      if (!std::experimental::filesystem::exists(root_path))
         LOG(FATAL) << "cluster_config, failed to create storage path at : " << root_path;
     }
     root_path_ = root_path;
@@ -76,7 +76,7 @@ namespace kspp {
   }
 
   void cluster_config::set_ca_cert_path(std::string path) {
-    if (!boost::filesystem::exists(path)) {
+    if (!std::experimental::filesystem::exists(path)) {
       LOG(WARNING) << "cluster_config, ca_cert not found at: " << path << " ignoring ssl config";
     } else {
       ca_cert_path_ = path;
@@ -86,13 +86,13 @@ namespace kspp {
   void cluster_config::set_private_key_path(std::string client_cert_path, std::string private_key_path,
                                             std::string passprase) {
     bool all_ok = true;
-    if (!boost::filesystem::exists(private_key_path)) {
+    if (!std::experimental::filesystem::exists(private_key_path)) {
       LOG(WARNING) << "cluster_config, private_key_path not found at:" << private_key_path;
       all_ok = false;
     }
 
     //boost::filesystem::path p(client_cert_path);
-    if (boost::filesystem::exists(client_cert_path) == false) {
+    if (std::experimental::filesystem::exists(client_cert_path) == false) {
       LOG(WARNING) << "cluster_config, client_cert not found at:" << client_cert_path;
       all_ok = false;
     }

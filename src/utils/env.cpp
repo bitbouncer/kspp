@@ -1,5 +1,5 @@
 #include <kspp/utils/env.h>
-#include <boost/filesystem.hpp>
+#include <experimental/filesystem>
 #include <boost/asio/ip/host_name.hpp>
 #include <glog/logging.h>
 
@@ -42,7 +42,7 @@ namespace kspp {
   }
 
   std::string default_statestore_root() {
-    return get_env_and_log("KSPP_STATE_STORE_ROOT", boost::filesystem::temp_directory_path().generic_string() + "/kspp");
+    return get_env_and_log("KSPP_STATE_STORE_ROOT", std::experimental::filesystem::temp_directory_path().generic_string() + "/kspp");
   }
 
 #ifdef _WIN32

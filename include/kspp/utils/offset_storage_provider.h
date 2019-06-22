@@ -1,6 +1,6 @@
 #include <climits>
 #include <string>
-#include <boost/filesystem.hpp>
+#include <experimental/filesystem>
 #include <libs3.h>
 
 #pragma once
@@ -48,7 +48,7 @@ namespace kspp {
   private:
     int64_t load_offset(int timeout_ms) override;
     void persist_offset(int64_t offset, int timeout_ms) override;
-    boost::filesystem::path _offset_storage_path;
+    std::experimental::filesystem::path _offset_storage_path;
   };
 
 

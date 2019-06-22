@@ -1,5 +1,4 @@
 #include <cstdlib>
-#include <boost/filesystem.hpp>
 #include <glog/logging.h>
 #include <kspp/cluster_config.h>
 #include <kspp/topology.h>
