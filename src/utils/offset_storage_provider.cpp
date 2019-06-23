@@ -2,6 +2,12 @@
 #include <fstream>
 #include <glog/logging.h>
 #include <kspp/kspp.h>
+#include <aws/core/Aws.h>
+#include <aws/core/auth/AWSCredentialsProvider.h>
+#include <aws/s3/model/PutObjectRequest.h>
+#include <aws/s3/model/GetObjectRequest.h>
+#include <kspp/features/aws/aws.h>
+#include <boost/interprocess/streams/bufferstream.hpp>
 
 namespace kspp {
   int64_t offset_storage::start(int64_t offset){
@@ -183,6 +189,92 @@ namespace kspp {
     _last_flushed_offset = _last_commited_offset;
   }
 
+  /*Below is the code used to initialize S3Client.
+  Aws::Client::ClientConfiguration config;
+  config.endpointOverride = "http://127.0.0.1:9000";
+  config.region = "us-east-1";
+  config.followRedirects = true;
+  Aws::S3::S3Client s3_client(Aws::Auth::AWSCredentials(access_key, secret_key), config, Aws::Client::AWSAuthV4Signer::PayloadSigningPolicy::Always);
+   */
+
+
+
+  s3_offset_storage2::s3_offset_storage2(std::string host, std::string s3_bucket, std::string s3_object_name, std::string access_key, std::string secret_key, bool use_ssl)
+      : _host(host)
+      ,_s3_bucket(s3_bucket)
+      ,_s3_object_name(s3_object_name)
+      ,_access_key(access_key)
+      ,_secret_key(secret_key){
+
+    kspp::init_aws(); // must be done at least once - otherwise the aws functions segfaults
+
+    Aws::Client::ClientConfiguration config;
+
+    config.endpointOverride = Aws::String(host.c_str());
+    config.scheme = use_ssl ? Aws::Http::Scheme::HTTPS : Aws::Http::Scheme::HTTP;
+    config.connectTimeoutMs = 5000;
+    config.requestTimeoutMs = 1000;
+
+    //const Aws::Auth::AWSCredentials aws_credentials(Aws::String(access_key), Aws::String(secret_key));
+    //Aws::Auth::AWSCredentials aws_credentials;
+    //aws_credentials.SetAWSAccessKeyId(Aws::String(access_key.c_str()));
+    //aws_credentials.SetAWSSecretKey(Aws::String(access_key.c_str()));
+    //auto x = Aws::MakeShared<Aws::S3::S3Client>(aws_credentials, config, Aws::Client::AWSAuthV4Signer::PayloadSigningPolicy::Never, false);
+
+   s3_client_ = std::make_shared<Aws::S3::S3Client>(
+       Aws::Auth::AWSCredentials(Aws::String(access_key.c_str()), Aws::String(secret_key.c_str())),
+        config,
+        Aws::Client::AWSAuthV4Signer::PayloadSigningPolicy::Never,
+        false);
+    }
+
+  s3_offset_storage2::~s3_offset_storage2(){
+    persist_offset(_last_commited_offset, 1000);
+    //S3_deinitialize();
+  }
+
+   int64_t s3_offset_storage2::load_offset(int timeout_ms){
+    Aws::S3::Model::GetObjectRequest object_request;
+    object_request.SetBucket(Aws::String(_s3_bucket.c_str()));
+    object_request.SetKey(Aws::String(_s3_object_name.c_str()));
+    object_request.SetRange("0-7");
+    int64_t tmp=kspp::OFFSET_BEGINNING;
+    auto get_object_outcome = s3_client_->GetObject(object_request);
+    if (get_object_outcome.IsSuccess()) {
+      auto &retrieved_data = get_object_outcome.GetResultWithOwnership().GetBody();
+      memcpy(&tmp, get_object_outcome.GetResult().GetBody().rdbuf(), sizeof(int64_t));
+    }
+    if (tmp == kspp::OFFSET_BEGINNING){
+      LOG(INFO) << "start(OFFSET_STORED), read failed: starting from OFFSET_BEGINNING";
+      return kspp::OFFSET_BEGINNING;
+    }
+    LOG(INFO) << "start(OFFSET_STORED), starting from offset: " << tmp;
+    return tmp;
+  }
+
+   void s3_offset_storage2::persist_offset(int64_t offset, int timeout_ms){
+    if (_last_flushed_offset == _last_commited_offset)
+      return;
+
+
+    Aws::S3::Model::PutObjectRequest object_request;
+    object_request.SetBucket(Aws::String(_s3_bucket.c_str()));
+    object_request.SetKey(Aws::String(_s3_object_name.c_str()));
+
+    std::shared_ptr<Aws::IOStream> body =  std::shared_ptr<Aws::IOStream>(new boost::interprocess::bufferstream((char*)_last_commited_offset, sizeof(int64_t)));
+    object_request.SetBody(body);
+
+    LOG(INFO) << "begin persist_offset " << offset;
+    auto put_object_outcome = s3_client_->PutObject(object_request);
+    if (!put_object_outcome.IsSuccess()) {
+      auto error = put_object_outcome.GetError();
+      LOG(ERROR) << error.GetExceptionName() << ": " << error.GetMessage();
+      return;
+    }
+    LOG(INFO) << "persist_offset done";
+    _last_flushed_offset = _last_commited_offset;
+  }
+
   std::shared_ptr<offset_storage> get_offset_provider(std::string uri) {
     // we should split the name in S3: host:port bucket name
     if (uri.size() < 2)
@@ -240,7 +332,7 @@ namespace kspp {
         return nullptr;
       }
 
-      return std::make_shared<s3_offset_storage>(host, bucket, key, access_key, secret_key, use_ssl);
+      return std::make_shared<s3_offset_storage2>(host, bucket, key, access_key, secret_key, use_ssl);
     } else {
       return std::make_shared<fs_offset_storage>(uri);
     }

@@ -7,13 +7,17 @@ export LIBRDKAFKA_VER="v1.0.0"
 export LIBS3_VER="master"
 export PROMETHEUS_CPP_VER="master"
 export RAPIDJSON_VER="v1.1.0"
+export PROTOBUF_VER="3.7.0"
+
 export ROCKDB_VER="v5.18.3"
+
+#-DCMAKE_CXX_STANDARD=17
 
 mkdir tmp && cd tmp
 
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 
-wget -O protobuf.tar.gz "https://github.com/protocolbuffers/protobuf/releases/download/v3.7.0/protobuf-cpp-3.7.0.tar.gz" && \
+wget -O protobuf.tar.gz "https://github.com/protocolbuffers/protobuf/releases/download/v$PROTOBUF_VER/protobuf-cpp-$PROTOBUF_VER.tar.gz" && \
 mkdir -p protobuf && \
 tar \
   --extract \
@@ -52,7 +56,7 @@ tar \
 cd rapidjson && \
 mkdir build && \
 cd build && \
-cmake -DRAPIDJSON_BUILD_EXAMPLES=OFF -DRAPIDJSON_BUILD_DOC=OFF -DRAPIDJSON_BUILD_TESTS=OFF  -DBUILD_SHARED_LIBS=ON .. && \
+cmake -DRAPIDJSON_BUILD_EXAMPLES=OFF -DRAPIDJSON_BUILD_DOC=OFF -DRAPIDJSON_BUILD_TESTS=OFF -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_STANDARD=17 .. && \
 sudo make install && \
 sudo rm -rf /usr/local/share/doc/RapidJSON && \
 cd ../.. && \
@@ -85,7 +89,7 @@ tar \
 cd avro/lang/c++/ && \
 mkdir build && \
 cd build && \
-cmake -DCMAKE_BUILD_TYPE=Release .. -DBUILD_SHARED_LIBS=ON && \
+cmake -DCMAKE_BUILD_TYPE=Release .. -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_STANDARD=17 && \
 make -j "$(getconf _NPROCESSORS_ONLN)" && \
 sudo make install && \
 cd ../../../..
@@ -101,7 +105,7 @@ tar \
   --strip-components 1 && \
 cd civetweb && \
 mkdir build_xx && cd build_xx && \
-cmake  -DCMAKE_BUILD_TYPE=Release -DCIVETWEB_ENABLE_CXX=ON -DCIVETWEB_ENABLE_SERVER_EXECUTABLE=OFF -DCIVETWEB_BUILD_TESTING=OFF -DBUILD_SHARED_LIBS=ON .. && \
+cmake  -DCMAKE_BUILD_TYPE=Release -DCIVETWEB_ENABLE_CXX=ON -DCIVETWEB_ENABLE_SERVER_EXECUTABLE=OFF -DCIVETWEB_BUILD_TESTING=OFF -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_STANDARD=17 .. && \
 make -j "$(getconf _NPROCESSORS_ONLN)" && \
 sudo make install && \
 cd ../.. && \
@@ -117,7 +121,7 @@ tar \
   --strip-components 1 && \
 cd cpr && \
 mkdir build && cd build && \
-cmake  -DCMAKE_BUILD_TYPE=Release -DUSE_SYSTEM_CURL=ON -DBUILD_CPR_TESTS=OFF -DBUILD_SHARED_LIBS=ON .. && \
+cmake  -DCMAKE_BUILD_TYPE=Release -DUSE_SYSTEM_CURL=ON -DBUILD_CPR_TESTS=OFF -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_STANDARD=17 .. && \
 make -j "$(getconf _NPROCESSORS_ONLN)" && \
 sudo cp lib/libcpr.so /usr/local/lib/libcpr.so && \
 sudo mkdir -p /usr/local/include/cpr && \
@@ -135,7 +139,7 @@ tar \
   --strip-components 1 && \
 cd prometheus-cpp && \
 mkdir build && cd build && \
-cmake  -DCMAKE_BUILD_TYPE=Release -DUSE_THIRDPARTY_LIBRARIES=OFF -DENABLE_TESTING=OFF -DBUILD_SHARED_LIBS=ON .. && \
+cmake  -DCMAKE_BUILD_TYPE=Release -DUSE_THIRDPARTY_LIBRARIES=OFF -DENABLE_TESTING=OFF -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_STANDARD=17 .. && \
 make -j "$(getconf _NPROCESSORS_ONLN)" && \
 sudo make install && \
 cd ../.. && \
@@ -166,7 +170,7 @@ tar \
 cd aws-sdk && \
 mkdir build && \
 cd build && \
-cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DBUILD_ONLY="s3" .. && \
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DBUILD_ONLY="s3" -DCPP_STANDARD=17 .. && \
 make -j "$(getconf _NPROCESSORS_ONLN)" && \
 sudo make install && \
 cd ../..

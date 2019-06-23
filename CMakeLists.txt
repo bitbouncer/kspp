@@ -19,7 +19,7 @@ option(LINK_SHARED "link shared" OFF)
 set(KSPP_VERSION_MAJOR 1)
 set(KSPP_VERSION_MINOR 0)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 14)
 
 #set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wpedantic -O2")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wpedantic -g -O0")
@@ -97,7 +97,7 @@ endif () #ZK
 SET(LIBRDKAFKA_LIBS rdkafka++ rdkafka)
 SET(PROMETHEUS_CPP_LIBS prometheus-cpp-core prometheus-cpp-pull prometheus-cpp-push)
 SET(LIBS3_LIBS s3)
-SET(AWS_S3_LIBS aws-cpp-sdk-s3 aws-cpp-sdk-core)
+SET(AWS_S3_LIBS aws-cpp-sdk-s3 aws-cpp-sdk-core aws-c-event-stream aws-checksums aws-c-common)
 
 SET(LIBRARY_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/lib)
 SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/bin)
@@ -117,6 +117,7 @@ link_directories(${CSI_LIBRARY_PATH})
 
 file(GLOB LIB_SRCS
         src/*.cpp
+        src/features/aws/*.cpp
         src/avro/*.cpp
         src/metrics/*.cpp
         src/impl/*.cpp
@@ -134,6 +135,7 @@ file(GLOB KSPP_INCLUDE_FILES
         include/kspp/*.h
         include/kspp/avro/*.h
         include/kspp/connect/avro_file/*.h
+        include/kspp/features/aws/*.h
         include/kspp/utils/*
         include/kspp/utils.h
         include/kspp/metrics/*.h
