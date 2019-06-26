@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
+#FEATURES
 option(ENABLE_BITBOUNCER_STREAMING "enable bitbouncer streaming support" ON)
 option(ENABLE_ROCKSDB "enable rocksdb support" ON)
 option(ENABLE_ZK "enable zk support" OFF)
@@ -9,6 +10,8 @@ option(ENABLE_POSTGRES "enable postgres support" ON)
 option(ENABLE_INFLUXDB "enable influxdb support" ON)
 option(ENABLE_TDS "enable tds support" ON)
 option(ENABLE_ELASTICSEARCH "enable elastic search support" ON)
+option(ENABLE_S3 "enable S3 support" ON)
+
 option(BUILD_TOOLS "build tools" ON)
 option(BUILD_SAMPLES "build examples" ON)
 option(BUILD_STATIC_LIBS "enable static linking support" ON)
@@ -19,7 +22,7 @@ option(LINK_SHARED "link shared" OFF)
 set(KSPP_VERSION_MAJOR 1)
 set(KSPP_VERSION_MINOR 0)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 #set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wpedantic -O2")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wpedantic -g -O0")
@@ -96,19 +99,12 @@ endif () #ZK
 
 SET(LIBRDKAFKA_LIBS rdkafka++ rdkafka)
 SET(PROMETHEUS_CPP_LIBS prometheus-cpp-core prometheus-cpp-pull prometheus-cpp-push)
-SET(LIBS3_LIBS s3)
-SET(AWS_S3_LIBS aws-cpp-sdk-s3 aws-cpp-sdk-core aws-c-event-stream aws-checksums aws-c-common)
 
 SET(LIBRARY_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/lib)
 SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/bin)
 add_definitions(-g -D_FILE_OFFSET_BITS=64 -D_REENTRANT -DEXTERNAL_LOCKS -DMULTITHREAD)
 add_definitions(-fPIC)
 add_definitions(-Wno-deprecated)
-SET(EXT_LIBS_SHARED ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${PROMETHEUS_CPP_LIBS} ${BOOST_LIBS} ${PostgreSQL_LIBRARIES} ${LIBS3_LIBS} ${AWS_S3_LIBS} glog crypto ssl stdc++fs)
-SET(EXT_LIBS_STATIC ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${PROMETHEUS_CPP_LIBS} ${BOOST_LIBS} ${PostgreSQL_LIBRARIES} ${LIBS3_LIBS} ${AWS_S3_LIBS} glog crypto ssl stdc++fs)
-
-SET(CSI_LIBS_SHARED kspp ${EXT_LIBS_SHARED})
-SET(CSI_LIBS_STATIC kspp_s ${EXT_LIBS_STATIC})
 
 include_directories(${CSI_INCLUDE_PATH} ${CMAKE_SOURCE_DIR}/include)
 link_directories(${CSI_LIBRARY_PATH})
@@ -117,7 +113,6 @@ link_directories(${CSI_LIBRARY_PATH})
 
 file(GLOB LIB_SRCS
         src/*.cpp
-        src/features/aws/*.cpp
         src/avro/*.cpp
         src/metrics/*.cpp
         src/impl/*.cpp
@@ -135,7 +130,6 @@ file(GLOB KSPP_INCLUDE_FILES
         include/kspp/*.h
         include/kspp/avro/*.h
         include/kspp/connect/avro_file/*.h
-        include/kspp/features/aws/*.h
         include/kspp/utils/*
         include/kspp/utils.h
         include/kspp/metrics/*.h
@@ -342,8 +336,40 @@ if (ENABLE_BITBOUNCER_STREAMING)
 endif () #ENABLE_BITBOUNCER_STREAMING
 
 
+if (ENABLE_S3)
+    file(GLOB S3_LIB_SRCS
+            include/features/aws/*.h
+            src/features/aws/*.cpp)
+
+    if (BUILD_STATIC_LIBS)
+        ADD_LIBRARY(kspp_s3_s STATIC ${S3_LIB_SRCS})
+        INSTALL(TARGETS kspp_s3_s
+                LIBRARY DESTINATION lib
+                ARCHIVE DESTINATION lib
+                )
+    endif ()
+
+    if (BUILD_SHARED_LIBS)
+        ADD_LIBRARY(kspp_s3 SHARED ${S3_LIB_SRCS})
+        INSTALL(TARGETS kspp_s3
+                LIBRARY DESTINATION lib
+                ARCHIVE DESTINATION lib
+                )
+    endif ()
+    #SET(LIBS3_LIBS s3)
+    SET(AWS_S3_LIBS aws-cpp-sdk-s3 aws-cpp-sdk-core aws-c-event-stream aws-checksums aws-c-common)
+    SET(KSPP_S3_LIBS_STATIC kspp_s3_s ${AWS_S3_LIBS})
+    SET(KSPP_S3_LIBS_SHARED kspp_s3 ${AWS_S3_LIBS})
+    add_definitions(-DKSPP_S3)
+
+endif()
 
 
+SET(EXT_LIBS_SHARED ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${PROMETHEUS_CPP_LIBS} ${BOOST_LIBS} ${PostgreSQL_LIBRARIES} glog crypto ssl stdc++fs)
+SET(EXT_LIBS_STATIC ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${PROMETHEUS_CPP_LIBS} ${BOOST_LIBS} ${PostgreSQL_LIBRARIES} glog crypto ssl stdc++fs)
+
+SET(CSI_LIBS_SHARED kspp ${KSPP_S3_LIBS_SHARED} ${EXT_LIBS_SHARED})
+SET(CSI_LIBS_STATIC kspp_s ${KSPP_S3_LIBS_STATIC} ${EXT_LIBS_STATIC})
 
 
 INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/include/ DESTINATION include)
@@ -362,6 +388,8 @@ IF (BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
 ENDIF ()
+
+
 
 
 

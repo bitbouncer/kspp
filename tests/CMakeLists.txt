@@ -71,4 +71,8 @@ add_executable(test11_metrics test11_metrics.cpp)
 target_link_libraries(test11_metrics ${CSI_LIBS_STATIC})
 add_test(NAME test11_metrics COMMAND $<TARGET_FILE:test11_metrics>)
 
-
+if (ENABLE_S3)
+add_executable(test12_s3 test12_s3.cpp)
+target_link_libraries(test12_s3 ${CSI_LIBS_STATIC})
+add_test(NAME test12_s3 COMMAND $<TARGET_FILE:test12_s3>)
+endif ()
