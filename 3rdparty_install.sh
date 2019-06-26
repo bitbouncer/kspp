@@ -176,7 +176,7 @@ cd .. && \
 rm librdkafka.tar.gz && \
 rm -rf librdkafka
 
-..
+cd ..
 
 
 

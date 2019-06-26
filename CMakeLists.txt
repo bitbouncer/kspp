@@ -147,8 +147,18 @@ file(GLOB KSPP_INCLUDE_FILES
         include/kspp/beta/*.h
         )
 
+if (ENABLE_S3)
+    file(GLOB S3_LIB_SRCS
+            include/features/aws/*.h
+            src/features/aws/*.cpp)
+
+    #SET(LIBS3_LIBS s3)
+    SET(AWS_S3_LIBS aws-cpp-sdk-s3 aws-cpp-sdk-core aws-c-event-stream aws-checksums aws-c-common)
+    add_definitions(-DKSPP_S3)
+endif()
+
 if (BUILD_STATIC_LIBS)
-    ADD_LIBRARY(kspp_s STATIC ${LIB_SRCS} ${KSPP_INCLUDE_FILES})
+    ADD_LIBRARY(kspp_s STATIC ${LIB_SRCS} ${KSPP_INCLUDE_FILES} ${S3_LIB_SRCS})
     INSTALL(TARGETS kspp_s
             LIBRARY DESTINATION lib
             ARCHIVE DESTINATION lib
@@ -156,7 +166,7 @@ if (BUILD_STATIC_LIBS)
 endif ()
 
 if (BUILD_SHARED_LIBS)
-    ADD_LIBRARY(kspp SHARED ${LIB_SRCS} ${KSPP_INCLUDE_FILES})
+    ADD_LIBRARY(kspp SHARED ${LIB_SRCS} ${KSPP_INCLUDE_FILES} ${S3_LIB_SRCS})
     INSTALL(TARGETS kspp
             LIBRARY DESTINATION lib
             ARCHIVE DESTINATION lib
@@ -336,41 +346,11 @@ if (ENABLE_BITBOUNCER_STREAMING)
 endif () #ENABLE_BITBOUNCER_STREAMING
 
 
-if (ENABLE_S3)
-    file(GLOB S3_LIB_SRCS
-            include/features/aws/*.h
-            src/features/aws/*.cpp)
 
-    if (BUILD_STATIC_LIBS)
-        ADD_LIBRARY(kspp_s3_s STATIC ${S3_LIB_SRCS})
-        INSTALL(TARGETS kspp_s3_s
-                LIBRARY DESTINATION lib
-                ARCHIVE DESTINATION lib
-                )
-    endif ()
-
-    if (BUILD_SHARED_LIBS)
-        ADD_LIBRARY(kspp_s3 SHARED ${S3_LIB_SRCS})
-        INSTALL(TARGETS kspp_s3
-                LIBRARY DESTINATION lib
-                ARCHIVE DESTINATION lib
-                )
-    endif ()
-    #SET(LIBS3_LIBS s3)
-    SET(AWS_S3_LIBS aws-cpp-sdk-s3 aws-cpp-sdk-core aws-c-event-stream aws-checksums aws-c-common)
-    SET(KSPP_S3_LIBS_STATIC kspp_s3_s ${AWS_S3_LIBS})
-    SET(KSPP_S3_LIBS_SHARED kspp_s3 ${AWS_S3_LIBS})
-    add_definitions(-DKSPP_S3)
-
-endif()
-
-
-SET(EXT_LIBS_SHARED ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${PROMETHEUS_CPP_LIBS} ${BOOST_LIBS} ${PostgreSQL_LIBRARIES} glog crypto ssl stdc++fs)
-SET(EXT_LIBS_STATIC ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${PROMETHEUS_CPP_LIBS} ${BOOST_LIBS} ${PostgreSQL_LIBRARIES} glog crypto ssl stdc++fs)
-
-SET(CSI_LIBS_SHARED kspp ${KSPP_S3_LIBS_SHARED} ${EXT_LIBS_SHARED})
-SET(CSI_LIBS_STATIC kspp_s ${KSPP_S3_LIBS_STATIC} ${EXT_LIBS_STATIC})
-
+SET(EXT_LIBS_SHARED ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${PROMETHEUS_CPP_LIBS} ${BOOST_LIBS} ${PostgreSQL_LIBRARIES} ${AWS_S3_LIBS} glog crypto ssl stdc++fs)
+SET(EXT_LIBS_STATIC ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${PROMETHEUS_CPP_LIBS} ${BOOST_LIBS} ${PostgreSQL_LIBRARIES} ${AWS_S3_LIBS} glog crypto ssl stdc++fs)
+SET(CSI_LIBS_SHARED kspp ${EXT_LIBS_SHARED})
+SET(CSI_LIBS_STATIC kspp_s ${EXT_LIBS_STATIC})
 
 INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/include/ DESTINATION include)
 
