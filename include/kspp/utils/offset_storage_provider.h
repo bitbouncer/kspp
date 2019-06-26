@@ -1,7 +1,6 @@
 #include <climits>
 #include <string>
 #include <experimental/filesystem>
-#include <libs3.h>
 
 #pragma once
 
