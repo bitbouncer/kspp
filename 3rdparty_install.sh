@@ -48,7 +48,7 @@ mkdir build && cd build && \
 cmake -DCMAKE_BUILD_TYPE=Release .. -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_STANDARD=$CPP_STANDARD && \
 make -j "$(getconf _NPROCESSORS_ONLN)" && \
 sudo make install && \
-cd ../../../..
+cd ../../../.. && \
 rm avro.tar.gz && \
 rm -rf arvo
 
