@@ -41,13 +41,13 @@ tar \
   --strip-components 1
 sed -i.bak1 's/-std=c++11/-std=c++17/g' avro/lang/c++/CMakeLists.txt
 sed -i.bak2 '/regex system)/a SET(Boost_LIBRARIES boost_program_options boost_iostreams boost_filesystem boost_regex boost_system z bz2)' avro/lang/c++/CMakeLists.txt
-sed -i.bak3 '/find_package (Boost/d' avro/lang/c++/CMakeLists.txt
-sed -i.bak4 '/regex system)/d' avro/lang/c++/CMakeLists.txt
+#sed -i.bak3 '/find_package (Boost/d' avro/lang/c++/CMakeLists.txt
+#sed -i.bak4 '/regex system)/d' avro/lang/c++/CMakeLists.txt
 cat avro/lang/c++/CMakeLists.txt
 cd avro/lang/c++/ 
 mkdir build 
 cd build
-cmake -DCMAKE_BUILD_TYPE=Release .. -DBUILD_SHARED_LIBS=ON -DBoost_NO_BOOST_CMAKE=ON -DCMAKE_CXX_STANDARD=$CPP_STANDARD
+cmake -DCMAKE_BUILD_TYPE=Release .. -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_STANDARD=$CPP_STANDARD
 make -j "$(getconf _NPROCESSORS_ONLN)"
 sudo make install
 cd ../../../..
@@ -106,15 +106,16 @@ tar \
     --extract \
     --file rocksdb.tar.gz \
     --directory rocksdb \
-    --strip-components 1 && \
-cd rocksdb && \
-export USE_RTTI=1 && \
-make -j "$(getconf _NPROCESSORS_ONLN)" shared_lib && \
-sudo cp -r include/* /usr/local/include/ && \
-sudo cp librocksdb.so /usr/local/lib/ && \
-cd .. && \
-rm rocksdb.tar.gz && \
-rm -rf rocksdb
+    --strip-components 1
+cd rocksdb
+export USE_RTTI=1
+make -j "$(getconf _NPROCESSORS_ONLN)" shared_lib
+sudo make install-shared
+#sudo cp -r include/* /usr/local/include/ 
+#sudo cp librocksdb.so /usr/local/lib/
+cd ..
+rm rocksdb.tar.gz
+#rm -rf rocksdb
 
 wget -O civetweb.tar.gz "https://github.com/civetweb/civetweb/archive/$CIVETWEB_VER.tar.gz" && \
 mkdir -p civetweb && \
