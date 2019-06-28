@@ -1,5 +1,3 @@
-set -ef 
-
 export AVRO_VER="release-1.9.0"
 export AWS_SDK_VER="1.7.128"
 export CIVETWEB_VER="v1.11"
@@ -44,7 +42,8 @@ tar \
 cd avro/lang/c++/ && \
 sed -i 's/-std=c++11/-std=c++17/g' CMakeLists.txt && \ 
 sed -i '/regex system)/a SET(Boost_LIBRARIES boost_program_options boost_iostreams boost_filesystem boost_regex boost_system z bz2)' CMakeLists.txt && \
-mkdir build && cd build && \
+mkdir build && \
+cd build && \
 cmake -DCMAKE_BUILD_TYPE=Release .. -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_STANDARD=$CPP_STANDARD && \
 make -j "$(getconf _NPROCESSORS_ONLN)" && \
 sudo make install && \
