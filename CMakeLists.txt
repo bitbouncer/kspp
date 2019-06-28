@@ -45,13 +45,17 @@ if (ENABLE_POSTGRES)
 endif () #POSTGRES
 
 find_package(Boost COMPONENTS program_options system REQUIRED)
-set(BOOST_LIBS
-        ${Boost_PROGRAM_OPTIONS_LIBRARY}
-        ${Boost_SYSTEM_LIBRARY}
-        pthread
-        rt
-        c
-        )
+
+#it seems we cannot longer find boost 1.7.0 with cmake???
+#set(BOOST_LIBS
+#        ${Boost_PROGRAM_OPTIONS_LIBRARY}
+#        ${Boost_SYSTEM_LIBRARY}
+#        pthread
+#        rt
+#        c
+#        )
+
+set(BOOST_LIBS boost_program_options boost_iostreams boost_filesystem boost_regex boost_system z bz2 pthread rt c)
 
 
 SET(CSI_INCLUDE_PATH ${Boost_INCLUDE_DIR})
