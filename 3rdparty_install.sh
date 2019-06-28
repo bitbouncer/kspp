@@ -17,9 +17,6 @@ export CPP_STANDARD="17"
 
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 
-mkdir tmp
-cd tmp
-
 #wget -O boost.tar.gz "https://dl.bintray.com/boostorg/release/1.70.0/source/boost_1_70_0.tar.gz" && \
 #mkdir -p boost && \
 #tar \
@@ -45,6 +42,7 @@ tar \
 
 sed -i.bak1 's/-std=c++11/-std=c++17/g' avro/lang/c++/CMakeLists.txt
 sed -i.bak2 '/regex system)/a SET(Boost_LIBRARIES boost_program_options boost_iostreams boost_filesystem boost_regex boost_system z bz2)' avro/lang/c++/CMakeLists.txt
+cat avro/lang/c++/CMakeLists.txt
 
 cd avro/lang/c++/ && \
 mkdir build && \
