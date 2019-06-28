@@ -1,3 +1,5 @@
+set -ef 
+
 export AVRO_VER="release-1.9.0"
 export AWS_SDK_VER="1.7.128"
 export CIVETWEB_VER="v1.11"
@@ -49,7 +51,7 @@ make -j "$(getconf _NPROCESSORS_ONLN)" && \
 sudo make install && \
 cd ../../../.. && \
 rm avro.tar.gz && \
-rm -rf arvo
+rm -rf arvokspp-build3rdparty-ubuntu:latest
 
 wget -O protobuf.tar.gz "https://github.com/protocolbuffers/protobuf/releases/download/v$PROTOBUF_VER/protobuf-cpp-$PROTOBUF_VER.tar.gz" && \
 mkdir -p protobuf && \
