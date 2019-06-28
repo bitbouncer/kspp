@@ -17,20 +17,20 @@ export CPP_STANDARD="17"
 
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 
-#wget -O boost.tar.gz "https://dl.bintray.com/boostorg/release/1.70.0/source/boost_1_70_0.tar.gz" && \
-#mkdir -p boost && \
-#tar \
-#  --extract \
-#  --file boost.tar.gz \
-#  --directory boost \
-#  --strip-components 1 && \
-#cd boost && \
-#./bootstrap.sh  && \
-#./b2 cxxflags=-std=c++17 -j "$(getconf _NPROCESSORS_ONLN)" stage && \
-#sudo ./b2 cxxflags=-std=c++17 install && \
-#cd .. && \
-#rm boost.tar.gz && \
-#rm -rf boost
+wget -O boost.tar.gz "https://dl.bintray.com/boostorg/release/1.70.0/source/boost_1_70_0.tar.gz" && \
+mkdir -p boost && \
+tar \
+  --extract \
+  --file boost.tar.gz \
+  --directory boost \
+  --strip-components 1
+cd boost
+./bootstrap.sh
+./b2 --with-program_options --with-iostreams --with-filesystem --with-regex --with-system cxxflags=-std=c++17 -j "$(getconf _NPROCESSORS_ONLN)" stage
+sudo ./b2 --with-program_options --with-iostreams --with-filesystem --with-regex --with-system cxxflags=-std=c++17 install
+cd ..
+rm boost.tar.gz
+rm -rf boost
 
 wget -O avro.tar.gz "https://github.com/apache/avro/archive/$AVRO_VER.tar.gz"
 mkdir -p avro
