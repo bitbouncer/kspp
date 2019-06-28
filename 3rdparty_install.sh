@@ -111,11 +111,9 @@ cd rocksdb
 export USE_RTTI=1
 make -j "$(getconf _NPROCESSORS_ONLN)" shared_lib
 sudo make install-shared
-#sudo cp -r include/* /usr/local/include/ 
-#sudo cp librocksdb.so /usr/local/lib/
 cd ..
 rm rocksdb.tar.gz
-#rm -rf rocksdb
+rm -rf rocksdb
 
 wget -O civetweb.tar.gz "https://github.com/civetweb/civetweb/archive/$CIVETWEB_VER.tar.gz" && \
 mkdir -p civetweb && \
