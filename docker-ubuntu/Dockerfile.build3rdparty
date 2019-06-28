@@ -4,6 +4,7 @@ WORKDIR /src
 
 MAINTAINER sk svante.karlsson@csi.se
 
+RUN apt-get install software-properties-common
 RUN add-apt-repository ppa:mhier/libboost-latest
 RUN apt-get update && apt-get install -y sudo pax-utils automake autogen shtool libtool git wget cmake unzip build-essential pkg-config \
       libboost1.70-dev g++ python-dev autotools-dev libicu-dev zlib1g-dev openssl libssl-dev \
