@@ -41,8 +41,8 @@ tar \
   --strip-components 1
 sed -i.bak1 's/-std=c++11/-std=c++17/g' avro/lang/c++/CMakeLists.txt
 sed -i.bak2 '/regex system)/a SET(Boost_LIBRARIES boost_program_options boost_iostreams boost_filesystem boost_regex boost_system z bz2)' avro/lang/c++/CMakeLists.txt
-sed -i.bak3'/find_package (Boost/d' avro/lang/c++/CMakeLists.txt
-sed -i.bak4'/regex system)/d' avro/lang/c++/CMakeLists.txt
+sed -i.bak3 '/find_package (Boost/d' avro/lang/c++/CMakeLists.txt
+sed -i.bak4 '/regex system)/d' avro/lang/c++/CMakeLists.txt
 cat avro/lang/c++/CMakeLists.txt
 cd avro/lang/c++/ 
 mkdir build 
