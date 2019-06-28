@@ -1,3 +1,5 @@
+set -ef 
+
 export AVRO_VER="release-1.9.0"
 export AWS_SDK_VER="1.7.128"
 export CIVETWEB_VER="v1.11"
@@ -16,6 +18,39 @@ export CPP_STANDARD="17"
 mkdir tmp && cd tmp
 
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+
+#wget -O boost.tar.gz "https://dl.bintray.com/boostorg/release/1.70.0/source/boost_1_70_0.tar.gz" && \
+#mkdir -p boost && \
+#tar \
+#  --extract \
+#  --file boost.tar.gz \
+#  --directory boost \
+#  --strip-components 1 && \
+#cd boost && \
+#./bootstrap.sh  && \
+#./b2 cxxflags=-std=c++17 -j "$(getconf _NPROCESSORS_ONLN)" stage && \
+#sudo ./b2 cxxflags=-std=c++17 install && \
+#cd .. && \
+#rm boost.tar.gz && \
+#rm -rf boost
+
+wget -O avro.tar.gz "https://github.com/apache/avro/archive/$AVRO_VER.tar.gz" && \
+mkdir -p avro && \
+tar \
+  --extract \
+  --file avro.tar.gz \
+  --directory avro \
+  --strip-components 1 && \
+cd avro/lang/c++/ && \
+sed -i 's/-std=c++11/-std=c++17/g' CMakeLists.txt && \ 
+sed -i '/regex system)/a SET(Boost_LIBRARIES boost_program_options boost_iostreams boost_filesystem boost_regex boost_system z bz2)' CMakeLists.txt && \
+mkdir build && cd build && \
+cmake -DCMAKE_BUILD_TYPE=Release .. -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_STANDARD=$CPP_STANDARD && \
+make -j "$(getconf _NPROCESSORS_ONLN)" && \
+sudo make install && \
+cd ../../../..
+rm avro.tar.gz && \
+rm -rf arvo
 
 wget -O protobuf.tar.gz "https://github.com/protocolbuffers/protobuf/releases/download/v$PROTOBUF_VER/protobuf-cpp-$PROTOBUF_VER.tar.gz" && \
 mkdir -p protobuf && \
@@ -78,23 +113,6 @@ sudo cp librocksdb.so /usr/local/lib/ && \
 cd .. && \
 rm rocksdb.tar.gz && \
 rm -rf rocksdb
-
-wget -O avro.tar.gz "https://github.com/apache/avro/archive/$AVRO_VER.tar.gz" && \
-mkdir -p avro && \
-tar \
-  --extract \
-  --file avro.tar.gz \
-  --directory avro \
-  --strip-components 1 && \
-cd avro/lang/c++/ && \
-mkdir build && \
-cd build && \
-cmake -DCMAKE_BUILD_TYPE=Release .. -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_STANDARD=$CPP_STANDARD && \
-make -j "$(getconf _NPROCESSORS_ONLN)" && \
-sudo make install && \
-cd ../../../..
-rm avro.tar.gz && \
-rm -rf arvo
 
 wget -O civetweb.tar.gz "https://github.com/civetweb/civetweb/archive/$CIVETWEB_VER.tar.gz" && \
 mkdir -p civetweb && \
