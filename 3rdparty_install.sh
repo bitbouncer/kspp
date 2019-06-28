@@ -39,11 +39,11 @@ tar \
   --file avro.tar.gz \
   --directory avro \
   --strip-components 1 && \
-cd avro/lang/c++/ && \
-pwd && \
-which sed  && \
-sed -i 's/-std=c++11/-std=c++17/g' CMakeLists.txt && \ 
-sed -i '/regex system)/a SET(Boost_LIBRARIES boost_program_options boost_iostreams boost_filesystem boost_regex boost_system z bz2)' CMakeLists.txt && \
+cd avro/lang/c++/ 
+
+sed -i 's/-std=c++11/-std=c++17/g' CMakeLists.txt
+sed -i '/regex system)/a SET(Boost_LIBRARIES boost_program_options boost_iostreams boost_filesystem boost_regex boost_system z bz2)' CMakeLists.txt
+
 mkdir build && \
 cd build && \
 cmake -DCMAKE_BUILD_TYPE=Release .. -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_STANDARD=$CPP_STANDARD && \
