@@ -102,7 +102,7 @@ endif () #ZK
 
 
 SET(LIBRDKAFKA_LIBS rdkafka++ rdkafka)
-SET(PROMETHEUS_CPP_LIBS prometheus-cpp-core prometheus-cpp-pull prometheus-cpp-push)
+SET(PROMETHEUS_CPP_LIBS prometheus-cpp-core prometheus-cpp-push)
 
 SET(LIBRARY_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/lib)
 SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/bin)

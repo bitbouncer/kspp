@@ -1,19 +1,17 @@
 set -ef 
 
+export CPP_STANDARD="17"
+
 export AVRO_VER="release-1.9.0"
 export AWS_SDK_VER="1.7.128"
-export CIVETWEB_VER="v1.11"
-export CPR_VER="1.3.0"
+#export CIVETWEB_VER="v1.11"
+#export CPR_VER="1.3.0"
 export GRPC_VER="v1.21.0"
-export LIBRDKAFKA_VER="v1.0.0"
-export LIBS3_VER="master"
-export PROMETHEUS_CPP_VER="master"
+export LIBRDKAFKA_VER="v1.1.0"
+export PROMETHEUS_CPP_VER="v0.7.0"
 export RAPIDJSON_VER="v1.1.0"
 export PROTOBUF_VER="3.7.0"
-
 export ROCKDB_VER="v5.18.3"
-
-export CPP_STANDARD="17"
 
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 
@@ -115,39 +113,39 @@ cd ..
 rm rocksdb.tar.gz
 rm -rf rocksdb
 
-wget -O civetweb.tar.gz "https://github.com/civetweb/civetweb/archive/$CIVETWEB_VER.tar.gz" && \
-mkdir -p civetweb && \
-tar \
-  --extract \
-  --file civetweb.tar.gz \
-  --directory civetweb \
-  --strip-components 1 && \
-cd civetweb && \
-mkdir build_xx && cd build_xx && \
-cmake  -DCMAKE_BUILD_TYPE=Release -DCIVETWEB_ENABLE_CXX=ON -DCIVETWEB_ENABLE_SERVER_EXECUTABLE=OFF -DCIVETWEB_BUILD_TESTING=OFF -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_STANDARD=$CPP_STANDARD .. && \
-make -j "$(getconf _NPROCESSORS_ONLN)" && \
-sudo make install && \
-cd ../.. && \
-rm civetweb.tar.gz && \
-rm -rf civetweb
+#wget -O civetweb.tar.gz "https://github.com/civetweb/civetweb/archive/$CIVETWEB_VER.tar.gz" && \
+#mkdir -p civetweb && \
+#tar \
+#  --extract \
+#  --file civetweb.tar.gz \
+#  --directory civetweb \
+#  --strip-components 1 && \
+#cd civetweb && \
+#mkdir build_xx && cd build_xx && \
+#cmake  -DCMAKE_BUILD_TYPE=Release -DCIVETWEB_ENABLE_CXX=ON -DCIVETWEB_ENABLE_SERVER_EXECUTABLE=OFF -DCIVETWEB_BUILD_TESTING=OFF -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_STANDARD=$CPP_STANDARD .. && \
+#make -j "$(getconf _NPROCESSORS_ONLN)" && \
+#sudo make install && \
+#cd ../.. && \
+#rm civetweb.tar.gz && \
+#rm -rf civetweb
 
-wget -O cpr.tar.gz "https://github.com/whoshuu/cpr/archive/$CPR_VER.tar.gz" && \
-mkdir -p cpr && \
-tar \
-  --extract \
-  --file cpr.tar.gz \
-  --directory cpr \
-  --strip-components 1 && \
-cd cpr && \
-mkdir build && cd build && \
-cmake  -DCMAKE_BUILD_TYPE=Release -DUSE_SYSTEM_CURL=ON -DBUILD_CPR_TESTS=OFF -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_STANDARD=$CPP_STANDARD .. && \
-make -j "$(getconf _NPROCESSORS_ONLN)" && \
-sudo cp lib/libcpr.so /usr/local/lib/libcpr.so && \
-sudo mkdir -p /usr/local/include/cpr && \
-sudo cp -r ../include/cpr/* /usr/local/include/cpr && \
-cd ../.. && \
-rm cpr.tar.gz && \
-rm -rf cpr
+#wget -O cpr.tar.gz "https://github.com/whoshuu/cpr/archive/$CPR_VER.tar.gz" && \
+#mkdir -p cpr && \
+#tar \
+#  --extract \
+#  --file cpr.tar.gz \
+#  --directory cpr \
+#  --strip-components 1 && \
+#cd cpr && \
+#mkdir build && cd build && \
+#cmake  -DCMAKE_BUILD_TYPE=Release -DUSE_SYSTEM_CURL=ON -DBUILD_CPR_TESTS=OFF -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_STANDARD=$CPP_STANDARD .. && \
+#make -j "$(getconf _NPROCESSORS_ONLN)" && \
+#sudo cp lib/libcpr.so /usr/local/lib/libcpr.so && \
+#sudo mkdir -p /usr/local/include/cpr && \
+#sudo cp -r ../include/cpr/* /usr/local/include/cpr && \
+#cd ../.. && \
+#rm cpr.tar.gz && \
+#rm -rf cpr
 
 wget -O prometheus-cpp.tar.gz "https://github.com/jupp0r/prometheus-cpp/archive/$PROMETHEUS_CPP_VER.tar.gz" && \
 mkdir -p prometheus-cpp && \
@@ -156,13 +154,13 @@ tar \
   --file prometheus-cpp.tar.gz \
   --directory prometheus-cpp \
   --strip-components 1 && \
-cd prometheus-cpp && \
-mkdir build && cd build && \
-cmake  -DCMAKE_BUILD_TYPE=Release -DUSE_THIRDPARTY_LIBRARIES=OFF -DENABLE_TESTING=OFF -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_STANDARD=$CPP_STANDARD .. && \
-make -j "$(getconf _NPROCESSORS_ONLN)" && \
-sudo make install && \
-cd ../.. && \
-rm prometheus-cpp.tar.gz && \
+cd prometheus-cpp
+mkdir build && cd build
+cmake  -DCMAKE_BUILD_TYPE=Release -DENABLE_PULL=OFF -DUSE_THIRDPARTY_LIBRARIES=OFF -DENABLE_TESTING=OFF -DBUILD_SHARED_LIBS=ON -DOVERRIDE_CXX_STANDARD_FLAGS=OFF -DCMAKE_CXX_STANDARD=$CPP_STANDARD ..
+make -j "$(getconf _NPROCESSORS_ONLN)"
+sudo make install
+cd ../..
+rm prometheus-cpp.tar.gz
 rm -rf prometheus-cpp
 
 wget -O aws-sdk.tar.gz "https://github.com/aws/aws-sdk-cpp/archive/$AWS_SDK_VER.tar.gz" && \
@@ -171,13 +169,13 @@ tar \
   --extract \
   --file aws-sdk.tar.gz \
   --directory aws-sdk \
-  --strip-components 1 && \
-cd aws-sdk && \
-mkdir build && \
-cd build && \
-cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DBUILD_ONLY="s3" -DCPP_STANDARD=$CPP_STANDARD .. && \
-make -j "$(getconf _NPROCESSORS_ONLN)" && \
-sudo make install && \
+  --strip-components 1
+cd aws-sdk
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DBUILD_ONLY="s3" -DCPP_STANDARD=$CPP_STANDARD ..
+make -j "$(getconf _NPROCESSORS_ONLN)"
+sudo make install
 cd ../..
 
 wget -O librdkafka.tar.gz "https://github.com/edenhill/librdkafka/archive/$LIBRDKAFKA_VER.tar.gz" && \
@@ -186,13 +184,13 @@ tar \
   --extract \
   --file librdkafka.tar.gz \
   --directory librdkafka \
-  --strip-components 1 && \
-cd librdkafka && \
-./configure --prefix=/usr/local && \
-make -j "$(getconf _NPROCESSORS_ONLN)" && \
-sudo make install && \
-cd .. && \
-rm librdkafka.tar.gz && \
+  --strip-components 1
+cd librdkafka
+./configure --prefix=/usr/local
+make -j "$(getconf _NPROCESSORS_ONLN)"
+sudo make install
+cd ..
+rm librdkafka.tar.gz
 rm -rf librdkafka
 
 cd ..
