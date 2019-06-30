@@ -30,7 +30,7 @@ namespace kspp {
       return _autocommit_marker ? _autocommit_marker->offset() : -1;
     }
 
-    inline std::shared_ptr<const krecord<K, V>> record() {
+    inline std::shared_ptr<const krecord<K, V>> record() const {
       return _record;
     }
 

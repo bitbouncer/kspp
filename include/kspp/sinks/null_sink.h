@@ -10,7 +10,7 @@ namespace kspp {
   public:
     typedef std::function<void(std::shared_ptr<const krecord <K, V>> record)> handler;
 
-    null_sink(std::shared_ptr<cluster_config> config, handler f)
+    null_sink(std::shared_ptr<cluster_config> config, handler f=nullptr)
         : topic_sink<K, V>()
         , _handler(f) {
       this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "null_sink");
@@ -50,10 +50,10 @@ namespace kspp {
         auto r = this->_queue.pop_and_get();
         this->_lag.add_event_time(tick, r->event_time());
         ++(this->_processed_count);
+        if (_handler)
         _handler(r->record());
         ++processed;
       }
-
       return processed;
     }
 

@@ -76,3 +76,9 @@ add_executable(test12_s3 test12_s3.cpp)
 target_link_libraries(test12_s3 ${CSI_LIBS_STATIC})
 add_test(NAME test12_s3 COMMAND $<TARGET_FILE:test12_s3>)
 endif ()
+
+add_executable(test13_mem test13_mem.cpp)
+target_link_libraries(test13_mem ${CSI_LIBS_STATIC})
+add_test(NAME test13_mem COMMAND $<TARGET_FILE:test13_mem>)
+
+
