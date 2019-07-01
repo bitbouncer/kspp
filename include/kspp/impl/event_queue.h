@@ -34,7 +34,7 @@ namespace kspp {
 
     //normal usage
     inline void push_back(std::shared_ptr<kevent<K, V>> p) {
-      if (p != nullptr && p.get() != nullptr) {
+      if (p) {
         spinlock::scoped_lock xxx(_spinlock);
         {
           if (_queue.size() == 0)
@@ -46,7 +46,7 @@ namespace kspp {
 
     // used for error handling
     inline void push_front(std::shared_ptr<kevent<K, V>> p) {
-      if (p != nullptr && p.get() != nullptr) {
+      if (p) {
         spinlock::scoped_lock xxx(_spinlock);
         {
           _next_event_time = p->event_time();

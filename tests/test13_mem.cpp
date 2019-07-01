@@ -13,7 +13,9 @@ static void sigterm(int sig) {
   run = false;
 }
 
-int main(int argc, char** argv){
+//valgrind  --leak-check=yes --leak-check=full --show-leak-kinds=all
+
+int main(int argc, char** argv) {
   auto config = std::make_shared<kspp::cluster_config>("");
   kspp::topology_builder builder(config);
   auto topology = builder.create_topology();
@@ -39,12 +41,27 @@ int main(int argc, char** argv){
   });
 
 
-  for(;;){
-    for (int i=0; i!=100000; ++i)
+  for (int i = 0; i != 10; ++i) {
+    for (int j = 0; j != 1000; ++j)
       insert(*source, std::string("nisse"), std::string("was here"));
     std::this_thread::sleep_for(1000ms);
   }
+  LOG(INFO) << "exiting test";
 
+  run = false;
+  t.join();
+  LOG(INFO) << "joined";
+
+
+  config->load_config_from_env();
+  config->set_producer_buffering_time(1000ms);
+  config->set_consumer_buffering_time(500ms);
+  config->validate();
+  config->log();
+  config->get_schema_registry();
+
+
+  gflags::ShutDownCommandLineFlags();
   return 0;
 }
 

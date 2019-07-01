@@ -628,7 +628,7 @@ namespace kspp {
       if (timeout_ms > 0) {
         if (!_closing) {
           _timer.expires_from_now(std::chrono::milliseconds(timeout_ms));
-          _timer.async_wait([&](const boost::system::error_code &ec) {
+          _timer.async_wait([this](const boost::system::error_code &ec) {
             timer_cb(ec);
           });
         }

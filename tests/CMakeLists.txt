@@ -81,4 +81,7 @@ add_executable(test13_mem test13_mem.cpp)
 target_link_libraries(test13_mem ${CSI_LIBS_STATIC})
 add_test(NAME test13_mem COMMAND $<TARGET_FILE:test13_mem>)
 
+add_executable(test14_async test14_async.cpp)
+target_link_libraries(test14_async ${CSI_LIBS_STATIC})
+add_test(NAME test14_async COMMAND $<TARGET_FILE:test14_async>)
 

@@ -119,7 +119,7 @@ namespace kspp {
         });
       });
     }
-    work->async_call([work, shared_result, cb](int64_t duration, int ec) {
+    work->async_call([shared_result, cb](int64_t duration, int ec) {
       shared_result->ec = ec;
       cb(*shared_result);
     });

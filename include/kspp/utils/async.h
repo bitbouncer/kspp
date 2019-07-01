@@ -207,7 +207,13 @@ namespace kspp {
       };
 
       inline result_type call() {
-        return operator();
+        std::promise<result_type> p;
+        std::future<result_type>  f = p.get_future();
+        async_call([&p](int64_t duration_ms, result_type ec) {
+          p.set_value(ec);
+        });
+        f.wait();
+        return f.get();
       }
 
     private:

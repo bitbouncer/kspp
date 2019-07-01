@@ -55,7 +55,7 @@ find_package(Boost COMPONENTS program_options system REQUIRED)
 #        c
 #        )
 
-set(BOOST_LIBS boost_program_options boost_iostreams boost_filesystem boost_regex boost_system z bz2 pthread rt c)
+set(BOOST_LIBS boost_program_options boost_iostreams boost_filesystem boost_system boost_regex z bz2 pthread rt c)
 
 
 SET(CSI_INCLUDE_PATH ${Boost_INCLUDE_DIR})
@@ -351,8 +351,8 @@ endif () #ENABLE_BITBOUNCER_STREAMING
 
 
 
-SET(EXT_LIBS_SHARED ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${PROMETHEUS_CPP_LIBS} ${BOOST_LIBS} ${PostgreSQL_LIBRARIES} ${AWS_S3_LIBS} glog crypto ssl stdc++fs)
-SET(EXT_LIBS_STATIC ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${PROMETHEUS_CPP_LIBS} ${BOOST_LIBS} ${PostgreSQL_LIBRARIES} ${AWS_S3_LIBS} glog crypto ssl stdc++fs)
+SET(EXT_LIBS_SHARED ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${PROMETHEUS_CPP_LIBS} ${BOOST_LIBS} ${PostgreSQL_LIBRARIES} ${AWS_S3_LIBS} glog gflags crypto ssl stdc++fs)
+SET(EXT_LIBS_STATIC ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${PROMETHEUS_CPP_LIBS} ${BOOST_LIBS} ${PostgreSQL_LIBRARIES} ${AWS_S3_LIBS} glog gflags crypto ssl stdc++fs)
 SET(CSI_LIBS_SHARED kspp ${EXT_LIBS_SHARED})
 SET(CSI_LIBS_STATIC kspp_s ${EXT_LIBS_STATIC})
 
