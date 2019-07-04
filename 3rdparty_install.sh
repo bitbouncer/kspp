@@ -3,8 +3,8 @@ set -ef
 export CPP_STANDARD="17"
 
 export AVRO_VER="release-1.9.0"
-export AWS_SDK_VER="1.7.128"
-export GRPC_VER="v1.21.0"
+export AWS_SDK_VER="1.7.138"
+export GRPC_VER="v1.22.0"
 export LIBRDKAFKA_VER="v1.1.0"
 export PROMETHEUS_CPP_VER="v0.7.0"
 export RAPIDJSON_VER="v1.1.0"
