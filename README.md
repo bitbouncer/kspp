@@ -46,12 +46,14 @@ sudo apt-get purge libprotobuf-dev libgrpc++-dev protobuf-compiler
 
 Install build tools
 ```
-sudo apt-get install -y automake autogen shtool libtool git wget cmake unzip build-essential pkg-config
+sudo apt-get install -y g++ sudo pax-utils automake autogen shtool libtool git wget cmake unzip build-essential pkg-config sed 
 ```
 
 Install build deps
 ```
-sudo apt-get install -y libboost-all-dev g++ python-dev autotools-dev libicu-dev zlib1g-dev openssl libssl-dev libbz2-dev libsnappy-dev libgoogle-glog-dev libgflags-dev libjansson-dev libcurl4-openssl-dev liblzma-dev libpq-dev freetds-dev libc-ares-dev libc++-dev libgtest-dev
+sudo apt-get install -y python-dev autotools-dev libicu-dev zlib1g-dev openssl libssl-dev libbz2-dev libsnappy-dev \
+    libgoogle-glog-dev libgflags-dev libcurl4-openssl-dev libc-ares-dev liblzma-dev libpq-dev freetds-dev libxml2-dev \
+    libfmt-dev libpcre2-dev libhttp-parser-dev
 
 ```
 
