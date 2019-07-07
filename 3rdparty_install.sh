@@ -22,8 +22,8 @@ tar \
   --strip-components 1
 cd boost
 ./bootstrap.sh
-./b2 --with-program_options --with-iostreams --with-filesystem --with-regex --with-system cxxflags=-std=c++17 -j "$(getconf _NPROCESSORS_ONLN)" stage
-sudo ./b2 --with-program_options --with-iostreams --with-filesystem --with-regex --with-system cxxflags=-std=c++17 install
+./b2 --with-program_options --with-iostreams --with-filesystem --with-regex --with-system --with-date_time cxxflags=-std=c++17 -j "$(getconf _NPROCESSORS_ONLN)" stage
+sudo ./b2 --with-program_options --with-iostreams --with-filesystem --with-regex --with-system --with-date_time cxxflags=-std=c++17 install
 cd ..
 rm boost.tar.gz
 rm -rf boost
