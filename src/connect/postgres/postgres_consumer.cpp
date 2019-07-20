@@ -9,6 +9,29 @@
 using namespace std::chrono_literals;
 
 namespace kspp {
+  // trim from left
+  static inline std::string& ltrim(std::string& s, const char* t = " \t\n\r\f\v")
+  {
+    s.erase(0, s.find_first_not_of(t));
+    return s;
+  }
+
+// trim from right
+  static  inline std::string& rtrim(std::string& s, const char* t = " \t\n\r\f\v")
+  {
+    s.erase(s.find_last_not_of(t) + 1);
+    return s;
+  }
+
+// trim from left & right
+  static  inline std::string& trim(std::string& s, const char* t = " \t\n\r\f\v")
+  {
+    return ltrim(rtrim(s, t), t);
+  }
+
+
+
+
   static void load_avro_by_name(kspp::generic_avro* avro, PGresult* pgres, size_t row)
   {
     // key tupe is null if there is no key
@@ -52,8 +75,7 @@ namespace kspp {
         //avro::GenericDatum& avro_item(au.datum());
         const char* val = PQgetvalue(pgres, row, j);
 
-        switch (col.type())
-        {
+        switch (col.type()) {
           case avro::AVRO_STRING:
             col.value<std::string>() = val;
             break;
@@ -67,18 +89,68 @@ namespace kspp {
             col.value<int64_t>() = std::stoull(val);
             break;
           case avro::AVRO_FLOAT:
-            col.value<float>() = (float)atof(val);
+            col.value<float>() = (float) atof(val);
             break;
           case avro::AVRO_DOUBLE:
             col.value<double>() = atof(val);
             break;
           case avro::AVRO_BOOL:
-            col.value<bool>() = (val[0]=='t' || val[0]=='T' || val[0]=='1');
+            col.value<bool>() = (val[0] == 't' || val[0] == 'T' || val[0] == '1');
             break;
+          case avro::AVRO_MAP: {
+            std::vector<std::string> kvs;
+            boost::split(kvs, val, boost::is_any_of(",")); // TODO we cannot handle "dsd,hggg" => "jhgf"
+
+            avro::GenericMap& v = col.value<avro::GenericMap>();
+            avro::GenericMap::Value& r = v.value();
+
+            // this is an empty string "" that will be mapped as 1 item of empty size
+            if (kvs.size()==1 && kvs[0].size() ==0)
+              break;
+
+            r.resize(kvs.size());
+
+            int cursor=0;
+            for(auto& i : kvs){
+              std::size_t found = i.find("=>");
+              if (found==std::string::npos)
+                LOG(FATAL) << "expected => in hstore";
+              std::string key = i.substr(0, found);
+              std::string val = i.substr(found +2);
+              trim(key, "\" ");
+              trim(val, "\" ");
+              r[cursor].first = key;
+              r[cursor].second = avro::GenericDatum(val);
+              ++cursor;
+            }
+          }
+            break;
+
+          case avro::AVRO_ARRAY:{
+            std::vector<std::string> kvs;
+            std::string trimmed_val = val;
+            trim(trimmed_val, "{ }");
+            boost::split(kvs, trimmed_val, boost::is_any_of(",")); // TODO we cannot handle [ "dsd,hg", ljdshf ]
+            avro::GenericArray& v = col.value<avro::GenericArray>();
+            avro::GenericArray::Value& r = v.value();
+
+            // this is an empty string "" that will be mapped as 1 item of empty size
+            if (kvs.size()==1 && kvs[0].size() ==0)
+              break;
+
+            r.resize(kvs.size());
+
+            int cursor=0;
+            for(auto& i : kvs) {
+              r[cursor] = avro::GenericDatum(i);
+              ++cursor;
+            }
+
+            }
+          break;
+
           case avro::AVRO_RECORD:
           case avro::AVRO_ENUM:
-          case avro::AVRO_ARRAY:
-          case avro::AVRO_MAP:
           case avro::AVRO_UNION:
           case avro::AVRO_FIXED:
           case avro::AVRO_NULL:

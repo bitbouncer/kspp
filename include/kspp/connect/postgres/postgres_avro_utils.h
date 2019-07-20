@@ -5,6 +5,7 @@
 #pragma once
 
 //https://godoc.org/github.com/lib/pq/oid
+//https://jdbc.postgresql.org/development/privateapi/constant-values.html
 
 namespace kspp {
   namespace pq {
@@ -26,12 +27,14 @@ namespace kspp {
       PGSQL_OIDVECTOROID = 30,
       FLOAT4OID = 700,
       FLOAT8OID = 701,
+      TEXT_ARRAYOID=1009, // possibly array of strings,
       DATEOID = 1082,
       TIMEOID = 1083,
       TIMESTAMPOID = 1114,
       TIMESTAMPZOID = 1184,
       NUMERICOID = 1700,
-      UUIDOID = 2950
+      UUIDOID = 2950,
+      HSTOREOID=16524
     };
 
     boost::shared_ptr<avro::Schema> schema_for_oid(Oid typid);

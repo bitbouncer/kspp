@@ -105,6 +105,15 @@ namespace kspp {
           //case JSONOID:    /* json: Text-based JSON */
           //case JSONBOID:   /* jsonb: Binary JSON */
 
+          // key value store of string type
+        case HSTOREOID: // got 16524 while debugging - is that the only one??
+          value_schema = boost::make_shared<avro::MapSchema>(avro::StringSchema());
+          break;
+
+        case TEXT_ARRAYOID:
+          value_schema = boost::make_shared<avro::ArraySchema>(avro::StringSchema());
+          break;
+
           /* String-like types: fall through to the default, which is to create a string representation */
         case CHAROID:    /* "char": single character */
         case NAMEOID:    /* name: 63-byte type for storing system identifiers */
@@ -128,7 +137,6 @@ namespace kspp {
       //avro_schema_decref(value_schema);
       return union_schema;
     }
-
 
     std::shared_ptr<avro::ValidSchema> schema_for_table_row(std::string schema_name, const PGresult *res) {
       avro::RecordSchema record_schema(schema_name);
@@ -243,13 +251,18 @@ namespace kspp {
           return FLOAT8OID;
         case avro::AVRO_BOOL:
           return BOOLOID;
-        case avro::AVRO_ARRAY: // we map arrays to a json string representation of the array eg [ 123, 123 ] or [ "nisse" ]
-          return TEXTOID;
+
+        //case avro::AVRO_ARRAY: // we map arrays to a json string representation of the array eg [ 123, 123 ] or [ "nisse" ]
+        //return TEXTOID;
+        case avro::AVRO_ARRAY:
+          return TEXT_ARRAYOID;
+
+        case avro::AVRO_MAP:
+          return HSTOREOID;
 
         case avro::AVRO_UNION:
         case avro::AVRO_RECORD:
         case avro::AVRO_ENUM:
-        case avro::AVRO_MAP:
 
         case avro::AVRO_FIXED:
         case avro::AVRO_NULL:
@@ -281,6 +294,10 @@ namespace kspp {
           return "name";
         case TEXTOID:
           return "text";
+        case HSTOREOID:
+          return "hstore";
+        case TEXT_ARRAYOID:
+          return "ARRAY";
         default:
           LOG(FATAL) << "unsupported / non supported type e:" << oid;
           break;
@@ -424,9 +441,35 @@ namespace kspp {
         }
           break;
 
+        case avro::AVRO_MAP:{
+          const avro::GenericMap &map = column.value<avro::GenericMap>();
+          //const std::map<std::string, avro::GenericDatum>&r = map.value();
+          auto const &  v = map.value();
+          if (v.size()==0)
+            return "''";
+
+          avro::GenericMap::Value::const_iterator second_last = v.end();
+          --second_last;
+
+          std::string s = "";
+          for (avro::GenericMap::Value::const_iterator i = v.begin(); i!=v.end(); ++i){
+            // should be '_HOSTIPMI_IP=>10.1.40.23'  ie no inner ''
+            //s += i->first + "=>" + avro_2_sql_simple_column_value(i->second);
+            // this is a bit inefficient
+            std::string value_string = avro_2_sql_simple_column_value(i->second);
+            value_string.erase(std::remove_if(value_string.begin(), value_string.end(), IsChars("'")), value_string.end());
+            s += i->first + "=>" + value_string;
+            if (i != second_last)
+              s += ", ";
+          }
+          s += "";
+          return escapeSQLstring(s);
+        } break;
+
+
         case avro::AVRO_RECORD:
         case avro::AVRO_ENUM:
-        case avro::AVRO_MAP:
+
         case avro::AVRO_FIXED:
         default:
           LOG(FATAL) << "unexpected / non supported type e:" << column.type();
