@@ -27,7 +27,7 @@ namespace kspp {
       PGSQL_OIDVECTOROID = 30,
       FLOAT4OID = 700,
       FLOAT8OID = 701,
-      TEXT_ARRAYOID=1009, // possibly array of strings,
+      TEXT_ARRAYOID=1009,
       DATEOID = 1082,
       TIMEOID = 1083,
       TIMESTAMPOID = 1114,

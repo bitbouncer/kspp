@@ -26,6 +26,7 @@ namespace kspp
   template<> inline avro::Type cpp_to_avro_type<double>() { return avro::AVRO_DOUBLE; }
   template<> inline avro::Type cpp_to_avro_type<bool>() { return avro::AVRO_BOOL; }
   template<> inline avro::Type cpp_to_avro_type<avro::GenericArray>() { return avro::AVRO_ARRAY; }
+  template<> inline avro::Type cpp_to_avro_type<avro::GenericMap>() { return avro::AVRO_MAP; }
   template<> inline avro::Type cpp_to_avro_type<avro::GenericRecord>() { return avro::AVRO_RECORD; }
 
   template<typename T> T convert(const avro::GenericDatum& datum){

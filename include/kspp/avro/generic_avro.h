@@ -15,46 +15,44 @@ namespace kspp {
           : record_(record){
       }
 
-      inline const avro::GenericDatum& getGenericDatum(std::string name) const {
-        if (!record_.hasField(name))
-          throw std::invalid_argument(std::string("no such member: ") + name +  ", actual: " + to_json());
-
-        return record_.field(name);
+      inline const avro::GenericDatum& get_generic_datum(const std::string& member) const {
+        if (!record_.hasField(member))
+          throw std::invalid_argument(name() + "." + member + ": no such member, actual: " + to_json());
+        return record_.field(member);
       }
 
       template<class T>
-      T get(std::string name) const {
-        if (!record_.hasField(name))
-          throw std::invalid_argument("no such member: " + name);
+      T get(const std::string& member) const {
+        if (!record_.hasField(member))
+          throw std::invalid_argument("no such member: " + member);
 
-        const avro::GenericDatum &field = record_.field(name);
+        const avro::GenericDatum &datum = record_.field(member);
 
-        if(field.type() == cpp_to_avro_type<T>())
-          return field.value<T>();
+        if(datum.type() == cpp_to_avro_type<T>())
+          return datum.value<T>();
 
-        throw std::invalid_argument(std::string("wrong type, expected:") + to_string(cpp_to_avro_type<T>()) +  ", actual: " + to_string(field.type()));
+        throw std::invalid_argument(name() + "." + member + ":  wrong type, expected:" + to_string(cpp_to_avro_type<T>()) +  ", actual: " + to_string(datum.type()));
       }
 
       template<class T>
-      boost::optional<T> get_optional(const std::string& name) const{
-        if (!record_.hasField(name))
-          throw std::invalid_argument("no such member: " + name);
-        const avro::GenericDatum &field = record_.field(name);
+      boost::optional<T> get_optional(const std::string& member) const{
+        if (!record_.hasField(member))
+          throw std::invalid_argument("no such member: " + member);
+        const avro::GenericDatum &datum = record_.field(member);
 
-        if (field.type() == avro::AVRO_NULL)
+        if (datum.type() == avro::AVRO_NULL)
             return boost::none;
 
-        if(field.type() == cpp_to_avro_type<T>())
-          return convert<T>(field);
-
-        throw std::invalid_argument(std::string("wrong type, expected:") + to_string(cpp_to_avro_type<T>()) +  ", actual: " + to_string(field.type()));
+        if(datum.type() == cpp_to_avro_type<T>())
+          return datum.value<T>();
+        throw std::invalid_argument(name() + "." + member + ": wrong type, expected:" + to_string(cpp_to_avro_type<T>()) +  ", actual: " + to_string(datum.type()));
       }
 
-      boost::optional<std::string> get_optional_as_string(const std::string& name) const{
-        if (!record_.hasField(name))
-          throw std::invalid_argument("no such member: " + name);
+      boost::optional<std::string> get_optional_as_string(const std::string& member) const{
+        if (!record_.hasField(member))
+          throw std::invalid_argument(name() + "." + member + ": no such member");
 
-        const avro::GenericDatum &field = record_.field(name);
+        const avro::GenericDatum &field = record_.field(member);
 
         switch (field.type()) {
             case avro::AVRO_NULL:
@@ -77,27 +75,29 @@ namespace kspp {
 
 
       template<class T>
-      T get(std::string name, const T& default_value) const {
-        if (!record_.hasField(name))
+      T get(const std::string& member, const T& default_value) const {
+        if (!record_.hasField(member))
           return default_value;
 
-        const avro::GenericDatum &field = record_.field(name);
+        const avro::GenericDatum &datum = record_.field(member);
 
-        if(field.type() == cpp_to_avro_type<T>())
-          return field.value<T>();
+        if(datum.type() == cpp_to_avro_type<T>())
+          return datum.value<T>();
 
-        if(field.type() == avro::AVRO_NULL)
+        if(datum.type() == avro::AVRO_NULL)
           return default_value;
 
-        throw std::invalid_argument(std::string("wrong type, expected:") + to_string(cpp_to_avro_type<T>()) +  ", actual: " + to_string(field.type()));
+        throw std::invalid_argument(name() + "." + member + ": wrong type, expected:" + to_string(cpp_to_avro_type<T>()) +  ", actual: " + to_string(datum.type()));
       }
 
-      bool is_null(std::string name) const {
-        if (!record_.hasField(name))
-          throw std::invalid_argument("no such member: " + name);
+      bool is_null(const std::string& member) const {
+        if (!record_.hasField(member))
+          throw std::invalid_argument(name() + "." + member + ": no such member");
+        return record_.field(member).type() == avro::AVRO_NULL;
+      }
 
-        const avro::GenericDatum &field = record_.field(name);
-        return field.type() == avro::AVRO_NULL;
+      std::string name() const {
+        return record_.schema()->name().fullname();
       }
 
       std::string to_json() const;
@@ -107,7 +107,7 @@ namespace kspp {
     };
 
     generic_avro()
-        : _schema_id(-1) {
+        : schema_id_(-1) {
     }
 
     generic_avro(std::shared_ptr<const avro::ValidSchema> s, int32_t schema_id) {
@@ -115,43 +115,43 @@ namespace kspp {
     }
 
     void create(std::shared_ptr<const avro::ValidSchema> s, int32_t schema_id) {
-      _valid_schema = s;
-      _generic_datum = std::make_shared<avro::GenericDatum>(*_valid_schema);
-      _schema_id = schema_id;
+      valid_schema_ = s;
+      generic_datum_ = std::make_shared<avro::GenericDatum>(*valid_schema_);
+      schema_id_ = schema_id;
     }
 
     inline std::shared_ptr<avro::GenericDatum> generic_datum() {
-      return _generic_datum;
+      return generic_datum_;
     }
 
     inline const std::shared_ptr<avro::GenericDatum> generic_datum() const {
-      return _generic_datum;
+      return generic_datum_;
     }
 
     inline std::shared_ptr<const avro::ValidSchema> valid_schema() const {
-      return _valid_schema;
+      return valid_schema_;
     }
 
     inline int32_t schema_id() const {
-      return _schema_id;
+      return schema_id_;
     }
 
     inline avro::Type type() const {
-      return _generic_datum->type();
+      return generic_datum_->type();
     }
 
     generic_avro::generic_record record() const {
-      if (_generic_datum->type() == avro::AVRO_RECORD) {
-        return generic_avro::generic_record(_generic_datum->value<avro::GenericRecord>());
+      if (generic_datum_->type() == avro::AVRO_RECORD) {
+        return generic_avro::generic_record(generic_datum_->value<avro::GenericRecord>());
       } else {
-        throw std::invalid_argument(std::string("wrong type, expected: ") + to_string(avro::AVRO_RECORD) + " actual: " + to_string(_generic_datum->type()));
+        throw std::invalid_argument(std::string("wrong type, expected: ") + to_string(avro::AVRO_RECORD) + " actual: " + to_string(generic_datum_->type()));
       }
     }
 
   private:
-    std::shared_ptr<avro::GenericDatum> _generic_datum;
-    std::shared_ptr<const avro::ValidSchema> _valid_schema;
-    int32_t _schema_id;
+    std::shared_ptr<avro::GenericDatum> generic_datum_;
+    std::shared_ptr<const avro::ValidSchema> valid_schema_;
+    int32_t schema_id_;
   };
 }
 
