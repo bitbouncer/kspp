@@ -1,5 +1,5 @@
 #include <memory>
-#include <boost/optional.hpp>
+#include <optional>
 #include <avro/Generic.hh>
 #include <kspp/avro/avro_utils.h>
 #pragma once
@@ -35,44 +35,42 @@ namespace kspp {
       }
 
       template<class T>
-      boost::optional<T> get_optional(const std::string& member) const{
+      std::optional<T> get_optional(const std::string& member) const{
         if (!record_.hasField(member))
           throw std::invalid_argument("no such member: " + member);
         const avro::GenericDatum &datum = record_.field(member);
 
         if (datum.type() == avro::AVRO_NULL)
-            return boost::none;
+            return std::nullopt;
 
         if(datum.type() == cpp_to_avro_type<T>())
           return datum.value<T>();
         throw std::invalid_argument(name() + "." + member + ": wrong type, expected:" + to_string(cpp_to_avro_type<T>()) +  ", actual: " + to_string(datum.type()));
       }
 
-      boost::optional<std::string> get_optional_as_string(const std::string& member) const{
+      std::optional<std::string> get_optional_as_string(const std::string& member) const{
         if (!record_.hasField(member))
           throw std::invalid_argument(name() + "." + member + ": no such member");
 
-        const avro::GenericDatum &field = record_.field(member);
-
-        switch (field.type()) {
+        const avro::GenericDatum &datum = record_.field(member);
+        switch (datum.type()) {
             case avro::AVRO_NULL:
-              return boost::none;
+              return std::nullopt;
             case avro::AVRO_STRING :
-              return convert<std::string>(field);
+              return convert<std::string>(datum);
             case avro::AVRO_INT:
-              return std::to_string(convert<int32_t>(field));
+              return std::to_string(convert<int32_t>(datum));
             case avro::AVRO_LONG:
-              return std::to_string(convert<int64_t>(field));
+              return std::to_string(convert<int64_t>(datum));
             case avro::AVRO_FLOAT:
-              return std::to_string(convert<float>(field));
+              return std::to_string(convert<float>(datum));
             case avro::AVRO_DOUBLE:
-              return std::to_string(convert<double>(field));
+              return std::to_string(convert<double>(datum));
             case avro::AVRO_BOOL:
-              return std::to_string(convert<bool>(field));
+              return std::to_string(convert<bool>(datum));
           }
-        return boost::none; // TODO not a good default - throw exception
+        throw std::invalid_argument(name() + "." + member + ": , cannot convert to string, actual type: "  + to_string(datum.type()));
       }
-
 
       template<class T>
       T get(const std::string& member, const T& default_value) const {

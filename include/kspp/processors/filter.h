@@ -11,13 +11,13 @@ namespace kspp {
     filter(std::shared_ptr<cluster_config> config, std::shared_ptr<partition_source < K, V>> source, predicate f)
     : event_consumer<K, V>()
     , partition_source<K, V>(source.get(), source->partition())
-    , _source(source)
-    , _predicate(f)
-    , _predicate_false("predicate_false", "msg") {
-      _source->add_sink([this](auto r) {
+    , source_(source)
+    , predicate_(f)
+    , predicate_false_("predicate_false", "msg") {
+      source_->add_sink([this](auto r) {
         this->_queue.push_back(r);
       });
-      this->add_metric(&_predicate_false);
+      this->add_metric(&predicate_false_);
       this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "filter");
       this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(source->partition()));
     }
@@ -31,15 +31,15 @@ namespace kspp {
     }
 
     void start(int64_t offset) override {
-      _source->start(offset);
+      source_->start(offset);
     }
 
     void close() override {
-      _source->close();
+      source_->close();
     }
 
     size_t process(int64_t tick) override {
-      _source->process(tick);
+      source_->process(tick);
       size_t processed = 0;
 
       while (this->_queue.next_event_time()<=tick){
@@ -48,10 +48,10 @@ namespace kspp {
        this->_lag.add_event_time(tick, trans->event_time());
         ++(this->_processed_count);
         if (trans->record()) {
-          if (_predicate(*trans->record())) {
+          if (predicate_(*trans->record())) {
             this->send_to_sinks(trans);
           } else {
-            ++_predicate_false;
+            ++predicate_false_;
           }
         }
       }
@@ -59,11 +59,11 @@ namespace kspp {
     }
 
     void commit(bool flush) override {
-      _source->commit(flush);
+      source_->commit(flush);
     }
 
     bool eof() const override {
-      return (queue_size() == 0) && _source->eof();
+      return ((queue_size() == 0) && source_->eof());
     }
 
     size_t queue_size() const override {
@@ -75,8 +75,8 @@ namespace kspp {
     }
 
   private:
-    std::shared_ptr<partition_source < K, V>> _source;
-    predicate _predicate;
-    metric_counter _predicate_false;
+    std::shared_ptr<partition_source < K, V>> source_;
+    predicate predicate_;
+    metric_counter predicate_false_;
   };
 } // namespace

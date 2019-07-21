@@ -17,11 +17,11 @@ namespace kspp {
     std::shared_ptr<CODEC> repartition_codec = std::make_shared<CODEC>())
     : event_consumer<K, V>()
     , partition_processor(source.get(), source->partition())
-    , _source (source)
-    , _routing_table(routing_table)
-    , _topic_sink(topic_sink)
-    , _repartition_codec(repartition_codec) {
-      _source->add_sink([this](auto r) {
+    , source_ (source)
+    , routing_table_(routing_table)
+    , topic_sink_(topic_sink)
+    , repartition_codec_(repartition_codec) {
+      source_->add_sink([this](auto r) {
         this->_queue.push_back(r);
       });
       this->add_metric(&_lag);
@@ -46,30 +46,30 @@ namespace kspp {
     }
 
     void start(int64_t offset) override {
-      _routing_table->start(kspp::OFFSET_STORED);
-      _source->start(offset);
+      routing_table_->start(kspp::OFFSET_STORED);
+      source_->start(offset);
     }
 
     void close() override {
-      _routing_table->close();
-      _source->close();
+      routing_table_->close();
+      source_->close();
     }
 
     size_t process(int64_t tick) override {
-      if (_routing_table->process(tick)>0)
-        _routing_table->commit(false);
+      if (routing_table_->process(tick)>0)
+        routing_table_->commit(false);
 
-      _source->process(tick);
+      source_->process(tick);
       size_t processed = 0;
       while (this->_queue.next_event_time()<=tick) {
         auto trans = this->_queue.pop_and_get();
         this->_lag.add_event_time(tick, trans->event_time());
         ++(this->_processed_count);
-        auto routing_row = _routing_table->get(trans->record()->key());
+        auto routing_row = routing_table_->get(trans->record()->key());
         if (routing_row) {
           if (routing_row->value()) {
-            uint32_t hash = kspp::get_partition_hash<FOREIGN_KEY, CODEC>(*routing_row->value(), _repartition_codec);
-            _topic_sink->push_back(hash, trans);
+            uint32_t hash = kspp::get_partition_hash<FOREIGN_KEY, CODEC>(*routing_row->value(), repartition_codec_);
+            topic_sink_->push_back(hash, trans);
             ++processed;
           }
         } else {
@@ -88,19 +88,19 @@ namespace kspp {
     }
 
     bool eof() const override {
-      return queue_size() == 0 && _routing_table->eof() && _source->eof();
+      return ((queue_size() == 0) && routing_table_->eof() && source_->eof());
     }
 
     void commit(bool force) override {
-      _routing_table->commit(force);
-      _source->commit(force);
+      routing_table_->commit(force);
+      source_->commit(force);
     }
 
   private:
-    std::shared_ptr<partition_source<K, V>> _source;
-    std::shared_ptr<materialized_source<K, FOREIGN_KEY>> _routing_table;
-    std::shared_ptr<topic_sink<K, V>> _topic_sink;
-    std::shared_ptr<CODEC> _repartition_codec;
+    std::shared_ptr<partition_source<K, V>> source_;
+    std::shared_ptr<materialized_source<K, FOREIGN_KEY>> routing_table_;
+    std::shared_ptr<topic_sink<K, V>> topic_sink_;
+    std::shared_ptr<CODEC> repartition_codec_;
   };
 }
 

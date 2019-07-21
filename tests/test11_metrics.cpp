@@ -22,6 +22,15 @@
 using namespace std::chrono_literals;
 using namespace kspp;
 
+template<class KEY, class LEFT, class RIGHT>
+std::shared_ptr<kspp::krecord<KEY, std::pair<LEFT, std::optional<RIGHT>>>>
+make_left_join_record(KEY key, LEFT a, RIGHT b, int64_t ts) {
+  auto pair = std::make_shared<std::pair<LEFT, std::optional<RIGHT>>>(a, b);
+  return std::make_shared<kspp::krecord<KEY, std::pair<LEFT, std::optional<RIGHT>>>>(key, pair, ts);
+}
+
+
+
 void produce_stream1(kspp::event_consumer<int32_t, std::string>& stream) {
   stream.push_back(std::make_shared<kspp::krecord < int32_t, std::string>>(42, nullptr, 1));
   stream.push_back(std::make_shared<kspp::krecord < int32_t, std::string>>(42, "A", 3));
@@ -64,9 +73,9 @@ int main(int argc, char **argv) {
 
     auto left_join = topology->create_processor<kspp::kstream_left_join<int32_t, std::string, std::string>>(streamA, ktableB);
 
-    std::vector<std::shared_ptr<const kspp::krecord<int32_t, std::pair<std::string, boost::optional<std::string>>>>> expected;
-    std::vector<std::shared_ptr<const kspp::krecord<int32_t, std::pair<std::string, boost::optional<std::string>>>>> actual;
-    expected.push_back(kspp::make_left_join_record<int32_t, std::string, std::string>(42, "A", nullptr, 3));
+    std::vector<std::shared_ptr<const kspp::krecord<int32_t, std::pair<std::string, std::optional<std::string>>>>> expected;
+    std::vector<std::shared_ptr<const kspp::krecord<int32_t, std::pair<std::string, std::optional<std::string>>>>> actual;
+    expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, "A", nullptr, 3));
     expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, "B", "a", 5));
     expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, "C", nullptr, 9));
     expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, "D", "d", 15));

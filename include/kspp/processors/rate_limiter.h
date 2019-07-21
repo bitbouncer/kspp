@@ -13,18 +13,18 @@ namespace kspp {
   class rate_limiter : public event_consumer<K, V>, public partition_source<K, V> {
     static constexpr const char* PROCESSOR_NAME = "rate_limiter";
   public:
-    rate_limiter(std::shared_ptr<cluster_config> config, std::shared_ptr<partition_source<K, V>> source,
-                 std::chrono::milliseconds agetime, size_t capacity)
-            : event_consumer<K, V>(), partition_source<K, V>(source.get(), source->partition())
-        , _source(source)
-        , _token_bucket(std::make_shared<mem_token_bucket_store<K, size_t>>(agetime, capacity))
-        , _rejection_count("rejection_count", "msg") {
+    rate_limiter(std::shared_ptr<cluster_config> config, std::shared_ptr<partition_source<K, V>> source, std::chrono::milliseconds agetime, size_t capacity)
+        : event_consumer<K, V>()
+        , partition_source<K, V>(source.get(), source->partition())
+        , source_(source)
+        , token_bucket_(std::make_shared<mem_token_bucket_store<K, size_t>>(agetime, capacity))
+        , rejection_count_("rejection_count", "msg") {
       this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "rate_limiter");
       this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(source->partition()));
-      _source->add_sink([this](auto r) {
+      source_->add_sink([this](auto r) {
         this->_queue.push_back(r);
       });
-      this->add_metric(&_rejection_count);
+      this->add_metric(&rejection_count_);
     }
 
     ~rate_limiter() {
@@ -36,17 +36,17 @@ namespace kspp {
     }
 
     void start(int64_t offset) override {
-      _source->start(offset);
+      source_->start(offset);
       if (offset == kspp::OFFSET_BEGINNING)
-        _token_bucket->clear();
+        token_bucket_->clear();
     }
 
     void close() override {
-      _source->close();
+      source_->close();
     }
 
     size_t process(int64_t tick) override {
-      _source->process(tick);
+      source_->process(tick);
       size_t processed = 0;
       while (this->_queue.next_event_time()<=tick) {
         auto trans = this->_queue.pop_and_get();
@@ -55,21 +55,21 @@ namespace kspp {
         this->_lag.add_event_time(tick, trans->event_time());
         // milliseconds_since_epoch for processing time limiter
         //
-        if (_token_bucket->consume(trans->record()->key(), trans->event_time())) { // TBD tick???
+        if (token_bucket_->consume(trans->record()->key(), trans->event_time())) { // TBD tick???
           this->send_to_sinks(trans);
         } else {
-          ++_rejection_count;
+          ++rejection_count_;
         }
       }
       return processed;
     }
 
     void commit(bool flush) override {
-      _source->commit(flush);
+      source_->commit(flush);
     }
 
     bool eof() const override {
-      return _source->eof() && (queue_size() == 0);
+      return (source_->eof() && (queue_size() == 0));
     }
 
     size_t queue_size() const override {
@@ -82,8 +82,8 @@ namespace kspp {
 
 
   private:
-    std::shared_ptr<partition_source<K, V>> _source;
-    std::shared_ptr<mem_token_bucket_store<K, size_t>> _token_bucket;
-    metric_counter _rejection_count;
+    std::shared_ptr<partition_source<K, V>> source_;
+    std::shared_ptr<mem_token_bucket_store<K, size_t>> token_bucket_;
+    metric_counter rejection_count_;
   };
 } // namespace

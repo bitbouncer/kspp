@@ -14,9 +14,9 @@ namespace kspp {
     flat_map(std::shared_ptr<cluster_config> config, std::shared_ptr<partition_source < SK, SV>> source,  extractor f)
     : event_consumer<SK, SV>()
     , partition_source<RK, RV>(source.get(), source->partition())
-    , _source(source)
-    , _extractor(f) {
-      _source->add_sink([this](auto r) { this->_queue.push_back(r); });
+    , source_(source)
+    , extractor_(f) {
+      source_->add_sink([this](auto r) { this->_queue.push_back(r); });
       this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
       this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(source->partition()));
     }
@@ -30,35 +30,35 @@ namespace kspp {
     }
 
     void start(int64_t offset) override {
-      _source->start(offset);
+      source_->start(offset);
     }
 
     void close() override {
-      _source->close();
+      source_->close();
     }
 
     size_t process(int64_t tick) override {
-      _source->process(tick);
+      source_->process(tick);
       size_t processed=0;
       while (this->_queue.next_event_time()<=tick){
         auto trans = this->_queue.pop_and_get();
         ++processed;
         this->_lag.add_event_time(tick, trans->event_time());
         ++(this->_processed_count);
-        _current_id = trans->id(); // we capture this to have it in push_back callback
+        current_id_ = trans->id(); // we capture this to have it in push_back callback
         if (trans->record())
-          _extractor(*trans->record(), this);
-        _current_id.reset(); // must be freed otherwise we continue to hold the last ev
+          extractor_(*trans->record(), this);
+        current_id_.reset(); // must be freed otherwise we continue to hold the last ev
       }
       return processed;
     }
 
     void commit(bool flush) override {
-      _source->commit(flush);
+      source_->commit(flush);
     }
 
     bool eof() const override {
-      return queue_size() == 0 && _source->eof();
+      return ((queue_size() == 0) && source_->eof());
     }
 
     size_t queue_size() const override {
@@ -73,7 +73,7 @@ namespace kspp {
     * use from from extractor callback
     */
     inline void push_back(std::shared_ptr<const krecord<RK, RV>>record) {
-      this->send_to_sinks(std::make_shared<kevent<RK, RV>>(record, _current_id));
+      this->send_to_sinks(std::make_shared<kevent<RK, RV>>(record, current_id_));
     }
 
     /*
@@ -93,20 +93,20 @@ namespace kspp {
     */
     inline void push_back(const krecord<RK, RV>& record) {
       auto pr = std::make_shared<krecord<RK, RV>>(record);
-      this->send_to_sinks(std::make_shared<kevent<RK, RV>>(pr, _current_id));
+      this->send_to_sinks(std::make_shared<kevent<RK, RV>>(pr, current_id_));
     }
 
     /**
     * use from from extractor callback to force a custom partition hash
     */
     inline void push_back(std::shared_ptr<const krecord<RK, RV>> record, uint32_t partition_hash) {
-      this->send_to_sinks(std::make_shared<kevent<RK, RV>>(record, _current_id, partition_hash));
+      this->send_to_sinks(std::make_shared<kevent<RK, RV>>(record, current_id_, partition_hash));
     }
 
   private:
-    std::shared_ptr<partition_source < SK, SV>> _source;
-    extractor _extractor;
-    std::shared_ptr<commit_chain::autocommit_marker> _current_id; // used to briefly hold the commit open during process one
+    std::shared_ptr<partition_source < SK, SV>> source_;
+    extractor extractor_;
+    std::shared_ptr<commit_chain::autocommit_marker> current_id_; // used to briefly hold the commit open during process one
   };
 }
 

@@ -11,20 +11,23 @@ namespace kspp {
   public:
     template<typename... Args>
     ktable(std::shared_ptr<cluster_config> config, std::shared_ptr<kspp::partition_source<K, V>> source, Args... args)
-            : event_consumer<K, V>(), materialized_source<K, V>(source.get(), source->partition()), _source(source),
-              _state_store(this->get_storage_path(config->get_storage_root()), args...),
-              _state_store_count("state_store_size", "msg") {
-      _source->add_sink([this](auto ev) {
+        : event_consumer<K, V>()
+        , materialized_source<K, V>(source.get()
+        , source->partition())
+        , source_(source)
+        ,state_store_(this->get_storage_path(config->get_storage_root()), args...)
+        ,state_store_count_("state_store_size", "msg") {
+      source_->add_sink([this](auto ev) {
         this->_lag.add_event_time(kspp::milliseconds_since_epoch(), ev->event_time());
         ++(this->_processed_count);
-        _state_store.insert(ev->record(), ev->offset());
+        state_store_.insert(ev->record(), ev->offset());
         this->send_to_sinks(ev);
       });
       // what to do with state_store deleted records (windowed)
-      _state_store.set_sink([this](auto ev) {
+      state_store_.set_sink([this](auto ev) {
         this->send_to_sinks(ev);
       });
-      this->add_metric(&_state_store_count);
+      this->add_metric(&state_store_count_);
       this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
       this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(source->partition()));
     }
@@ -39,53 +42,53 @@ namespace kspp {
 
     void start(int64_t offset) override {
       if (offset==kspp::OFFSET_STORED) {
-        _source->start(_state_store.offset());
+        source_->start(state_store_.offset());
       } else {
-        _state_store.start(offset);
-        _source->start(offset);
+        state_store_.start(offset);
+        source_->start(offset);
       }
     }
 
     void commit(bool flush) override {
-      _state_store.commit(flush);
+      state_store_.commit(flush);
     }
 
     void close() override {
-      _source->close();
-      _state_store.close();
+      source_->close();
+      state_store_.close();
     }
 
     bool eof() const override {
-      return this->_queue.size()==0 && _source->eof();
+      return ((this->_queue.size()==0) && source_->eof());
     }
 
     size_t process(int64_t tick) override {
-      _source->process(tick);
+      source_->process(tick);
       size_t processed=0;
 
       while (this->_queue.next_event_time()<=tick) {
         auto trans = this->_queue.pop_and_get();
-        _state_store.insert(trans->record(), trans->offset());
+        state_store_.insert(trans->record(), trans->offset());
         ++(this->_processed_count);
         ++processed;
         this->send_to_sinks(trans);
       }
 
       // TODO is this expensive??
-      _state_store_count.set(_state_store.aprox_size());
+      state_store_count_.set(state_store_.aprox_size());
       return processed;
     }
 
     void garbage_collect(int64_t tick) override {
-      _state_store.garbage_collect(tick);
+      state_store_.garbage_collect(tick);
     }
 
     void garbage_collect_one(int64_t tick) {
-      _state_store.garbage_collect_one(tick);
+      state_store_.garbage_collect_one(tick);
     }
 
     int64_t offset() const {
-      return _state_store.offset();
+      return state_store_.offset();
     }
 
     size_t queue_size() const override {
@@ -97,20 +100,20 @@ namespace kspp {
     }
 
     std::shared_ptr<const krecord <K, V>> get(const K &key) const override {
-      return _state_store.get(key);
+      return state_store_.get(key);
     }
 
     typename kspp::materialized_source<K, V>::iterator begin(void) const override {
-      return _state_store.begin();
+      return state_store_.begin();
     }
 
     typename kspp::materialized_source<K, V>::iterator end() const override {
-      return _state_store.end();
+      return state_store_.end();
     }
 
   private:
-    std::shared_ptr<kspp::partition_source<K, V>> _source;
-    STATE_STORE<K, V, CODEC> _state_store;
-    metric_gauge     _state_store_count;
+    std::shared_ptr<kspp::partition_source<K, V>> source_;
+    STATE_STORE<K, V, CODEC> state_store_;
+    metric_gauge     state_store_count_;
   };
 }

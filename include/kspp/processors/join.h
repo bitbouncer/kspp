@@ -1,17 +1,15 @@
 #include <memory>
 #include <deque>
 #include <functional>
-#include <boost/optional.hpp>
+#include <optional>
 #include <kspp/kspp.h>
-
-
 #pragma once
 
 namespace kspp {
   template<class LEFT, class RIGHT>
   class left_join {
   public:
-    typedef std::pair<LEFT, boost::optional<RIGHT>> value_type;
+    typedef std::pair<LEFT, std::optional<RIGHT>> value_type;
   };
 
   template<class LEFT, class RIGHT>
@@ -23,74 +21,8 @@ namespace kspp {
   template<class LEFT, class RIGHT>
   class outer_join {
   public:
-    typedef std::pair<boost::optional<LEFT>, boost::optional<RIGHT>> value_type;
+    typedef std::pair<std::optional<LEFT>, std::optional<RIGHT>> value_type;
   };
-
-  //LEFT JOIN
-  template<class KEY, class LEFT, class RIGHT>
-  std::shared_ptr<kspp::krecord<KEY, std::pair<LEFT, boost::optional<RIGHT>>>>
-  make_left_join_record(KEY key, LEFT a, RIGHT b, int64_t ts) {
-    auto pair = std::make_shared<std::pair<LEFT, boost::optional<RIGHT>>>(a, b);
-    return std::make_shared<kspp::krecord<KEY, std::pair<LEFT, boost::optional<RIGHT>>>>(key, pair, ts);
-  }
-
-  template<class KEY, class LEFT, class RIGHT>
-  std::shared_ptr<kspp::krecord<KEY, std::pair<std::string, boost::optional<std::string>>>>
-  make_left_join_record(KEY key, std::string a, std::nullptr_t, int64_t ts) {
-    auto pair = std::make_shared<std::pair<LEFT, boost::optional<RIGHT>>>(a, boost::optional<RIGHT>());
-    return std::make_shared<kspp::krecord<int32_t, std::pair<std::string, boost::optional<std::string>>>>(key, pair, ts);
-  }
-
-  template<class KEY, class LEFT, class RIGHT>
-  std::shared_ptr<kspp::krecord<KEY, std::pair<std::string, boost::optional<std::string>>>>
-  make_left_join_record(KEY key, std::nullptr_t, int64_t ts) {
-    std::shared_ptr<std::pair<LEFT, boost::optional<RIGHT>>> pair; // nullptr..
-    return std::make_shared<kspp::krecord<KEY, std::pair<LEFT, boost::optional<RIGHT>>>>(key, pair, ts);
-  }
-
-  //INNER JOIN
-  template<class KEY, class LEFT, class RIGHT>
-  std::shared_ptr<kspp::krecord<KEY, std::pair<LEFT, RIGHT>>>
-  make_inner_join_record(KEY key, LEFT a, RIGHT b, int64_t ts) {
-    auto pair = std::make_shared<std::pair<LEFT, RIGHT>>(a, b);
-    return std::make_shared<kspp::krecord<KEY, std::pair<LEFT, RIGHT>>>(key, pair, ts);
-  }
-
-  template<class KEY, class LEFT, class RIGHT>
-  std::shared_ptr<kspp::krecord<KEY, std::pair<LEFT, RIGHT>>>
-  make_inner_join_record(KEY key, std::nullptr_t, int64_t ts) {
-    std::shared_ptr<std::pair<LEFT, RIGHT>> pair; // nullptr..
-    return std::make_shared<kspp::krecord<KEY, std::pair<LEFT, RIGHT>>>(key, pair, ts);
-  }
-
-//OUTER JOIN
-  template<class KEY, class LEFT, class RIGHT>
-  std::shared_ptr<kspp::krecord<KEY, std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>>>
-  make_outer_join_record(KEY key, LEFT a, RIGHT b, int64_t ts) {
-    auto pair = std::make_shared<std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>>(a, b);
-    return std::make_shared<kspp::krecord<KEY, std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>>>(key, pair, ts);
-  }
-
-  template<class KEY, class LEFT, class RIGHT>
-  std::shared_ptr<kspp::krecord<KEY, std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>>>
-  make_outer_join_record(KEY key, LEFT a, std::nullptr_t, int64_t ts) {
-    auto pair = std::make_shared<std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>>(a, boost::optional<RIGHT>());
-    return std::make_shared<kspp::krecord<KEY, std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>>>(key, pair, ts);
-  }
-
-  template<class KEY, class LEFT, class RIGHT>
-  std::shared_ptr<kspp::krecord<KEY, std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>>>
-  make_outer_join_record(KEY key, std::nullptr_t, RIGHT b, int64_t ts) {
-    auto pair = std::make_shared<std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>>(boost::optional<LEFT>(), b);
-    return std::make_shared<kspp::krecord<KEY, std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>>>(key, pair, ts);
-  }
-
-  template<class KEY, class LEFT, class RIGHT>
-  std::shared_ptr<kspp::krecord<KEY, std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>>>
-  make_outer_join_record(KEY key, std::nullptr_t, int64_t ts) {
-    std::shared_ptr<std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>> pair; // nullptr..
-    return std::make_shared<kspp::krecord<KEY, std::pair<boost::optional<LEFT>, boost::optional<RIGHT>>>>(key, pair, ts);
-  }
 
   template<class KEY, class LEFT, class RIGHT>
   class kstream_left_join :
@@ -106,11 +38,11 @@ namespace kspp {
     std::shared_ptr<materialized_source < KEY, RIGHT>> right)
     : event_consumer<KEY, LEFT>()
     , partition_source<KEY, value_type>(left.get(), left->partition())
-    , _left_stream (left)
-    , _right_table(right) {
+    , left_stream_ (left)
+    , right_table_(right) {
       this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "kstream_left_join");
       this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(left->partition()));
-      _left_stream->add_sink([this](auto r) { this->_queue.push_back(r); });
+      left_stream_->add_sink([this](auto r) { this->_queue.push_back(r); });
     }
 
     ~kstream_left_join() {
@@ -122,13 +54,13 @@ namespace kspp {
     }
 
     void start(int64_t offset) override {
-      _left_stream->start(offset);
-      _right_table->start(offset);
+      left_stream_->start(offset);
+      right_table_->start(offset);
     }
 
     void close() override {
-      _left_stream->close();
-      _right_table->close();
+      left_stream_->close();
+      right_table_->close();
     }
 
     size_t queue_size() const override {
@@ -137,15 +69,15 @@ namespace kspp {
 
     int64_t next_event_time() const override {
       auto q = event_consumer<KEY, LEFT>::next_event_time();
-      auto us = _left_stream->next_event_time();
+      auto us = left_stream_->next_event_time();
       return std::min(q, us);
     }
 
     size_t process(int64_t tick) override {
-      if (_right_table->process(tick) > 0)
-        _right_table->commit(false);
+      if (right_table_->process(tick) > 0)
+        right_table_->commit(false);
 
-      _left_stream->process(tick);
+      left_stream_->process(tick);
 
       size_t processed = 0;
       // reuse event time & commit it from event stream
@@ -156,9 +88,9 @@ namespace kspp {
         ++processed;
         // null values from left should be ignored
         if (left->record() && left->record()->value()) {
-          auto right_record = _right_table->get(left->record()->key());
+          auto right_record = right_table_->get(left->record()->key());
 
-          boost::optional<RIGHT> right_val;
+          std::optional<RIGHT> right_val;
           if (right_record && right_record->value())
             right_val = *right_record->value();
 
@@ -173,17 +105,17 @@ namespace kspp {
     }
 
     void commit(bool flush) override {
-      _right_table->commit(flush);
-      _left_stream->commit(flush);
+      right_table_->commit(flush);
+      left_stream_->commit(flush);
     }
 
     bool eof() const override {
-      return _right_table->eof() && _left_stream->eof();
+      return right_table_->eof() && left_stream_->eof();
     }
 
   private:
-    std::shared_ptr<partition_source < KEY, LEFT>>   _left_stream;
-    std::shared_ptr<materialized_source < KEY, RIGHT>> _right_table;
+    std::shared_ptr<partition_source < KEY, LEFT>>   left_stream_;
+    std::shared_ptr<materialized_source < KEY, RIGHT>> right_table_;
   };
 
   template<class KEY, class LEFT, class RIGHT>
@@ -199,11 +131,11 @@ namespace kspp {
         std::shared_ptr<partition_source < KEY, LEFT>> left,
     std::shared_ptr<materialized_source < KEY, RIGHT>> right)
     : event_consumer<KEY, LEFT>(), partition_source<KEY, value_type>(left.get(), left->partition())
-    , _left_stream (left)
-    , _right_table(right) {
+    , left_stream_ (left)
+    , right_table_(right) {
       this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "kstream_inner_join");
       this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(left->partition()));
-      _left_stream->add_sink([this](auto r) { this->_queue.push_back(r); });
+      left_stream_->add_sink([this](auto r) { this->_queue.push_back(r); });
     }
 
     ~kstream_inner_join() {
@@ -215,13 +147,13 @@ namespace kspp {
     }
 
     void start(int64_t offset) override {
-      _left_stream->start(offset);
-      _right_table->start(offset);
+      left_stream_->start(offset);
+      right_table_->start(offset);
     }
 
     void close() override {
-      _right_table->close();
-      _left_stream->close();
+      right_table_->close();
+      left_stream_->close();
     }
 
     size_t queue_size() const override {
@@ -230,15 +162,15 @@ namespace kspp {
 
     int64_t next_event_time() const override {
       auto q = event_consumer<KEY, LEFT>::next_event_time();
-      auto us = _left_stream->next_event_time();
+      auto us = left_stream_->next_event_time();
       return std::min(q, us);
     }
 
     size_t process(int64_t tick) override {
-      if (_right_table->process(tick) > 0)
-        _right_table->commit(false);
+      if (right_table_->process(tick) > 0)
+        right_table_->commit(false);
 
-      _left_stream->process(tick);
+      left_stream_->process(tick);
 
       size_t processed = 0;
       // reuse event time & commit it from event stream
@@ -249,7 +181,7 @@ namespace kspp {
         ++processed;
         // null values from left should be ignored
         if (left->record() && left->record()->value()) {
-          auto right_record = _right_table->get(left->record()->key());
+          auto right_record = right_table_->get(left->record()->key());
           // null values from right should be ignored
           if (right_record && right_record->value()) {
             //auto right_val = std::make_shared<tableV>(*right_record->value());
@@ -265,17 +197,17 @@ namespace kspp {
     }
 
     void commit(bool flush) override {
-      _right_table->commit(flush);
-      _left_stream->commit(flush);
+      right_table_->commit(flush);
+      left_stream_->commit(flush);
     }
 
     bool eof() const override {
-      return _right_table->eof() && _left_stream->eof();
+      return right_table_->eof() && left_stream_->eof();
     }
 
   private:
-    std::shared_ptr<partition_source < KEY, LEFT>>   _left_stream;
-    std::shared_ptr<materialized_source < KEY, RIGHT>> _right_table;
+    std::shared_ptr<partition_source < KEY, LEFT>>   left_stream_;
+    std::shared_ptr<materialized_source < KEY, RIGHT>> right_table_;
   };
 
 
@@ -293,12 +225,12 @@ namespace kspp {
         std::shared_ptr<materialized_source < KEY, RIGHT>> right)
     : event_consumer<KEY, LEFT>()
     , partition_source<KEY, value_type>(left.get(), left->partition())
-    , _left_table (left)
-    , _right_table(right) {
+    , left_table_ (left)
+    , right_table_(right) {
       this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "ktable_left_join");
       this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(left->partition()));
-      _left_table->add_sink([this](auto r) { this->_queue.push_back(r); });
-      _right_table->add_sink([this](auto r) { this->_queue.push_back(r); });
+      left_table_->add_sink([this](auto r) { this->_queue.push_back(r); });
+      right_table_->add_sink([this](auto r) { this->_queue.push_back(r); });
     }
 
     ~ktable_left_join() {
@@ -312,13 +244,13 @@ namespace kspp {
     void start(int64_t offset) override {
       // if we request begin - should we restart table here???
       //it seems that we should retain whatever's in the cache in as many cases as possible
-      _left_table->start(offset);
-      _right_table->start(offset);
+      left_table_->start(offset);
+      right_table_->start(offset);
     }
 
     void close() override {
-      _left_table->close();
-      _right_table->close();
+      left_table_->close();
+      right_table_->close();
     }
 
     size_t queue_size() const override {
@@ -327,14 +259,14 @@ namespace kspp {
 
     int64_t next_event_time() const override {
       auto q = event_consumer < KEY, LEFT>::next_event_time();
-      auto ls = _right_table->next_event_time();
-      auto rs = _left_table->next_event_time();
+      auto ls = right_table_->next_event_time();
+      auto rs = left_table_->next_event_time();
       return std::min(q, std::min(ls, rs));
     }
 
     size_t process(int64_t tick) override {
-      _right_table->process(tick);
-      _left_table->process(tick);
+      right_table_->process(tick);
+      left_table_->process(tick);
 
       size_t processed = 0;
       // reuse event time & commit it from event stream
@@ -346,13 +278,13 @@ namespace kspp {
         ++processed;
         // null values from left should be ignored
 
-        auto left_record = _left_table->get(ev->record()->key());
+        auto left_record = left_table_->get(ev->record()->key());
 
         if (left_record && left_record->value()) {
           //std::shared_ptr<leftV> left_val = std::make_shared<leftV>(*left_record->value());
 
-          auto right_record = _right_table->get(ev->record()->key());
-          boost::optional<RIGHT> right_val;
+          auto right_record = right_table_->get(ev->record()->key());
+          std::optional<RIGHT> right_val;
           if (right_record && right_record->value())
             right_val = *right_record->value();
 
@@ -369,17 +301,17 @@ namespace kspp {
     }
 
     void commit(bool flush) override {
-      _right_table->commit(flush);
-      _left_table->commit(flush);
+      right_table_->commit(flush);
+      left_table_->commit(flush);
     }
 
     bool eof() const override {
-      return _right_table->eof() && _left_table->eof();
+      return right_table_->eof() && left_table_->eof();
     }
 
   private:
-    std::shared_ptr<materialized_source < KEY, LEFT>>  _left_table;
-    std::shared_ptr<materialized_source < KEY, RIGHT>> _right_table;
+    std::shared_ptr<materialized_source < KEY, LEFT>>  left_table_;
+    std::shared_ptr<materialized_source < KEY, RIGHT>> right_table_;
   };
 
 
@@ -396,12 +328,12 @@ namespace kspp {
     std::shared_ptr<materialized_source < KEY, RIGHT>> right)
     : event_consumer<KEY, LEFT>()
     , partition_source<KEY, value_type>(left.get(), left->partition())
-    , _left_table (left)
-    , _right_table(right) {
+    , left_table_ (left)
+    , right_table_(right) {
       this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "ktable_inner_join");
       this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(left->partition()));
-      _left_table->add_sink([this](auto r) { this->_queue.push_back(r); });
-      _right_table->add_sink([this](auto r) { this->_queue.push_back(r); });
+      left_table_->add_sink([this](auto r) { this->_queue.push_back(r); });
+      right_table_->add_sink([this](auto r) { this->_queue.push_back(r); });
     }
 
     ~ktable_inner_join() {
@@ -415,13 +347,13 @@ namespace kspp {
     void start(int64_t offset) override {
       // if we request begin - should we restart table here???
       //it seems that we should retain whatever's in the cache in as many cases as possible
-      _right_table->start(offset);
-      _left_table->start(offset);
+      right_table_->start(offset);
+      left_table_->start(offset);
     }
 
     void close() override {
-      _right_table->close();
-      _left_table->close();
+      right_table_->close();
+      left_table_->close();
     }
 
     size_t queue_size() const override {
@@ -430,14 +362,14 @@ namespace kspp {
 
     int64_t next_event_time() const override {
       auto q = event_consumer < KEY, LEFT>::next_event_time();
-      auto ls = _right_table->next_event_time();
-      auto rs = _left_table->next_event_time();
+      auto ls = right_table_->next_event_time();
+      auto rs = left_table_->next_event_time();
       return std::min(q, std::min(ls, rs));
     }
 
     size_t process(int64_t tick) override {
-      _right_table->process(tick);
-      _left_table->process(tick);
+      right_table_->process(tick);
+      left_table_->process(tick);
 
       size_t processed = 0;
       // reuse event time & commit it from event stream
@@ -449,8 +381,8 @@ namespace kspp {
         ++processed;
         // null values from left should be ignored
 
-        auto left_record = _left_table->get(ev->record()->key());
-        auto right_record = _right_table->get(ev->record()->key());
+        auto left_record = left_table_->get(ev->record()->key());
+        auto right_record = right_table_->get(ev->record()->key());
 
         if (left_record && left_record->value() && right_record && right_record->value()) {
           auto value = std::make_shared<value_type>(*left_record->value(), *right_record->value());
@@ -466,17 +398,17 @@ namespace kspp {
     }
 
     void commit(bool flush) override {
-      _right_table->commit(flush);
-      _left_table->commit(flush);
+      right_table_->commit(flush);
+      left_table_->commit(flush);
     }
 
     bool eof() const override {
-      return _right_table->eof() && _left_table->eof();
+      return right_table_->eof() && left_table_->eof();
     }
 
   private:
-    std::shared_ptr<materialized_source < KEY, LEFT>>  _left_table;
-    std::shared_ptr<materialized_source < KEY, RIGHT>> _right_table;
+    std::shared_ptr<materialized_source < KEY, LEFT>>  left_table_;
+    std::shared_ptr<materialized_source < KEY, RIGHT>> right_table_;
   };
 
   template<class KEY, class LEFT, class RIGHT>
@@ -491,12 +423,12 @@ namespace kspp {
                       std::shared_ptr<materialized_source < KEY, RIGHT>> right)
     : event_consumer<KEY, LEFT>()
     , partition_source<KEY, value_type>(left.get(), left->partition())
-    , _left_table (left)
-    , _right_table(right) {
+    , left_table_ (left)
+    , right_table_(right) {
       this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "ktable_outer_join");
       this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(left->partition()));
-      _left_table->add_sink([this](auto r) { this->_queue.push_back(r); });
-      _right_table->add_sink([this](auto r) { this->_queue.push_back(r); });
+      left_table_->add_sink([this](auto r) { this->_queue.push_back(r); });
+      right_table_->add_sink([this](auto r) { this->_queue.push_back(r); });
     }
 
     ~ktable_outer_join() {
@@ -510,13 +442,13 @@ namespace kspp {
     void start(int64_t offset) override {
       // if we request begin - should we restart table here???
       //it seems that we should retain whatever's in the cache in as many cases as possible
-      _left_table->start(offset);
-      _right_table->start(offset);
+      left_table_->start(offset);
+      right_table_->start(offset);
     }
 
     void close() override {
-      _left_table->close();
-      _right_table->close();
+      left_table_->close();
+      right_table_->close();
     }
 
     size_t queue_size() const override {
@@ -525,14 +457,14 @@ namespace kspp {
 
     int64_t next_event_time() const override {
       auto q = event_consumer < KEY, LEFT>::next_event_time();
-      auto ls = _right_table->next_event_time();
-      auto rs = _left_table->next_event_time();
+      auto ls = right_table_->next_event_time();
+      auto rs = left_table_->next_event_time();
       return std::min(q, std::min(ls, rs));
     }
 
     size_t process(int64_t tick) override {
-      _left_table->process(tick);
-      _right_table->process(tick);
+      left_table_->process(tick);
+      right_table_->process(tick);
 
       size_t processed = 0;
       // reuse event time & commit it from event stream
@@ -544,12 +476,12 @@ namespace kspp {
         ++processed;
         // null values from left should be ignored
 
-        auto left_record = _left_table->get(ev->record()->key());
-        auto right_record = _right_table->get(ev->record()->key());
+        auto left_record = left_table_->get(ev->record()->key());
+        auto right_record = right_table_->get(ev->record()->key());
 
         if (right_record || left_record) {
-          boost::optional<RIGHT> right_val;
-          boost::optional<LEFT> left_val;
+          std::optional<RIGHT> right_val;
+          std::optional<LEFT> left_val;
 
           if (right_record && right_record->value())
             right_val = *right_record->value();
@@ -570,16 +502,16 @@ namespace kspp {
     }
 
     void commit(bool flush) override {
-      _right_table->commit(flush);
-      _left_table->commit(flush);
+      right_table_->commit(flush);
+      left_table_->commit(flush);
     }
 
     bool eof() const override {
-      return _right_table->eof() && _left_table->eof();
+      return right_table_->eof() && left_table_->eof();
     }
 
   private:
-    std::shared_ptr<materialized_source < KEY, LEFT>>  _left_table;
-    std::shared_ptr<materialized_source < KEY, RIGHT>> _right_table;
+    std::shared_ptr<materialized_source < KEY, LEFT>>  left_table_;
+    std::shared_ptr<materialized_source < KEY, RIGHT>> right_table_;
   };
 }
