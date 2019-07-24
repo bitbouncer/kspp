@@ -120,7 +120,11 @@ namespace kspp {
         case TEXTOID:    /* text: variable-length string, no limit specified */
           //case BPCHAROID:  /* character(n), char(length): blank-padded string, fixed storage length */
           //case VARCHAROID: /* varchar(length): non-blank-padded string, variable storage length */
+          value_schema = boost::make_shared<avro::StringSchema>();
+          break;
+
         default:
+          LOG(WARNING) << "got unknown OID - mapping to string, OID=" << typid;
           value_schema = boost::make_shared<avro::StringSchema>();
           break;
       }
@@ -138,19 +142,20 @@ namespace kspp {
       return union_schema;
     }
 
-    std::shared_ptr<avro::ValidSchema> schema_for_table_row(std::string schema_name, const PGresult *res) {
+    /*std::shared_ptr<avro::ValidSchema> schema_for_table_row(std::string schema_name, const PGresult *res) {
       avro::RecordSchema record_schema(schema_name);
       int nFields = PQnfields(res);
       for (int i = 0; i < nFields; i++) {
         Oid col_type = PQftype(res, i);
         std::string col_name = PQfname(res, i);
         boost::shared_ptr<avro::Schema> col_schema = schema_for_oid(col_type);
-        /* TODO ensure that names abide by Avro's requirements */
+        // TODO ensure that names abide by Avro's requirements
         record_schema.addField(col_name, *col_schema);
       }
       auto result = std::make_shared<avro::ValidSchema>(record_schema);
       return result;
     }
+    */
 
     std::string simple_column_name(std::string column_name) {
       std::string simple = column_name;

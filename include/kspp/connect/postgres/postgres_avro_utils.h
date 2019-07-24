@@ -34,12 +34,12 @@ namespace kspp {
       TIMESTAMPZOID = 1184,
       NUMERICOID = 1700,
       UUIDOID = 2950,
-      HSTOREOID=16524
+      HSTOREOID=-10000  // fake id used in reverse mapping
     };
 
     boost::shared_ptr<avro::Schema> schema_for_oid(Oid typid);
 
-    std::shared_ptr<avro::ValidSchema> schema_for_table_row(std::string schema_name, const PGresult *res);
+    //std::shared_ptr<avro::ValidSchema> schema_for_table_row(std::string schema_name, const PGresult *res);
 
     std::string simple_column_name(std::string column_name);
 

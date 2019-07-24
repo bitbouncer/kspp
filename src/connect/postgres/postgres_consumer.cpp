@@ -1,9 +1,10 @@
 #include <kspp/connect/postgres/postgres_consumer.h>
-#include <kspp/kspp.h>
+#include <boost/make_shared.hpp>
 #include <chrono>
 #include <memory>
 #include <glog/logging.h>
 #include <boost/bind.hpp>
+#include <kspp/kspp.h>
 #include <kspp/connect/postgres/postgres_avro_utils.h>
 
 using namespace std::chrono_literals;
@@ -227,11 +228,39 @@ namespace kspp {
       return false;
     }
 
-    //should we check more thing in database
+    // check extensions
+    auto res = _connection->exec("SELECT oid FROM pg_type WHERE typname = 'hstore'");
+
+    if (res.first) {
+      LOG(ERROR) << "exec failed - disconnecting and retrying e: " << _connection->last_error();
+      _connection->disconnect();
+      return false;
+    }
+
+    if (!res.second)
+      return false;
+
+    int nRows = PQntuples(res.second.get());
+    if (nRows==1){
+      const char* val = PQgetvalue(res.second.get(), 0, 0);
+      LOG(INFO) << val;
+      int oid = atoi(val);
+
+      auto value_schema = boost::make_shared<avro::MapSchema>(avro::StringSchema());
+      boost::shared_ptr<avro::Schema> null_schema = boost::make_shared<avro::NullSchema>();
+      boost::shared_ptr<avro::UnionSchema> union_schema = boost::make_shared<avro::UnionSchema>();
+      union_schema->addType(*null_schema);
+      union_schema->addType(*value_schema);
+
+      extension_oids_[oid] = union_schema; // is is just copy and paste from old code and does not respect not null columns
+    }
+
+      //should we check more thing in database
     //maybe select a row and register the schema???
 
     _start_running = true;
   }
+
 
   void postgres_consumer::start(int64_t offset) {
     if (offset == kspp::OFFSET_STORED) {
@@ -259,6 +288,29 @@ namespace kspp {
     initialize();
   }
 
+  std::shared_ptr<avro::ValidSchema> postgres_consumer::schema_for_table_row(std::string schema_name,  const PGresult *res) const {
+    avro::RecordSchema record_schema(schema_name);
+    int nFields = PQnfields(res);
+    for (int i = 0; i < nFields; i++) {
+      Oid col_oid = PQftype(res, i);
+      std::string col_name = PQfname(res, i);
+
+      boost::shared_ptr<avro::Schema> col_schema;
+
+      auto ext_item = extension_oids_.find(col_oid);
+      if (ext_item != extension_oids_.end())
+        col_schema = ext_item->second;
+      else
+        col_schema = pq::schema_for_oid(col_oid); // build in types
+
+      /* TODO ensure that names abide by Avro's requirements */
+      record_schema.addField(col_name, *col_schema);
+    }
+    auto result = std::make_shared<avro::ValidSchema>(record_schema);
+    return result;
+  }
+
+
   int postgres_consumer::parse_response(std::shared_ptr<PGresult> result){
     if (!result)
       return -1;
@@ -285,7 +337,7 @@ namespace kspp {
         LOG(INFO) << "key_schema: \n" << ss0.str();
       }
 
-      value_schema_ = pq::schema_for_table_row(_logical_name + "_value", result.get());
+      value_schema_ = schema_for_table_row(_logical_name + "_value", result.get());
       if (schema_registry_) {
         // we should probably prepend the name with a prefix (like _my_db_table_name)
         value_schema_id_ = schema_registry_->put_schema(_logical_name + "-value", value_schema_);

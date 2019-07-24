@@ -52,7 +52,9 @@ namespace kspp {
     };
 
   private:
-    void connect();
+    //void connect();
+    void load_oids_for_extensions();
+    std::shared_ptr<avro::ValidSchema> schema_for_table_row(std::string schema_name,  const PGresult *res) const;
     int parse_response(std::shared_ptr<PGresult>);
     std::string get_where_clause() const;
 
@@ -82,6 +84,8 @@ namespace kspp {
     std::shared_ptr<avro::ValidSchema> key_schema_;
     std::unique_ptr<kspp::generic_avro> last_key_;
     std::shared_ptr<avro::ValidSchema> value_schema_;
+    std::map<int, boost::shared_ptr<avro::Schema>> extension_oids_; // currently hstore
+
     int32_t key_schema_id_;
     int32_t value_schema_id_;
     event_queue<kspp::generic_avro, kspp::generic_avro> _incomming_msg;
