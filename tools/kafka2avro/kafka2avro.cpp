@@ -9,6 +9,8 @@
 #include <kspp/topology_builder.h>
 #include <kspp/sources/kafka_source.h>
 #include <kspp/sinks/avro_file_sink.h>
+#include <kspp/sinks/avro_s3_sink.h>
+#include <kspp/utils/url.h>
 
 #define SERVICE_NAME     "kafka2avro"
 
@@ -124,10 +126,13 @@ int main(int argc, char** argv) {
   if (vm.count("oneshot"))
     oneshot=true;
 
+  kspp::url dst(dst_dir, "file");
+
   LOG(INFO) << "topic                  : " << topic;
   LOG(INFO) << "start_offset           : " << kspp::to_string(start_offset);
-
-  LOG(INFO) << "dst_dir                : " << dst_dir;
+  LOG(INFO) << "dst schema             :"  << dst.scheme();
+  LOG(INFO) << "dst authority          :"  << dst.authority();
+  LOG(INFO) << "dst path               :"  << dst.path();
   LOG(INFO) << "window_size_s          : " << window_size_s << " s";
 
 //  LOG(INFO) << "pushgateway_uri   : " << pushgateway_uri;
@@ -146,7 +151,12 @@ int main(int argc, char** argv) {
 
   auto t = generic_builder.create_topology();
   auto source = t->create_processors<kspp::kafka_source<void, kspp::generic_avro, void, kspp::avro_serdes>>(partition_list, topic, config->avro_serdes());
-  auto sink = t->create_sink<kspp::avro_file_sink<kspp::generic_avro>>(source, dst_dir, topic, 1h);
+
+  if (dst.scheme()=="file")
+    auto sink1 = t->create_sink<kspp::avro_file_sink<kspp::generic_avro>>(source, dst_dir, topic, 1h);
+  if (dst.scheme()=="s3")
+    auto sink2 = t->create_sink<kspp::avro_s3_sink<kspp::generic_avro>>(source, dst, topic, 1h);
+
   t->start(start_offset);
 
   std::signal(SIGINT, sigterm);
