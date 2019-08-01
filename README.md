@@ -15,7 +15,7 @@ Sources:
 Offset storage:
 - kafka
 - file
-- s3
+- S3
  
 Sinks:
 - kafka
