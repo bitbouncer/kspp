@@ -11,6 +11,11 @@ Sources:
 - postgres (uses libpq)
 - microsoft sqlserver (uses freetds) 
 - memory stream
+
+Offset storage:
+- kafka
+- file
+- s3
  
 Sinks:
 - kafka
