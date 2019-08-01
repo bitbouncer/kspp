@@ -184,7 +184,6 @@ namespace kspp {
 
   tds_consumer::tds_consumer(int32_t partition,
                              std::string logical_name,
-                             std::string consumer_group,
                              const kspp::connect::connection_params& cp,
                              kspp::connect::table_params tp,
                              std::string query,
@@ -196,7 +195,6 @@ namespace kspp {
       , _logical_name(logical_name)
       , _query(query)
       , _partition(partition)
-      , _consumer_group(consumer_group)
       , _cp(cp)
       , _tp(tp)
       , _read_cursor(tp, id_column, ts_column)
@@ -206,18 +204,11 @@ namespace kspp {
       , _key_schema_id(-1)
       , _val_schema_id(-1)
       , _msg_cnt(0)
-      , _good(true)
       , _closed(false)
       , _eof(false)
       , _start_running(false)
       , _exit(false) {
-
-    _offset_storage = get_offset_provider(tp.offset_storage); // check this...
-
-    //if (!_offset_storage_path.empty()){
-    //  std::experimental::filesystem::create_directories(_offset_storage_path.parent_path());
-    //}
-
+    _offset_storage = get_offset_provider(tp.offset_storage);
     std::string top_part(" TOP " + std::to_string(_tp.max_items_in_fetch));
     // assumed to start with "SELECT"
     _query.insert(6,top_part);
@@ -250,27 +241,6 @@ namespace kspp {
     }
   }
 
-  /*void tds_consumer::commit(bool flush) {
-    int64_t ticks = _commit_chain.last_good_offset();
-    if (ticks>0)
-      commit(_commit_chain.last_good_offset(), flush);
-  }*/
-
-  /*void tds_consumer::commit(int64_t ticks, bool flush) {
-    if (_offset_storage_path.empty())
-      return;
-
-    _last_commited_ts_ticks = ticks;
-    if (flush || ((_last_commited_ts_ticks - _last_flushed_ticks) > 3600)) {
-      if (_last_flushed_ticks != _last_commited_ts_ticks) {
-        std::ofstream os(_offset_storage_path.generic_string(), std::ios::binary);
-        os.write((char *) &_last_commited_ts_ticks, sizeof(int64_t));
-        _last_flushed_ticks = _last_commited_ts_ticks;
-        os.flush();
-      }
-    }
-  }*/
-
   bool tds_consumer::initialize() {
     if (!_connection->connected())
       _connection->connect(_cp);
@@ -290,42 +260,6 @@ namespace kspp {
     }
     initialize();
   }
-
-    /*
-    /*if (offset == kspp::OFFSET_STORED) {
-
-      if ( std::experimental::filesystem::exists(_offset_storage_path)) {
-        std::ifstream is(_offset_storage_path.generic_string(), std::ios::binary);
-        int64_t tmp;
-        is.read((char *) &tmp, sizeof(int64_t));
-        if (is.good()) {
-          // if we are rescraping we must assume that this offset were at eof
-          LOG(INFO) << _logical_name << ", start(OFFSET_STORED) - > ts:" << tmp;
-          _read_cursor.set_eof(true);
-          _read_cursor.start(tmp);
-        } else {
-          LOG(INFO) << _logical_name << ", start(OFFSET_STORED), bad file " << _offset_storage_path << ", starting from OFFSET_BEGINNING";
-        }
-      } else {
-        LOG(INFO) << _logical_name << ", start(OFFSET_STORED), missing file " << _offset_storage_path << ", starting from OFFSET_BEGINNING";
-      }
-    } else if (offset == kspp::OFFSET_BEGINNING) {
-      DLOG(INFO) << "tds_consumer::start table:" << _logical_name << ":" << _partition << " consumer group: " << _consumer_group << " starting from OFFSET_BEGINNING";
-    } else if (offset == kspp::OFFSET_END) {
-      DLOG(INFO) << "tds_consumer::start table:" << _logical_name << ":" << _partition << " consumer group: " << _consumer_group << " starting from OFFSET_END";
-    } else {
-      LOG(INFO) << "tds_consumer::start table:" << _logical_name << ":" << _partition << " consumer group: " << _consumer_group << " starting from fixed offset: " << offset;
-      _read_cursor.set_eof(true);
-      _read_cursor.start(offset);
-    }
-     initialize();
-  }
-  */
-
-  /*
-  int32_t tds_consumer::commit(int64_t offset, bool flush) {
-  }
-  */
 
   int tds_consumer::parse_row(DBPROCESS *stream, COL *columns) {
     //TODO what name should we segister this under.. source/database/table ? table seems to week
@@ -570,4 +504,3 @@ namespace kspp {
     DLOG(INFO) << "exiting thread";
   }
 }
-

@@ -226,7 +226,7 @@ namespace kspp {
       return false;
     }
 
-    // check extensions
+    // check extensions - move this to separate function
     auto res = connection_->exec("SELECT oid FROM pg_type WHERE typname = 'hstore'");
 
     if (res.first) {
@@ -252,6 +252,7 @@ namespace kspp {
 
       extension_oids_[oid] = union_schema; // is is just copy and paste from old code and does not respect not null columns
     }
+    // end extenstions
 
     //should we check more thing in database
     //maybe select a row and register the schema???
@@ -402,6 +403,9 @@ namespace kspp {
       auto res = connection_->exec(statement);
       if (res.first) {
         LOG(ERROR) << "exec failed - disconnecting and retrying e: " << connection_->last_error();
+
+        LOG(FATAL) << "exec failed - disconnecting and retrying e: " << connection_->last_error();
+
         connection_->disconnect();
         std::this_thread::sleep_for(10s);
         continue;
@@ -410,6 +414,9 @@ namespace kspp {
       int parse_result = parse_response(res.second);
       if (parse_result) {
         LOG(ERROR) << "parse failed - disconnecting and retrying";
+
+        LOG(FATAL) << "exec failed - disconnecting and retrying e: " << connection_->last_error();
+
         connection_->disconnect();
         std::this_thread::sleep_for(10s);
         continue;

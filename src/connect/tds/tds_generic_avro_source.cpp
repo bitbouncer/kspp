@@ -14,7 +14,7 @@ namespace kspp {
                                                    std::string ts_column,
                                                    std::shared_ptr<kspp::avro_schema_registry> registry)
       : partition_source<kspp::generic_avro, kspp::generic_avro>(nullptr, partition)
-      , _impl(partition, logical_name, config->get_consumer_group(), cp, tp, query, id_column, ts_column, registry) {
+      , _impl(partition, logical_name, cp, tp, query, id_column, ts_column, registry) {
     this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
     this->add_metrics_label(KSPP_TOPIC_TAG, logical_name);
     this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(partition));

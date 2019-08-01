@@ -26,6 +26,7 @@ postgres_read_cursor::postgres_read_cursor(kspp::connect::table_params tp, std::
       , order_by_(__order_by(ts_column_, id_column_))
       , ts_multiplier_(tp.ts_multiplier)
       , ts_utc_offset_(tp.ts_utc_offset){
+    assert(ts_multiplier_>=1);
   }
 
   void postgres_read_cursor::init(std::shared_ptr<PGresult> result) {

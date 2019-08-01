@@ -20,13 +20,13 @@ namespace kspp {
 
     std::string get_where_clause() const;
 
-    std::string last_ts() const { return _last_ts; }
+    std::string last_ts() const { return last_ts_; }
 
-    inline int64_t last_tick() const { return _last_ts_ticks; }
+    inline int64_t last_tick() const { return last_ts_ticks_; }
 
-    inline int64_t last_ts_ms () const { return (_last_ts_ticks >= 0) ? _ts_utc_offset +( _last_ts_ticks*_ts_multiplier) : 0; }
+    inline int64_t last_ts_ms () const { return (last_ts_ticks_ >= 0) ? ts_utc_offset_ +( last_ts_ticks_*ts_multiplier_) : 0; }
 
-    void set_eof(bool state) { _eof = state; }
+    void set_eof(bool state) { eof_ = state; }
 
   private:
 
@@ -35,18 +35,18 @@ namespace kspp {
     int64_t parse_ts(DBPROCESS *stream);
 
     const kspp::connect::table_params tp_;
-    bool _eof = false;
-    const std::string _id_column;
-    const std::string _ts_column;
-    const std::string _order_by;
-    int _ts_column_index = -1;
-    int _id_column_index = -1;
-    int64_t _last_ts_ticks = INT64_MIN;
-    std::string _last_ts;
-    std::string _last_id;
+    bool eof_ = false;
+    const std::string id_column_;
+    const std::string ts_column_;
+    const std::string order_by_;
+    int ts_column_index_ = -1;
+    int id_column_index_ = -1;
+    int64_t last_ts_ticks_ = INT64_MIN;
+    std::string last_ts_;
+    std::string last_id_;
 
-    int _ts_multiplier=0;
-    int _ts_utc_offset=0;
+    int ts_multiplier_=0;
+    int ts_utc_offset_=0;
 
   };
 }

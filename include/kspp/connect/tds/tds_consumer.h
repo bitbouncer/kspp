@@ -13,7 +13,6 @@ namespace kspp {
   public:
     tds_consumer(int32_t partition,
                  std::string logical_name,
-                 std::string consumer_group,
                  const kspp::connect::connection_params& cp,
                  kspp::connect::table_params tp,
                  std::string query,
@@ -41,8 +40,6 @@ namespace kspp {
 
     void start(int64_t offset);
 
-    void subscribe();
-
     bool is_query_running() const { return !_eof; }
 
     inline event_queue<kspp::generic_avro, kspp::generic_avro>& queue(){
@@ -53,14 +50,11 @@ namespace kspp {
       return _incomming_msg;
     };
 
-    //void commit(bool flush);
-
     void commit(bool flush) {
       int64_t offset = _commit_chain.last_good_offset();
-      if (offset>0 && _offset_storage)
+      if (offset>0)
         _offset_storage->commit(offset, flush);
     }
-
 
   private:
     // this should go away when we can parse datetime2
@@ -87,28 +81,20 @@ namespace kspp {
 
     bool _exit;
     bool _start_running;
-    bool _good;
     bool _eof;
     bool _closed;
 
     std::thread _bg;
     std::unique_ptr<kspp_tds::connection> _connection;
-
     const std::string _logical_name;
     const int32_t _partition;
-    const std::string _consumer_group;
-
     std::shared_ptr<offset_storage> _offset_storage;
     commit_chain _commit_chain;
-
     const kspp::connect::connection_params _cp;
     const kspp::connect::table_params _tp;
-
     std::string _query;
     tds_read_cursor _read_cursor;
-
     const std::string _id_column;
-
     std::shared_ptr<kspp::avro_schema_registry> _schema_registry;
     std::shared_ptr<avro::ValidSchema> _val_schema;
     std::shared_ptr<avro::ValidSchema> _key_schema;
@@ -116,7 +102,6 @@ namespace kspp {
     int32_t _key_schema_id;
     int32_t _val_schema_id;
     event_queue<kspp::generic_avro, kspp::generic_avro> _incomming_msg;
-
     uint64_t _msg_cnt; // TODO move to metrics
   };
 }

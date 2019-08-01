@@ -35,7 +35,7 @@ namespace kspp {
       std::string offset_storage;
       std::string query;
       std::string ts_column;
-      int ts_multiplier=0;
+      int ts_multiplier=1; // normally 1 or 1000 (ie ms or s)
       int ts_utc_offset=0;
       std::string id_column;
     };
