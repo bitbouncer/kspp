@@ -51,6 +51,9 @@ sudo apt-get purge libprotobuf-dev libgrpc++-dev protobuf-compiler
 
 Install build tools
 ```
+
+sudo apt-get install -y software-properties-common
+sudo apt-get update
 sudo apt-get install -y g++ sudo pax-utils automake autogen shtool libtool git wget cmake unzip build-essential pkg-config sed 
 ```
 
