@@ -22,7 +22,8 @@ Sinks:
 - postgres
 - influxdb
 - elastic search
-- avro files
+- files (avro)
+- S3 (avro)
 - memory stream
 
 Statestores:
@@ -80,18 +81,10 @@ sudo make install
 cd ..
 ```
 
-build docker image / alpine 3:8
-```
-cd docker-alpine
-./build_3rdparty.sh
-./build.sh
-```
-
 build docker image / ubuntu 18.04
 ```
 cd docker-ubuntu
 ./build_3rdparty.sh
 ./build.sh
 ```
-
 
