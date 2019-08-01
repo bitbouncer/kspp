@@ -65,7 +65,7 @@ sudo apt-get install -y python-dev autotools-dev libicu-dev zlib1g-dev openssl l
 
 ```
 
-install 3rd party deps we need to build from source
+install 3rd party deps we need to build from source  (you can hack versions - see the file)
 ```
 ./3rdparty_install.sh 
 
