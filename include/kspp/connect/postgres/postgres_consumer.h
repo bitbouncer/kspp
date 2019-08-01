@@ -3,7 +3,9 @@
 #include <kspp/impl/queue.h>
 #include <kspp/topology.h>
 #include <kspp/avro/generic_avro.h>
+#include <kspp/utils/offset_storage_provider.h>
 #include <kspp/connect/postgres/postgres_connection.h>
+#include <kspp/connect/postgres/postgres_read_cursor.h>
 #pragma once
 
 namespace kspp {
@@ -11,7 +13,6 @@ namespace kspp {
   public:
     postgres_consumer(int32_t partition,
                        std::string locical_name,
-                       std::string consumer_group,
                        const kspp::connect::connection_params& cp,
                        kspp::connect::table_params tp,
                        std::string query,
@@ -26,22 +27,20 @@ namespace kspp {
     void close();
 
     inline bool eof() const {
-      return (_incomming_msg.size() == 0) && _eof;
+      return (_incomming_msg.size() == 0) && eof_;
     }
 
     inline std::string logical_name() const {
-      return _logical_name;
+      return logical_name_;
     }
 
     inline int32_t partition() const {
-      return _partition;
+      return partition_;
     }
 
     void start(int64_t offset);
 
     void subscribe();
-
-    bool is_query_running() const { return !_eof; }
 
     inline event_queue<kspp::generic_avro, kspp::generic_avro>& queue(){
       return _incomming_msg;
@@ -51,6 +50,12 @@ namespace kspp {
       return _incomming_msg;
     };
 
+    void commit(bool flush) {
+      int64_t offset = commit_chain_.last_good_offset();
+      if (offset>0)
+        offset_storage_->commit(offset, flush);
+    }
+
   private:
     //void connect();
     void load_oids_for_extensions();
@@ -59,26 +64,22 @@ namespace kspp {
     std::string get_where_clause() const;
 
     void _thread();
-    bool _exit;
-    bool _start_running;
-    bool _good;
-    bool _eof;
-    bool _closed;
-    std::thread _bg;
-    std::unique_ptr<kspp_postgres::connection> _connection;
-    const std::string _logical_name;
-    const std::string _query;
-    const int32_t _partition;
-    const std::string _consumer_group;
+    bool exit_;
+    bool start_running_;
+    bool eof_;
+    bool closed_;
+    std::thread bg_;
+    std::unique_ptr<kspp_postgres::connection> connection_;
+    const std::string logical_name_;
+    const std::string query_;
+    postgres_read_cursor read_cursor_;
+    commit_chain commit_chain_;
+    const int32_t partition_;
+    std::shared_ptr<offset_storage> offset_storage_;
     const kspp::connect::connection_params cp_;
     const kspp::connect::table_params tp_;
-    const std::string _id_column;
-    const std::string _ts_column;
-    // this holds the read cursor (should be abstracted)
-    int id_column_index_;
-    int ts_column_index_;
-    std::string last_id_;
-    std::string last_ts_;
+
+    const std::string id_column_;
 
     std::shared_ptr<kspp::avro_schema_registry> schema_registry_;
     std::shared_ptr<avro::ValidSchema> key_schema_;

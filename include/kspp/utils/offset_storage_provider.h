@@ -1,6 +1,7 @@
 #include <climits>
 #include <string>
 #include <experimental/filesystem>
+#include <kspp/typedefs.h>
 
 #pragma once
 
@@ -51,6 +52,19 @@ namespace kspp {
     std::experimental::filesystem::path offset_storage_path_;
   };
 
+  class null_offset_storage : public offset_storage {
+  public:
+    null_offset_storage() {};
+    ~null_offset_storage() override {}
+  private:
+    int64_t load_offset(int timeout_ms) override { return OFFSET_END; }
+    void persist_offset(int64_t offset, int timeout_ms) override { } // noop
+  };
+
+
+  /*
+   * uri is one of [file: s3: null:]
+   */
   std::shared_ptr<offset_storage> get_offset_provider(std::string uri);
 }
 

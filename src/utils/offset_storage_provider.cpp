@@ -65,11 +65,18 @@ namespace kspp {
   }
 
   std::shared_ptr<offset_storage> get_offset_provider(std::string uri) {
+    if (uri.size()==0)
+      return std::make_shared<null_offset_storage>();
+
     kspp::url u(uri, "file");
 
     if (!u.good()){
       LOG(ERROR) << "bad uri: " << uri;
       return nullptr;
+    }
+
+    if (u.scheme()=="null"){
+      return std::make_shared<null_offset_storage>();
     }
 
     if (u.scheme()=="s3"){
@@ -79,12 +86,14 @@ namespace kspp {
       LOG(ERROR) << "feature S3 not enabled";
       return nullptr
 #endif
-    } else if (u.scheme()=="file"){
-      return std::make_shared<fs_offset_storage>(uri);
-    } else {
-      LOG(ERROR) << "unknown scheme: " << u.scheme() << " in uri:" << uri;
-      return nullptr;
     }
+
+    if (u.scheme()=="file"){
+      return std::make_shared<fs_offset_storage>(uri);
+    }
+
+    LOG(ERROR) << "unknown scheme: " << u.scheme() << " in uri:" << uri;
+    return nullptr;
   }
 
 }

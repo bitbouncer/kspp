@@ -2,6 +2,12 @@
 #include <regex>
 
 namespace kspp {
+
+/*
+  file://localhost/etc/fstab
+  file:///etc/fstab
+*/
+
   url::url(std::string s, std::string default_scheme)
       : good_(true) {
     std::string::size_type pos0 = s.find("://");

@@ -5,6 +5,7 @@
 #include <kspp/avro/generic_avro.h>
 #include <kspp/connect/tds/tds_connection.h>
 #include <kspp/connect/tds/tds_read_cursor.h>
+#include <kspp/utils/offset_storage_provider.h>
 #pragma once
 
 namespace kspp {
@@ -52,7 +53,14 @@ namespace kspp {
       return _incomming_msg;
     };
 
-    void commit(bool flush);
+    //void commit(bool flush);
+
+    void commit(bool flush) {
+      int64_t offset = _commit_chain.last_good_offset();
+      if (offset>0 && _offset_storage)
+        _offset_storage->commit(offset, flush);
+    }
+
 
   private:
     // this should go away when we can parse datetime2
@@ -90,10 +98,8 @@ namespace kspp {
     const int32_t _partition;
     const std::string _consumer_group;
 
-    std::experimental::filesystem::path _offset_storage_path;
+    std::shared_ptr<offset_storage> _offset_storage;
     commit_chain _commit_chain;
-    int64_t _last_commited_ts_ticks=0;
-    int64_t _last_flushed_ticks=0;
 
     const kspp::connect::connection_params _cp;
     const kspp::connect::table_params _tp;

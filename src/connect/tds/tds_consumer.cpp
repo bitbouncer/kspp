@@ -197,7 +197,6 @@ namespace kspp {
       , _query(query)
       , _partition(partition)
       , _consumer_group(consumer_group)
-      , _offset_storage_path(tp.offset_storage)
       , _cp(cp)
       , _tp(tp)
       , _read_cursor(tp, id_column, ts_column)
@@ -212,9 +211,13 @@ namespace kspp {
       , _eof(false)
       , _start_running(false)
       , _exit(false) {
-    if (!_offset_storage_path.empty()){
-      std::experimental::filesystem::create_directories(_offset_storage_path.parent_path());
-    }
+
+    _offset_storage = get_offset_provider(tp.offset_storage); // check this...
+
+    //if (!_offset_storage_path.empty()){
+    //  std::experimental::filesystem::create_directories(_offset_storage_path.parent_path());
+    //}
+
     std::string top_part(" TOP " + std::to_string(_tp.max_items_in_fetch));
     // assumed to start with "SELECT"
     _query.insert(6,top_part);
@@ -247,13 +250,13 @@ namespace kspp {
     }
   }
 
-  void tds_consumer::commit(bool flush) {
+  /*void tds_consumer::commit(bool flush) {
     int64_t ticks = _commit_chain.last_good_offset();
     if (ticks>0)
       commit(_commit_chain.last_good_offset(), flush);
-  }
+  }*/
 
-  void tds_consumer::commit(int64_t ticks, bool flush) {
+  /*void tds_consumer::commit(int64_t ticks, bool flush) {
     if (_offset_storage_path.empty())
       return;
 
@@ -266,7 +269,7 @@ namespace kspp {
         os.flush();
       }
     }
-  }
+  }*/
 
   bool tds_consumer::initialize() {
     if (!_connection->connected())
@@ -278,7 +281,18 @@ namespace kspp {
   }
 
   void tds_consumer::start(int64_t offset) {
-    if (offset == kspp::OFFSET_STORED) {
+    if (_offset_storage) {
+      int64_t tmp = _offset_storage->start(offset);
+      _read_cursor.set_eof(true);
+      _read_cursor.start(tmp);
+    } else {
+      //_read_cursor will start at beginning if not initialized
+    }
+    initialize();
+  }
+
+    /*
+    /*if (offset == kspp::OFFSET_STORED) {
 
       if ( std::experimental::filesystem::exists(_offset_storage_path)) {
         std::ifstream is(_offset_storage_path.generic_string(), std::ios::binary);
@@ -304,8 +318,9 @@ namespace kspp {
       _read_cursor.set_eof(true);
       _read_cursor.start(offset);
     }
-    initialize();
+     initialize();
   }
+  */
 
   /*
   int32_t tds_consumer::commit(int64_t offset, bool flush) {

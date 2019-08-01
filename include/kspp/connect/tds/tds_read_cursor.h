@@ -1,7 +1,7 @@
 #include <chrono>
 #include <memory>
-#include <kspp/impl/queue.h>
 #include <kspp/connect/tds/tds_connection.h>
+#include <kspp/connect/connection_params.h>
 #include <kspp/topology.h>
 #include <kspp/avro/generic_avro.h>
 

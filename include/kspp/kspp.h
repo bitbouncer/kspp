@@ -12,6 +12,7 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/algorithm/string/replace.hpp>
 #include <glog/logging.h>
+#include <kspp/typedefs.h>
 #include <kspp/metrics/metrics.h>
 #include <kspp/kevent.h>
 #include <kspp/type_name.h>
@@ -23,8 +24,6 @@
 #pragma once
 namespace kspp {
   class topology;
-
-  enum start_offset_t { OFFSET_BEGINNING=-2, OFFSET_END=-1, OFFSET_STORED=-1000 };
 
   std::string to_string(start_offset_t);
 
