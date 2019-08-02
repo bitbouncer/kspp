@@ -19,7 +19,7 @@ int main(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);
 
   std::string consumer_group("kspp-examples");
-  auto config = std::make_shared<kspp::cluster_config>(consumer_group);;
+  auto config = std::make_shared<kspp::cluster_config>(consumer_group);
   config->load_config_from_env();
   config->validate(); // optional
 

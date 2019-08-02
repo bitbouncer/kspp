@@ -46,48 +46,49 @@ namespace kspp {
   class kevent {
   public:
     kevent(std::shared_ptr<const krecord<K, V>> r, std::shared_ptr<event_done_marker> marker = nullptr)
-            : _record(r)
-              , _event_done_marker(marker)
-              , _partition_hash(-1) {
+        : record_(r)
+        , event_done_marker_(marker)
+        , partition_hash_(-1) {
     }
 
     kevent(std::shared_ptr<const krecord<K, V>> r, std::shared_ptr<event_done_marker> marker, uint32_t partition_hash)
-            : _record(r)
-              , _event_done_marker(marker)
-              , _partition_hash(partition_hash) {
+        : record_(r)
+        , event_done_marker_(marker)
+        , partition_hash_(partition_hash) {
     }
 
     inline int64_t event_time() const {
-      return _record ? _record->event_time() : -1;
+      return record_ ? record_->event_time() : -1;
     }
 
     inline int64_t offset() const {
-      return _event_done_marker ? _event_done_marker->offset() : -1;
+      return event_done_marker_ ? event_done_marker_->offset() : -1;
     }
 
     inline std::shared_ptr<const krecord<K, V>> record() const {
-      return _record;
+      return record_;
     }
 
     inline std::shared_ptr<event_done_marker> id() {
-      return _event_done_marker;
+      return event_done_marker_;
     }
 
     inline bool has_partition_hash() const {
-      return _partition_hash >= 0;
+      return partition_hash_ >= 0;
     }
 
     inline uint32_t partition_hash() const {
-      assert(_partition_hash >= 0);
-      return static_cast<uint32_t>(_partition_hash);
+      assert(partition_hash_ >= 0);
+      return static_cast<uint32_t>(partition_hash_);
     }
 
   private:
-    std::shared_ptr<const krecord<K, V>> _record;
-    std::shared_ptr<event_done_marker> _event_done_marker;
-    const int64_t _partition_hash;
+    std::shared_ptr<const krecord<K, V>> record_;
+    std::shared_ptr<event_done_marker> event_done_marker_;
+    const int64_t partition_hash_;
   };
 
+  /*
   template<class K, class V>
   std::shared_ptr<kevent<K, V>> make_event(const K &key, const V &value, int64_t ts = kspp::milliseconds_since_epoch(), std::shared_ptr<event_done_marker> marker = nullptr){
     auto record = std::make_shared<krecord<K, V>>(key, value, ts);
@@ -105,5 +106,5 @@ namespace kspp {
     auto record = std::make_shared<krecord<void, V>>(value, ts);
     return std::make_shared<kevent<void, V>>(record, marker);
   }
-
+  */
 }

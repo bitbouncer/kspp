@@ -12,59 +12,54 @@ namespace kspp {
   class krecord {
   public:
     krecord(const K &k, const V &v, int64_t ts = milliseconds_since_epoch())
-        : _event_time(ts), _key(k), _value(std::make_shared<V>(v)) {
+        : event_time_(ts), key_(k), value_(std::make_shared<V>(v)) {
     }
 
     krecord(const K &k, std::shared_ptr<const V> v, int64_t ts = milliseconds_since_epoch())
-        : _event_time(ts), _key(k), _value(v) {
+        : event_time_(ts), key_(k), value_(v) {
     }
 
     krecord(const K &k, std::nullptr_t nullp, int64_t ts = milliseconds_since_epoch())
-        : _event_time(ts), _key(k), _value(nullptr) {
+        : event_time_(ts), key_(k), value_(nullptr) {
     }
 
     krecord(const krecord& a)
-        : _event_time(a._event_time), _key(a._key), _value(a._value) {
+        : event_time_(a.event_time_), key_(a.key_), value_(a.value_) {
     }
 
     inline bool operator==(const krecord<K,V>& other) const
     {
-      if (_event_time != other._event_time)
+      if (event_time_ != other.event_time_)
         return false;
 
-      if (_key != other._key)
+      if (key_ != other.key_)
         return false;
 
-      if (_value.get() == nullptr)
-        if (other._value.get() == nullptr)
+      if (value_.get() == nullptr)
+        if (other.value_.get() == nullptr)
           return true;
         else
           return false;
 
-      return (*_value.get() == *other._value.get());
+      return (*value_.get() == *other.value_.get());
     }
 
     inline const K &key() const {
-      return _key;
+      return key_;
     }
 
     inline const V *value() const {
-      return _value.get();
+      return value_.get();
     }
-
-    /*inline std::shared_ptr<const V> shared_ptr_value() const {
-      return _value;
-    }
-    */
 
     inline int64_t event_time() const {
-      return _event_time;
+      return event_time_;
     }
 
   private:
-    const K _key;
-    const std::shared_ptr<const V> _value;
-    const int64_t _event_time;
+    const K key_;
+    const std::shared_ptr<const V> value_;
+    const int64_t event_time_;
   };
 
 
@@ -72,28 +67,43 @@ namespace kspp {
   class krecord<void, V> {
   public:
     krecord(const V &v, int64_t ts = milliseconds_since_epoch())
-        : _event_time(ts), _value(std::make_shared<V>(v)) {
+        : event_time_(ts), value_(std::make_shared<V>(v)) {
     }
 
     krecord(std::shared_ptr<const V> v, int64_t ts = milliseconds_since_epoch())
-        : _event_time(ts), _value(v) {
+        : event_time_(ts), value_(v) {
     }
 
     krecord(const krecord& a)
-        : _event_time(a._event_time), _value(a._value) {
+        : event_time_(a.event_time_), value_(a.value_) {
     }
 
+    inline bool operator==(const krecord<void, V>& other) const
+    {
+      if (event_time_ != other.event_time_)
+        return false;
+
+      if (value_.get() == nullptr)
+        if (other.value_.get() == nullptr)
+          return true;
+        else
+          return false;
+
+      return (*value_.get() == *other.value_.get());
+    }
+
+
     inline const V *value() const {
-      return _value.get();
+      return value_.get();
     }
 
     inline int64_t event_time() const {
-      return _event_time;
+      return event_time_;
     }
 
   private:
-    const std::shared_ptr<const V> _value;
-    const int64_t _event_time;
+    const std::shared_ptr<const V> value_;
+    const int64_t event_time_;
   };
 
 
@@ -101,27 +111,35 @@ namespace kspp {
   class krecord<K, void> {
   public:
     krecord(const K &k, int64_t ts = milliseconds_since_epoch())
-        : _event_time(ts), _key(k) {
+        : event_time_(ts), key_(k) {
     }
 
     krecord(const krecord& a)
-        : _event_time(a._event_time), _key(a._key) {
+        : event_time_(a.event_time_), key_(a.key_) {
+    }
+
+    inline bool operator==(const krecord<K,void>& other) const
+    {
+      if (event_time_ != other.event_time_)
+        return false;
+
+      return key_ == other.key_;
     }
 
     inline const K &key() const {
-      return _key;
+      return key_;
     }
 
     inline int64_t event_time() const {
-      return _event_time;
+      return event_time_;
     }
 
   private:
-    const K _key;
-    const int64_t _event_time;
+    const K key_;
+    const int64_t event_time_;
   };
 
-
+/*
   template<class K, class V>
   inline std::shared_ptr<krecord<K,V>> make_krecord(const K &k, const V &v, int64_t ts = milliseconds_since_epoch()){
     return std::make_shared<krecord<K, V >>(k, v, ts);
@@ -146,4 +164,5 @@ namespace kspp {
   inline std::shared_ptr<krecord<void,V>> make_krecord(std::shared_ptr<const V> p, int64_t ts = milliseconds_since_epoch()){
     return std::make_shared<krecord<void, V >>(p, ts);
   }
+  */
 }
