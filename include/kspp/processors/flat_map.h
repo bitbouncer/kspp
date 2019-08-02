@@ -75,20 +75,7 @@ namespace kspp {
     inline void push_back(std::shared_ptr<const krecord<RK, RV>>record) {
       this->send_to_sinks(std::make_shared<kevent<RK, RV>>(record, current_id_));
     }
-
-    /*
-     * inline void push_back(const RK& key, std::shared_ptr<RV> row, int64_t ts = milliseconds_since_epoch()) {
-      auto pr = std::make_shared<krecord<RK, RV>>(key, row, ts);
-      this->send_to_sinks(std::make_shared<kevent<RK, RV>>(pr, _current_id));
-    }
-
-    inline void push_back(const RK& key, const RV& row, int64_t ts = milliseconds_since_epoch()) {
-      auto pr = std::make_shared<krecord<RK, RV>>(key, row, ts);
-      this->send_to_sinks(std::make_shared<kevent<RK, RV>>(pr, _current_id));
-    }
-     */
-
-    /**
+  /**
      * use from from extractor callback
     */
     inline void push_back(const krecord<RK, RV>& record) {
@@ -106,7 +93,7 @@ namespace kspp {
   private:
     std::shared_ptr<partition_source < SK, SV>> source_;
     extractor extractor_;
-    std::shared_ptr<commit_chain::autocommit_marker> current_id_; // used to briefly hold the commit open during process one
+    std::shared_ptr<event_done_marker> current_id_; // used to briefly hold the commit open during process one
   };
 }
 

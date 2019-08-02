@@ -10,13 +10,13 @@ using namespace std::chrono_literals;
 namespace kspp {
   struct producer_user_data
   {
-    producer_user_data(void* key, size_t keysz, void* val, size_t valsz, uint32_t hash, std::shared_ptr<commit_chain::autocommit_marker> marker)
+    producer_user_data(void* key, size_t keysz, void* val, size_t valsz, uint32_t hash, std::shared_ptr<event_done_marker> marker)
         : key_ptr(key)
         , key_sz(keysz)
         , val_ptr(val)
         , val_sz(valsz)
         , partition_hash(hash)
-        , autocommit_marker(marker) {
+        , done_marker(marker) {
     }
 
     ~producer_user_data() {
@@ -29,12 +29,12 @@ namespace kspp {
       val_ptr = nullptr;
     }
 
-    uint32_t                                         partition_hash;
-    std::shared_ptr<commit_chain::autocommit_marker> autocommit_marker;
-    void*                                            key_ptr;
-    size_t                                           key_sz;
-    void*                                            val_ptr;
-    size_t                                           val_sz;
+    uint32_t                           partition_hash;
+    std::shared_ptr<event_done_marker> done_marker;
+    void*                              key_ptr;
+    size_t                             key_sz;
+    void*                              val_ptr;
+    size_t                             val_sz;
   };
 
   int32_t kafka_producer::MyHashPartitionerCb::partitioner_cb(const RdKafka::Topic *topic, const std::string *key, int32_t partition_cnt, void *msg_opaque) {
@@ -52,8 +52,8 @@ namespace kspp {
 
     // if error fail this commit
     if (message.err() != RdKafka::ErrorCode::ERR_NO_ERROR) {
-      if (extra->autocommit_marker)
-        extra->autocommit_marker->fail(message.err());
+      if (extra->done_marker)
+        extra->done_marker->fail(message.err());
       _status = message.err();
     }
     delete extra; // kill the marker here...
@@ -176,7 +176,7 @@ namespace kspp {
   }
 
 
-  int kafka_producer::produce(uint32_t partition_hash, memory_management_mode mode, void* key, size_t keysz, void* value, size_t valuesz, int64_t timestamp, std::shared_ptr<commit_chain::autocommit_marker> autocommit_marker) {
+  int kafka_producer::produce(uint32_t partition_hash, memory_management_mode mode, void* key, size_t keysz, void* value, size_t valuesz, int64_t timestamp, std::shared_ptr<event_done_marker> marker) {
     producer_user_data* user_data = nullptr;
     if (mode == kafka_producer::COPY) {
       void* pkey = malloc(keysz);
@@ -187,7 +187,7 @@ namespace kspp {
       memcpy(pval, value, valuesz);
       value = pval;
     }
-    user_data = new producer_user_data(key, keysz, value, valuesz, partition_hash, autocommit_marker);
+    user_data = new producer_user_data(key, keysz, value, valuesz, partition_hash, marker);
 
     RdKafka::ErrorCode ec = _producer->produce(_topic, -1, 0, value, valuesz, key, keysz, timestamp, user_data); // note not using _rd_topic anymore...?
     if (ec == RdKafka::ERR__QUEUE_FULL) {

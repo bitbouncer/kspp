@@ -7,8 +7,7 @@ namespace kspp {
   static std::deque<std::shared_ptr<commit_chain::autocommit_marker>> s_pending_delete;
 
   commit_chain::autocommit_marker::~autocommit_marker() {
-    _cb(_offset, _ec);
-
+    //_cb(_offset, _ec);
     //now we could delete everting that is waiting for us - but if this is 100k objects the callstack is kind of large and we will segfault
     //so we check if we're the last holder of next - if so let someone else delete next object
     if (_next.use_count()==1){

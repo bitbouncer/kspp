@@ -5,6 +5,7 @@
 #include <glog/logging.h>
 #include <kspp/topology.h>
 #include <kspp/impl/sources/kafka_consumer.h>
+#include <kspp/impl/commit_chain.h>
 
 #pragma once
 

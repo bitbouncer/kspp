@@ -6,6 +6,7 @@
 #include <kspp/utils/offset_storage_provider.h>
 #include <kspp/connect/postgres/postgres_connection.h>
 #include <kspp/connect/postgres/postgres_read_cursor.h>
+#include <kspp/impl/commit_chain.h>
 #pragma once
 
 namespace kspp {

@@ -6,6 +6,7 @@
 #include <kspp/connect/tds/tds_connection.h>
 #include <kspp/connect/tds/tds_read_cursor.h>
 #include <kspp/utils/offset_storage_provider.h>
+#include <kspp/impl/commit_chain.h>
 #pragma once
 
 namespace kspp {

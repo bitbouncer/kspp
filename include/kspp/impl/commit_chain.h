@@ -3,7 +3,7 @@
 #include <ctype.h>
 #include <string>
 #include <kspp/utils/spinlock.h>
-
+#include <kspp/kevent.h>
 #pragma once
 
 namespace kspp {
@@ -13,37 +13,21 @@ namespace kspp {
   class commit_chain {
   public:
 
-    class autocommit_marker {
+    class autocommit_marker : public event_done_marker {
     public:
       autocommit_marker(std::function<void(int64_t offset, int32_t ec)> callback)
-              : _offset(-1), _ec(0), _cb(callback) {
+              : event_done_marker(callback){
       }
 
-      ~autocommit_marker();
-
-
-      inline int64_t offset() const {
-        return _offset;
-      }
-
-      inline int32_t ec() const {
-        return _ec;
-      }
-
-      inline void fail(int32_t ec) {
-        if (ec)
-          _ec = ec;
-      }
+      ~autocommit_marker() override;
 
       void init(int64_t offset, std::shared_ptr<autocommit_marker> next) {
-        _offset = offset;
+        event_done_marker::init(offset);
+        //_offset = offset;
         _next = next;
       }
 
     private:
-      int64_t _offset;
-      int32_t _ec;
-      std::function<void(int64_t offset, int32_t ec)> _cb;
       std::shared_ptr<autocommit_marker> _next;
     };
 

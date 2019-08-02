@@ -9,6 +9,7 @@
 #include "grpc_avro_schema_resolver.h"
 #include "grpc_avro_serdes.h"
 #include <kspp/utils/offset_storage_provider.h>
+#include <kspp/impl/commit_chain.h>
 #pragma once
 
 namespace kspp {

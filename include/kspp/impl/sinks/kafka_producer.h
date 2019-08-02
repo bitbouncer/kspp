@@ -23,7 +23,7 @@ namespace kspp {
     /**
     produce a message to partition -> (partition_hash % partition_cnt)
     */
-    int produce(uint32_t partition_hash, memory_management_mode mode, void* key, size_t keysz, void* value, size_t valuesz, int64_t timestamp, std::shared_ptr<commit_chain::autocommit_marker> autocommit_marker);
+    int produce(uint32_t partition_hash, memory_management_mode mode, void* key, size_t keysz, void* value, size_t valuesz, int64_t timestamp, std::shared_ptr<event_done_marker> autocommit_marker);
 
     inline std::string topic() const {
       return _topic;
