@@ -39,7 +39,7 @@ namespace kspp {
     void set_max_pending_sink_messages(size_t sz);
     size_t get_max_pending_sink_messages() const;
 
-    void set_ca_cert_path(std::string path);
+    bool set_ca_cert_path(std::string path);
     std::string get_ca_cert_path() const;
 
     void set_private_key_path(std::string cert_path, std::string key_path, std::string passphrase="");

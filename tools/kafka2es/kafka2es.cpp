@@ -145,10 +145,12 @@ int main(int argc, char **argv) {
   config->set_schema_registry_uri(schema_registry);
   config->set_producer_buffering_time(1000ms);
   config->set_consumer_buffering_time(500ms);
-  config->set_ca_cert_path(kspp::default_ca_cert_path());
-  config->set_private_key_path(kspp::default_client_cert_path(),
-                               kspp::default_client_key_path(),
-                               kspp::default_client_key_passphrase());
+
+  if (config->set_ca_cert_path(kspp::default_ca_cert_path())) {
+    config->set_private_key_path(kspp::default_client_cert_path(),
+                                 kspp::default_client_key_path(),
+                                 kspp::default_client_key_passphrase());
+  }
   config->validate();
   config->log();
   auto s= config->avro_serdes();

@@ -22,6 +22,27 @@ static void sigterm(int sig) {
   run = false;
 }
 
+std::chrono::seconds to_duration(std::string s){
+  switch (s[s.size()-1]){
+    case 'h':
+      return std::chrono::seconds(atoi(s.c_str())*3600);
+    case 'm':
+      return std::chrono::seconds(atoi(s.c_str())*60);
+    case 's':
+      return std::chrono::seconds(atoi(s.c_str()));
+  }
+  return std::chrono::seconds(atoi(s.c_str()));
+};
+
+std::string to_string(std::chrono::seconds s){
+  int seconds = s.count();
+  if (seconds % 3600 == 0)
+    return std::to_string(seconds/3600) + "h";
+  if (seconds % 60 == 0)
+    return std::to_string(seconds/36) + "m";
+  return std::to_string(seconds) + "s";
+}
+
 int main(int argc, char** argv) {
   FLAGS_logtostderr = 1;
   google::InitGoogleLogging(argv[0]);
@@ -29,14 +50,14 @@ int main(int argc, char** argv) {
   boost::program_options::options_description desc("options");
   desc.add_options()
       ("help", "produce help message")
-      ("broker", boost::program_options::value<std::string>()->default_value(kspp::default_kafka_broker_uri()), "broker")
-      ("schema_registry", boost::program_options::value<std::string>()->default_value(kspp::default_schema_registry_uri()), "schema_registry")
+      //("broker", boost::program_options::value<std::string>()->default_value(kspp::default_kafka_broker_uri()), "broker")
+      //("schema_registry", boost::program_options::value<std::string>()->default_value(kspp::default_schema_registry_uri()), "schema_registry")
       ("partition_list", boost::program_options::value<std::string>()->default_value("[-1]"), "partition_list")
       ("start_offset", boost::program_options::value<std::string>()->default_value("OFFSET_STORED"), "start_offset")
       ("topic", boost::program_options::value<std::string>(), "topic")
       ("consumer_group", boost::program_options::value<std::string>()->default_value(get_env_and_log("CONSUMER_GROUP", "")), "consumer_group")
-      ("dst_dir", boost::program_options::value<std::string>()->default_value(get_env_and_log("DST_DIR", "/tmp")), "dst_dir")
-      ("window_size_s", boost::program_options::value<std::string>()->default_value(get_env_and_log("WINDOW_SIZE_S", "3600")), "window_size_s")
+      ("dst", boost::program_options::value<std::string>()->default_value(get_env_and_log("DST", "")), "dst")
+      ("window_size", boost::program_options::value<std::string>()->default_value(get_env_and_log("WINDOW_SIZE", "1h")), "window_size")
       ("oneshot", "run to eof and exit")
       ;
 
@@ -63,7 +84,7 @@ int main(int argc, char** argv) {
 
   config->load_config_from_env();
 
-  std::string broker;
+  /*std::string broker;
   if (vm.count("broker")) {
     broker = vm["broker"].as<std::string>();
   }
@@ -72,6 +93,7 @@ int main(int argc, char** argv) {
   if (vm.count("schema_registry")) {
     schema_registry = vm["schema_registry"].as<std::string>();
   }
+  */
 
   std::string topic;
   if (vm.count("topic")) {
@@ -99,10 +121,16 @@ int main(int argc, char** argv) {
     }
   }
 
-  std::string dst_dir;
-  if (vm.count("dst_dir")) {
-    dst_dir = vm["dst_dir"].as<std::string>();
+  std::string dst_tmp;
+  if (vm.count("dst")) {
+    dst_tmp = vm["dst"].as<std::string>();
   }
+
+  if (dst_tmp.empty()){
+    std::cerr << "dst must be specified" << std::endl;
+    return -1;
+  }
+  kspp::url dst_uri(dst_tmp, "file");
 
   std::string offset_storage;
   if (vm.count("offset_storage")) {
@@ -111,14 +139,14 @@ int main(int argc, char** argv) {
     offset_storage = config->get_storage_root() + "/" + SERVICE_NAME + "-" + topic + ".offset";
   }
 
-  int window_size_s;
-  if (vm.count("window_size_s")) {
-    auto s = vm["window_size_s"].as<std::string>();
-    window_size_s = atoi(s.c_str());
+  std::chrono::seconds window_size(0);
+  if (vm.count("window_size")) {
+    auto s = vm["window_size"].as<std::string>();
+    window_size = to_duration(s);
   }
 
-  if (window_size_s<=0) {
-    std::cerr << "window_size_s muist be >0";
+  if (window_size.count()<=0) {
+    std::cerr << "window_size_s must be >0";
     return -1;
   }
 
@@ -126,14 +154,14 @@ int main(int argc, char** argv) {
   if (vm.count("oneshot"))
     oneshot=true;
 
-  kspp::url dst(dst_dir, "file");
+
 
   LOG(INFO) << "topic                  : " << topic;
   LOG(INFO) << "start_offset           : " << kspp::to_string(start_offset);
-  LOG(INFO) << "dst schema             :"  << dst.scheme();
-  LOG(INFO) << "dst authority          :"  << dst.authority();
-  LOG(INFO) << "dst path               :"  << dst.path();
-  LOG(INFO) << "window_size_s          : " << window_size_s << " s";
+  LOG(INFO) << "dst schema             : "  << dst_uri.scheme();
+  LOG(INFO) << "dst authority          : "  << dst_uri.authority();
+  LOG(INFO) << "dst path               : "  << dst_uri.path();
+  LOG(INFO) << "window_size            : "  << to_string(window_size);
 
 //  LOG(INFO) << "pushgateway_uri   : " << pushgateway_uri;
 //  LOG(INFO) << "metrics_namespace : " << metrics_namespace;
@@ -152,10 +180,10 @@ int main(int argc, char** argv) {
   auto t = generic_builder.create_topology();
   auto source = t->create_processors<kspp::kafka_source<void, kspp::generic_avro, void, kspp::avro_serdes>>(partition_list, topic, config->avro_serdes());
 
-  if (dst.scheme()=="file")
-    auto sink1 = t->create_sink<kspp::avro_file_sink<kspp::generic_avro>>(source, dst_dir, topic, 1h);
-  if (dst.scheme()=="s3")
-    auto sink2 = t->create_sink<kspp::avro_s3_sink<kspp::generic_avro>>(source, dst, topic, 1h);
+  if (dst_uri.scheme()=="file")
+    auto sink1 = t->create_sink<kspp::avro_file_sink<kspp::generic_avro>>(source, dst_uri.path(), topic, window_size);
+  if (dst_uri.scheme()=="s3")
+    auto sink2 = t->create_sink<kspp::avro_s3_sink<kspp::generic_avro>>(source, dst_uri, topic, window_size);
 
   t->start(start_offset);
 

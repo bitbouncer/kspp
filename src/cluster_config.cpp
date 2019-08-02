@@ -29,10 +29,13 @@ namespace kspp {
     set_storage_root(default_statestore_root());
     //set_consumer_buffering_time()
     //set_producer_buffering_time
-    set_ca_cert_path(default_ca_cert_path());
-    set_private_key_path(default_client_cert_path(),
-                         default_client_key_path(),
-                         default_client_key_passphrase());
+
+    if (set_ca_cert_path(default_ca_cert_path())) {
+      set_private_key_path(default_client_cert_path(),
+                           default_client_key_path(),
+                           default_client_key_passphrase());
+    }
+
     if (has_feature(cluster_config::SCHEMA_REGISTRY))
       set_schema_registry_uri(default_schema_registry_uri());
 
@@ -75,16 +78,15 @@ namespace kspp {
     return ca_cert_path_;
   }
 
-  void cluster_config::set_ca_cert_path(std::string path) {
+  bool cluster_config::set_ca_cert_path(std::string path) {
     if (!std::experimental::filesystem::exists(path)) {
-      LOG(WARNING) << "cluster_config, ca_cert not found at: " << path << " ignoring ssl config";
+      LOG(WARNING) << "cluster_config, ca_cert not found at: " << path << ", ignoring ssl config";
     } else {
       ca_cert_path_ = path;
     }
   }
 
-  void cluster_config::set_private_key_path(std::string client_cert_path, std::string private_key_path,
-                                            std::string passprase) {
+  void cluster_config::set_private_key_path(std::string client_cert_path, std::string private_key_path, std::string passprase) {
     bool all_ok = true;
     if (!std::experimental::filesystem::exists(private_key_path)) {
       LOG(WARNING) << "cluster_config, private_key_path not found at:" << private_key_path;
