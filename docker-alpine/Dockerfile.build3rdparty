@@ -5,7 +5,7 @@ WORKDIR /src
 MAINTAINER sk svante.karlsson@csi.se
 
 #RUN echo "@testing http://nl.alpinelinux.org/alpine/edge/testing" >>/etc/apk/repositories
-RUN echo "http://nl.alpinelinux.org/alpine/edge/comunity" >>/etc/apk/repositories
+RUN echo "http://nl.alpinelinux.org/alpine/edge/community" >>/etc/apk/repositories
 RUN echo "http://nl.alpinelinux.org/alpine/edge/testing" >>/etc/apk/repositories
 
 RUN apk add sudo ca-certificates git wget tar bash g++ make cmake python perl build-base linux-headers libressl-dev gflags-dev glog-dev musl-dev zlib-dev
