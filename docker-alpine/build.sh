@@ -1,9 +1,12 @@
 #!/bin/bash
 set -ef
 
-export BUILD_CONTAINER_NAME=kspp-build-alpine
-export EXTRACT_CONTAINER=kspp-build-alpine-extract
-export TAG_NAME=kspp-sample-alpine
+IMAGE_TAG=${1:-latest}
+
+export BUILD_CONTAINER_NAME=kspp-build-alpine:${IMAGE_TAG}
+export EXTRACT_CONTAINER=kspp-build-alpine-extract-${IMAGE_TAG}
+export TAG_NAME=kspp-sample-alpine:${IMAGE_TAG}
+
 
 rm -rf ./extract
 mkdir -p ./extract/bin
@@ -26,7 +29,6 @@ docker cp $EXTRACT_CONTAINER:/usr/local/bin/kafka2influxdb              ./extrac
 docker cp $EXTRACT_CONTAINER:/usr/local/bin/kafka2postgres              ./extract/bin
 docker cp $EXTRACT_CONTAINER:/usr/local/bin/postgres2kafka              ./extract/bin
 docker cp $EXTRACT_CONTAINER:/usr/local/bin/tds2kafka                   ./extract/bin
-
 docker cp $EXTRACT_CONTAINER:/usr/local/bin/bb2pg                       ./extract/bin
 docker cp $EXTRACT_CONTAINER:/usr/local/bin/bb2console                  ./extract/bin
 
