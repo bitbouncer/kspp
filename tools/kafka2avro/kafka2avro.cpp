@@ -11,6 +11,7 @@
 #include <kspp/sinks/avro_file_sink.h>
 #include <kspp/sinks/avro_s3_sink.h>
 #include <kspp/utils/url.h>
+#include <kspp/utils/string_utils.h>
 
 #define SERVICE_NAME     "kafka2avro"
 
@@ -22,26 +23,6 @@ static void sigterm(int sig) {
   run = false;
 }
 
-std::chrono::seconds to_duration(std::string s){
-  switch (s[s.size()-1]){
-    case 'h':
-      return std::chrono::seconds(atoi(s.c_str())*3600);
-    case 'm':
-      return std::chrono::seconds(atoi(s.c_str())*60);
-    case 's':
-      return std::chrono::seconds(atoi(s.c_str()));
-  }
-  return std::chrono::seconds(atoi(s.c_str()));
-};
-
-std::string to_string(std::chrono::seconds s){
-  int seconds = s.count();
-  if (seconds % 3600 == 0)
-    return std::to_string(seconds/3600) + "h";
-  if (seconds % 60 == 0)
-    return std::to_string(seconds/36) + "m";
-  return std::to_string(seconds) + "s";
-}
 
 int main(int argc, char** argv) {
   FLAGS_logtostderr = 1;
@@ -107,19 +88,15 @@ int main(int argc, char** argv) {
   }
 
   kspp::start_offset_t start_offset=kspp::OFFSET_BEGINNING;
-  if (vm.count("start_offset")) {
-    auto s = vm["start_offset"].as<std::string>();
-    if (boost::iequals(s, "OFFSET_BEGINNING"))
-      start_offset=kspp::OFFSET_BEGINNING;
-    else if (boost::iequals(s, "OFFSET_END"))
-      start_offset=kspp::OFFSET_END;
-    else if (boost::iequals(s, "OFFSET_STORED"))
-      start_offset=kspp::OFFSET_STORED;
-    else {
-      std::cerr << "start_offset must be one of OFFSET_BEGINNING / OFFSET_END / OFFSET_STORED";
-      return -1;
-    }
+  try {
+    if (vm.count("start_offset"))
+      start_offset = kspp::to_offset(vm["start_offset"].as<std::string>());
   }
+  catch(std::exception& e) {
+    std::cerr << "start_offset must be one of OFFSET_BEGINNING / OFFSET_END / OFFSET_STORED";
+    return -1;
+  }
+
 
   std::string dst_tmp;
   if (vm.count("dst")) {
@@ -190,6 +167,7 @@ int main(int argc, char** argv) {
   std::signal(SIGINT, sigterm);
   std::signal(SIGTERM, sigterm);
   std::signal(SIGPIPE, SIG_IGN);
+  LOG(INFO) << "status is up";
 
   int64_t next_commit = kspp::milliseconds_since_epoch() + 10000;
 
@@ -214,8 +192,7 @@ int main(int argc, char** argv) {
     }
   }
 
-  LOG(INFO) << "exiting";
-
+  LOG(INFO) << "status is down";
 
   return 0;
 }

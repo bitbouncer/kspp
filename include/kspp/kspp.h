@@ -25,8 +25,6 @@
 namespace kspp {
   class topology;
 
-  std::string to_string(start_offset_t);
-
   class processor {
   protected:
     processor() :

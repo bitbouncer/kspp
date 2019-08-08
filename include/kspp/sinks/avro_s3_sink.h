@@ -6,7 +6,6 @@
 #include <avro/DataFile.hh>
 #include <kspp/avro/avro_utils.h>
 #include <kspp/kspp.h>
-
 #include <aws/core/Aws.h>
 #include <aws/s3/S3Client.h>
 #include <aws/s3/model/CreateBucketRequest.h>
@@ -15,7 +14,6 @@
 #include <aws/s3/model/ListObjectsRequest.h>
 #include <aws/s3/model/PutObjectRequest.h>
 #include <kspp/features/aws/aws.h>
-
 #pragma once
 
 namespace kspp {

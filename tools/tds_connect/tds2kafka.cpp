@@ -4,17 +4,13 @@
 #include <kspp/topology_builder.h>
 #include <kspp/sinks/kafka_sink.h>
 #include <kspp/utils/env.h>
-#include <boost/bind.hpp>
-#include <boost/make_shared.hpp>
-#include <kspp/utils/env.h>
 #include <kspp/connect/tds/tds_connection.h>
 #include <kspp/connect/tds/tds_generic_avro_source.h>
-#include <kspp/sinks/avro_file_sink.h>
 #include <kspp/processors/transform.h>
-#include <kspp/processors/flat_map.h>
 #include <clocale>
 #include <algorithm>
 #include <kspp/metrics/prometheus_pushgateway_reporter.h>
+#include <kspp/utils/string_utils.h>
 
 #define SERVICE_NAME "tds2kafka"
 
@@ -189,18 +185,13 @@ int main(int argc, char **argv) {
   }
 
   kspp::start_offset_t start_offset=kspp::OFFSET_BEGINNING;
-  if (vm.count("start_offset")) {
-    auto s = vm["start_offset"].as<std::string>();
-    if (boost::iequals(s, "OFFSET_BEGINNING"))
-      start_offset=kspp::OFFSET_BEGINNING;
-    else if (boost::iequals(s, "OFFSET_END"))
-      start_offset=kspp::OFFSET_END;
-    else if (boost::iequals(s, "OFFSET_STORED"))
-      start_offset=kspp::OFFSET_STORED;
-    else {
-      std::cerr << "start_offset must be one of OFFSET_BEGINNING / OFFSET_END / OFFSET_STORED";
-      return -1;
-    }
+  try {
+    if (vm.count("start_offset"))
+      start_offset = kspp::to_offset(vm["start_offset"].as<std::string>());
+  }
+  catch(std::exception& e) {
+    std::cerr << "start_offset must be one of OFFSET_BEGINNING / OFFSET_END / OFFSET_STORED";
+    return -1;
   }
 
   std::string pushgateway_uri;

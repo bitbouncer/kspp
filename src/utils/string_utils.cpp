@@ -1,6 +1,9 @@
 #include <kspp/utils/string_utils.h>
 #include <sstream>
 #include <iomanip>
+#include <exception>
+#include <chrono>
+#include <boost/algorithm/string.hpp>
 
 namespace kspp {
 // see  //https://stackoverflow.com/questions/7724448/simple-json-string-escape-for-c/33799784#33799784
@@ -26,4 +29,49 @@ namespace kspp {
     }
     return o.str();
   }
+
+  kspp::start_offset_t to_offset(std::string s) {
+    if (boost::iequals(s, "OFFSET_BEGINNING"))
+      return kspp::OFFSET_BEGINNING;
+    else if (boost::iequals(s, "OFFSET_END"))
+      return  kspp::OFFSET_END;
+    else if (boost::iequals(s, "OFFSET_STORED"))
+      return  kspp::OFFSET_STORED;
+    throw std::invalid_argument("cannot convert " + s + " to start_offset_t");
+  }
+
+  std::string to_string(start_offset_t offset) {
+    switch (offset) {
+      case kspp::OFFSET_BEGINNING:
+        return "OFFSET_BEGINNING";
+      case kspp::OFFSET_END:
+        return "OFFSET_END";
+      case kspp::OFFSET_STORED:
+        return "OFFSET_STORED";
+      default:
+        return std::to_string((int64_t) offset);
+    }
+  }
+
+  std::chrono::seconds to_duration(std::string s){
+    switch (s[s.size()-1]){
+      case 'h':
+        return std::chrono::seconds(atoi(s.c_str())*3600);
+      case 'm':
+        return std::chrono::seconds(atoi(s.c_str())*60);
+      case 's':
+        return std::chrono::seconds(atoi(s.c_str()));
+    }
+    return std::chrono::seconds(atoi(s.c_str()));
+  };
+
+  std::string to_string(std::chrono::seconds s){
+    int seconds = s.count();
+    if (seconds % 3600 == 0)
+      return std::to_string(seconds/3600) + "h";
+    if (seconds % 60 == 0)
+      return std::to_string(seconds/36) + "m";
+    return std::to_string(seconds) + "s";
+  }
 }
+

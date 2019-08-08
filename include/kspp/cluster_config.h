@@ -50,9 +50,6 @@ namespace kspp {
     void set_schema_registry_uri(std::string);
     std::string get_schema_registry_uri() const;
 
-    //void set_kafka_rest_uri(std::string);
-    //std::string get_kafka_rest_uri() const;
-
     void set_pushgateway_uri(std::string);
     std::string get_pushgateway_uri() const;
 
