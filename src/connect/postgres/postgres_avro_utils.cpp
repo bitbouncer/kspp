@@ -1,7 +1,6 @@
 #include <kspp/connect/postgres/postgres_avro_utils.h>
 #include <algorithm>
 #include <string>
-#include <boost/make_shared.hpp>
 #include <glog/logging.h>
 #include <avro/Specific.hh>
 #include <avro/Encoder.hh>
@@ -9,27 +8,29 @@
 #include <avro/Compiler.hh>
 #include <avro/Schema.hh>
 #include <avro/AvroSerialize.hh>
+#include <boost/algorithm/string.hpp>
+#include <kspp/utils/string_utils.h>
 //inpiration
 //http://upp-mirror.googlecode.com/svn/trunk/uppsrc/PostgreSQL/PostgreSQL.cpp
 
 namespace kspp {
   namespace pq {
-    boost::shared_ptr<avro::Schema> schema_for_oid(Oid typid) {
-      boost::shared_ptr<avro::Schema> value_schema;
+    std::shared_ptr<avro::Schema> schema_for_oid(Oid typid) {
+      std::shared_ptr<avro::Schema> value_schema;
       switch ((PG_OIDS) typid) {
         /* Numeric-like types */
         case BOOLOID:    /* boolean: 'true'/'false' */
-          value_schema = boost::make_shared<avro::BoolSchema>();
+          value_schema = std::make_shared<avro::BoolSchema>();
           break;
         case FLOAT4OID:  /* real, float4: 32-bit floating point number */
-          value_schema = boost::make_shared<avro::FloatSchema>();
+          value_schema = std::make_shared<avro::FloatSchema>();
           break;
         case FLOAT8OID:  /* double precision, float8: 64-bit floating point number */
-          value_schema = boost::make_shared<avro::DoubleSchema>();
+          value_schema = std::make_shared<avro::DoubleSchema>();
           break;
         case INT2OID:    /* smallint, int2: 16-bit signed integer */
         case INT4OID:    /* integer, int, int4: 32-bit signed integer */
-          value_schema = boost::make_shared<avro::IntSchema>();
+          value_schema = std::make_shared<avro::IntSchema>();
           break;
         case INT8OID:    /* bigint, int8: 64-bit signed integer */
           //case CASHOID:    /* money: monetary amounts, $d,ddd.cc, stored as 64-bit signed integer */
@@ -37,10 +38,10 @@ namespace kspp {
           //case REGPROCOID: /* regproc: RegProcedure is Oid */
         case XIDOID:     /* xid: TransactionId is uint32 */
         case CIDOID:     /* cid: CommandId is uint32 */
-          value_schema = boost::make_shared<avro::LongSchema>();
+          value_schema = std::make_shared<avro::LongSchema>();
           break;
         case NUMERICOID: /* numeric(p, s), decimal(p, s): arbitrary precision number */
-          value_schema = boost::make_shared<avro::DoubleSchema>();
+          value_schema = std::make_shared<avro::DoubleSchema>();
           break;
 
           /* Date/time types. We don't bother with abstime, reltime and tinterval (which are based
@@ -53,14 +54,14 @@ namespace kspp {
           //    // this is wrong...
 
         case TIMEOID:        /* time without time zone: microseconds since start of day */
-          value_schema = boost::make_shared<avro::LongSchema>();
+          value_schema = std::make_shared<avro::LongSchema>();
           break;
           //case TIMETZOID:      /* time with time zone, timetz: time of day with time zone */
           //    //value_schema = schema_for_time_tz(); NOT IMPEMENTED YET
           //    value_schema = boost::make_shared<avro::Node>(avro::AVRO_STRING);
           //    break;
         case TIMESTAMPOID:   /* timestamp without time zone: datetime, microseconds since epoch */
-          value_schema = boost::make_shared<avro::LongSchema>();
+          value_schema = std::make_shared<avro::LongSchema>();
           break;
 
           //    // return schema_for_timestamp(false);NOT IMPEMENTED YET
@@ -78,12 +79,12 @@ namespace kspp {
 
           /* Binary string types */
         case BYTEAOID:   /* bytea: variable-length byte array */
-          value_schema = boost::make_shared<avro::BytesSchema>();
+          value_schema = std::make_shared<avro::BytesSchema>();
           break;
           //case BITOID:     /* fixed-length bit string */
           //case VARBITOID:  /* variable-length bit string */
         case UUIDOID:    /* UUID datatype */
-          value_schema = boost::make_shared<avro::StringSchema>();
+          value_schema = std::make_shared<avro::StringSchema>();
           break;
           //case LSNOID:     /* PostgreSQL LSN datatype */
           //case MACADDROID: /* XX:XX:XX:XX:XX:XX, MAC address */
@@ -107,11 +108,11 @@ namespace kspp {
 
           // key value store of string type
         case HSTOREOID: // got 16524 while debugging - is that the only one??
-          value_schema = boost::make_shared<avro::MapSchema>(avro::StringSchema());
+          value_schema = std::make_shared<avro::MapSchema>(avro::StringSchema());
           break;
 
         case TEXT_ARRAYOID:
-          value_schema = boost::make_shared<avro::ArraySchema>(avro::StringSchema());
+          value_schema = std::make_shared<avro::ArraySchema>(avro::StringSchema());
           break;
 
           /* String-like types: fall through to the default, which is to create a string representation */
@@ -120,12 +121,12 @@ namespace kspp {
         case TEXTOID:    /* text: variable-length string, no limit specified */
           //case BPCHAROID:  /* character(n), char(length): blank-padded string, fixed storage length */
           //case VARCHAROID: /* varchar(length): non-blank-padded string, variable storage length */
-          value_schema = boost::make_shared<avro::StringSchema>();
+          value_schema = std::make_shared<avro::StringSchema>();
           break;
 
         default:
           LOG(WARNING) << "got unknown OID - mapping to string, OID=" << typid;
-          value_schema = boost::make_shared<avro::StringSchema>();
+          value_schema = std::make_shared<avro::StringSchema>();
           break;
       }
 
@@ -133,8 +134,8 @@ namespace kspp {
       * in which case they must include null as the first branch of the union,
       * and return directly from the function without getting here (otherwise
       * we'd get a union inside a union, which is not valid Avro). */
-      boost::shared_ptr<avro::Schema> null_schema = boost::make_shared<avro::NullSchema>();
-      boost::shared_ptr<avro::UnionSchema> union_schema = boost::make_shared<avro::UnionSchema>();
+      std::shared_ptr<avro::Schema> null_schema = std::make_shared<avro::NullSchema>();
+      std::shared_ptr<avro::UnionSchema> union_schema = std::make_shared<avro::UnionSchema>();
       union_schema->addType(*null_schema);
       union_schema->addType(*value_schema);
       //avro_schema_decref(null_schema);
@@ -148,7 +149,7 @@ namespace kspp {
       for (int i = 0; i < nFields; i++) {
         Oid col_type = PQftype(res, i);
         std::string col_name = PQfname(res, i);
-        boost::shared_ptr<avro::Schema> col_schema = schema_for_oid(col_type);
+        std::shared_ptr<avro::Schema> col_schema = schema_for_oid(col_type);
         // TODO ensure that names abide by Avro's requirements
         record_schema.addField(col_name, *col_schema);
       }
@@ -176,10 +177,49 @@ namespace kspp {
         assert(column_index >= 0);
         if (column_index >= 0) {
           Oid col_type = PQftype(res, column_index);
-          boost::shared_ptr<avro::Schema> col_schema = schema_for_oid(col_type);
+          std::shared_ptr<avro::Schema> col_schema = schema_for_oid(col_type);
           /* TODO ensure that names abide by Avro's requirements */
           record_schema.addField(simple_key, *col_schema);
         }
+      }
+      auto result = std::make_shared<avro::ValidSchema>(record_schema);
+      return result;
+    }
+
+//    std::shared_ptr<avro::ValidSchema> schema_for_table_row(std::string schema_name,  const PGresult *res) {
+//      avro::RecordSchema record_schema(schema_name);
+//      int nFields = PQnfields(res);
+//      for (int i = 0; i < nFields; i++) {
+//        Oid col_oid = PQftype(res, i);
+//        std::string col_name = PQfname(res, i);
+//
+//        std::shared_ptr<avro::Schema> col_schema;
+//
+//        auto ext_item = extension_oids_.find(col_oid);
+//        if (ext_item != extension_oids_.end())
+//          col_schema = ext_item->second;
+//        else
+//          col_schema = pq::schema_for_oid(col_oid); // build in types
+//
+//        /* TODO ensure that names abide by Avro's requirements */
+//        record_schema.addField(col_name, *col_schema);
+//      }
+//      auto result = std::make_shared<avro::ValidSchema>(record_schema);
+//      return result;
+//    }
+
+
+    // does only support build in types - we have to add a db connection object witrh the extensions to do this right
+    std::shared_ptr<avro::ValidSchema> schema_for_table_row(std::string schema_name,  const PGresult *res) {
+      avro::RecordSchema record_schema(schema_name);
+      int nFields = PQnfields(res);
+      for (int i = 0; i < nFields; i++) {
+        Oid col_oid = PQftype(res, i);
+        std::string col_name = PQfname(res, i);
+        std::shared_ptr<avro::Schema> col_schema;
+        col_schema = pq::schema_for_oid(col_oid); // build in types
+        /* TODO ensure that names abide by Avro's requirements */
+        record_schema.addField(col_name, *col_schema);
       }
       auto result = std::make_shared<avro::ValidSchema>(record_schema);
       return result;
@@ -201,7 +241,7 @@ namespace kspp {
     };
 
 
-    std::string avro2sql_table_name(boost::shared_ptr<avro::ValidSchema> schema, avro::GenericDatum &datum) {
+    std::string avro2sql_table_name(std::shared_ptr<avro::ValidSchema> schema, avro::GenericDatum &datum) {
       auto r = schema->root();
       assert(r->type() == avro::AVRO_RECORD);
       if (r->hasName()) {
@@ -220,7 +260,7 @@ namespace kspp {
       return "unknown_table_name";
     }
 
-    std::string avro2sql_column_names(boost::shared_ptr<avro::ValidSchema> schema, avro::GenericDatum &datum) {
+    std::string avro2sql_column_names(std::shared_ptr<avro::ValidSchema> schema, avro::GenericDatum &datum) {
       auto r = schema->root();
       assert(r->type() == avro::AVRO_RECORD);
       std::string s = "(";
@@ -531,5 +571,139 @@ namespace kspp {
         return key + "=" + avro_2_sql_simple_column_value(datum);
       }
     }
+
+    std::vector<std::shared_ptr<avro::GenericDatum>> to_avro(std::shared_ptr<avro::ValidSchema> schema, const PGresult *res){
+
+    }
+
+    void load_avro_by_name(kspp::generic_avro* avro, PGresult* pgres, size_t row)
+    {
+      // key tupe is null if there is no key
+      if (avro->type() == avro::AVRO_NULL)
+        return;
+
+      assert(avro->type() == avro::AVRO_RECORD);
+      avro::GenericRecord& record(avro->generic_datum()->value<avro::GenericRecord>());
+      size_t nFields = record.fieldCount();
+      for (int j = 0; j < nFields; j++)
+      {
+        avro::GenericDatum& col = record.fieldAt(j); // expected union
+        if (!record.fieldAt(j).isUnion()) // this should not hold - but we fail to create correct schemas for not null columns
+        {
+          LOG(INFO) << avro->valid_schema()->toJson();
+          LOG(FATAL) << "unexpected schema - bailing out, type:" << record.fieldAt(j).type();
+          break;
+        }
+
+        //avro::GenericUnion& au(record.fieldAt(j).value<avro::GenericUnion>());
+
+        const std::string& column_name = record.schema()->nameAt(j);
+
+        //which pg column has this value?
+        int column_index = PQfnumber(pgres, column_name.c_str());
+        if (column_index < 0)
+        {
+          LOG(FATAL) << "unknown column - bailing out: " << column_name;
+          break;
+        }
+
+        if (PQgetisnull(pgres, row, column_index) == 1)
+        {
+          col.selectBranch(0); // NULL branch - we hope..
+          assert(col.type() == avro::AVRO_NULL);
+        }
+        else
+        {
+          col.selectBranch(1);
+          //au.selectBranch(1);
+          //avro::GenericDatum& avro_item(au.datum());
+          const char* val = PQgetvalue(pgres, row, j);
+
+          switch (col.type()) {
+            case avro::AVRO_STRING:
+              col.value<std::string>() = val;
+              break;
+            case avro::AVRO_BYTES:
+              col.value<std::string>() = val;
+              break;
+            case avro::AVRO_INT:
+              col.value<int32_t>() = atoi(val);
+              break;
+            case avro::AVRO_LONG:
+              col.value<int64_t>() = std::stoull(val);
+              break;
+            case avro::AVRO_FLOAT:
+              col.value<float>() = (float) atof(val);
+              break;
+            case avro::AVRO_DOUBLE:
+              col.value<double>() = atof(val);
+              break;
+            case avro::AVRO_BOOL:
+              col.value<bool>() = (val[0] == 't' || val[0] == 'T' || val[0] == '1');
+              break;
+            case avro::AVRO_MAP: {
+              std::vector<std::string> kvs;
+              boost::split(kvs, val, boost::is_any_of(",")); // TODO we cannot handle "dsd,hggg" => "jhgf"
+
+              avro::GenericMap& v = col.value<avro::GenericMap>();
+              avro::GenericMap::Value& r = v.value();
+
+              // this is an empty string "" that will be mapped as 1 item of empty size
+              if (kvs.size()==1 && kvs[0].size() ==0)
+                break;
+
+              r.resize(kvs.size());
+
+              int cursor=0;
+              for(auto& i : kvs){
+                std::size_t found = i.find("=>");
+                if (found==std::string::npos)
+                  LOG(FATAL) << "expected => in hstore";
+                std::string key = i.substr(0, found);
+                std::string val = i.substr(found +2);
+                pq_trim(key, "\" ");
+                pq_trim(val, "\" ");
+                r[cursor].first = key;
+                r[cursor].second = avro::GenericDatum(val);
+                ++cursor;
+              }
+            }
+              break;
+
+            case avro::AVRO_ARRAY:{
+              std::vector<std::string> kvs;
+              std::string trimmed_val = val;
+              pq_trim(trimmed_val, "{ }");
+              boost::split(kvs, trimmed_val, boost::is_any_of(",")); // TODO we cannot handle [ "dsd,hg", ljdshf ]
+              avro::GenericArray& v = col.value<avro::GenericArray>();
+              avro::GenericArray::Value& r = v.value();
+
+              // this is an empty string "" that will be mapped as 1 item of empty size
+              if (kvs.size()==1 && kvs[0].size() ==0)
+                break;
+
+              r.resize(kvs.size());
+
+              int cursor=0;
+              for(auto& i : kvs) {
+                r[cursor] = avro::GenericDatum(i);
+                ++cursor;
+              }
+
+            }
+              break;
+
+            case avro::AVRO_RECORD:
+            case avro::AVRO_ENUM:
+            case avro::AVRO_UNION:
+            case avro::AVRO_FIXED:
+            case avro::AVRO_NULL:
+            default:
+              LOG(FATAL) << "unexpected / non supported type e:" << col.type();
+          }
+        }
+      }
+    }
+
   } // namespace
 } // namespace

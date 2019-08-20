@@ -1,39 +1,16 @@
 #include <kspp/connect/postgres/postgres_consumer.h>
-#include <boost/make_shared.hpp>
 #include <chrono>
 #include <memory>
 #include <glog/logging.h>
-#include <boost/bind.hpp>
 #include <kspp/kspp.h>
 #include <kspp/connect/postgres/postgres_avro_utils.h>
+#include <kspp/utils/string_utils.h>
 
 using namespace std::chrono_literals;
 
 namespace kspp {
-  // trim from left
-  static inline std::string& ltrim(std::string& s, const char* t = " \t\n\r\f\v")
-  {
-    s.erase(0, s.find_first_not_of(t));
-    return s;
-  }
-
-// trim from right
-  static  inline std::string& rtrim(std::string& s, const char* t = " \t\n\r\f\v")
-  {
-    s.erase(s.find_last_not_of(t) + 1);
-    return s;
-  }
-
-// trim from left & right
-  static  inline std::string& trim(std::string& s, const char* t = " \t\n\r\f\v")
-  {
-    return ltrim(rtrim(s, t), t);
-  }
-
-
-
-
-  static void load_avro_by_name(kspp::generic_avro* avro, PGresult* pgres, size_t row)
+  /*
+   * static void load_avro_by_name(kspp::generic_avro* avro, PGresult* pgres, size_t row)
   {
     // key tupe is null if there is no key
     if (avro->type() == avro::AVRO_NULL)
@@ -118,8 +95,8 @@ namespace kspp {
                 LOG(FATAL) << "expected => in hstore";
               std::string key = i.substr(0, found);
               std::string val = i.substr(found +2);
-              trim(key, "\" ");
-              trim(val, "\" ");
+              pq::pq_trim(key, "\" ");
+              pq::pq_trim(val, "\" ");
               r[cursor].first = key;
               r[cursor].second = avro::GenericDatum(val);
               ++cursor;
@@ -130,7 +107,7 @@ namespace kspp {
           case avro::AVRO_ARRAY:{
             std::vector<std::string> kvs;
             std::string trimmed_val = val;
-            trim(trimmed_val, "{ }");
+            pq::pq_trim(trimmed_val, "{ }");
             boost::split(kvs, trimmed_val, boost::is_any_of(",")); // TODO we cannot handle [ "dsd,hg", ljdshf ]
             avro::GenericArray& v = col.value<avro::GenericArray>();
             avro::GenericArray::Value& r = v.value();
@@ -160,7 +137,7 @@ namespace kspp {
         }
       }
     }
-  }
+  }*/
 
   postgres_consumer::postgres_consumer(int32_t partition,
                                        std::string logical_name,
@@ -244,9 +221,9 @@ namespace kspp {
       LOG(INFO) << val;
       int oid = atoi(val);
 
-      auto value_schema = boost::make_shared<avro::MapSchema>(avro::StringSchema());
-      boost::shared_ptr<avro::Schema> null_schema = boost::make_shared<avro::NullSchema>();
-      boost::shared_ptr<avro::UnionSchema> union_schema = boost::make_shared<avro::UnionSchema>();
+      auto value_schema = std::make_shared<avro::MapSchema>(avro::StringSchema());
+      std::shared_ptr<avro::Schema> null_schema = std::make_shared<avro::NullSchema>();
+      std::shared_ptr<avro::UnionSchema> union_schema = std::make_shared<avro::UnionSchema>();
       union_schema->addType(*null_schema);
       union_schema->addType(*value_schema);
 
@@ -274,7 +251,7 @@ namespace kspp {
       Oid col_oid = PQftype(res, i);
       std::string col_name = PQfname(res, i);
 
-      boost::shared_ptr<avro::Schema> col_schema;
+      std::shared_ptr<avro::Schema> col_schema;
 
       auto ext_item = extension_oids_.find(col_oid);
       if (ext_item != extension_oids_.end())
@@ -328,15 +305,15 @@ namespace kspp {
 
     for (int i = 0; i < nRows; i++) {
       auto key = std::make_shared<kspp::generic_avro>(key_schema_, key_schema_id_);
-      load_avro_by_name(key.get(), result.get(), i);
+      pq::load_avro_by_name(key.get(), result.get(), i);
       auto val = std::make_shared<kspp::generic_avro>(value_schema_, value_schema_id_);
-      load_avro_by_name(val.get(), result.get(), i);
+      pq::load_avro_by_name(val.get(), result.get(), i);
 
       if (i == (nRows-1)) {
 
         if (!last_key_)
           last_key_ = std::make_unique<kspp::generic_avro>(key_schema_, key_schema_id_);
-        load_avro_by_name(last_key_.get(), result.get(), i);
+        pq::load_avro_by_name(last_key_.get(), result.get(), i);
       }
 
       read_cursor_.parse(result);

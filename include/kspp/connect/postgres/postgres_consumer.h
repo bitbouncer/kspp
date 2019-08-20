@@ -86,7 +86,7 @@ namespace kspp {
     std::shared_ptr<avro::ValidSchema> key_schema_;
     std::unique_ptr<kspp::generic_avro> last_key_;
     std::shared_ptr<avro::ValidSchema> value_schema_;
-    std::map<int, boost::shared_ptr<avro::Schema>> extension_oids_; // currently hstore
+    std::map<int, std::shared_ptr<avro::Schema>> extension_oids_; // currently hstore
 
     int32_t key_schema_id_;
     int32_t value_schema_id_;

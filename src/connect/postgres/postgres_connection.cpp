@@ -109,7 +109,6 @@ namespace kspp_postgres {
         case PGRES_BAD_RESPONSE:
         case PGRES_FATAL_ERROR:
           LOG(ERROR) << _trace_id << ", postgres::exec failed " << last_error() << ", t=" << duration << ", s=" << statement.substr(0, STATEMENT_LOG_BYTES);
-          //return std::make_pair<int, std::shared_ptr<PGresult>>(status, std::move(res));
           return std::make_pair<>(status, std::move(res));
         default:
           LOG(WARNING) << _trace_id << ", postgres::exec unknown status code, t=" << duration << ", s=" << statement.substr(0, STATEMENT_LOG_BYTES);

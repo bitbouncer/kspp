@@ -18,7 +18,7 @@ namespace kspp {
       SYBMSUDT = 240
     };
 
-    boost::shared_ptr<avro::Schema> schema_for_oid(TDS_OIDS typid);
+    std::shared_ptr<avro::Schema> schema_for_oid(TDS_OIDS typid);
     std::shared_ptr<avro::ValidSchema> schema_for_table_row(std::string schema_name, DBPROCESS *context);
     std::shared_ptr<avro::ValidSchema> schema_for_table_key(std::string schema_name, const std::vector<std::string>& keys, DBPROCESS *context);
     std::string simple_column_name(std::string column_name);

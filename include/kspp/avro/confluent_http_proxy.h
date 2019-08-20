@@ -83,6 +83,6 @@ namespace kspp {
       const std::string _private_key_path;
       const std::string _private_key_passphrase;
       bool _verify_host = { false };
-      std::map<int32_t, boost::shared_ptr<const avro::ValidSchema>> _registry;
+      std::map<int32_t, std::shared_ptr<const avro::ValidSchema>> _registry;
     };
 } // kspp
