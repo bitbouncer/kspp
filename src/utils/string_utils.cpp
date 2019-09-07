@@ -63,7 +63,7 @@ namespace kspp {
         return std::chrono::seconds(atoi(s.c_str()));
     }
     return std::chrono::seconds(atoi(s.c_str()));
-  };
+  }
 
   std::string to_string(std::chrono::seconds s){
     int seconds = s.count();
