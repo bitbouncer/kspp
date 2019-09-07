@@ -12,8 +12,8 @@ namespace kspp {
     return s;
   }
 
-  std::vector<int> parse_partition_list(std::string s) {
-    std::vector<int> result;
+  std::vector<int32_t> parse_partition_list(std::string s) {
+    std::vector<int32_t> result;
     auto begin = s.find_first_of("[");
     auto end = s.find_first_of("]");
     if (begin == std::string::npos || end == std::string::npos || end - begin < 2)
@@ -32,14 +32,14 @@ namespace kspp {
     return result;
   }
 
-  std::vector<int> get_partition_list(int32_t nr_of_partitions) {
-    std::vector<int> res;
+  std::vector<int32_t> get_partition_list(int32_t nr_of_partitions) {
+    std::vector<int32_t> res;
     for (int32_t i = 0; i != nr_of_partitions; ++i)
       res.push_back(i);
     return res;
   }
 
-  std::string partition_list_to_string(std::vector<int> v) {
+  std::string partition_list_to_string(std::vector<int32_t> v) {
     std::string s = "[";
     for (auto i = v.begin(); i != v.end(); ++i)
       s += std::to_string(*i) + ((i != v.end() - 1) ? ", " : "]");

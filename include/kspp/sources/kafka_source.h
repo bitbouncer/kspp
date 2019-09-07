@@ -151,7 +151,7 @@ namespace kspp {
           }
 
           // to much work in queue - back off and let the consumers work
-         while(_incomming_msg.size()>100 && !_exit) {
+         while(_incomming_msg.size()>_max_incomming_queue_size && !_exit) {
            std::this_thread::sleep_for(std::chrono::milliseconds(10));
            _commit_chain_size.set(_commit_chain.size());
          }
@@ -166,6 +166,7 @@ namespace kspp {
       DLOG(INFO) << "exiting thread";
     }
 
+    size_t _max_incomming_queue_size=1000;
     bool _started;
     bool _exit;
     std::thread _thread;

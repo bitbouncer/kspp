@@ -22,7 +22,13 @@ namespace kspp {
     void set_brokers(std::string uri);
     std::string get_brokers() const;
 
-    std::string get_consumer_group() const;
+    void set_consumer_group(std::string s){
+      consumer_group_ = s;
+    }
+
+    std::string get_consumer_group() const{
+
+    }
 
     void set_consumer_buffering_time(std::chrono::milliseconds timeout);
     std::chrono::milliseconds get_consumer_buffering_time() const;
