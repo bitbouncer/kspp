@@ -22,13 +22,7 @@ namespace kspp {
     void set_brokers(std::string uri);
     std::string get_brokers() const;
 
-    void set_consumer_group(std::string s){
-      consumer_group_ = s;
-    }
-
-    std::string get_consumer_group() const{
-
-    }
+    std::string get_consumer_group() const;
 
     void set_consumer_buffering_time(std::chrono::milliseconds timeout);
     std::chrono::milliseconds get_consumer_buffering_time() const;
@@ -87,7 +81,7 @@ namespace kspp {
 
   private:
     uint64_t    flags_;
-    std::string consumer_group_;
+    const std::string consumer_group_;
     std::string brokers_;
     std::string ca_cert_path_;
     std::string client_cert_path_;
