@@ -8,14 +8,29 @@
 namespace kspp {
   class event_done_marker {
   public:
+    // init when you know the offset right away
+    event_done_marker(int64_t offset, std::function<void(int64_t offset, int32_t ec)> callback)
+        : _offset(offset)
+        , _ec(0)
+        , _cb(callback) {
+    }
+
+    // two step init - used in commit chain
+    //
     event_done_marker(std::function<void(int64_t offset, int32_t ec)> callback)
         : _offset(-1)
         , _ec(0)
         , _cb(callback) {
     }
 
+    void init(int64_t offset) {
+      _offset = offset;
+    }
+
+
     virtual ~event_done_marker(){
-      _cb(_offset, _ec);
+      if (_cb) // allow nullptr callback
+        _cb(_offset, _ec);
     }
 
     inline int64_t offset() const {
@@ -31,9 +46,6 @@ namespace kspp {
         _ec = ec;
     }
 
-    void init(int64_t offset) {
-      _offset = offset;
-    }
 
   protected:
     int64_t _offset;
