@@ -1,8 +1,8 @@
 #include <iostream>
 #include <chrono>
 #include <cassert>
-#include <kspp/impl/sources/kafka_consumer.h>
-#include <kspp/impl/sinks/kafka_producer.h>
+#include <kspp/internal/sources/kafka_consumer.h>
+#include <kspp/internal/sinks/kafka_producer.h>
 
 using namespace std::chrono_literals;
 

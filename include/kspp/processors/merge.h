@@ -90,7 +90,7 @@ namespace kspp {
         i->process(tick);
 
       while (this->_queue.next_event_time()<=tick) {
-        auto trans = this->_queue.pop_and_get();
+        auto trans = this->_queue.pop_front_and_get();
         this->send_to_sinks(trans);
         this->_lag.add_event_time(tick, trans->event_time());
         ++(this->_processed_count);
@@ -152,7 +152,7 @@ namespace kspp {
         i->process(tick);
 
       while (this->_queue.next_event_time()<=tick) {
-        auto trans = this->_queue.pop_and_get();
+        auto trans = this->_queue.pop_front_and_get();
         this->send_to_sinks(trans);
         this->_lag.add_event_time(tick, trans->event_time());
         ++(this->_processed_count);

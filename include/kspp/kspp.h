@@ -17,8 +17,8 @@
 #include <kspp/kevent.h>
 #include <kspp/type_name.h>
 #include <kspp/cluster_config.h>
-#include <kspp/impl/event_queue.h>
-#include <kspp/impl/hash/murmurhash2.h>
+#include <kspp/internal/event_queue.h>
+#include <kspp/internal/hash/murmurhash2.h>
 #include <kspp/utils/kspp_utils.h>
 #include <kspp/event_consumer.h>
 #pragma once

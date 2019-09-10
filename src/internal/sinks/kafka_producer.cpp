@@ -1,8 +1,8 @@
-#include <kspp/impl/sinks/kafka_producer.h>
+#include <kspp/internal/sinks/kafka_producer.h>
 #include <thread>
 #include <glog/logging.h>
 #include <kspp/topology_builder.h>
-#include <kspp/impl/rd_kafka_utils.h>
+#include <kspp/internal/rd_kafka_utils.h>
 #include <kspp/cluster_metadata.h>
 
 using namespace std::chrono_literals;

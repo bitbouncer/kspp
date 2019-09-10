@@ -3,7 +3,7 @@
 #include <glog/logging.h>
 #include <librdkafka/rdkafka.h> // for stuff that only exists in c code (in rdkafka)
 #include <kspp/cluster_config.h>
-#include <kspp/impl/rd_kafka_utils.h>
+#include <kspp/internal/rd_kafka_utils.h>
 
 using namespace std::chrono_literals;
 

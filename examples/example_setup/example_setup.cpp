@@ -2,7 +2,7 @@
 #include <chrono>
 #include <boost/uuid/uuid.hpp>
 #include <boost/functional/hash.hpp>
-#include <kspp/impl/serdes/binary_serdes.h>
+#include <kspp/internal/serdes/binary_serdes.h>
 #include <kspp/topology_builder.h>
 #include <kspp/sinks/kafka_sink.h>
 #include <kspp/utils/env.h>
@@ -28,12 +28,8 @@ int main(int argc, char **argv) {
 
   kspp::topology_builder builder(config);
   auto topology = builder.create_topology();
-
-  auto table_stream = topology->create_sink<kspp::kafka_sink<boost::uuids::uuid, int64_t, kspp::binary_serdes, kspp::binary_serdes>>(
-          "kspp_test0_table");
-  auto event_stream = topology->create_sink<kspp::kafka_sink<boost::uuids::uuid, int64_t, kspp::binary_serdes, kspp::binary_serdes>>(
-          "kspp_test0_eventstream");
-
+  auto table_stream = topology->create_sink<kspp::kafka_sink<boost::uuids::uuid, int64_t, kspp::binary_serdes, kspp::binary_serdes>>("kspp_test0_table");
+  auto event_stream = topology->create_sink<kspp::kafka_sink<boost::uuids::uuid, int64_t, kspp::binary_serdes, kspp::binary_serdes>>("kspp_test0_eventstream");
 
   std::vector<boost::uuids::uuid> ids;
   for (int i = 0; i != 10000; ++i)

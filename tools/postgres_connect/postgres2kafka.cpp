@@ -2,7 +2,7 @@
 #include <csignal>
 #include <boost/program_options.hpp>
 #include <kspp/topology_builder.h>
-#include <kspp/impl/serdes/text_serdes.h>
+#include <kspp/serdes/text_serdes.h>
 #include <kspp/sinks/kafka_sink.h>
 #include <kspp/utils/env.h>
 #include <kspp/connect/postgres/postgres_generic_avro_source.h>

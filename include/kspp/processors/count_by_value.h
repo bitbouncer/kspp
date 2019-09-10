@@ -47,7 +47,7 @@ namespace kspp {
       size_t processed = 0;
       //forward up this timestamp
       while (this->_queue.next_event_time()<=tick){
-        auto trans = this->_queue.pop_and_get();
+        auto trans = this->_queue.pop_front_and_get();
         // should this be on processing time our message time???
         // what happens at end of stream if on messaage time...
         if (next_punctuate_ < trans->event_time()) {

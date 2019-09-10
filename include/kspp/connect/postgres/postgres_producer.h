@@ -1,6 +1,6 @@
 #include <chrono>
 #include <memory>
-#include <kspp/impl/queue.h>
+#include <kspp/internal/queue.h>
 #include <kspp/connect/postgres/postgres_connection.h>
 #include <kspp/topology.h>
 #include <kspp/connect/generic_producer.h>

@@ -1,4 +1,4 @@
-#include <kspp/impl/commit_chain.h>
+#include <kspp/internal/commit_chain.h>
 #include <deque>
 #include <glog/logging.h>
 

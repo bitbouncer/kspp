@@ -1,4 +1,4 @@
-#include <kspp/connect/bitbouncer/grpc_utils.h>
+#include <kspp/internal/grpc/grpc_utils.h>
 
 #define API_KEY_HEADER            "api-key"
 #define SECRET_ACCESS_KEY_HEADER "secret-access-key"

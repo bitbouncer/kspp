@@ -1,6 +1,6 @@
 #include <cassert>
 #include <kspp/state_stores/rocksdb_windowed_store.h>
-#include <kspp/impl/serdes/binary_serdes.h>
+#include <kspp/internal/serdes/binary_serdes.h>
 #include <kspp/utils/env.h>
 
 using namespace std::chrono_literals;

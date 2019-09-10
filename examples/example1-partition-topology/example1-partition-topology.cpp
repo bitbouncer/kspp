@@ -1,7 +1,7 @@
 #include <iostream>
 #include <chrono>
-#include <kspp/impl/serdes/binary_serdes.h>
-#include <kspp/impl/serdes/text_serdes.h>
+#include <kspp/internal/serdes/binary_serdes.h>
+#include <kspp/serdes/text_serdes.h>
 #include <kspp/topology_builder.h>
 #include <kspp/sources/kafka_source.h>
 #include <kspp/processors/ktable.h>

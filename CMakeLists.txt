@@ -119,12 +119,13 @@ file(GLOB LIB_SRCS
         src/*.cpp
         src/avro/*.cpp
         src/metrics/*.cpp
-        src/impl/*.cpp
-        src/impl/sources/*.cpp
-        src/impl/sinks/*.cpp
-        src/impl/serdes/*.cpp
-        src/impl/hash/*.cpp
-        src/impl/utils/*.cpp
+        src/internal/*.cpp
+        src/internal/sources/*.cpp
+        src/internal/sinks/*.cpp
+        src/internal/serdes/*.cpp
+        src/internal/hash/*.cpp
+        src/internal/utils/*.cpp
+        src/internal/grpc/*.cpp
         src/utils/*.cpp
         src/beta/*.cpp
         #        src/connect/kafka_rest/kafka_rest_source.cpp
@@ -142,12 +143,13 @@ file(GLOB KSPP_INCLUDE_FILES
         include/kspp/codecs/*.h
         include/kspp/processors/*.h
         include/kspp/state_stores/*.h
-        include/kspp/impl/*.h
-        include/kspp/impl/sources/*.h
-        include/kspp/impl/sinks/*.h
-        include/kspp/impl/serdes/*.h
-        include/kspp/impl/hash/*.h
-        include/kspp/impl/rocksdb/*.h
+        include/kspp/internal/*.h
+        include/kspp/internal/sources/*.h
+        include/kspp/internal/sinks/*.h
+        include/kspp/internal/serdes/*.h
+        include/kspp/internal/hash/*.h
+        include/kspp/internal/rocksdb/*.h
+        include/kspp/internal/grpc/*.h
         include/kspp/beta/*.h
         )
 
@@ -181,7 +183,7 @@ endif ()
 
 IF (ENABLE_ROCKSDB)
     file(GLOB ROCKDB_LIB_SRCS
-            src/impl/rocksdb/*.cpp)
+            src/internal/rocksdb/*.cpp)
 
     if (BUILD_STATIC_LIBS)
         ADD_LIBRARY(kspp_rocksdb_s STATIC ${ROCKDB_LIB_SRCS})
@@ -308,8 +310,12 @@ if (ENABLE_BITBOUNCER_STREAMING)
     message ("GRPC_SRCS = ${GRPC_SRCS}")
     message ("GRPC_HDRS = ${GRPC_HDRS}")
 
+    file(GLOB BITBOUNCER_GRPC_LIB_SRCS
+            include/internal/grpc/*.h
+            src/internal/grpc/*.cpp)
+
     if (BUILD_STATIC_LIBS)
-        ADD_LIBRARY(kspp_grpc_s STATIC ${PROTO_SRCS}  ${GRPC_SRCS})
+        ADD_LIBRARY(kspp_grpc_s STATIC ${PROTO_SRCS}  ${GRPC_SRCS} ${BITBOUNCER_GRPC_LIB_SRCS})
         INSTALL(TARGETS kspp_grpc_s
                 LIBRARY DESTINATION lib
                 ARCHIVE DESTINATION lib
@@ -317,7 +323,7 @@ if (ENABLE_BITBOUNCER_STREAMING)
     endif ()
 
     if (BUILD_SHARED_LIBS)
-        ADD_LIBRARY(kspp_grpc SHARED ${PROTO_SRCS}  ${GRPC_SRCS})
+        ADD_LIBRARY(kspp_grpc SHARED ${PROTO_SRCS}  ${GRPC_SRCS} ${BITBOUNCER_GRPC_LIB_SRCS})
         INSTALL(TARGETS kspp_grpc
                 LIBRARY DESTINATION lib
                 ARCHIVE DESTINATION lib
@@ -325,27 +331,26 @@ if (ENABLE_BITBOUNCER_STREAMING)
     endif ()
 
     file(GLOB BITBOUNCER_LIB_SRCS
-            include/connect/bitbouncer/*.h
-            src/connect/bitbouncer/*.cpp)
+            include/connect/bitbouncer/*.h)
 
-    if (BUILD_STATIC_LIBS)
-        ADD_LIBRARY(kspp_bitbouncer_s STATIC ${BITBOUNCER_LIB_SRCS})
-        INSTALL(TARGETS kspp_bitbouncer_s
-                LIBRARY DESTINATION lib
-                ARCHIVE DESTINATION lib
-                )
-    endif ()
+#    if (BUILD_STATIC_LIBS)
+#        ADD_LIBRARY(kspp_bitbouncer_s STATIC ${BITBOUNCER_LIB_SRCS})
+#        INSTALL(TARGETS kspp_bitbouncer_s
+#                LIBRARY DESTINATION lib
+#                ARCHIVE DESTINATION lib
+#                )
+#    endif ()
 
-    if (BUILD_SHARED_LIBS)
-        ADD_LIBRARY(kspp_bitbouncer SHARED ${BITBOUNCER_LIB_SRCS})
-        INSTALL(TARGETS kspp_bitbouncer
-                LIBRARY DESTINATION lib
-                ARCHIVE DESTINATION lib
-                )
-    endif ()
+#    if (BUILD_SHARED_LIBS)
+#        ADD_LIBRARY(kspp_bitbouncer SHARED ${BITBOUNCER_LIB_SRCS})
+#        INSTALL(TARGETS kspp_bitbouncer
+#                LIBRARY DESTINATION lib
+#                ARCHIVE DESTINATION lib
+#                )
+#    endif ()
 
-    SET(BBSTREAMING_LIBS_STATIC kspp_bitbouncer_s kspp_grpc_s gRPC::grpc++_reflection gRPC::grpc++  gRPC::grpc protobuf::libprotobuf)
-    SET(BBSTREAMING_LIBS_SHARED kspp_bitbouncer kspp_grpc gRPC::grpc++_reflection gRPC::grpc++  gRPC::grpc protobuf::libprotobuf)
+    SET(BBSTREAMING_LIBS_STATIC kspp_grpc_s gRPC::grpc++_reflection gRPC::grpc++  gRPC::grpc protobuf::libprotobuf)
+    SET(BBSTREAMING_LIBS_SHARED kspp_grpc gRPC::grpc++_reflection gRPC::grpc++  gRPC::grpc protobuf::libprotobuf)
 
 endif () #ENABLE_BITBOUNCER_STREAMING
 

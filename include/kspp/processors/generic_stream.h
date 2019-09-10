@@ -127,7 +127,7 @@ namespace kspp {
 
       //forward up this timestamp
       while (this->_queue.next_event_time()<=tick){
-        auto p = this->_queue.pop_and_get();
+        auto p = this->_queue.pop_front_and_get();
         this->send_to_sinks(p);
         ++(this->_processed_count);
         this->_lag.add_event_time(kspp::milliseconds_since_epoch(), p->event_time()); // move outside loop

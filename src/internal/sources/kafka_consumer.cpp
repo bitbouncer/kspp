@@ -1,10 +1,10 @@
 #include <librdkafka/rdkafka.h> // for stuff that only exists in c code (in rdkafka), must be included first
-#include <kspp/impl/sources/kafka_consumer.h>
+#include <kspp/internal/sources/kafka_consumer.h>
 #include <thread>
 #include <chrono>
 #include <glog/logging.h>
 #include <kspp/utils/kafka_utils.h>
-#include <kspp/impl/rd_kafka_utils.h>
+#include <kspp/internal/rd_kafka_utils.h>
 #include <kspp/kspp.h>
 #include <kspp/cluster_metadata.h>
 

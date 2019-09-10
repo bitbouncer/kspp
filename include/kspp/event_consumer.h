@@ -1,4 +1,4 @@
-#include <kspp/impl/event_queue.h>
+#include <kspp/internal/event_queue.h>
 #include <memory>
 #pragma once
 

@@ -2,17 +2,11 @@
 #include <chrono>
 #include <kspp/topology_builder.h>
 #include <kspp/sinks/kafka_sink.h>
-#include <kspp/sinks/stream_sink.h>
 #include <kspp/sinks/null_sink.h>
-#include <kspp/processors/ktable.h>
-#include <kspp/processors/join.h>
-#include <kspp/processors/count.h>
-#include <kspp/processors/flat_map.h>
 #include <kspp/sources/kafka_source.h>
-#include <kspp/state_stores/mem_counter_store.h>
 #include <kspp/utils/kafka_utils.h>
-#include <kspp/avro/avro_serdes.h>
-#include <kspp/avro/avro_text.h>
+#include <kspp/serdes/avro_serdes.h>
+//#include <kspp/serdes/avro_text.h>
 #include <kspp/utils/env.h>
 
 using namespace std::chrono_literals;

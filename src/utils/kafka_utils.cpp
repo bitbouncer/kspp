@@ -2,7 +2,7 @@
 #include <thread>
 #include <glog/logging.h>
 #include <librdkafka/rdkafka.h>
-#include <kspp/impl/rd_kafka_utils.h>
+#include <kspp/internal/rd_kafka_utils.h>
 #include <kspp/cluster_metadata.h>
 #include <kspp/utils/kspp_utils.h>
 

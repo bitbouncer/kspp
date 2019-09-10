@@ -1,12 +1,12 @@
 #include <chrono>
 #include <memory>
-#include <kspp/impl/queue.h>
+#include <kspp/internal/queue.h>
 #include <kspp/topology.h>
 #include <kspp/avro/generic_avro.h>
 #include <kspp/connect/tds/tds_connection.h>
 #include <kspp/connect/tds/tds_read_cursor.h>
 #include <kspp/utils/offset_storage_provider.h>
-#include <kspp/impl/commit_chain.h>
+#include <kspp/internal/commit_chain.h>
 #pragma once
 
 namespace kspp {

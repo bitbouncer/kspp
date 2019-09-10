@@ -2,7 +2,7 @@
 #include <chrono>
 #include <mutex>
 #include <memory>
-#include <kspp/avro/avro_serdes.h>
+#include <kspp/serdes/avro_serdes.h>
 #pragma once
 
 namespace kspp {

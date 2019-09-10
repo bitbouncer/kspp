@@ -2,7 +2,7 @@
 #include <string>
 #include <chrono>
 #include <regex>
-#include <kspp/impl/serdes/text_serdes.h>
+#include <kspp/serdes/text_serdes.h>
 #include <kspp/topology_builder.h>
 #include <kspp/processors/flat_map.h>
 #include <kspp/processors/count.h>

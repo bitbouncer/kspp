@@ -3,8 +3,7 @@
 #include <functional>
 #include <sstream>
 #include <kspp/kspp.h>
-#include <kspp/impl/serdes/text_serdes.h>
-
+#include <kspp/serdes/text_serdes.h>
 #pragma once
 
 namespace kspp {

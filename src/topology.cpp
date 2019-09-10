@@ -2,7 +2,7 @@
 #include <kspp/kspp.h>
 #include <kspp/utils/kafka_utils.h>
 #include <algorithm>
-#include <kspp/impl/commit_chain.h>
+#include <kspp/internal/commit_chain.h>
 
 using namespace std::chrono_literals;
 

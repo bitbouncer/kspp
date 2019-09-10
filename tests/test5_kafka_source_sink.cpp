@@ -1,7 +1,7 @@
 #include <iostream>
 #include <chrono>
 #include <cassert>
-#include <kspp/impl/serdes/binary_serdes.h>
+#include <kspp/internal/serdes/binary_serdes.h>
 #include <kspp/utils/kafka_utils.h>
 #include <kspp/topology_builder.h>
 #include <kspp/sinks/kafka_sink.h>

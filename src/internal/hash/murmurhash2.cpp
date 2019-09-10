@@ -13,7 +13,7 @@
 // 2. It will not produce the same results on little-endian and big-endian
 //    machines.
 
-#include <kspp/impl/hash/murmurhash2.h>
+#include <kspp/internal/hash/murmurhash2.h>
 
 //-----------------------------------------------------------------------------
 // Platform-specific functions and macros

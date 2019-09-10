@@ -1,6 +1,6 @@
 #include <iostream>
 #include <chrono>
-#include <kspp/impl/serdes/binary_serdes.h>
+#include <kspp/internal/serdes/binary_serdes.h>
 #include <kspp/topology_builder.h>
 #include <kspp/sources/kafka_source.h>
 #include <kspp/processors/ktable.h>
@@ -38,15 +38,10 @@ int main(int argc, char **argv) {
 
   {
     auto topology = builder.create_topology();
-    auto streams = topology->create_processors<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_serdes, kspp::binary_serdes>>(
-        partition_list, "kspp_test0_eventstream");
-    auto table_sources = topology->create_processors<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_serdes, kspp::binary_serdes>>(
-        partition_list, "kspp_test0_table");
+    auto streams = topology->create_processors<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_serdes, kspp::binary_serdes>>(partition_list, "kspp_test0_eventstream");
+    auto table_sources = topology->create_processors<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_serdes, kspp::binary_serdes>>(partition_list, "kspp_test0_table");
     auto tables = topology->create_processors<kspp::ktable<boost::uuids::uuid, int64_t, kspp::mem_store>>(table_sources);
-    auto joins = topology->create_processors<kspp::kstream_left_join<boost::uuids::uuid, int64_t, int64_t>>(
-        streams,
-        tables);
-
+    auto joins = topology->create_processors<kspp::kstream_left_join<boost::uuids::uuid, int64_t, int64_t>>(streams, tables);
     auto sinks = topology->create_sink<kspp::null_sink<boost::uuids::uuid, kspp::left_join<int64_t, int64_t>::value_type>>(
         joins,
         [&join_count](auto r) {

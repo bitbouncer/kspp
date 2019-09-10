@@ -4,7 +4,7 @@
 #include <sstream>
 #include <kspp/kspp.h>
 #include <kspp/topology.h>
-#include <kspp/impl/sinks/kafka_producer.h>
+#include <kspp/internal/sinks/kafka_producer.h>
 #include <kspp/sinks/sink_defs.h>
 
 #pragma once

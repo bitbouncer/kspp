@@ -2,24 +2,21 @@
 #include <string>
 #include <chrono>
 #include <regex>
-#include <kspp/impl/serdes/text_serdes.h>
-#include <kspp/impl/serdes/binary_serdes.h>
+#include <kspp/serdes/text_serdes.h>
+#include <kspp/internal/serdes/binary_serdes.h>
 #include <kspp/topology_builder.h>
 #include <kspp/sources/kafka_source.h>
 #include <kspp/processors/ktable.h>
 #include <kspp/processors/filter.h>
 #include <kspp/processors/flat_map.h>
 #include <kspp/processors/count.h>
-#include <kspp/processors/rate_limiter.h>
 #include <kspp/sinks/kafka_sink.h>
-#include <kspp/sinks/stream_sink.h>
-
-#include <kspp/state_stores/rocksdb_counter_store.h>
-#include <kspp/state_stores/rocksdb_store.h>
-#include <kspp/state_stores/mem_store.h>
-#include <kspp/state_stores/mem_windowed_store.h>
 #include <kspp/utils/kafka_utils.h>
-#include <kspp/utils/env.h>
+
+#include <kspp/state_stores/rocksdb_store.h>
+#include <kspp/state_stores/rocksdb_counter_store.h>
+#include <kspp/state_stores/mem_windowed_store.h>
+#include <kspp/state_stores/mem_store.h>
 
 using namespace std::chrono_literals;
 

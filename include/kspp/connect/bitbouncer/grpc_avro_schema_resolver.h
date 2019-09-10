@@ -2,7 +2,7 @@
 #include <avro/Compiler.hh>
 #include <grpcpp/grpcpp.h>
 #include <kspp/utils/spinlock.h>
-#include <kspp/connect/bitbouncer/grpc_utils.h>
+#include <kspp/internal/grpc/grpc_utils.h>
 #include <bb_streaming.grpc.pb.h>
 #pragma once
 

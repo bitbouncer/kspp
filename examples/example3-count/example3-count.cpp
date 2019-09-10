@@ -2,7 +2,7 @@
 #include <string>
 #include <chrono>
 #include <regex>
-#include <kspp/impl/serdes/text_serdes.h>
+#include <kspp/serdes/text_serdes.h>
 #include <kspp/topology_builder.h>
 #include <kspp/processors/generic_stream.h>
 #include <kspp/sources/kafka_source.h>

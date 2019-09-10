@@ -1,11 +1,11 @@
 #include <chrono>
 #include <memory>
 #include <kspp/kspp.h>
-#include <kspp/impl/queue.h>
+#include <kspp/internal/queue.h>
 #include <kspp/utils/async.h>
 #include <kspp/utils/http_client.h>
 #include <kspp/avro/generic_avro.h>
-#include <kspp/impl/event_queue.h>
+#include <kspp/internal/event_queue.h>
 #include <kspp/kevent.h>
 #include <kspp/connect/generic_producer.h>
 #include <kspp/connect/connection_params.h>

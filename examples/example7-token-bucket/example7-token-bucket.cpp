@@ -2,7 +2,7 @@
 #include <string>
 #include <chrono>
 #include <regex>
-#include <kspp/impl/serdes/text_serdes.h>
+#include <kspp/serdes/text_serdes.h>
 #include <kspp/topology_builder.h>
 #include <kspp/sources/kafka_source.h>
 #include <kspp/processors/filter.h>
@@ -12,10 +12,10 @@
 #include <kspp/processors/thoughput_limiter.h>
 #include <kspp/sinks/kafka_sink.h>
 #include <kspp/sinks/stream_sink.h>
-#include <kspp/state_stores/mem_counter_store.h>
 #include <kspp/utils/kafka_utils.h>
-#include <kspp/utils/env.h>
-
+#include <kspp/state_stores/mem_counter_store.h>
+//#include <kspp/state_stores/mem_windowed_store.h>
+//#include <kspp/state_stores/mem_store.h>
 #define PARTITION 0
 
 #define TOPIC_NAME "kspp_TextInput"

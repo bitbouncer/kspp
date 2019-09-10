@@ -1,4 +1,4 @@
-#include <kspp/impl/rd_kafka_utils.h>
+#include <kspp/internal/rd_kafka_utils.h>
 #include <thread>
 #include <chrono>
 #include <glog/logging.h>

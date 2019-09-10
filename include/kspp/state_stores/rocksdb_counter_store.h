@@ -6,7 +6,7 @@
 #include <rocksdb/db.h>
 #include <kspp/kspp.h>
 #include "state_store.h"
-#include <kspp/impl/rocksdb/rocksdb_operators.h>
+#include <kspp/internal/rocksdb/rocksdb_operators.h>
 #pragma once
 
 namespace kspp {

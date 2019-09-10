@@ -52,6 +52,10 @@ namespace kspp {
       return value_.get();
     }
 
+    inline std::shared_ptr<const V> shared_value() const {
+      return value_;
+    }
+
     inline int64_t event_time() const {
       return event_time_;
     }
@@ -97,6 +101,10 @@ namespace kspp {
       return value_.get();
     }
 
+    inline std::shared_ptr<const V> shared_value() const {
+      return value_;
+    }
+
     inline int64_t event_time() const {
       return event_time_;
     }
@@ -138,31 +146,4 @@ namespace kspp {
     const K key_;
     const int64_t event_time_;
   };
-
-/*
-  template<class K, class V>
-  inline std::shared_ptr<krecord<K,V>> make_krecord(const K &k, const V &v, int64_t ts = milliseconds_since_epoch()){
-    return std::make_shared<krecord<K, V >>(k, v, ts);
-  }
-
-  template<class K, class V>
-  inline std::shared_ptr<krecord<K,V>> make_krecord(const K &k, std::shared_ptr<const V> p, int64_t ts = milliseconds_since_epoch()){
-    return std::make_shared<krecord<K, V >>(k, p, ts);
-  }
-
-  template<class K>
-  inline std::shared_ptr<krecord<K, void>> make_krecord(const K &k, int64_t ts = milliseconds_since_epoch()){
-    return std::make_shared<krecord<K, void >>(k, ts);
-  }
-
-  template<class V>
-  inline std::shared_ptr<krecord<void,V>> make_krecord(const V &v, int64_t ts = milliseconds_since_epoch()){
-    return std::make_shared<krecord<void, V >>(v, ts);
-  }
-
-  template<class V>
-  inline std::shared_ptr<krecord<void,V>> make_krecord(std::shared_ptr<const V> p, int64_t ts = milliseconds_since_epoch()){
-    return std::make_shared<krecord<void, V >>(p, ts);
-  }
-  */
 }

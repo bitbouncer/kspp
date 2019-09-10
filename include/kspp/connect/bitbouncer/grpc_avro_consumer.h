@@ -1,15 +1,15 @@
 #include <chrono>
 #include <memory>
-#include <kspp/impl/queue.h>
-#include <kspp/topology.h>
-#include <kspp/avro/generic_avro.h>
 #include <grpcpp/grpcpp.h>
 #include <glog/logging.h>
+#include <kspp/internal/queue.h>
+#include <kspp/topology.h>
+#include <kspp/avro/generic_avro.h>
+#include <kspp/utils/offset_storage_provider.h>
+#include <kspp/internal/commit_chain.h>
 #include <bb_streaming.grpc.pb.h>
 #include "grpc_avro_schema_resolver.h"
 #include "grpc_avro_serdes.h"
-#include <kspp/utils/offset_storage_provider.h>
-#include <kspp/impl/commit_chain.h>
 #pragma once
 
 namespace kspp {

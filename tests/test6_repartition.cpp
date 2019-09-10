@@ -1,6 +1,6 @@
 #include <iostream>
 #include <chrono>
-#include <kspp/impl/serdes/text_serdes.h>
+#include <kspp/serdes/text_serdes.h>
 #include <kspp/topology_builder.h>
 #include <kspp/state_stores/mem_store.h>
 #include <kspp/sinks/kafka_sink.h>

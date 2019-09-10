@@ -2,7 +2,7 @@
 #include <rocksdb/env.h>
 #include <rocksdb/merge_operator.h>
 #include <rocksdb/slice.h>
-#include <kspp/impl/rocksdb/rocksdb_operators.h>
+#include <kspp/internal/rocksdb/rocksdb_operators.h>
 
 // A 'model' merge operator with uint64 addition semantics
 // Implemented as an AssociativeMergeOperator for simplicity and example.

@@ -5,7 +5,7 @@
 #include <kspp/sources/kafka_source.h>
 #include <kspp/connect/influxdb/influx_sink.h>
 #include <kspp/topology_builder.h>
-#include <kspp/impl/serdes/text_serdes.h>
+#include <kspp/serdes/text_serdes.h>
 #include <kspp/metrics/prometheus_pushgateway_reporter.h>
 #include <kspp/utils/env.h>
 #include <kspp/utils/kafka_utils.h>
