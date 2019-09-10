@@ -49,7 +49,7 @@ namespace kspp {
 
       //forward up this timestamp
       while (this->_queue.next_event_time()<=tick){
-        auto r = this->_queue.pop_and_get();
+        auto r = this->_queue.pop_front_and_get();
         this->_lag.add_event_time(tick, r->event_time());
         ++(this->_processed_count);
         _array->push_back((r->record()));

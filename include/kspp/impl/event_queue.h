@@ -90,7 +90,7 @@ namespace kspp {
     }
 
 
-    inline std::shared_ptr<kevent<K, V>> pop_and_get() {
+    inline std::shared_ptr<kevent<K, V>> pop_front_and_get() {
       if (empty())
         return nullptr;
 

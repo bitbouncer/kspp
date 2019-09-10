@@ -55,7 +55,7 @@ namespace kspp {
       size_t processed=0;
       //forward up this timestamp
       while (this->_queue.next_event_time()<=tick){
-        auto trans = this->_queue.pop_and_get();
+        auto trans = this->_queue.pop_front_and_get();
 
         if (next_punctuate_ < trans->event_time()) {
           punctuate(next_punctuate_); // what happens here if message comes out of order??? TBD

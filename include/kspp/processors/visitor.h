@@ -40,7 +40,7 @@ namespace kspp {
       source_->process(tick);
       size_t processed=0;
       while (this->_queue.next_event_time()<=tick){
-        auto trans = this->_queue.pop_and_get();
+        auto trans = this->_queue.pop_front_and_get();
         ++processed;
         this->_lag.add_event_time(tick, trans->event_time());
         ++(this->_processed_count);

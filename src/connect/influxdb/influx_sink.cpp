@@ -100,7 +100,7 @@ namespace kspp {
       size_t bytes_in_batch = 0;
       event_queue<void, std::string> in_batch;
       while (!this->_queue.empty() && msg_in_batch < _batch_size) {
-        auto msg = this->_queue.pop_and_get(); // this will loose messages at retry... TODO
+        auto msg = this->_queue.pop_front_and_get(); // this will loose messages at retry... TODO
         //make sure no nulls gets to us
         if (msg->record()->value()) {
           request->append(*msg->record()->value());
@@ -136,10 +136,8 @@ namespace kspp {
 
         // OK...
         auto ts1 = kspp::milliseconds_since_epoch();
-        while (!in_batch.empty()) {
-          _pending_for_delete.push_back(in_batch.pop_and_get());
-        }
-
+        while (!in_batch.empty())
+          _pending_for_delete.push_back(in_batch.pop_front_and_get());
         //_msg_cnt += msg_in_batch;
         _http_bytes += bytes_in_batch;
         break;

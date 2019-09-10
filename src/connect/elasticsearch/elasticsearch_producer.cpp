@@ -209,9 +209,9 @@ namespace kspp {
         auto end = kspp::milliseconds_since_epoch();
         LOG(INFO) << _cp.url << ", worksize: " << ws << ", batch_size: " << _batch_size << ", duration: " << end - start << " ms";
 
-        while (!in_batch.empty()) {
-          _done.push_back(in_batch.pop_and_get());
-        }
+        while (!in_batch.empty())
+          _done.push_back(in_batch.pop_front_and_get());
+
       } else {
         std::this_thread::sleep_for(2s);
       }

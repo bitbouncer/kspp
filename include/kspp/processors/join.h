@@ -82,7 +82,7 @@ namespace kspp {
       size_t processed = 0;
       // reuse event time & commit it from event stream
       while (this->_queue.next_event_time() <= tick) {
-        auto left = this->_queue.pop_and_get();
+        auto left = this->_queue.pop_front_and_get();
         this->_lag.add_event_time(tick, left->event_time());
         ++(this->_processed_count);
         ++processed;
@@ -175,7 +175,7 @@ namespace kspp {
       size_t processed = 0;
       // reuse event time & commit it from event stream
       while (this->_queue.next_event_time() <= tick) {
-        auto left = this->_queue.pop_and_get();
+        auto left = this->_queue.pop_front_and_get();
         this->_lag.add_event_time(tick, left->event_time());
         ++(this->_processed_count);
         ++processed;
@@ -272,7 +272,7 @@ namespace kspp {
       // reuse event time & commit it from event stream
       //
       while (this->_queue.next_event_time() <= tick) {
-        auto ev = this->_queue.pop_and_get();
+        auto ev = this->_queue.pop_front_and_get();
         this->_lag.add_event_time(tick, ev->event_time());
         ++(this->_processed_count);
         ++processed;
@@ -375,7 +375,7 @@ namespace kspp {
       // reuse event time & commit it from event stream
       //
       while (this->_queue.next_event_time() <= tick) {
-        auto ev = this->_queue.pop_and_get();
+        auto ev = this->_queue.pop_front_and_get();
         this->_lag.add_event_time(tick, ev->event_time());
         ++(this->_processed_count);
         ++processed;
@@ -470,7 +470,7 @@ namespace kspp {
       // reuse event time & commit it from event stream
       //
       while (this->_queue.next_event_time() <= tick) {
-        auto ev = this->_queue.pop_and_get();
+        auto ev = this->_queue.pop_front_and_get();
         this->_lag.add_event_time(tick, ev->event_time());
         ++(this->_processed_count);
         ++processed;
