@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.5)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
 #FEATURES
-option(ENABLE_BITBOUNCER_STREAMING "enable bitbouncer streaming support" ON)
 option(ENABLE_ROCKSDB "enable rocksdb support" ON)
 option(ENABLE_ZK "enable zk support" OFF)
 option(ENABLE_POSTGRES "enable postgres support" ON)
@@ -11,6 +10,8 @@ option(ENABLE_INFLUXDB "enable influxdb support" ON)
 option(ENABLE_TDS "enable tds support" ON)
 option(ENABLE_ELASTICSEARCH "enable elastic search support" ON)
 option(ENABLE_S3 "enable S3 support" ON)
+option(ENABLE_GRPC "enable grpc support" ON)
+option(ENABLE_BITBOUNCER_STREAMING "enable bitbouncer streaming support" ON)
 
 option(BUILD_TOOLS "build tools" ON)
 option(BUILD_SAMPLES "build examples" ON)
@@ -125,7 +126,7 @@ file(GLOB LIB_SRCS
         src/internal/serdes/*.cpp
         src/internal/hash/*.cpp
         src/internal/utils/*.cpp
-        src/internal/grpc/*.cpp
+#        src/internal/grpc/*.cpp
         src/utils/*.cpp
         src/beta/*.cpp
         #        src/connect/kafka_rest/kafka_rest_source.cpp
@@ -292,7 +293,7 @@ IF (ENABLE_INFLUXDB)
 ENDIF ()
 
 
-if (ENABLE_BITBOUNCER_STREAMING)
+if (ENABLE_GRPC)
     find_package(Protobuf REQUIRED)
     message(STATUS "Using protobuf ${protobuf_VERSION}")
     find_package(GRPC REQUIRED)
@@ -333,31 +334,14 @@ if (ENABLE_BITBOUNCER_STREAMING)
     file(GLOB BITBOUNCER_LIB_SRCS
             include/connect/bitbouncer/*.h)
 
-#    if (BUILD_STATIC_LIBS)
-#        ADD_LIBRARY(kspp_bitbouncer_s STATIC ${BITBOUNCER_LIB_SRCS})
-#        INSTALL(TARGETS kspp_bitbouncer_s
-#                LIBRARY DESTINATION lib
-#                ARCHIVE DESTINATION lib
-#                )
-#    endif ()
-
-#    if (BUILD_SHARED_LIBS)
-#        ADD_LIBRARY(kspp_bitbouncer SHARED ${BITBOUNCER_LIB_SRCS})
-#        INSTALL(TARGETS kspp_bitbouncer
-#                LIBRARY DESTINATION lib
-#                ARCHIVE DESTINATION lib
-#                )
-#    endif ()
-
-    SET(BBSTREAMING_LIBS_STATIC kspp_grpc_s gRPC::grpc++_reflection gRPC::grpc++  gRPC::grpc protobuf::libprotobuf)
-    SET(BBSTREAMING_LIBS_SHARED kspp_grpc gRPC::grpc++_reflection gRPC::grpc++  gRPC::grpc protobuf::libprotobuf)
-
-endif () #ENABLE_BITBOUNCER_STREAMING
+    SET(BB_GRPC_LIBS_STATIC kspp_grpc_s gRPC::grpc++_reflection gRPC::grpc++  gRPC::grpc protobuf::libprotobuf)
+    SET(BB_GRPC_LIBS_SHARED kspp_grpc gRPC::grpc++_reflection gRPC::grpc++  gRPC::grpc protobuf::libprotobuf)
+endif () #ENABLE_GRPC
 
 
 
-SET(EXT_LIBS_SHARED ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${PROMETHEUS_CPP_LIBS} ${BOOST_LIBS} ${PostgreSQL_LIBRARIES} ${AWS_S3_LIBS} ${BBSTREAMING_LIBS_SHARED} glog gflags crypto ssl stdc++fs)
-SET(EXT_LIBS_STATIC ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${PROMETHEUS_CPP_LIBS} ${BOOST_LIBS} ${PostgreSQL_LIBRARIES} ${AWS_S3_LIBS} ${BBSTREAMING_LIBS_STATIC} glog gflags crypto ssl stdc++fs)
+SET(EXT_LIBS_SHARED ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${PROMETHEUS_CPP_LIBS} ${BOOST_LIBS} ${PostgreSQL_LIBRARIES} ${AWS_S3_LIBS} ${BB_GRPC_LIBS_SHARED} glog gflags crypto ssl stdc++fs)
+SET(EXT_LIBS_STATIC ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${PROMETHEUS_CPP_LIBS} ${BOOST_LIBS} ${PostgreSQL_LIBRARIES} ${AWS_S3_LIBS} ${BB_GRPC_LIBS_STATIC} glog gflags crypto ssl stdc++fs)
 SET(CSI_LIBS_SHARED kspp ${EXT_LIBS_SHARED})
 SET(CSI_LIBS_STATIC kspp_s ${EXT_LIBS_STATIC})
 
