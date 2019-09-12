@@ -3,8 +3,8 @@ set -ef
 export CPP_STANDARD="17"
 
 export AVRO_VER="release-1.9.0"
-export AWS_SDK_VER="1.7.138"
-export GRPC_VER="v1.22.0"
+export AWS_SDK_VER="1.7.181"
+export GRPC_VER="v1.22.1"
 export LIBRDKAFKA_VER="v1.1.0"
 export PROMETHEUS_CPP_VER="v0.7.0"
 export RAPIDJSON_VER="v1.1.0"
@@ -22,8 +22,8 @@ tar \
   --strip-components 1
 cd boost
 ./bootstrap.sh
-./b2 --with-program_options --with-iostreams --with-filesystem --with-regex --with-system --with-date_time cxxflags=-std=c++17 -j "$(getconf _NPROCESSORS_ONLN)" stage
-sudo ./b2 --with-program_options --with-iostreams --with-filesystem --with-regex --with-system --with-date_time cxxflags=-std=c++17 install
+./b2 cxxstd=17 --with-program_options --with-iostreams --with-filesystem --with-regex --with-system --with-date_time  -j "$(getconf _NPROCESSORS_ONLN)" stage
+sudo ./b2 cxxstd=17 --with-program_options --with-iostreams --with-filesystem --with-regex --with-system --with-date_time install
 cd ..
 rm boost.tar.gz
 rm -rf boost
