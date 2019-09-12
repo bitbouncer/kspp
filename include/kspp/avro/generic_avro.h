@@ -28,10 +28,10 @@ namespace kspp {
 
         const avro::GenericDatum &datum = record_.field(member);
 
-        if(datum.type() == cpp_to_avro_type<T>())
+        if(datum.type() == avro_utils::cpp_to_avro_type<T>())
           return datum.value<T>();
 
-        throw std::invalid_argument(name() + "." + member + ":  wrong type, expected:" + to_string(cpp_to_avro_type<T>()) +  ", actual: " + to_string(datum.type()));
+        throw std::invalid_argument(name() + "." + member + ":  wrong type, expected:" + avro_utils::to_string( avro_utils::cpp_to_avro_type<T>()) +  ", actual: " +  avro_utils::to_string(datum.type()));
       }
 
       template<class T>
@@ -43,9 +43,9 @@ namespace kspp {
         if (datum.type() == avro::AVRO_NULL)
             return std::nullopt;
 
-        if(datum.type() == cpp_to_avro_type<T>())
+        if(datum.type() ==  avro_utils::cpp_to_avro_type<T>())
           return datum.value<T>();
-        throw std::invalid_argument(name() + "." + member + ": wrong type, expected:" + to_string(cpp_to_avro_type<T>()) +  ", actual: " + to_string(datum.type()));
+        throw std::invalid_argument(name() + "." + member + ": wrong type, expected:" + avro_utils::to_string(avro_utils::cpp_to_avro_type<T>()) +  ", actual: " +  avro_utils::to_string(datum.type()));
       }
 
       std::optional<std::string> get_optional_as_string(const std::string& member) const{
@@ -57,19 +57,19 @@ namespace kspp {
             case avro::AVRO_NULL:
               return std::nullopt;
             case avro::AVRO_STRING :
-              return convert<std::string>(datum);
+              return  avro_utils::convert<std::string>(datum);
             case avro::AVRO_INT:
-              return std::to_string(convert<int32_t>(datum));
+              return std::to_string( avro_utils::convert<int32_t>(datum));
             case avro::AVRO_LONG:
-              return std::to_string(convert<int64_t>(datum));
+              return std::to_string( avro_utils::convert<int64_t>(datum));
             case avro::AVRO_FLOAT:
-              return std::to_string(convert<float>(datum));
+              return std::to_string( avro_utils::convert<float>(datum));
             case avro::AVRO_DOUBLE:
-              return std::to_string(convert<double>(datum));
+              return std::to_string( avro_utils::convert<double>(datum));
             case avro::AVRO_BOOL:
-              return std::to_string(convert<bool>(datum));
+              return std::to_string( avro_utils::convert<bool>(datum));
           }
-        throw std::invalid_argument(name() + "." + member + ": , cannot convert to string, actual type: "  + to_string(datum.type()));
+        throw std::invalid_argument(name() + "." + member + ": , cannot convert to string, actual type: "  +  avro_utils::to_string(datum.type()));
       }
 
       template<class T>
@@ -79,13 +79,13 @@ namespace kspp {
 
         const avro::GenericDatum &datum = record_.field(member);
 
-        if(datum.type() == cpp_to_avro_type<T>())
+        if(datum.type() ==  avro_utils::cpp_to_avro_type<T>())
           return datum.value<T>();
 
         if(datum.type() == avro::AVRO_NULL)
           return default_value;
 
-        throw std::invalid_argument(name() + "." + member + ": wrong type, expected:" + to_string(cpp_to_avro_type<T>()) +  ", actual: " + to_string(datum.type()));
+        throw std::invalid_argument(name() + "." + member + ": wrong type, expected:" + avro_utils::to_string( avro_utils::cpp_to_avro_type<T>()) +  ", actual: " +  avro_utils::to_string(datum.type()));
       }
 
       bool is_null(const std::string& member) const {
@@ -142,7 +142,7 @@ namespace kspp {
       if (generic_datum_->type() == avro::AVRO_RECORD) {
         return generic_avro::generic_record(generic_datum_->value<avro::GenericRecord>());
       } else {
-        throw std::invalid_argument(std::string("wrong type, expected: ") + to_string(avro::AVRO_RECORD) + " actual: " + to_string(generic_datum_->type()));
+        throw std::invalid_argument(std::string("wrong type, expected: ") +  avro_utils::to_string(avro::AVRO_RECORD) + " actual: " +  avro_utils::to_string(generic_datum_->type()));
       }
     }
 
@@ -165,17 +165,17 @@ template <> struct avro::codec_traits<kspp::generic_avro> {
 
 //TODO
 template<>
-inline std::string kspp::avro_utils<kspp::generic_avro>::schema_name(const kspp::generic_avro& dummy){
+inline std::string kspp:: avro_utils::avro_utils<kspp::generic_avro>::schema_name(const kspp::generic_avro& dummy){
   return normalize(*dummy.valid_schema());
 }
 
 template<>
-inline std::string kspp::avro_utils<kspp::generic_avro>::schema_as_string(const kspp::generic_avro& dummy){
+inline std::string kspp:: avro_utils::avro_utils<kspp::generic_avro>::schema_as_string(const kspp::generic_avro& dummy){
   return normalize(*dummy.valid_schema());
 }
 
 template<>
-inline std::shared_ptr<const avro::ValidSchema> kspp::avro_utils<kspp::generic_avro>::valid_schema(const kspp::generic_avro& dummy){
+inline std::shared_ptr<const avro::ValidSchema> kspp:: avro_utils::avro_utils<kspp::generic_avro>::valid_schema(const kspp::generic_avro& dummy){
   return dummy.valid_schema();
 }
 

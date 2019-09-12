@@ -145,7 +145,7 @@ namespace kspp {
 
         // time to create a new file?
         if (!file_writer_){
-          auto schema = avro_utils<V>::valid_schema(*r->record()->value());
+          auto schema = avro_utils::avro_utils<V>::valid_schema(*r->record()->value());
           current_file_name_ = std::tmpnam(nullptr);
           current_file_name_ += ".avro";
           current_s3_file_name_ = key_prefix_ + "/" + key_base_ + "-" + std::to_string(r->event_time()) + ".avro";

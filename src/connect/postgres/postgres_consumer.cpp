@@ -9,136 +9,6 @@
 using namespace std::chrono_literals;
 
 namespace kspp {
-  /*
-   * static void load_avro_by_name(kspp::generic_avro* avro, PGresult* pgres, size_t row)
-  {
-    // key tupe is null if there is no key
-    if (avro->type() == avro::AVRO_NULL)
-      return;
-
-    assert(avro->type() == avro::AVRO_RECORD);
-    avro::GenericRecord& record(avro->generic_datum()->value<avro::GenericRecord>());
-    size_t nFields = record.fieldCount();
-    for (int j = 0; j < nFields; j++)
-    {
-      avro::GenericDatum& col = record.fieldAt(j); // expected union
-      if (!record.fieldAt(j).isUnion()) // this should not hold - but we fail to create correct schemas for not null columns
-      {
-        LOG(INFO) << avro->valid_schema()->toJson();
-        LOG(FATAL) << "unexpected schema - bailing out, type:" << record.fieldAt(j).type();
-        break;
-      }
-
-      //avro::GenericUnion& au(record.fieldAt(j).value<avro::GenericUnion>());
-
-      const std::string& column_name = record.schema()->nameAt(j);
-
-      //which pg column has this value?
-      int column_index = PQfnumber(pgres, column_name.c_str());
-      if (column_index < 0)
-      {
-        LOG(FATAL) << "unknown column - bailing out: " << column_name;
-        break;
-      }
-
-      if (PQgetisnull(pgres, row, column_index) == 1)
-      {
-        col.selectBranch(0); // NULL branch - we hope..
-        assert(col.type() == avro::AVRO_NULL);
-      }
-      else
-      {
-        col.selectBranch(1);
-        //au.selectBranch(1);
-        //avro::GenericDatum& avro_item(au.datum());
-        const char* val = PQgetvalue(pgres, row, j);
-
-        switch (col.type()) {
-          case avro::AVRO_STRING:
-            col.value<std::string>() = val;
-            break;
-          case avro::AVRO_BYTES:
-            col.value<std::string>() = val;
-            break;
-          case avro::AVRO_INT:
-            col.value<int32_t>() = atoi(val);
-            break;
-          case avro::AVRO_LONG:
-            col.value<int64_t>() = std::stoull(val);
-            break;
-          case avro::AVRO_FLOAT:
-            col.value<float>() = (float) atof(val);
-            break;
-          case avro::AVRO_DOUBLE:
-            col.value<double>() = atof(val);
-            break;
-          case avro::AVRO_BOOL:
-            col.value<bool>() = (val[0] == 't' || val[0] == 'T' || val[0] == '1');
-            break;
-          case avro::AVRO_MAP: {
-            std::vector<std::string> kvs;
-            boost::split(kvs, val, boost::is_any_of(",")); // TODO we cannot handle "dsd,hggg" => "jhgf"
-
-            avro::GenericMap& v = col.value<avro::GenericMap>();
-            avro::GenericMap::Value& r = v.value();
-
-            // this is an empty string "" that will be mapped as 1 item of empty size
-            if (kvs.size()==1 && kvs[0].size() ==0)
-              break;
-
-            r.resize(kvs.size());
-
-            int cursor=0;
-            for(auto& i : kvs){
-              std::size_t found = i.find("=>");
-              if (found==std::string::npos)
-                LOG(FATAL) << "expected => in hstore";
-              std::string key = i.substr(0, found);
-              std::string val = i.substr(found +2);
-              pq::pq_trim(key, "\" ");
-              pq::pq_trim(val, "\" ");
-              r[cursor].first = key;
-              r[cursor].second = avro::GenericDatum(val);
-              ++cursor;
-            }
-          }
-            break;
-
-          case avro::AVRO_ARRAY:{
-            std::vector<std::string> kvs;
-            std::string trimmed_val = val;
-            pq::pq_trim(trimmed_val, "{ }");
-            boost::split(kvs, trimmed_val, boost::is_any_of(",")); // TODO we cannot handle [ "dsd,hg", ljdshf ]
-            avro::GenericArray& v = col.value<avro::GenericArray>();
-            avro::GenericArray::Value& r = v.value();
-
-            // this is an empty string "" that will be mapped as 1 item of empty size
-            if (kvs.size()==1 && kvs[0].size() ==0)
-              break;
-
-            r.resize(kvs.size());
-
-            int cursor=0;
-            for(auto& i : kvs) {
-              r[cursor] = avro::GenericDatum(i);
-              ++cursor;
-            }
-
-          }
-            break;
-
-          case avro::AVRO_RECORD:
-          case avro::AVRO_ENUM:
-          case avro::AVRO_UNION:
-          case avro::AVRO_FIXED:
-          case avro::AVRO_NULL:
-          default:
-            LOG(FATAL) << "unexpected / non supported type e:" << col.type();
-        }
-      }
-    }
-  }*/
-
   postgres_consumer::postgres_consumer(int32_t partition,
                                        std::string logical_name,
                                        const kspp::connect::connection_params& cp,
@@ -153,7 +23,7 @@ namespace kspp {
       , exit_(false)
       , bg_([this] { _thread(); })
       , connection_(std::make_unique<kspp_postgres::connection>())
-      , logical_name_(logical_name)
+      , logical_name_(avro_utils::sanitize_schema_name(logical_name))
       , partition_(partition)
       , cp_(cp)
       , tp_(tp)

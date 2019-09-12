@@ -73,7 +73,7 @@ namespace kspp {
         // time to create a new file?
         if (!_file_writer){
           //auto schema = r->record()->value()->valid_schema();
-          auto schema = avro_utils<V>::valid_schema(*r->record()->value());
+          auto schema = avro_utils::avro_utils<V>::valid_schema(*r->record()->value());
           _current_file_name = _parent_path + "/" + _base_name + "-" + std::to_string(r->event_time()) + ".avro";
           _end_of_windows_ts =  r->event_time() + (_window_size.count() * 1000); // should we make another kind of window that plays nice with 24h?
           _messages_in_file = 0;

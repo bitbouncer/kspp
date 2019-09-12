@@ -192,7 +192,7 @@ namespace kspp {
                              std::shared_ptr<kspp::avro_schema_registry> schema_registry)
       : _bg([this] { _thread(); })
       , _connection(std::make_unique<kspp_tds::connection>())
-      , _logical_name(logical_name)
+      , _logical_name(avro_utils::sanitize_schema_name(logical_name))
       , _query(query)
       , _partition(partition)
       , _cp(cp)

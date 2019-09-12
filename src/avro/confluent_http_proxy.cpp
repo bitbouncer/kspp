@@ -22,7 +22,7 @@ namespace kspp {
   }
 
   std::string encode_put_schema_request(std::shared_ptr<const avro::ValidSchema> schema) {
-    auto s = normalize(*schema);
+    auto s = avro_utils::normalize(*schema);
     auto document = std::make_shared<rapidjson::Document>();
     document->SetObject();
     add_member(document, "schema", s);
