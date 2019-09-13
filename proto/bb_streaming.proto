@@ -5,6 +5,11 @@ option objc_class_prefix = "bitbouncer_streaming";
 
 package bitbouncer.streaming;
 
+service streamprovider {
+  rpc Subscribe (SubscriptionRequest) returns (stream SubscriptionBundle) {}
+  rpc GetSchema (GetSchemaRequest) returns (GetSchemaReply) {}
+}
+
 message SubscriptionRequest {
   string topic = 1;
   int32 partition = 2;
@@ -24,7 +29,6 @@ message SubscriptionData {
   bytes value = 4;
   int64 offset = 5;
   int64 timestamp = 6;
-  bool  eof = 7;
 }
 
 // The request message containing the schema id
@@ -37,19 +41,5 @@ message GetSchemaReply {
   string schema = 1;
 }
 
-// The request message containing the schema id
-message PingRequest {
-  int64 timestamp=1;
-}
 
-// json encoded schema
-message PingReply {
-  int64 timestamp=1;
-}
-
-service streamprovider {
-  rpc Subscribe (SubscriptionRequest) returns (stream SubscriptionBundle) {}
-  rpc GetSchema (GetSchemaRequest) returns (GetSchemaReply) {}
-  rpc Ping (PingRequest) returns (PingReply) {}
-}
 

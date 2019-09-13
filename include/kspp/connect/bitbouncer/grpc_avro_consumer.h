@@ -149,7 +149,6 @@ namespace kspp {
 
             // empty message - read again
             if ((record.value().size() == 0) && record.key().size() == 0) {
-              _eof = record.eof();
               continue;
             }
 
@@ -162,6 +161,7 @@ namespace kspp {
             ++_msg_cnt;
             _incomming_msg.push_back(e);
           }
+          _eof = reply.eof();
         }
 
         if (_exit){
