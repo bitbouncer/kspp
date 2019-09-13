@@ -11,6 +11,9 @@ RUN apt-get update && apt-get install -y g++ sudo pax-utils automake autogen sht
 RUN apt-get install -y python-dev autotools-dev libicu-dev zlib1g-dev openssl libssl-dev libbz2-dev libsnappy-dev \
     libgoogle-glog-dev libgflags-dev libcurl4-openssl-dev libc-ares-dev liblzma-dev libpq-dev freetds-dev libxml2-dev \
     libfmt-dev libpcre2-dev libhttp-parser-dev
+
+#apache arrow requirements
+RUN apt-get install -y autoconf bison flex
       
 COPY 3rdparty_install.sh 	.
 RUN ./3rdparty_install.sh
