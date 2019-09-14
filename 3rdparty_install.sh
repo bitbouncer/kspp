@@ -222,8 +222,9 @@ tar \
   --strip-components 1
 cd thrift
 ./bootstrap.sh
-./configure CXXFLAGS='-g -O2' --with-boost=/usr/local --with-nodejs=no --with-python=no --with-lua=no --with-go=no
-make -j "$(getconf _NPROCESSORS_ONLN)"
+./configure CXXFLAGS='-g -O2' --with-boost=/usr/local --without-nodejs --without-python --without-lua --without-go --without-java --enable-tests=no --enable-static=no
+#thrift seems to have probles when doing parallell compliation
+make -j 1
 sudo make install
 cd ..
 rm thrift.tar.gz
