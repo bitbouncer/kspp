@@ -11,6 +11,13 @@ export RAPIDJSON_VER="v1.1.0"
 export PROTOBUF_VER="3.7.0"
 export ROCKDB_VER="v5.18.3"
 
+#deps for arrow
+export DOUBLE_CONVERSION_VER="v3.1.5"
+export BROTLI_VER="v1.0.7"
+export FLATBUFFERS_VER="v1.11.0"
+export THRIFT_VER="0.12.0"
+export ARROW_VER="apache-arrow-0.14.1"
+
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 
 wget -O boost.tar.gz "https://dl.bintray.com/boostorg/release/1.70.0/source/boost_1_70_0.tar.gz" && \
@@ -156,6 +163,88 @@ sudo make install
 cd ..
 rm librdkafka.tar.gz
 rm -rf librdkafka
+
+wget -O double-conversion.tar.gz "https://github.com/google/double-conversion/archive/$DOUBLE_CONVERSION_VER.tar.gz" && \
+mkdir -p double-conversion && \
+tar \
+  --extract \
+  --file double-conversion.tar.gz \
+  --directory double-conversion \
+  --strip-components 1
+cd double-conversion
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_STANDARD=$CPP_STANDARD ..
+make -j "$(getconf _NPROCESSORS_ONLN)"
+sudo make install
+cd ../..
+rm double-conversion.tar.gz
+
+wget -O brotli.tar.gz "https://github.com/google/brotli/archive/$BROTLI_VER.tar.gz" && \
+mkdir -p brotli && \
+tar \
+  --extract \
+  --file brotli.tar.gz \
+  --directory brotli \
+  --strip-components 1
+cd brotli
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_STANDARD=$CPP_STANDARD ..
+make -j "$(getconf _NPROCESSORS_ONLN)"
+sudo make install
+cd ../..
+rm brotli.tar.gz
+
+
+wget -O flatbuffers.tar.gz "https://github.com/google/flatbuffers/archive/$FLATBUFFERS_VER.tar.gz" && \
+mkdir -p flatbuffers && \
+tar \
+  --extract \
+  --file flatbuffers.tar.gz \
+  --directory flatbuffers \
+  --strip-components 1
+cd flatbuffers
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DFLATBUFFERS_BUILD_TESTS=OFF -DCMAKE_CXX_STANDARD=$CPP_STANDARD ..
+make -j "$(getconf _NPROCESSORS_ONLN)"
+sudo make install
+cd ../..
+rm flatbuffers.tar.gz
+
+wget -O thrift.tar.gz "https://github.com/apache/thrift/archive/$THRIFT_VER.tar.gz" && \
+mkdir -p thrift && \
+tar \
+  --extract \
+  --file thrift.tar.gz \
+  --directory thrift \
+  --strip-components 1
+cd thrift
+./bootstrap.sh
+./configure CXXFLAGS='-g -O2' --with-boost=/usr/local --with-nodejs=no --with-python=no --with-lua=no --with-go=no
+make -j "$(getconf _NPROCESSORS_ONLN)"
+sudo make install
+cd ..
+rm thrift.tar.gz
+
+
+wget -O arrow.tar.gz "https://github.com/apache/arrow/archive/$ARROW_VER.tar.gz" && \
+mkdir -p arrow && \
+tar \
+  --extract \
+  --file arrow.tar.gz \
+  --directory arrow \
+  --strip-components 1
+cd arrow/cpp
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DARROW_PARQUET=ON -DARROW_DEPENDENCY_SOURCE=SYSTEM -DCMAKE_CXX_STANDARD=$CPP_STANDARD ..
+make -j "$(getconf _NPROCESSORS_ONLN)"
+sudo make install
+cd ../../..
+rm arrow.tar.gz
+
 
 cd ..
 

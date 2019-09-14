@@ -13,7 +13,7 @@ RUN apt-get install -y python-dev autotools-dev libicu-dev zlib1g-dev openssl li
     libfmt-dev libpcre2-dev libhttp-parser-dev
 
 #apache arrow requirements
-RUN apt-get install -y autoconf bison flex
+RUN apt-get install -y autoconf bison flex liblz4-dev libzstd-dev 
       
 COPY 3rdparty_install.sh 	.
 RUN ./3rdparty_install.sh
