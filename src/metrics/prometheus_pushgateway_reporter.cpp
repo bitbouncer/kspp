@@ -17,7 +17,7 @@ namespace kspp {
           : _run(true)
           , _gateway(hostname_part(uri), port_part(uri), job_name)
           , _verbose(verbose) {
-        _thread = std::make_shared<std::thread>([this]() {
+        _thread = std::make_shared<std::thread>([this, uri]() {
 
        int64_t next_time_to_send = kspp::milliseconds_since_epoch() + 10 * 1000;
 
@@ -29,7 +29,7 @@ namespace kspp {
           int http_result = _gateway.Push();
           uint64_t push_time = milliseconds_since_epoch();
           if (http_result!=200){
-            LOG(WARNING) << "metrics push failed, elapsed: " << push_time - measurement_time;
+            LOG(WARNING) << "metrics push failed, uri:" << uri << ", elapsed: " << push_time - measurement_time;
           } else {
             if (_verbose)
               LOG(INFO) << "metrics sent OK, elapsed: " << push_time - measurement_time;
