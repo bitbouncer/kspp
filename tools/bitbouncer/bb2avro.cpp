@@ -8,7 +8,8 @@
 #include <kspp/connect/bitbouncer/grpc_avro_source.h>
 
 #define SERVICE_NAME     "bb2avro"
-#define DEFAULT_SRC_URI  "lb.bitbouncer.com:10063"
+#define DEFAULT_SRC_URI  "lb.bitbouncer.com:30112"
+#define DEBUG_URI        "localhost:50063"
 
 using namespace std::chrono_literals;
 using namespace kspp;
@@ -25,9 +26,9 @@ int main(int argc, char** argv) {
   boost::program_options::options_description desc("options");
   desc.add_options()
       ("help", "produce help message")
-      ("src_uri", boost::program_options::value<std::string>()->default_value(get_env_and_log("SRC_URI", DEFAULT_SRC_URI)), "src_uri")
-      ("bb_api_key", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("BB_API_KEY", "")), "bb_api_key")
-      ("bb_secret_access_key", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("BB_SECRET_ACCESS_KEY", "")), "bb_secret_access_key")
+      ("monitor_uri", boost::program_options::value<std::string>()->default_value(get_env_and_log("MONITOR_URI", DEFAULT_SRC_URI)), "monitor_uri")
+      ("monitor_api_key", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("MONITOR_API_KEY", "")), "monitor_api_key")
+      ("monitor_secret_access_key", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("MONITOR_SECRET_ACCESS_KEY", "")), "monitor_secret_access_key")
       ("topic", boost::program_options::value<std::string>()->default_value("logs"), "topic")
       ("offset_storage", boost::program_options::value<std::string>()->default_value(get_env_and_log("OFFSET_STORAGE", "")), "offset_storage")
       ("dst_dir", boost::program_options::value<std::string>()->default_value(get_env_and_log("DST_DIR", "/tmp")), "dst_dir")
@@ -48,28 +49,27 @@ int main(int argc, char** argv) {
   auto config = std::make_shared<kspp::cluster_config>(consumer_group, kspp::cluster_config::NONE);
   config->load_config_from_env();
 
-  std::string src_uri;
-  if (vm.count("src_uri")) {
-    src_uri = vm["src_uri"].as<std::string>();
+  std::string monitor_uri;
+  if (vm.count("monitor_uri")) {
+    monitor_uri = vm["monitor_uri"].as<std::string>();
   } else {
-    std::cerr << "--src_uri must specified" << std::endl;
+    std::cerr << "--monitor_uri must specified" << std::endl;
     return -1;
   }
 
-  std::string bb_api_key;
-  if (vm.count("bb_api_key")) {
-    bb_api_key = vm["bb_api_key"].as<std::string>();
+  std::string monitor_api_key;
+  if (vm.count("monitor_api_key")) {
+    monitor_api_key = vm["monitor_api_key"].as<std::string>();
   }
 
-  if (bb_api_key.size()==0){
-    std::cerr << "--bb_api_key must be defined" << std::endl;
+  if (monitor_api_key.size()==0){
+    std::cerr << "--monitor_api_key must be defined" << std::endl;
     return -1;
   }
 
-  std::string bb_secret_access_key;
-  if (vm.count("bb_secret_access_key")) {
-    bb_secret_access_key = vm["bb_secret_access_key"].as<std::string>();
-  }
+  std::string monitor_secret_access_key;
+  if (vm.count("monitor_secret_access_key"))
+    monitor_secret_access_key = vm["monitor_secret_access_key"].as<std::string>();
 
   std::string topic;
   if (vm.count("topic")) {
@@ -104,23 +104,32 @@ int main(int argc, char** argv) {
   if (vm.count("oneshot"))
     oneshot=true;
 
-  LOG(INFO) << "src_uri                : " << src_uri;
-  LOG(INFO) << "bb_api_key             : " << bb_api_key;
-  if (bb_secret_access_key.size()>0)
-    LOG(INFO) << "bb_secret_access_key   : " << "[hidden]";
-  LOG(INFO) << "offset_storage         : " << offset_storage;
-  LOG(INFO) << "topic                  : " << topic;
-  LOG(INFO) << "dst_dir                : " << dst_dir;
-  LOG(INFO) << "window_size_s          : " << window_size_s << " s";
+  LOG(INFO) << "monitor_uri                 : " << monitor_uri;
+  LOG(INFO) << "monitor_api_key             : " << monitor_api_key;
+  LOG(INFO) << "monitor_secret_access_key   : " << monitor_secret_access_key;
+  LOG(INFO) << "offset_storage              : " << offset_storage;
+  LOG(INFO) << "topic                       : " << topic;
+  LOG(INFO) << "dst_dir                     : " << dst_dir;
+  LOG(INFO) << "window_size_s               : " << window_size_s << " s";
   LOG(INFO) << "discovering facts...";
   if (oneshot)
     LOG(INFO) << "oneshot          : TRUE";
 
-  kspp::topology_builder generic_builder(config);
 
+  std::shared_ptr<grpc::Channel> channel;
+  grpc::ChannelArguments channelArgs;
+  // special for easier debugging
+  if (monitor_uri == DEBUG_URI) {
+    channel = grpc::CreateCustomChannel(monitor_uri, grpc::InsecureChannelCredentials(), channelArgs);
+  } else {
+    auto channel_creds = grpc::SslCredentials(grpc::SslCredentialsOptions());
+    channel = grpc::CreateCustomChannel(monitor_uri, channel_creds, channelArgs);
+  }
+
+  kspp::topology_builder generic_builder(config);
   auto t = generic_builder.create_topology();
   auto offset_provider = get_offset_provider(offset_storage);
-  auto source = t->create_processor<kspp::grpc_avro_source<void, kspp::generic_avro>>(0, topic, offset_provider, src_uri, bb_api_key, bb_secret_access_key);
+  auto source = t->create_processor<kspp::grpc_avro_source<void, kspp::generic_avro>>(0, topic, offset_provider, channel, monitor_api_key, monitor_secret_access_key);
   auto sink = t->create_sink<kspp::avro_file_sink<kspp::generic_avro>>(source, dst_dir, topic, 1h);
 
 
