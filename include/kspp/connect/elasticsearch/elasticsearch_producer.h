@@ -15,7 +15,7 @@
 
 namespace kspp {
   template<class K, class V>
-  class elasticsearch_producer : public generic_producer<kspp::generic_avro, kspp::generic_avro>
+  class elasticsearch_producer : public generic_producer<K, V>
   {
   public:
     typedef std::function<std::string(const K&)> key2string_f;
@@ -259,12 +259,9 @@ namespace kspp {
         if (work.size()) {
           auto start = kspp::milliseconds_since_epoch();
           auto ws = work.size();
-          //LOG(INFO) << "run_work...: ";
-
           run_work(work, _batch_size);
           auto end = kspp::milliseconds_since_epoch();
-          LOG(INFO) << _cp.url << ", worksize: " << ws << ", batch_size: " << _batch_size << ", duration: " << end - start << " ms";
-
+          LOG_EVERY_N(INFO, 100) << _cp.url << ", worksize: " << ws << ", batch_size: " << _batch_size << ", duration: " << end - start << " ms";
           while (!in_batch.empty())
             _done.push_back(in_batch.pop_front_and_get());
 
@@ -290,8 +287,8 @@ namespace kspp {
     const kspp::connect::connection_params _cp;
     const std::string _id_column;
 
-    event_queue<kspp::generic_avro, kspp::generic_avro> _incomming_msg;
-    event_queue<kspp::generic_avro, kspp::generic_avro> _done;
+    event_queue<K, V> _incomming_msg;
+    event_queue<K, V> _done;
 
     bool _good;
     bool _connected;

@@ -15,7 +15,7 @@ namespace kspp {
     : _impl(impl) {
     }
 
-    virtual ~generic_avro_sink() {
+    ~generic_avro_sink() override {
       close();
     }
 
