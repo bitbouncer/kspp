@@ -5,6 +5,7 @@
 namespace kspp {
   using namespace std::chrono_literals;
 
+  /*
   elasticsearch_producer::elasticsearch_producer(const kspp::connect::connection_params& cp, size_t batch_size)
       : _work(new boost::asio::io_service::work(_ios))
       , _fg([this] { _process_work(); })
@@ -35,12 +36,13 @@ namespace kspp {
     _http_404.add_label("code", "404_NO_ERROR");
     _http_4xx.add_label("code", "4xx");
     _http_5xx.add_label("code", "5xx");
-     curl_global_init(CURL_GLOBAL_NOTHING); /* minimal */
+     curl_global_init(CURL_GLOBAL_NOTHING);
     _http_handler.set_user_agent("Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36");
     connect_async();
   }
+  */
 
-  elasticsearch_producer::~elasticsearch_producer(){
+  /*elasticsearch_producer::~elasticsearch_producer(){
     _http_handler.close();
     close();
     _work.reset();
@@ -57,18 +59,20 @@ namespace kspp {
     parent->add_metric(&_http_4xx);
     parent->add_metric(&_http_5xx);
     parent->add_metric(&_msg_bytes);
-  }
+  }*/
 
-  void elasticsearch_producer::close(){
+  /*void elasticsearch_producer::close(){
     _closed=true;
-  }
+  }*/
 
 
-
+/*
   void elasticsearch_producer::connect_async(){
     _connected = true; // TODO login and get an auth token
   }
+  */
 
+/*
   void elasticsearch_producer::check_table_exists_async(){
     _table_exists = true;
     _table_create_pending = false;
@@ -102,8 +106,9 @@ namespace kspp {
       }
     }
   }
+  */
 
-  kspp::async::work<elasticsearch_producer::work_result_t>::async_function  elasticsearch_producer::create_one_http_work(const kspp::generic_avro& key, const kspp::generic_avro* value) {
+  /*kspp::async::work<elasticsearch_producer::work_result_t>::async_function  elasticsearch_producer::create_one_http_work(const kspp::generic_avro& key, const kspp::generic_avro* value) {
     auto key_string = avro_2_raw_column_value(*key.generic_datum());
     std::string url = _cp.url + "/" + _cp.database_name + "/" + "_doc" + "/" + key_string;
 
@@ -185,7 +190,9 @@ namespace kspp {
     }; // work
     return f;
   }
+   */
 
+  /*
   void elasticsearch_producer::_process_work() {
     while (!_closed) {
       size_t msg_in_batch = 0 ;
@@ -218,10 +225,12 @@ namespace kspp {
     }
     LOG(INFO) << "worker thread exiting";
   }
-
+   */
+/*
   void elasticsearch_producer::poll() {
     while (!_done.empty()) {
       _done.pop_front();
     }
   }
+  */
 }
