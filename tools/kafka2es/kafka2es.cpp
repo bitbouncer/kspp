@@ -29,17 +29,14 @@ int main(int argc, char **argv) {
   desc.add_options()
       ("help", "produce help message")
       ("app_realm", boost::program_options::value<std::string>()->default_value(get_env_and_log("APP_REALM", "DEV")), "app_realm")
-      ("broker", boost::program_options::value<std::string>()->default_value(kspp::default_kafka_broker_uri()), "broker")
-      ("schema_registry", boost::program_options::value<std::string>()->default_value(kspp::default_schema_registry_uri()), "schema_registry")
       ("partition_list", boost::program_options::value<std::string>()->default_value("[-1]"), "partition_list")
       ("start_offset", boost::program_options::value<std::string>()->default_value("OFFSET_BEGINNING"), "start_offset")
       ("topic", boost::program_options::value<std::string>(), "topic")
-      ("es_url", boost::program_options::value<std::string>()->default_value(get_env_and_log("ES_URL")), "es_url")
-      ("es_user", boost::program_options::value<std::string>()->default_value(get_env_and_log("ES_USER")), "es_user")
-      ("es_password", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("ES_PASSWORD")), "es_password")
-      ("es_index", boost::program_options::value<std::string>(), "es_index")
-      ("es_http_header", boost::program_options::value<std::string>()->default_value(get_env_and_log("ES_HTTP_HEADER")),"es_http_header")
-      ("pushgateway_uri", boost::program_options::value<std::string>()->default_value(get_env_and_log("PUSHGATEWAY_URI", "localhost:9091")),"pushgateway_uri")
+      ("remote_write_uri", boost::program_options::value<std::string>()->default_value(get_env_and_log("REMOTE_WRITE_URI", "")), "remote_write_uri")
+      ("remote_write_user", boost::program_options::value<std::string>()->default_value(get_env_and_log("REMOTE_WRITE_USER", "")), "remote_write_uri")
+      ("remote_write_password", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("REMOTE_WRITE_PASSWORD", "")), "remote_write_password")
+      //("es_http_header", boost::program_options::value<std::string>()->default_value(get_env_and_log("ES_HTTP_HEADER")),"es_http_header")
+      ("consumer_group", boost::program_options::value<std::string>()->default_value(get_env_and_log("CONSUMER_GROUP", "")), "consumer_group")
       ("metrics_namespace", boost::program_options::value<std::string>()->default_value(get_env_and_log("METRICS_NAMESPACE", "bb")),"metrics_namespace")
       ;
 
@@ -52,19 +49,17 @@ int main(int argc, char **argv) {
     return 0;
   }
 
+  std::string consumer_group;
+  if (vm.count("consumer_group")) {
+    consumer_group = vm["consumer_group"].as<std::string>();
+  }
+
+  auto config = std::make_shared<kspp::cluster_config>(consumer_group);
+  config->load_config_from_env();
+
   std::string app_realm;
   if (vm.count("app_realm")) {
     app_realm = vm["app_realm"].as<std::string>();
-  }
-
-  std::string broker;
-  if (vm.count("broker")) {
-    broker = vm["broker"].as<std::string>();
-  }
-
-  std::string schema_registry;
-  if (vm.count("schema_registry")) {
-    schema_registry = vm["schema_registry"].as<std::string>();
   }
 
   std::string topic;
@@ -91,37 +86,24 @@ int main(int argc, char **argv) {
     return -1;
   }
 
-
-  std::string es_url;
-  if (vm.count("es_url")) {
-    es_url = vm["es_url"].as<std::string>();
+  std::string remote_write_uri;
+  if (vm.count("remote_write_uri")) {
+    remote_write_uri = vm["remote_write_uri"].as<std::string>();
   }
 
-  std::string es_user;
-  if (vm.count("es_user")) {
-    es_user = vm["es_user"].as<std::string>();
+  if (remote_write_uri.size()==0) {
+    std::cerr << "--remote_write_uri must specified" << std::endl;
+    return -1;
   }
 
-  std::string es_password;
-  if (vm.count("es_password")) {
-    es_password = vm["es_password"].as<std::string>();
+  std::string remote_write_user;
+  if (vm.count("remote_write_user")) {
+    remote_write_user = vm["remote_write_user"].as<std::string>();
   }
 
-  std::string es_http_header;
-  if (vm.count("es_http_header")) {
-    es_http_header = vm["es_http_header"].as<std::string>();
-  }
-
-  std::string es_index;
-  if (vm.count("es_index")) {
-    es_index = vm["es_index"].as<std::string>();
-  }  else {
-    es_index = "kafka_" + topic;
-  }
-
-  std::string pushgateway_uri;
-  if (vm.count("pushgateway_uri")) {
-    pushgateway_uri = vm["pushgateway_uri"].as<std::string>();
+  std::string remote_write_password;
+  if (vm.count("remote_write_password")) {
+    remote_write_password = vm["remote_write_password"].as<std::string>();
   }
 
   std::string metrics_namespace;
@@ -129,45 +111,27 @@ int main(int argc, char **argv) {
     metrics_namespace = vm["metrics_namespace"].as<std::string>();
   }
 
-
-  std::string consumer_group(SERVICE_NAME);
-  consumer_group += es_index;
-
-  auto config = std::make_shared<kspp::cluster_config>(consumer_group);
-  config->set_brokers(broker);
-  config->set_schema_registry_uri(schema_registry);
   config->set_producer_buffering_time(1000ms);
   config->set_consumer_buffering_time(500ms);
-
-  if (config->set_ca_cert_path(kspp::default_ca_cert_path())) {
-    config->set_private_key_path(kspp::default_client_cert_path(),
-                                 kspp::default_client_key_path(),
-                                 kspp::default_client_key_passphrase());
-  }
   config->validate();
   config->log();
   auto s= config->avro_serdes();
 
-  LOG(INFO) << "app_realm         : " << app_realm;
-  LOG(INFO) << "topic             : " << topic;
-  LOG(INFO) << "start_offset      : " << kspp::to_string(start_offset);
-  LOG(INFO) << "es_url            : " << es_url;
-  LOG(INFO) << "es_user           : " << es_user;
-  LOG(INFO) << "es_password       : " << "[hidden]";
-  LOG(INFO) << "es_http_header    : " << es_http_header;
-  LOG(INFO) << "es_index          : " << es_index;
-  LOG(INFO) << "pushgateway_uri   : " << pushgateway_uri;
-  LOG(INFO) << "metrics_namespace : " << metrics_namespace;
+  LOG(INFO) << "app_realm            : " << app_realm;
+  LOG(INFO) << "topic                : " << topic;
+  LOG(INFO) << "start_offset         : " << kspp::to_string(start_offset);
+
+
+  LOG(INFO) << "remote_write_uri     : " << remote_write_uri;
+  if (remote_write_user.size()) {
+    LOG(INFO) << "remote_write_user    : " << remote_write_user;
+    LOG(INFO) << "remote_write_password: [hidden]";
+  } else {
+    LOG(INFO) << "authentication       : NONE";
+  }
+  LOG(INFO) << "pushgateway_uri      : " << config->get_pushgateway_uri();
+  LOG(INFO) << "metrics_namespace    : " << metrics_namespace;
   LOG(INFO) << "discovering facts...";
-
-  kspp::connect::connection_params connection_params;
-  connection_params.url = es_url;
-  connection_params.database_name = es_index;
-  connection_params.user = es_user;
-  connection_params.password = es_password;
-
-  // since we always seems to start with OFFSET_BEGINNING
-  // connection_params.assume_beginning_of_stream = true;
 
   auto nr_of_partitions = kspp::kafka::get_number_partitions(config, topic);
   if (partition_list.size() == 0 || partition_list[0] == -1)
@@ -179,14 +143,13 @@ int main(int argc, char **argv) {
 
   auto source0 = topology->create_processors<kspp::kafka_source<kspp::generic_avro, kspp::generic_avro, kspp::avro_serdes, kspp::avro_serdes>>(partition_list, topic, config->avro_serdes(), config->avro_serdes());
 
-  topology->create_sink<kspp::elasticsearch_generic_avro_sink>(source0, connection_params);
+  topology->create_sink<kspp::elasticsearch_generic_avro_sink>(source0, remote_write_uri, remote_write_user, remote_write_password);
 
   topology->add_labels( {
                             { "app_name", SERVICE_NAME },
                             { "app_realm", app_realm },
                             { "hostname", default_hostname() },
-                            { "es_url", es_url },
-                            { "es_index", es_index }
+                            { "remote_write_uri", remote_write_uri },
                         });
 
   topology->start(start_offset);
@@ -198,7 +161,7 @@ int main(int argc, char **argv) {
   LOG(INFO) << "status is up";
 
   {
-    auto metrics_reporter = std::make_shared<kspp::prometheus_pushgateway_reporter>(metrics_namespace, pushgateway_uri) << topology;
+    auto metrics_reporter = std::make_shared<kspp::prometheus_pushgateway_reporter>(metrics_namespace, config->get_pushgateway_uri()) << topology;
     while (run) {
       if (topology->process(kspp::milliseconds_since_epoch()) == 0) {
         std::this_thread::sleep_for(10ms);

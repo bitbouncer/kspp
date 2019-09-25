@@ -2,16 +2,27 @@
 #include <kspp/cluster_config.h>
 #include <experimental/filesystem>
 #include <glog/logging.h>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
 #include <kspp/utils/url_parser.h>
 #include <kspp/utils/env.h>
 #include <kspp/cluster_metadata.h>
 
-
 using namespace std::chrono_literals;
 
 namespace kspp {
+
+  static std::string consumer_group_or_random(std::string s){
+    if (s.size())
+      return s;
+    boost::uuids::random_generator gen;
+    boost::uuids::uuid id = gen();
+    return boost::uuids::to_string(id);
+  }
+
   cluster_config::cluster_config(std::string consumer_group, uint64_t flags)
-      : consumer_group_(consumer_group)
+      : consumer_group_(consumer_group_or_random(consumer_group))
       , min_topology_buffering_(std::chrono::milliseconds(1000))
       , producer_buffering_(std::chrono::milliseconds(1000))
       , producer_message_timeout_(std::chrono::milliseconds(0))

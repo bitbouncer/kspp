@@ -27,14 +27,16 @@ namespace kspp {
     typedef typename kspp::async::work<elasticsearch_producer::work_result_t>::async_function work_f;
 
 
-    elasticsearch_producer(const kspp::connect::connection_params& cp, key2string_f key_conv, value2json_f value_conv, size_t http_batch_size)
+    elasticsearch_producer(std::string remote_write_url, std::string username, std::string password, key2string_f key_conv, value2json_f value_conv, size_t http_batch_size)
     : _work(new boost::asio::io_service::work(_ios))
         , _fg([this] { _process_work(); })
         , _bg(boost::bind(&boost::asio::io_service::run, &_ios))
         , _key_conv(key_conv)
         , _value_conv(value_conv)
         , _http_handler(_ios, http_batch_size)
-        , _cp(cp)
+        , _remote_write_url(remote_write_url)
+        , _username(username)
+        , _password(password)
         , _batch_size(http_batch_size)
         , _http_timeout(std::chrono::seconds(2))
         , _good(true)
@@ -44,7 +46,7 @@ namespace kspp {
         , _table_exists(false)
         , _table_create_pending(false)
         , _insert_in_progress(false)
-        , _skip_delete_of_non_active(cp.assume_beginning_of_stream)
+        //, _skip_delete_of_non_active(cp.assume_beginning_of_stream)
         , _request_time("http_request_time", "ms", { 0.9, 0.99 })
         , _timeout("http_timeout", "msg")
         , _http_2xx("http_request", "msg")
@@ -53,7 +55,7 @@ namespace kspp {
         , _http_404("http_request", "msg")
         , _http_5xx("http_request", "msg")
         , _msg_bytes("bytes_sent", "bytes"){
-      _request_time.add_label(KSPP_DESTINATION_HOST, _cp.host);
+      _request_time.add_label(KSPP_DESTINATION_HOST, remote_write_url);
       _http_2xx.add_label("code", "2xx");
       _http_3xx.add_label("code", "3xx");
       _http_404.add_label("code", "404_NO_ERROR");
@@ -96,10 +98,8 @@ namespace kspp {
     }
 
     std::string topic() const override {
-      return _cp.database_name;
+      return "unknown-index"; // todo split url?? if we care "http://127.0.0.1:9200/logs/_doc"
     }
-
-    //void stop();
 
     bool is_connected() const {
       return _connected;
@@ -159,30 +159,27 @@ namespace kspp {
     }
 
     work_f create_one_http_work(const K& key, const V* value){
-      //auto key_string = avro_2_raw_column_value(*key.generic_datum());
       auto key_string = _key_conv(key);
-      std::string url = _cp.url + "/" + _cp.database_name + "/" + "_doc" + "/" + key_string;
-
+      std::string url = _remote_write_url + "/" + key_string;
       kspp::http::method_t request_type = (value) ? kspp::http::PUT : kspp::http::DELETE_;
-
       std::string body;
-
       if (value) {
-        //body = avro2elastic_json(*value->valid_schema(), *value->generic_datum());
         body = _value_conv(*value);
-        _active_ids.insert(key_string);
+        //_active_ids.insert(key_string);
       } else {
-        if (_active_ids.find(key_string)!=_active_ids.end()) {
+          /*if (_active_ids.find(key_string)!=_active_ids.end()) {
           _active_ids.erase(key_string);
+
         } else {
         }
+        */
       }
         work_f f = [this, request_type, body, url](std::function<void(work_result_t)> cb) {
         std::vector<std::string> headers({ "Content-Type: application/json" });
         auto request = std::make_shared<kspp::http::request>(request_type, url, headers, _http_timeout);
 
-        if (_cp.user.size() && _cp.password.size())
-          request->set_basic_auth(_cp.user, _cp.password);
+        if (_username.size() && _password.size())
+          request->set_basic_auth(_username, _password);
 
         request->append(body);
         //request->set_trace_level(http::TRACE_LOG_NONE);
@@ -202,7 +199,7 @@ namespace kspp {
                   cb(TIMEOUT);
                   return;
                 } else {
-                  // if we are deleteing and the document does not exist we do not consideer this as a failure
+                  // if we are deleteing and the document does not exist we do not consider this as a failure
                   if (h->method()==kspp::http::DELETE_ && h->http_result()==kspp::http::not_found){
                     ++_http_404;
                     cb(SUCCESS);
@@ -217,7 +214,8 @@ namespace kspp {
                   else if (ec>=500 && ec <600)
                     ++_http_5xx;
 
-                  LOG(ERROR) << "http " << kspp::http::to_string(h->method()) << ", "  << h->uri() << " HTTPRES = " << h->http_result() << " - retrying, reponse:" << h->rx_content();
+                  LOG_FIRST_N(ERROR, 100)  << "http " << kspp::http::to_string(h->method()) << ", "  << h->uri() << " HTTPRES = " << h->http_result() << " - retrying, reponse:" << h->rx_content();
+                  LOG_EVERY_N(ERROR, 1000) << "http " << kspp::http::to_string(h->method()) << ", "  << h->uri() << " HTTPRES = " << h->http_result() << " - retrying, reponse:" << h->rx_content();
 
                   if (ec==400) {
                     LOG(ERROR) << "http(400) content: " << h->tx_content();
@@ -229,9 +227,7 @@ namespace kspp {
                   return;
                 }
               }
-              LOG_EVERY_N(INFO, 1000) << "http PUT: " << h->uri() << " got " << h->rx_content_length() << " bytes, time="
-                                      << h->milliseconds() << " ms (" << h->rx_kb_per_sec() << " KB/s), #"
-                                      << google::COUNTER;
+              LOG_EVERY_N(INFO, 1000) << "http PUT: " << h->uri() << " got " << h->rx_content_length() << " bytes, time=" << h->milliseconds() << " ms (" << h->rx_kb_per_sec() << " KB/s), #" << google::COUNTER;
               ++_http_2xx;
               _msg_bytes += h->tx_content_length();
               cb(SUCCESS);
@@ -261,7 +257,7 @@ namespace kspp {
           auto ws = work.size();
           run_work(work, _batch_size);
           auto end = kspp::milliseconds_since_epoch();
-          LOG_EVERY_N(INFO, 100) << _cp.url << ", worksize: " << ws << ", batch_size: " << _batch_size << ", duration: " << end - start << " ms";
+          LOG_EVERY_N(INFO, 100) << _remote_write_url << ", worksize: " << ws << ", batch_size: " << _batch_size << ", duration: " << end - start << " ms";
           while (!in_batch.empty())
             _done.push_back(in_batch.pop_front_and_get());
 
@@ -284,8 +280,9 @@ namespace kspp {
     size_t _batch_size;
     std::chrono::milliseconds _http_timeout;
 
-    const kspp::connect::connection_params _cp;
-    const std::string _id_column;
+    const std::string _remote_write_url;
+    const std::string _username;
+    const std::string _password;
 
     event_queue<K, V> _incomming_msg;
     event_queue<K, V> _done;
@@ -308,7 +305,7 @@ namespace kspp {
     metric_counter _msg_bytes;
     metric_summary _request_time;
 
-    bool _skip_delete_of_non_active;
+    //bool _skip_delete_of_non_active;
     std::set<std::string> _active_ids;
   };
 }

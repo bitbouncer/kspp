@@ -45,7 +45,6 @@ int main(int argc, char** argv) {
       ("id_column", boost::program_options::value<std::string>()->default_value("id"), "id_column")
       ("table_prefix", boost::program_options::value<std::string>()->default_value("kafka_"), "table_prefix")
       ("character_encoding", boost::program_options::value<std::string>()->default_value("UTF8"), "character_encoding")
-      ("pushgateway_uri", boost::program_options::value<std::string>()->default_value(get_env_and_log("PUSHGATEWAY_URI", "localhost:9091")),"pushgateway_uri")
       ("metrics_namespace", boost::program_options::value<std::string>()->default_value(get_env_and_log("METRICS_NAMESPACE", "bb")),"metrics_namespace")
       ("oneshot", "run to eof and exit")
       ;
@@ -182,11 +181,6 @@ int main(int argc, char** argv) {
     postgres_disable_delete = (vm["postgres_disable_delete"].as<int>() > 0);
   }
 
-  std::string pushgateway_uri;
-  if (vm.count("pushgateway_uri")) {
-    pushgateway_uri = vm["pushgateway_uri"].as<std::string>();
-  }
-
   std::string metrics_namespace;
   if (vm.count("metrics_namespace")) {
     metrics_namespace = vm["metrics_namespace"].as<std::string>();
@@ -215,7 +209,7 @@ int main(int argc, char** argv) {
   LOG(INFO) << "postgres_tablename           : " << postgres_tablename;
   LOG(INFO) << "character_encoding           : " << character_encoding;
   LOG(INFO) << "postgres_disable_delete      : " << postgres_disable_delete;
-  LOG(INFO) << "pushgateway_uri              : " << pushgateway_uri;
+  LOG(INFO) << "pushgateway_uri              : " << config->get_pushgateway_uri();
   LOG(INFO) << "metrics_namespace            : " << metrics_namespace;
 
   kspp::connect::connection_params connection_params;

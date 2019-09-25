@@ -18,7 +18,7 @@ namespace kspp {
       std::string user;
       std::string password;
 
-      //resource id database in postgres & tds - index in elastic search
+      //resource id database in postgres & tds - not used in elastic
       std::string database_name;
 
       std::string http_header;

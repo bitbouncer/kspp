@@ -28,8 +28,6 @@ int main(int argc, char **argv) {
   boost::program_options::options_description desc("options");
   desc.add_options()
       ("help", "produce help message")
-      ("broker", boost::program_options::value<std::string>()->default_value(kspp::default_kafka_broker_uri()), "broker")
-      ("schema_registry", boost::program_options::value<std::string>()->default_value(kspp::default_schema_registry_uri()), "schema_registry")
       ("app_realm", boost::program_options::value<std::string>()->default_value(get_env_and_log("APP_REALM", "DEV")), "app_realm")
       ("topic", boost::program_options::value<std::string>(), "topic")
       ("partition_list", boost::program_options::value<std::string>()->default_value("[-1]"), "partition_list")
@@ -46,7 +44,7 @@ int main(int argc, char **argv) {
       ("table_prefix", boost::program_options::value<std::string>()->default_value("kafka_"), "table_prefix")
       ("character_encoding", boost::program_options::value<std::string>()->default_value("UTF8"), "character_encoding")
       ("table_name_override", boost::program_options::value<std::string>(), "table_name_override")
-      ("pushgateway_uri", boost::program_options::value<std::string>()->default_value(get_env_and_log("PUSHGATEWAY_URI", "localhost:9091")),"pushgateway_uri")
+      ("consumer_group", boost::program_options::value<std::string>()->default_value(get_env_and_log("CONSUMER_GROUP", "")), "consumer_group")
       ("metrics_namespace", boost::program_options::value<std::string>()->default_value(get_env_and_log("METRICS_NAMESPACE", "bb")),"metrics_namespace")
       ;
 
@@ -59,15 +57,13 @@ int main(int argc, char **argv) {
     return 0;
   }
 
-  std::string broker;
-  if (vm.count("broker")) {
-    broker = vm["broker"].as<std::string>();
+  std::string consumer_group;
+  if (vm.count("consumer_group")) {
+    consumer_group = vm["consumer_group"].as<std::string>();
   }
 
-  std::string schema_registry;
-  if (vm.count("schema_registry")) {
-    schema_registry = vm["schema_registry"].as<std::string>();
-  }
+  auto config = std::make_shared<kspp::cluster_config>(consumer_group);
+  config->load_config_from_env();
 
   std::string app_realm;
   if (vm.count("app_realm")) {
@@ -161,29 +157,13 @@ int main(int argc, char **argv) {
     postgres_disable_delete = (vm["postgres_disable_delete"].as<int>() > 0);
   }
 
-  std::string pushgateway_uri;
-  if (vm.count("pushgateway_uri")) {
-    pushgateway_uri = vm["pushgateway_uri"].as<std::string>();
-  }
-
   std::string metrics_namespace;
   if (vm.count("metrics_namespace")) {
     metrics_namespace = vm["metrics_namespace"].as<std::string>();
   }
 
-  std::string consumer_group(SERVICE_NAME);
-  consumer_group += postgres_dbname;
-
-  auto config = std::make_shared<kspp::cluster_config>(consumer_group);
-
-  config->set_brokers(broker);
-  config->set_schema_registry_uri(schema_registry);
   config->set_producer_buffering_time(1000ms);
   config->set_consumer_buffering_time(500ms);
-  config->set_ca_cert_path(kspp::default_ca_cert_path());
-  config->set_private_key_path(kspp::default_client_cert_path(),
-                               kspp::default_client_key_path(),
-                               kspp::default_client_key_passphrase());
   config->validate();
   config->log();
   auto s= config->avro_serdes();
@@ -209,7 +189,7 @@ int main(int argc, char **argv) {
   LOG(INFO) << "table_name                   : " << table_name;
   LOG(INFO) << "character_encoding           : " << character_encoding;
   LOG(INFO) << "postgres_disable_delete      : " << postgres_disable_delete;
-  LOG(INFO) << "pushgateway_uri              : " << pushgateway_uri;
+  LOG(INFO) << "pushgateway_uri              : " << config->get_pushgateway_uri();
   LOG(INFO) << "metrics_namespace            : " << metrics_namespace;
 
   kspp::connect::connection_params connection_params;
@@ -257,7 +237,7 @@ int main(int argc, char **argv) {
   LOG(INFO) << "status is up";
 
   {
-    auto metrics_reporter = std::make_shared<kspp::prometheus_pushgateway_reporter>(metrics_namespace, pushgateway_uri) << topology;
+    auto metrics_reporter = std::make_shared<kspp::prometheus_pushgateway_reporter>(metrics_namespace, config->get_pushgateway_uri()) << topology;
     int64_t next_exit_check = kspp::milliseconds_since_epoch() + 10000;
     while (run) {
       if (topology->process(kspp::milliseconds_since_epoch()) == 0) {

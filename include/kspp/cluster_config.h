@@ -13,7 +13,7 @@ namespace kspp {
   public:
     enum flags_t { NONE=0x0, KAFKA=0x01, SCHEMA_REGISTRY=0x02, PUSHGATEWAY=0x04, BB_STREAMING=0x08 };
 
-    cluster_config(std::string consumer_group, uint64_t flags = KAFKA | SCHEMA_REGISTRY | PUSHGATEWAY );
+    cluster_config(std::string consumer_group="", uint64_t flags = KAFKA | SCHEMA_REGISTRY | PUSHGATEWAY );
 
     inline bool has_feature(flags_t f) const {  return (flags_ & f); }
 

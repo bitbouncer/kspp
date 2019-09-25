@@ -31,8 +31,6 @@ int main(int argc, char **argv) {
   desc.add_options()
       ("help", "produce help message")
       ("app_realm", boost::program_options::value<std::string>()->default_value(get_env_and_log("APP_REALM", "DEV")), "app_realm")
-      ("broker", boost::program_options::value<std::string>(), "broker")
-      ("schema_registry", boost::program_options::value<std::string>(), "schema_registry")
       ("db_host", boost::program_options::value<std::string>()->default_value(get_env_and_log("DB_HOST")), "db_host")
       ("db_port", boost::program_options::value<int32_t>()->default_value(1433), "db_port")
       ("db_user", boost::program_options::value<std::string>()->default_value(get_env_and_log("DB_USER")), "db_user")
@@ -51,7 +49,6 @@ int main(int argc, char **argv) {
       ("state_store_root", boost::program_options::value<std::string>(), "state_store_root")
       ("offset_storage", boost::program_options::value<std::string>(), "offset_storage")
       ("filename", boost::program_options::value<std::string>(), "filename")
-      ("pushgateway_uri", boost::program_options::value<std::string>()->default_value(get_env_and_log("PUSHGATEWAY_URI", "localhost:9091")),"pushgateway_uri")
       ("metrics_namespace", boost::program_options::value<std::string>()->default_value(get_env_and_log("METRICS_NAMESPACE", "bb")),"metrics_namespace")
       ("oneshot", "run to eof and exit")
       ;
@@ -65,8 +62,7 @@ int main(int argc, char **argv) {
     return 0;
   }
 
-  std::string consumer_group(SERVICE_NAME);
-  auto config = std::make_shared<kspp::cluster_config>(consumer_group);
+  auto config = std::make_shared<kspp::cluster_config>();
   config->load_config_from_env();
 
   if (vm.count("state_store_root")) {
@@ -76,14 +72,6 @@ int main(int argc, char **argv) {
   std::string app_realm;
   if (vm.count("app_realm")) {
     app_realm = vm["app_realm"].as<std::string>();
-  }
-
-  if (vm.count("broker")) {
-    config->set_brokers(vm["broker"].as<std::string>());
-  }
-
-  if (vm.count("schema_registry")) {
-    config->set_schema_registry_uri(vm["schema_registry"].as<std::string>());
   }
 
   std::string db_host;
@@ -194,11 +182,6 @@ int main(int argc, char **argv) {
     return -1;
   }
 
-  std::string pushgateway_uri;
-  if (vm.count("pushgateway_uri")) {
-    pushgateway_uri = vm["pushgateway_uri"].as<std::string>();
-  }
-
   std::string metrics_namespace;
   if (vm.count("metrics_namespace")) {
     metrics_namespace = vm["metrics_namespace"].as<std::string>();
@@ -230,7 +213,7 @@ int main(int argc, char **argv) {
   LOG(INFO) << "topic             : " << topic;
   LOG(INFO) << "offset_storage    : " << offset_storage;
   LOG(INFO) << "start_offset      : " << kspp::to_string(start_offset);
-  LOG(INFO) << "pushgateway_uri   : " << pushgateway_uri;
+  LOG(INFO) << "pushgateway_uri   : " << config->get_pushgateway_uri();
   LOG(INFO) << "metrics_namespace : " << metrics_namespace;
   if (oneshot)
     LOG(INFO) << "oneshot           : TRUE";
@@ -292,7 +275,7 @@ int main(int argc, char **argv) {
 
   // output metrics and run
   {
-    auto metrics_reporter = std::make_shared<kspp::prometheus_pushgateway_reporter>(metrics_namespace, pushgateway_uri) << topology;
+    auto metrics_reporter = std::make_shared<kspp::prometheus_pushgateway_reporter>(metrics_namespace, config->get_pushgateway_uri()) << topology;
     while (run) {
       if (topology->process(kspp::milliseconds_since_epoch()) == 0) {
         std::this_thread::sleep_for(10ms);

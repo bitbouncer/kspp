@@ -1,9 +1,9 @@
 #include <iostream>
 #include <csignal>
 #include <boost/program_options.hpp>
-#include <boost/uuid/uuid.hpp>
-#include <boost/uuid/uuid_generators.hpp>
-#include <boost/uuid/uuid_io.hpp>
+//#include <boost/uuid/uuid.hpp>
+//#include <boost/uuid/uuid_generators.hpp>
+//#include <boost/uuid/uuid_io.hpp>
 #include <kspp/utils/env.h>
 #include <kspp/utils/kafka_utils.h>
 #include <kspp/topology_builder.h>
@@ -31,8 +31,6 @@ int main(int argc, char** argv) {
   boost::program_options::options_description desc("options");
   desc.add_options()
       ("help", "produce help message")
-      //("broker", boost::program_options::value<std::string>()->default_value(kspp::default_kafka_broker_uri()), "broker")
-      //("schema_registry", boost::program_options::value<std::string>()->default_value(kspp::default_schema_registry_uri()), "schema_registry")
       ("partition_list", boost::program_options::value<std::string>()->default_value("[-1]"), "partition_list")
       ("start_offset", boost::program_options::value<std::string>()->default_value("OFFSET_STORED"), "start_offset")
       ("topic", boost::program_options::value<std::string>(), "topic")
@@ -55,26 +53,10 @@ int main(int argc, char** argv) {
   if (vm.count("consumer_group")) {
     consumer_group = vm["consumer_group"].as<std::string>();
   }
-  if (consumer_group.empty()){
-    boost::uuids::random_generator gen;
-    boost::uuids::uuid id = gen();
-    consumer_group = boost::uuids::to_string(id);
-  }
 
   auto config = std::make_shared<kspp::cluster_config>(consumer_group);
 
   config->load_config_from_env();
-
-  /*std::string broker;
-  if (vm.count("broker")) {
-    broker = vm["broker"].as<std::string>();
-  }
-
-  std::string schema_registry;
-  if (vm.count("schema_registry")) {
-    schema_registry = vm["schema_registry"].as<std::string>();
-  }
-  */
 
   std::string topic;
   if (vm.count("topic")) {
@@ -96,7 +78,6 @@ int main(int argc, char** argv) {
     std::cerr << "start_offset must be one of OFFSET_BEGINNING / OFFSET_END / OFFSET_STORED";
     return -1;
   }
-
 
   std::string dst_tmp;
   if (vm.count("dst")) {

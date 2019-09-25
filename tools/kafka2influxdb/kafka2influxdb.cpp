@@ -32,16 +32,14 @@ int main(int argc, char** argv) {
   desc.add_options()
       ("help", "produce help message")
       ("app_realm", boost::program_options::value<std::string>()->default_value(get_env_and_log("APP_REALM", "DEV")), "app_realm")
-      ("broker", boost::program_options::value<std::string>()->default_value(default_kafka_broker_uri()), "broker")
       ("src_topic", boost::program_options::value<std::string>()->default_value(get_env_and_log("SRC_TOPIC", DEFAULT_METRICS_TOPIC)), "src_topic")
       ("partition_list", boost::program_options::value<std::string>()->default_value("[-1]"), "partition_list")
       ("start_offset", boost::program_options::value<std::string>()->default_value("OFFSET_STORED"), "start_offset")
       ("dst_uri", boost::program_options::value<std::string>()->default_value(get_env_and_log("DST_URI", DEFAULT_URI)), "dst_uri")
       ("dst_database", boost::program_options::value<std::string>()->default_value(get_env_and_log("DST_DATABASE", "telegraf")), "dst_database")
-      ("schema_registry", boost::program_options::value<std::string>()->default_value(default_schema_registry_uri()), "schema_registry")
       ("http_batch_size", boost::program_options::value<int32_t>()->default_value(500), "http_batch_size")
       ("http_timeout_ms", boost::program_options::value<int32_t>()->default_value(1000), "http_timeout_ms")
-      ("pushgateway_uri", boost::program_options::value<std::string>()->default_value(get_env_and_log("PUSHGATEWAY_URI", "localhost:9091")),"pushgateway_uri")
+      ("consumer_group", boost::program_options::value<std::string>()->default_value(get_env_and_log("CONSUMER_GROUP", "")), "consumer_group")
       ("metrics_namespace", boost::program_options::value<std::string>()->default_value(get_env_and_log("METRICS_NAMESPACE", "bb")),"metrics_namespace")
       ;
 
@@ -53,6 +51,14 @@ int main(int argc, char** argv) {
     std::cout << desc << std::endl;
     return 0;
   }
+
+  std::string consumer_group;
+  if (vm.count("consumer_group")) {
+    consumer_group = vm["consumer_group"].as<std::string>();
+  }
+
+  auto config = std::make_shared<kspp::cluster_config>(consumer_group);
+  config->load_config_from_env();
 
   std::string app_realm;
   if (vm.count("app_realm")) {
@@ -84,16 +90,6 @@ int main(int argc, char** argv) {
     http_timeout = std::chrono::milliseconds(vm["http_timeout_ms"].as<int32_t>());
   }
 
-  std::string broker;
-  if (vm.count("broker")) {
-    broker = vm["broker"].as<std::string>();
-  }
-
-  std::string schema_registry;
-  if (vm.count("schema_registry")) {
-    schema_registry = vm["schema_registry"].as<std::string>();
-  }
-
   std::vector<int> partition_list;
   if (vm.count("partition_list")) {
     auto s = vm["partition_list"].as<std::string>();
@@ -110,30 +106,13 @@ int main(int argc, char** argv) {
     return -1;
   }
 
-  std::string pushgateway_uri;
-  if (vm.count("pushgateway_uri")) {
-    pushgateway_uri = vm["pushgateway_uri"].as<std::string>();
-  }
-
   std::string metrics_namespace;
   if (vm.count("metrics_namespace")) {
     metrics_namespace = vm["metrics_namespace"].as<std::string>();
   }
 
-  std::string consumer_group(SERVICE_NAME);
-  consumer_group += dst_uri;
-  consumer_group += dst_database;
-
-  auto config = std::make_shared<kspp::cluster_config>(consumer_group);
-
-  config->set_brokers(broker);
-  config->set_schema_registry_uri(schema_registry);
   config->set_producer_buffering_time(1000ms);
   config->set_consumer_buffering_time(500ms);
-  config->set_ca_cert_path(kspp::default_ca_cert_path());
-  config->set_private_key_path(kspp::default_client_cert_path(),
-                               kspp::default_client_key_path(),
-                               kspp::default_client_key_passphrase());
   config->validate();
   config->log();
 
@@ -143,7 +122,7 @@ int main(int argc, char** argv) {
   LOG(INFO) << "dst_database      : " << dst_database;
   LOG(INFO) << "http_batch_size   : " << http_batch_size;
   LOG(INFO) << "http_timeout_ms   : " << http_timeout.count();
-  LOG(INFO) << "pushgateway_uri   : " << pushgateway_uri;
+  LOG(INFO) << "pushgateway_uri   : " << config->get_pushgateway_uri();
   LOG(INFO) << "metrics_namespace : " << metrics_namespace;
   LOG(INFO) << "discovering facts...";
 
@@ -180,7 +159,7 @@ int main(int argc, char** argv) {
 
   // output metrics and run...
   {
-    auto metrics_reporter = std::make_shared<kspp::prometheus_pushgateway_reporter>(metrics_namespace, pushgateway_uri) << topology;
+    auto metrics_reporter = std::make_shared<kspp::prometheus_pushgateway_reporter>(metrics_namespace, config->get_pushgateway_uri()) << topology;
     while (run) {
       if (topology->process(kspp::milliseconds_since_epoch()) == 0) {
         std::this_thread::sleep_for(10ms);
