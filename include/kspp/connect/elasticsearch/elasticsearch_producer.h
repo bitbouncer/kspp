@@ -119,6 +119,14 @@ namespace kspp {
       return _incomming_msg.size() + _done.size();
     }
 
+    void set_http_log_interval(int v) {
+      http_log_interval_ = v;
+    }
+
+    void set_batch_log_interval(int v) {
+      batch_log_interval_ = v;
+    }
+
   private:
     void connect_async(){
       _connected = true; // TODO login and get an auth token
@@ -227,7 +235,7 @@ namespace kspp {
                   return;
                 }
               }
-              LOG_EVERY_N(INFO, 1000) << "http PUT: " << h->uri() << " got " << h->rx_content_length() << " bytes, time=" << h->milliseconds() << " ms (" << h->rx_kb_per_sec() << " KB/s), #" << google::COUNTER;
+              LOG_EVERY_N(INFO, http_log_interval_) << "http PUT: " << h->uri() << " got " << h->rx_content_length() << " bytes, time=" << h->milliseconds() << " ms (" << h->rx_kb_per_sec() << " KB/s), #" << google::COUNTER;
               ++_http_2xx;
               _msg_bytes += h->tx_content_length();
               cb(SUCCESS);
@@ -257,7 +265,7 @@ namespace kspp {
           auto ws = work.size();
           run_work(work, _batch_size);
           auto end = kspp::milliseconds_since_epoch();
-          LOG_EVERY_N(INFO, 100) << _remote_write_url << ", worksize: " << ws << ", batch_size: " << _batch_size << ", duration: " << end - start << " ms";
+          LOG_EVERY_N(INFO, batch_log_interval_) << _remote_write_url << ", worksize: " << ws << ", batch_size: " << _batch_size << ", duration: " << end - start << " ms, #"  << google::COUNTER;
           while (!in_batch.empty())
             _done.push_back(in_batch.pop_front_and_get());
 
@@ -307,6 +315,9 @@ namespace kspp {
 
     //bool _skip_delete_of_non_active;
     std::set<std::string> _active_ids;
+
+    int http_log_interval_  = 1000;
+    int batch_log_interval_ = 100;
   };
 }
 
