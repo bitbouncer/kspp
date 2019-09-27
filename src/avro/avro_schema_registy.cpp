@@ -1,6 +1,9 @@
 #include <kspp/avro/avro_schema_registry.h>
-#include <kspp/cluster_config.h>
 #include <future>
+#include <rapidjson/document.h>
+#include <rapidjson/writer.h>
+#include <rapidjson/stringbuffer.h>
+#include <kspp/cluster_config.h>
 
 namespace kspp {
   avro_schema_registry::avro_schema_registry(const kspp::cluster_config& config)
@@ -64,9 +67,22 @@ namespace kspp {
       return nullptr;
     }
 
+
+    // multiline schema - bad for elastic search
+    //std::stringstream ss;
+    //rpc_result.schema->toJson(ss);
+    //LOG(INFO) << "avro_schema_registry get " << schema_id << "-> " << ss.str();
+
+    //replaced with
+    // this is very ugly... todo find out another way
     std::stringstream ss;
     rpc_result.schema->toJson(ss);
-    LOG(INFO) << "avro_schema_registry get " << schema_id << "-> " << ss.str();
+    rapidjson::Document d;
+    d.Parse(ss.str().c_str());
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+    d.Accept(writer);
+    LOG(INFO) << "avro_schema_registry get " << schema_id << "-> " << buffer.GetString();
 
     kspp::spinlock::scoped_lock xxx(_spinlock);
     {
