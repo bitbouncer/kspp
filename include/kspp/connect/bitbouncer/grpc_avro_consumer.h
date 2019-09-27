@@ -10,6 +10,7 @@
 #include <bb_streaming.grpc.pb.h>
 #include "grpc_avro_schema_resolver.h"
 #include "grpc_avro_serdes.h"
+
 #pragma once
 
 namespace kspp {
@@ -24,106 +25,99 @@ namespace kspp {
                             std::shared_ptr<grpc::Channel> channel,
                             std::string api_key,
                             std::string secret_access_key)
-        : _offset_storage(offset_store)
-        , _topic_name(topic_name)
-        , _partition(partition)
-        , _commit_chain(topic_name, partition)
-        , _bg([this](){_thread();})
-        , _channel(channel)
-        , _api_key(api_key)
-        , _secret_access_key(secret_access_key) {
+        : offset_storage_(offset_store), topic_name_(topic_name), partition_(partition), commit_chain_(topic_name, partition), bg_([this]() { _thread(); }), channel_(channel), api_key_(api_key), secret_access_key_(secret_access_key) {
     }
 
     virtual ~grpc_avro_consumer_base() {
-      if (!_closed)
+      if (!closed_)
         close();
-      LOG(INFO) << "grpc_avro_consumer " << _topic_name << " exiting";
+      LOG(INFO) << "grpc_avro_consumer " << topic_name_ << " exiting";
     }
 
-    void close(){
-      _exit = true;
-      if (_closed)
+    void close() {
+      exit_ = true;
+      if (closed_)
         return;
-      _closed = true;
-      LOG(INFO) << "grpc_avro_consumer " << _topic_name << ", closed - consumed " << _msg_cnt << " messages";
+      closed_ = true;
+      LOG(INFO) << "grpc_avro_consumer " << topic_name_ << ", closed - consumed " << msg_cnt_ << " messages";
     }
 
     inline bool eof() const {
-      return (_incomming_msg.size() == 0) && _eof;
+      return (incomming_msg_.size() == 0) && eof_;
     }
 
     inline std::string logical_name() const {
-      return _topic_name;
+      return topic_name_;
     }
 
     inline int32_t partition() const {
-      return _partition;
+      return partition_;
     }
 
     void start(int64_t offset) {
-      if (_offset_storage) {
-        _next_offset = _offset_storage->start(offset);
+      if (offset_storage_) {
+        next_offset_ = offset_storage_->start(offset);
       } else {
-        _next_offset = OFFSET_END;
+        next_offset_ = OFFSET_END;
       }
-      _start_running = true;
+      start_running_ = true;
     }
 
-    inline event_queue<K, V>& queue(){
-      return _incomming_msg;
+    inline event_queue<K, V> &queue() {
+      return incomming_msg_;
     };
 
-    inline const event_queue<K, V>& queue() const {
-      return _incomming_msg;
+    inline const event_queue<K, V> &queue() const {
+      return incomming_msg_;
     };
 
     void commit(bool flush) {
-      int64_t offset = _commit_chain.last_good_offset();
-      if (offset>0 && _offset_storage)
-          _offset_storage->commit(offset, flush);
+      int64_t offset = commit_chain_.last_good_offset();
+      if (offset > 0 && offset_storage_)
+        offset_storage_->commit(offset, flush);
     }
 
     inline int64_t offset() const {
-      return _commit_chain.last_good_offset();
+      return commit_chain_.last_good_offset();
     }
 
     inline bool good() const {
-      return _good;
+      return good_;
     }
 
   protected:
-    void stop_thread(){
-      _exit = true;
+    void stop_thread() {
+      exit_ = true;
 
-      if (_bg.joinable())
-        _bg.join();
+      if (bg_.joinable())
+        bg_.join();
     }
 
     void _thread() {
       using namespace std::chrono_literals;
-      while (!_start_running && !_exit)
+      while (!start_running_ && !exit_)
         std::this_thread::sleep_for(100ms);
 
-      _resolver = std::make_shared<grpc_avro_schema_resolver>(_channel, _api_key);
-      _serdes = std::make_unique<kspp::grpc_avro_serdes>(_resolver);
+      resolver_ = std::make_shared<grpc_avro_schema_resolver>(channel_, api_key_);
+      serdes_ = std::make_unique<kspp::grpc_avro_serdes>(resolver_);
 
-      while(!_exit) {
-        size_t msg_in_rpc=0;
+      while (!exit_) {
+        size_t msg_in_rpc = 0;
         //DLOG(INFO) << "new rpc";
-        _stub = bitbouncer::streaming::streamprovider::NewStub(_channel);
+        stub_ = bitbouncer::streaming::streamprovider::NewStub(channel_);
         grpc::ClientContext context;
-        add_api_key_secret(context, _api_key, _secret_access_key);
+        add_api_key_secret(context, api_key_, secret_access_key_);
 
         bitbouncer::streaming::SubscriptionRequest request;
-        request.set_topic(_topic_name);
-        request.set_partition(_partition);
-        request.set_offset(_next_offset);
-        std::shared_ptr<grpc::ClientReader<bitbouncer::streaming::SubscriptionBundle>> stream(_stub->Subscribe(&context, request));
+        request.set_topic(topic_name_);
+        request.set_partition(partition_);
+        request.set_offset(next_offset_);
+        std::shared_ptr<grpc::ClientReader<bitbouncer::streaming::SubscriptionBundle>> stream(stub_->Subscribe(&context, request));
         bitbouncer::streaming::SubscriptionBundle reply;
 
-        while (!_exit) {
+        while (!exit_) {
           //backpressure
-          if (_incomming_msg.size() > 50000) {
+          if (incomming_msg_.size() > 50000) {
             std::this_thread::sleep_for(100ms);
             continue;
           }
@@ -142,19 +136,19 @@ namespace kspp {
               continue;
             }
 
-            _next_offset = record.offset()+1;
+            next_offset_ = record.offset() + 1;
             auto krec = decode(record);
             if (krec == nullptr)
               continue;
-            auto e = std::make_shared<kevent<K, V>>(krec, _commit_chain.create(record.offset()));
+            auto e = std::make_shared<kevent<K, V>>(krec, commit_chain_.create(record.offset()));
             assert(e.get() != nullptr);
-            ++_msg_cnt;
-            _incomming_msg.push_back(e);
+            ++msg_cnt_;
+            incomming_msg_.push_back(e);
           }
-          _eof = reply.eof();
+          eof_ = reply.eof();
         }
 
-        if (_exit){
+        if (exit_) {
           //DLOG(INFO) << "TRY CANCEL";
           context.TryCancel();
           grpc::Status status = stream->Finish();
@@ -162,7 +156,7 @@ namespace kspp {
           break;
         }
 
-        if (!_exit) {
+        if (!exit_) {
           //DLOG(INFO) << "FINISHING STREAM, nr_of_msg: " << msg_in_rpc;
           grpc::Status status = stream->Finish();
           //DLOG(INFO) << "STREAM FINISHED status :" << status.error_message();
@@ -173,39 +167,39 @@ namespace kspp {
           }
         }
 
-        if (!_exit) {
-          if (msg_in_rpc==0)
+        if (!exit_) {
+          if (msg_in_rpc == 0)
             std::this_thread::sleep_for(1000ms);
 
         }
       } // while /!exit) -> try to connect again
-      _good = false;
+      good_ = false;
       LOG(INFO) << "grpc_avro_consumer exiting thread";
     }
 
-    virtual std::shared_ptr<kspp::krecord<K, V>> decode(const bitbouncer::streaming::SubscriptionData& record)=0;
+    virtual std::shared_ptr<kspp::krecord<K, V>> decode(const bitbouncer::streaming::SubscriptionData &record) = 0;
 
-    volatile bool _exit=false;
-    volatile bool _start_running=false;
-    volatile bool _good=true;
-    volatile bool _eof=false;
-    bool _closed=false;
+    volatile bool exit_ = false;
+    volatile bool start_running_ = false;
+    volatile bool good_ = true;
+    volatile bool eof_ = false;
+    bool closed_ = false;
 
-    std::thread _bg;
-    const std::string _topic_name;
-    const int32_t _partition;
+    std::thread bg_;
+    const std::string topic_name_;
+    const int32_t partition_;
 
-    int64_t _next_offset = kspp::OFFSET_BEGINNING; // not same as commit
-    std::shared_ptr<offset_storage> _offset_storage;
-    commit_chain _commit_chain;
-    event_queue<K, V> _incomming_msg;
-    uint64_t _msg_cnt=0;
-    std::shared_ptr<grpc::Channel> _channel;
-    std::shared_ptr<grpc_avro_schema_resolver> _resolver;
-    std::unique_ptr<bitbouncer::streaming::streamprovider::Stub> _stub;
-    std::string _api_key;
-    std::string _secret_access_key;
-    std::unique_ptr<grpc_avro_serdes> _serdes;
+    int64_t next_offset_ = kspp::OFFSET_BEGINNING; // not same as commit
+    std::shared_ptr<offset_storage> offset_storage_;
+    commit_chain commit_chain_;
+    event_queue<K, V> incomming_msg_;
+    uint64_t msg_cnt_ = 0;
+    std::shared_ptr<grpc::Channel> channel_;
+    std::shared_ptr<grpc_avro_schema_resolver> resolver_;
+    std::unique_ptr<bitbouncer::streaming::streamprovider::Stub> stub_; // why a member??
+    std::string api_key_;
+    std::string secret_access_key_;
+    std::unique_ptr<grpc_avro_serdes> serdes_;
   };
 
   template<class K, class V>
@@ -217,25 +211,33 @@ namespace kspp {
                        std::shared_ptr<grpc::Channel> channel,
                        std::string api_key,
                        std::string secret_access_key)
-        : grpc_avro_consumer_base<K,V>(partition, topic_name, offset_store, channel, api_key, secret_access_key) {
+        : grpc_avro_consumer_base<K, V>(partition, topic_name, offset_store, channel, api_key, secret_access_key) {
     }
 
-    virtual ~grpc_avro_consumer(){
+    virtual ~grpc_avro_consumer() {
       this->stop_thread();
     }
 
-    std::shared_ptr<kspp::krecord<K, V>> decode(const bitbouncer::streaming::SubscriptionData& record) override{
+    std::shared_ptr<kspp::krecord<K, V>> decode(const bitbouncer::streaming::SubscriptionData &record) override {
       K key;
       std::shared_ptr<V> val;
-      size_t r0 = this->_serdes->decode(record.key_schema(), record.key().data(), record.key().size(), key);
-      if (r0 == 0)
+
+      size_t consumed0 = this->serdes_->decode(record.key_schema(), record.key().data(), record.key().size(), key);
+      if (record.key().size() != consumed0) {
+        LOG_FIRST_N(ERROR, 100) << "avro decode key failed, consumed: " << consumed0 << ", actual: " << record.key().size();
+        LOG_EVERY_N(ERROR, 1000) << "avro decode key failed, consumed: " << consumed0 << ", actual: " << record.key().size();
         return nullptr;
+      }
+
 
       if (record.value().size() > 0) {
         val = std::make_shared<V>();
-        auto r1 = this->_serdes->decode(record.value_schema(), record.value().data(), record.value().size(), *val);
-        if (r1 == 0)
+        auto consumed1 = this->serdes_->decode(record.value_schema(), record.value().data(), record.value().size(), *val);
+        if (record.value().size() != consumed1) {
+          LOG_FIRST_N(ERROR, 100) << "avro decode value failed, consumed: " << consumed1 << ", actual: " << record.value().size();
+          LOG_EVERY_N(ERROR, 1000) << "avro decode value failed, consumed: " << consumed1 << ", actual: " << record.value().size();
           return nullptr;
+        }
       }
       return std::make_shared<krecord<K, V>>(key, val, record.timestamp());
     }
@@ -251,63 +253,41 @@ namespace kspp {
                        std::shared_ptr<grpc::Channel> channel,
                        std::string api_key,
                        std::string secret_access_key)
-        : grpc_avro_consumer_base<kspp::generic_avro,V>(partition, topic_name, offset_store, channel, api_key, secret_access_key) {
+        : grpc_avro_consumer_base<kspp::generic_avro, V>(partition, topic_name, offset_store, channel, api_key, secret_access_key) {
     }
 
-    virtual ~grpc_avro_consumer(){
+    virtual ~grpc_avro_consumer() {
       this->stop_thread();
     }
 
-    std::shared_ptr<kspp::krecord<kspp::generic_avro, V>> decode(const bitbouncer::streaming::SubscriptionData& record) override{
+    std::shared_ptr<kspp::krecord<kspp::generic_avro, V>> decode(const bitbouncer::streaming::SubscriptionData &record) override {
       kspp::generic_avro key;
       std::shared_ptr<V> val;
-      if (record.key().size()==0) {
+      if (record.key().size() == 0) {
         key.create(s_null_schema, 0);
       } else {
-        size_t r0 = this->_serdes->decode(record.key_schema(), record.key().data(), record.key().size(), key);
-        if (r0 == 0)
+
+        size_t consumed0 = this->serdes_->decode(record.key_schema(), record.key().data(), record.key().size(), key);
+        if (record.key().size() != consumed0) {
+          LOG_FIRST_N(ERROR, 100) << "avro decode key failed, consumed: " << consumed0 << ", actual: " << record.key().size();
+          LOG_EVERY_N(ERROR, 1000) << "avro decode key failed, consumed: " << consumed0 << ", actual: " << record.key().size();
           return nullptr;
+        }
       }
 
       if (record.value().size() > 0) {
         val = std::make_shared<V>();
-        auto r1 = this->_serdes->decode(record.value_schema(), record.value().data(), record.value().size(), *val);
-        if (r1 == 0)
+        auto consumed1 = this->serdes_->decode(record.value_schema(), record.value().data(), record.value().size(), *val);
+        if (record.value().size() != consumed1) {
+          LOG_FIRST_N(ERROR, 100) << "avro decode value failed, consumed: " << consumed1 << ", actual: " << record.value().size();
+          LOG_EVERY_N(ERROR, 1000) << "avro decode value failed, consumed: " << consumed1 << ", actual: " << record.value().size();
           return nullptr;
+        }
       }
       return std::make_shared<krecord<kspp::generic_avro, V>>(key, val, record.timestamp());
     }
   };
 
-
-
-  template<class V>
-  class grpc_avro_consumer<void, V> : public grpc_avro_consumer_base<void, V> {
-  public:
-    grpc_avro_consumer(int32_t partition,
-                       std::string topic_name,
-                       std::shared_ptr<offset_storage> offset_store,
-                       std::shared_ptr<grpc::Channel> channel,
-                       std::string api_key,
-                       std::string secret_access_key)
-        : grpc_avro_consumer_base<void,V>(partition, topic_name, offset_store, channel, api_key, secret_access_key) {
-    }
-
-    virtual ~grpc_avro_consumer(){
-      this->stop_thread();
-    }
-
-    std::shared_ptr<kspp::krecord<void, V>> decode(const bitbouncer::streaming::SubscriptionData& record) override{
-      std::shared_ptr<V> val;
-      if (record.value().size() > 0) {
-        val = std::make_shared<V>();
-        auto r1 = this->_serdes->decode(record.value_schema(), record.value().data(), record.value().size(), *val);
-        if (r1 == 0)
-          return nullptr;
-      }
-      return std::make_shared<krecord<void, V>>(val, record.timestamp());
-    }
-  };
 
   template<class K>
   class grpc_avro_consumer<K, void> : public grpc_avro_consumer_base<K, void> {
@@ -318,15 +298,49 @@ namespace kspp {
                        std::shared_ptr<grpc::Channel> channel,
                        std::string api_key,
                        std::string secret_access_key)
-        : grpc_avro_consumer_base<K,void>(partition, topic_name, offset_store, channel, api_key, secret_access_key) {
+        : grpc_avro_consumer_base<K, void>(partition, topic_name, offset_store, channel, api_key, secret_access_key) {
     }
 
-    std::shared_ptr<kspp::krecord<K, void>> decode(const bitbouncer::streaming::SubscriptionData& record) override{
+    std::shared_ptr<kspp::krecord<K, void>> decode(const bitbouncer::streaming::SubscriptionData &record) override {
       K key;
-      size_t r0 = this->_serdes->decode(record.key_schema(), record.key().data(), record.key().size(), key);
-      if (r0 == 0)
+      size_t consumed0 = this->serdes_->decode(record.key_schema(), record.key().data(), record.key().size(), key);
+      if (record.key().size() != consumed0) {
+        LOG_FIRST_N(ERROR, 100) << "avro decode key failed, consumed: " << consumed0 << ", actual: " << record.key().size();
+        LOG_EVERY_N(ERROR, 1000) << "avro decode key failed, consumed: " << consumed0 << ", actual: " << record.key().size();
         return nullptr;
+      }
       return std::make_shared<krecord<K, void>>(key, record.timestamp());
+    }
+  };
+
+  template<class V>
+  class grpc_avro_consumer<void, V> : public grpc_avro_consumer_base<void, V> {
+  public:
+    grpc_avro_consumer(int32_t partition,
+                       std::string topic_name,
+                       std::shared_ptr<offset_storage> offset_store,
+                       std::shared_ptr<grpc::Channel> channel,
+                       std::string api_key,
+                       std::string secret_access_key)
+        : grpc_avro_consumer_base<void, V>(partition, topic_name, offset_store, channel, api_key, secret_access_key) {
+    }
+
+    virtual ~grpc_avro_consumer() {
+      this->stop_thread();
+    }
+
+    std::shared_ptr<kspp::krecord<void, V>> decode(const bitbouncer::streaming::SubscriptionData &record) override {
+      std::shared_ptr<V> val;
+      if (record.value().size() > 0) {
+        val = std::make_shared<V>();
+        auto consumed1 = this->serdes_->decode(record.value_schema(), record.value().data(), record.value().size(), *val);
+        if (record.value().size() != consumed1) {
+          LOG_FIRST_N(ERROR, 100) << "avro decode value failed, consumed: " << consumed1 << ", actual: " << record.value().size();
+          LOG_EVERY_N(ERROR, 1000) << "avro decode value failed, consumed: " << consumed1 << ", actual: " << record.value().size();
+          return nullptr;
+        }
+      }
+      return std::make_shared<krecord<void, V>>(val, record.timestamp());
     }
   };
 }

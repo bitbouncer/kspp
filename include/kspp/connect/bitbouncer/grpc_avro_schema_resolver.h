@@ -32,7 +32,7 @@ namespace kspp {
       bitbouncer::streaming::GetSchemaReply reply;
       grpc::Status status = stub_->GetSchema(&context, request, &reply);
       if (!status.ok()) {
-        LOG(ERROR) << "avro_schema_resolver rpc failed, schema id: " << schema_id;
+        LOG_FIRST_N(ERROR,10) << "avro_schema_resolver rpc failed, schema id: " << schema_id;
         return nullptr;
       }
 

@@ -237,12 +237,8 @@ namespace kspp {
           LOG_IF(ERROR, ref->key_len()!=0) << this->log_name() << ", decode key failed, actual key sz:" << ref->key_len();
           return nullptr;
         } else if (ref->key_len() - consumed > 1 ) {// patch for 0 terminated string or not... if text encoding
-          LOG(ERROR)
-              << this->log_name()
-              << ", decode key failed, consumed: "
-              << consumed
-              << ", actual: "
-              << ref->key_len();
+          LOG_FIRST_N(ERROR,100) << this->log_name() << ", decode key failed, consumed: " << consumed << ", actual: " << ref->key_len();
+          LOG_EVERY_N(ERROR, 1000) << this->log_name() << ", decode key failed, consumed: " << consumed << ", actual: " << ref->key_len();
           return nullptr;
         }
       }
@@ -257,7 +253,8 @@ namespace kspp {
           LOG(ERROR) << this->log_name() << ", decode value failed, size:" << sz;
           return nullptr;
         } else if (sz -consumed > 1) { // patch for 0 terminated string or not... if text encoding
-          LOG(ERROR) << this->log_name() << ", decode value failed, consumed: " << consumed << ", actual: " << sz;
+          LOG_FIRST_N(ERROR,100) << this->log_name() << ", decode value failed, consumed: " << consumed << ", actual: " << sz;
+          LOG_EVERY_N(ERROR,1000) << this->log_name() << ", decode value failed, consumed: " << consumed << ", actual: " << sz;
           return nullptr;
         }
       }
@@ -313,8 +310,9 @@ namespace kspp {
           return nullptr;
         }
         else if (sz - consumed > 1) { // patch for 0 terminated string or not... if text encoding
-          LOG(ERROR) << this->log_name() << ", decode value failed, consumed: " << consumed << ", actual: " << sz;
-        return nullptr;
+          LOG_FIRST_N(ERROR,100) << this->log_name() << ", decode value failed, consumed: " << consumed << ", actual: " << sz;
+          LOG_EVERY_N(ERROR,1000) << this->log_name() << ", decode value failed, consumed: " << consumed << ", actual: " << sz;
+          return nullptr;
         }
 
         auto record = std::make_shared<krecord<void, V>>(tmp_value, timestamp);
