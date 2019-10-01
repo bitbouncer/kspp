@@ -20,10 +20,6 @@ export ARROW_VER="apache-arrow-0.14.1"
 
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 
-rm -rf tmp
-mkdir tmp
-cd tmp
-
 wget -O boost.tar.gz "https://dl.bintray.com/boostorg/release/1.70.0/source/boost_1_70_0.tar.gz" && \
 mkdir -p boost && \
 tar \
@@ -250,9 +246,8 @@ sudo make install
 cd ../../..
 rm arrow.tar.gz
 
-#out of tmp
+
 cd ..
-rm -rf tmp
 
 
 
