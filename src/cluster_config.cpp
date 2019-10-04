@@ -23,15 +23,15 @@ namespace kspp {
 
   cluster_config::cluster_config(std::string consumer_group, uint64_t flags)
       : consumer_group_(consumer_group_or_random(consumer_group))
-      , min_topology_buffering_(std::chrono::milliseconds(1000))
-      , producer_buffering_(std::chrono::milliseconds(1000))
-      , producer_message_timeout_(std::chrono::milliseconds(0))
-      , consumer_buffering_(std::chrono::milliseconds(1000))
-      , schema_registry_timeout_(std::chrono::milliseconds(10000))
-      , cluster_state_timeout_(std::chrono::seconds(60))
-      , max_pending_sink_messages_(50000)
-      , fail_fast_(true)
-      , flags_(flags){
+        , min_topology_buffering_(std::chrono::milliseconds(1000))
+        , producer_buffering_(std::chrono::milliseconds(1000))
+        , producer_message_timeout_(std::chrono::milliseconds(0))
+        , consumer_buffering_(std::chrono::milliseconds(1000))
+        , schema_registry_timeout_(std::chrono::milliseconds(10000))
+        , cluster_state_timeout_(std::chrono::seconds(60))
+        , max_pending_sink_messages_(50000)
+        , fail_fast_(true)
+        , flags_(flags){
   }
 
   void cluster_config::load_config_from_env() {
@@ -92,19 +92,18 @@ namespace kspp {
   bool cluster_config::set_ca_cert_path(std::string path) {
     if (!std::experimental::filesystem::exists(path)) {
       LOG(WARNING) << "cluster_config, ca_cert not found at: " << path << ", ignoring ssl config";
-    } else {
-      ca_cert_path_ = path;
+      return false;
     }
+    ca_cert_path_ = path;
+    return true;
   }
 
-  void cluster_config::set_private_key_path(std::string client_cert_path, std::string private_key_path, std::string passprase) {
+  bool cluster_config::set_private_key_path(std::string client_cert_path, std::string private_key_path, std::string passprase) {
     bool all_ok = true;
     if (!std::experimental::filesystem::exists(private_key_path)) {
       LOG(WARNING) << "cluster_config, private_key_path not found at:" << private_key_path;
       all_ok = false;
     }
-
-    //boost::filesystem::path p(client_cert_path);
     if (std::experimental::filesystem::exists(client_cert_path) == false) {
       LOG(WARNING) << "cluster_config, client_cert not found at:" << client_cert_path;
       all_ok = false;
@@ -112,11 +111,12 @@ namespace kspp {
 
     if (!all_ok) {
       LOG(WARNING) << "cluster_config, ssl client auth config incomplete, ignoring config";
-    } else {
-      client_cert_path_ = client_cert_path;
-      private_key_path_ = private_key_path;
-      private_key_passphrase_ = passprase;
+      return false;
     }
+    client_cert_path_ = client_cert_path;
+    private_key_path_ = private_key_path;
+    private_key_passphrase_ = passprase;
+    return true;
   }
 
   std::string cluster_config::get_client_cert_path() const {

@@ -121,10 +121,13 @@ namespace kspp_tds {
     DBSETLCHARSET(login_, "UTF-8");
     //tds_set_client_charset(login_,"UTF-8");
 
-    if ((dbproc_ = dbopen(login_, cp.host.c_str())) == NULL)
+    if ((dbproc_ = dbopen(login_, cp.host.c_str())) == NULL) {
       LOG(ERROR) << _trace_id << " cannot connect to " << cp.host;
-    else
-      LOG(INFO) << _trace_id << " connected to " << cp.host <<  " user: " << cp.user << ", database: " << cp.database_name;
+      return -1;
+    } else {
+      LOG(INFO) << _trace_id << " connected to " << cp.host << " user: " << cp.user << ", database: " << cp.database_name;
+    }
+    return 0;
   }
 
   void connection::close()
@@ -148,7 +151,7 @@ namespace kspp_tds {
 
     auto erc = dbcmd(dbproc_, statement.c_str());
     if (erc == FAIL) {
-     LOG(FATAL) << _trace_id << " dbcmd() failed - exiting";
+      LOG(FATAL) << _trace_id << " dbcmd() failed - exiting";
     }
 
     if (dbsqlexec(dbproc_) == FAIL) {
@@ -157,4 +160,4 @@ namespace kspp_tds {
     }
     return std::make_pair(0, this->dbproc_);
   }
-  }
+}

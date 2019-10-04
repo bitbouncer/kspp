@@ -42,7 +42,7 @@ namespace kspp {
     bool set_ca_cert_path(std::string path);
     std::string get_ca_cert_path() const;
 
-    void set_private_key_path(std::string cert_path, std::string key_path, std::string passphrase="");
+    bool set_private_key_path(std::string cert_path, std::string key_path, std::string passphrase="");
     std::string get_client_cert_path() const;
     std::string get_private_key_path() const;
     std::string get_private_key_passphrase() const;

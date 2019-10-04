@@ -25,6 +25,7 @@ namespace kspp {
     template<class T>
     size_t encode(const T& src, std::ostream& dst) {
       static_assert(fake_dependency<T>::value, "you must use specialization to provide a encode for T");
+      return 0; // dummy return to quiet warning
     }
 
     template<class T>
@@ -52,6 +53,7 @@ namespace kspp {
     template<class T>
     size_t decode(std::istream& src, T& dst) {
       static_assert(fake_dependency<T>::value, "you must use specialization to provide a decode for T");
+      return 0; // dummy return to quiet warning
     }
 
     template<class T>

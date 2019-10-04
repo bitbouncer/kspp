@@ -2,6 +2,7 @@
 #include <avro/Generic.hh>
 #include <avro/Schema.hh>
 #include <kspp/avro/generic_avro.h>
+
 #pragma once
 
 //https://godoc.org/github.com/lib/pq/oid
@@ -10,25 +11,21 @@
 namespace kspp {
   namespace pq {
     // trim from left
-    inline std::string& pq_l2trim(std::string& s, const char* t = " \t\n\r\f\v")
-    {
+    inline std::string &pq_l2trim(std::string &s, const char *t = " \t\n\r\f\v") {
       s.erase(0, s.find_first_not_of(t));
       return s;
     }
 
 // trim from right
-    inline std::string& pq_rtrim(std::string& s, const char* t = " \t\n\r\f\v")
-    {
+    inline std::string &pq_rtrim(std::string &s, const char *t = " \t\n\r\f\v") {
       s.erase(s.find_last_not_of(t) + 1);
       return s;
     }
 
 // trim from left & right
-    inline std::string& pq_trim(std::string& s, const char* t = " \t\n\r\f\v")
-    {
+    inline std::string &pq_trim(std::string &s, const char *t = " \t\n\r\f\v") {
       return pq_l2trim(pq_rtrim(s, t), t);
     }
-
 
     enum PG_OIDS {
       BOOLOID = 16,
@@ -48,24 +45,27 @@ namespace kspp {
       PGSQL_OIDVECTOROID = 30,
       FLOAT4OID = 700,
       FLOAT8OID = 701,
-      TEXT_ARRAYOID=1009,
+      TEXT_ARRAYOID = 1009,
       DATEOID = 1082,
       TIMEOID = 1083,
       TIMESTAMPOID = 1114,
       TIMESTAMPZOID = 1184,
       NUMERICOID = 1700,
       UUIDOID = 2950,
-      HSTOREOID=-10000  // fake id used in reverse mapping
+      HSTOREOID = -10000  // fake id used in reverse mapping
     };
 
     std::shared_ptr<avro::Schema> schema_for_oid(Oid typid);
 
     std::string simple_column_name(std::string column_name);
 
-    std::shared_ptr<avro::ValidSchema> schema_for_table_key(std::string schema_name, const std::vector<std::string> &keys, const PGresult *res);
+    std::shared_ptr<avro::ValidSchema>
+    schema_for_table_key(std::string schema_name, const std::vector<std::string> &keys, const PGresult *res);
+
     std::shared_ptr<avro::ValidSchema> schema_for_table_row(std::string schema_name, const PGresult *res);
+
     //std::vector<std::shared_ptr<avro::GenericDatum>> to_avro(std::shared_ptr<avro::ValidSchema> schema, const PGresult *res);
-    void load_avro_by_name(kspp::generic_avro* avro, PGresult* pgres, size_t row);
+    void load_avro_by_name(kspp::generic_avro *avro, PGresult *pgres, size_t row);
 
     //by index - order in schema and res must match
     //std::vector<std::shared_ptr<avro::GenericDatum>> to_avro(std::shared_ptr<avro::ValidSchema> schema, const PGresult *res);

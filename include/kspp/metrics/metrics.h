@@ -49,12 +49,12 @@ namespace kspp {
   struct metric_counter : public metric {
     metric_counter(std::string what, std::string unit)
         : metric(what, COUNTER, unit)
-        ,  _counter(nullptr) {
+          ,  _counter(nullptr) {
     }
 
     metric_counter(std::string what, std::string unit, const std::map<std::string, std::string>& labels, std::shared_ptr<prometheus::Registry> registry)
         : metric(what, COUNTER, unit)
-        ,  _counter(nullptr) {
+          ,  _counter(nullptr) {
       _labels.insert(labels.begin(), labels.end());
       auto& family = prometheus::BuildCounter().Name(_name).Register(*registry);
       _counter = &family.Add(_labels);
@@ -85,12 +85,12 @@ namespace kspp {
   struct metric_gauge : public metric {
     metric_gauge(std::string what, std::string unit)
         : metric(what, GAUGE, unit)
-        ,  _gauge(nullptr) {
+          ,  _gauge(nullptr) {
     }
 
     metric_gauge(std::string what, std::string unit, const std::map<std::string, std::string>& labels, std::shared_ptr<prometheus::Registry> registry)
-    : metric(what, GAUGE, unit)
-    ,  _gauge(nullptr) {
+        : metric(what, GAUGE, unit)
+          ,  _gauge(nullptr) {
       _labels.insert(labels.begin(), labels.end());
       auto& family = prometheus::BuildGauge().Name(_name).Register(*registry);
       _gauge = &family.Add(_labels);
@@ -114,7 +114,7 @@ namespace kspp {
     }
 
     virtual double value() const {
-     _gauge->Value();
+      return _gauge->Value();
     }
 
     void clear() {
@@ -127,8 +127,7 @@ namespace kspp {
   struct metric_streaming_lag : public metric {
     metric_streaming_lag()
         : metric("streaming_lag", GAUGE, "ms")
-        ,  _gauge(nullptr) {
-
+          ,  _gauge(nullptr) {
     }
 
     void finalize_labels(std::shared_ptr<prometheus::Registry> registry) override {
@@ -144,7 +143,7 @@ namespace kspp {
     }
 
     virtual double value() const {
-      _gauge->Value();
+      return _gauge->Value();
     }
 
   private:
@@ -154,14 +153,14 @@ namespace kspp {
   struct metric_summary : public metric {
     metric_summary(std::string what, std::string unit, const std::vector<float>& quantiles={0.99})
         : metric(what, SUMMARY, unit)
-        ,  _quantiles(quantiles)
-        ,  _summary(nullptr) {
+          ,  _quantiles(quantiles)
+          ,  _summary(nullptr) {
       add_label("window", "60s");
     }
 
     metric_summary(std::string what, std::string unit, const std::map<std::string, std::string>& labels, std::shared_ptr<prometheus::Registry> registry, const std::vector<float>& quantiles={0.99})
-    : metric(what, SUMMARY, unit)
-    ,  _summary(nullptr) {
+        : metric(what, SUMMARY, unit)
+          ,  _summary(nullptr) {
       _labels.insert(labels.begin(), labels.end());
       std::vector<prometheus::detail::CKMSQuantiles::Quantile> q;
       for (auto i : _quantiles)
@@ -171,7 +170,7 @@ namespace kspp {
     }
 
     void finalize_labels(std::shared_ptr<prometheus::Registry> registry) override {
-        std::vector<prometheus::detail::CKMSQuantiles::Quantile> q;
+      std::vector<prometheus::detail::CKMSQuantiles::Quantile> q;
       for (auto i : _quantiles)
         q.emplace_back(i, 0.05);
       auto& family = prometheus::BuildSummary().Name(_name).Register(*registry);
@@ -191,12 +190,11 @@ namespace kspp {
     prometheus::Summary* _summary;
   };
 
-
   struct metric_histogram : public metric {
     metric_histogram(std::string what, std::string unit, const std::vector<double>& buckets)
         : metric(what, HISTOGRAM, unit)
-        ,  _buckets(buckets)
-        ,  _histgram(nullptr) {
+          ,  _buckets(buckets)
+          ,  _histgram(nullptr) {
     }
 
     void finalize_labels(std::shared_ptr<prometheus::Registry> registry) override {

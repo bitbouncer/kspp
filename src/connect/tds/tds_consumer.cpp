@@ -191,23 +191,23 @@ namespace kspp {
                              std::string ts_column,
                              std::shared_ptr<kspp::avro_schema_registry> schema_registry)
       : _bg([this] { _thread(); })
-      , _connection(std::make_unique<kspp_tds::connection>())
-      , _logical_name(avro_utils::sanitize_schema_name(logical_name))
-      , _query(query)
-      , _partition(partition)
-      , _cp(cp)
-      , _tp(tp)
-      , _read_cursor(tp, id_column, ts_column)
-      , _id_column(id_column)
-      , _schema_registry(schema_registry)
-      , _commit_chain(logical_name, partition)
-      , _key_schema_id(-1)
-      , _val_schema_id(-1)
-      , _msg_cnt(0)
-      , _closed(false)
-      , _eof(false)
-      , _start_running(false)
-      , _exit(false) {
+        , _connection(std::make_unique<kspp_tds::connection>())
+        , _logical_name(avro_utils::sanitize_schema_name(logical_name))
+        , _query(query)
+        , _partition(partition)
+        , _cp(cp)
+        , _tp(tp)
+        , _read_cursor(tp, id_column, ts_column)
+        , _id_column(id_column)
+        , _schema_registry(schema_registry)
+        , _commit_chain(logical_name, partition)
+        , _key_schema_id(-1)
+        , _val_schema_id(-1)
+        , _msg_cnt(0)
+        , _closed(false)
+        , _eof(false)
+        , _start_running(false)
+        , _exit(false) {
     _offset_storage = get_offset_provider(tp.offset_storage);
     std::string top_part(" TOP " + std::to_string(_tp.max_items_in_fetch));
     // assumed to start with "SELECT"
@@ -244,10 +244,9 @@ namespace kspp {
   bool tds_consumer::initialize() {
     if (!_connection->connected())
       _connection->connect(_cp);
-
     // should we check more thing in database
-
     _start_running = true;
+    return true;
   }
 
   void tds_consumer::start(int64_t offset) {
@@ -332,6 +331,7 @@ namespace kspp {
     }
 
     _incomming_msg.push_back(e);
+    return 0;
   }
 
   int tds_consumer::parse_response(DBPROCESS *stream) {
@@ -425,6 +425,7 @@ namespace kspp {
       }
       free(columns);
     }
+    return 0;
   }
 
   void tds_consumer::_thread() {

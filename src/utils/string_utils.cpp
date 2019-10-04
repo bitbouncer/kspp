@@ -30,6 +30,17 @@ namespace kspp {
     return o.str();
   }
 
+  static inline bool is_bad_sql_char(char c){
+    static const std::string chars = "\"'\r\n\t";
+    return (chars.find(c) != std::string::npos);
+  }
+
+  //USAGE SHOULD BE REPLACED BY PREPARED STATEMENTS
+  std::string escape_sql(std::string s){
+    s.erase(std::remove_if(s.begin(), s.end(), [](unsigned char x){return is_bad_sql_char(x);}), s.end());
+    return s;
+  }
+
   kspp::start_offset_t to_offset(std::string s) {
     if (boost::iequals(s, "OFFSET_BEGINNING"))
       return kspp::OFFSET_BEGINNING;

@@ -482,7 +482,7 @@ namespace kspp {
           }
           s += "]";
 
-          return escapeSQLstring(s);
+          return escapeSQLstring(s); // TODO - should we really eascape here - does that not mean that we kill strings in strings since they have ' chars???
         }
           break;
 
@@ -519,9 +519,7 @@ namespace kspp {
         default:
           LOG(FATAL) << "unexpected / non supported type e:" << column.type();
       }
-
     }
-
 
     // handles both nullable and non nullable columns
     std::string avro2sql_values(const avro::ValidSchema &schema, const avro::GenericDatum &datum) {
@@ -539,7 +537,7 @@ namespace kspp {
       return result;
     }
 
-    // TODO mutiple keys
+    // TODO multiple keys
     std::string
     avro2sql_key_values(const avro::ValidSchema &schema, const std::string &key, const avro::GenericDatum &datum) {
       assert(datum.type() == avro::AVRO_RECORD);
@@ -572,9 +570,10 @@ namespace kspp {
       }
     }
 
-    std::vector<std::shared_ptr<avro::GenericDatum>> to_avro(std::shared_ptr<avro::ValidSchema> schema, const PGresult *res){
+    /*std::vector<std::shared_ptr<avro::GenericDatum>> to_avro(std::shared_ptr<avro::ValidSchema> schema, const PGresult *res){
 
     }
+     */
 
     void load_avro_by_name(kspp::generic_avro* avro, PGresult* pgres, size_t row)
     {

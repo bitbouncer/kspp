@@ -104,6 +104,7 @@ namespace kspp {
     //should we check more thing in database
     //maybe select a row and register the schema???
     start_running_ = true;
+    return true;
   }
 
   void postgres_consumer::start(int64_t offset) {

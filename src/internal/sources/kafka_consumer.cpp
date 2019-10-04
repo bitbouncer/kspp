@@ -80,6 +80,7 @@ namespace kspp {
       set_config(conf.get(), "log.connection.close", "false");
       set_config(conf.get(), "max.poll.interval.ms", "86400000"); // max poll interval before leaving consumer group
       set_config(conf.get(), "event_cb", &_event_cb);
+
       //set_config(conf.get(), "socket.max.fails", "1000000");
       //set_config(conf.get(), "message.send.max.retries", "1000000");// probably not needed
 

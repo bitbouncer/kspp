@@ -7,6 +7,8 @@
 namespace kspp {
   std::string escape_json(const std::string &s);
 
+  std::string escape_sql(std::string s);
+
   inline void ltrim(std::string &s) {
     s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
   }

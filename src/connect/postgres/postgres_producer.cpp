@@ -65,7 +65,6 @@ namespace kspp {
       _connection->close();
       LOG(INFO) << "postgres_producer table:" << _table << ", closed - producer " << (int64_t)_msg_cnt.value() << " messages (" << (int64_t) _msg_bytes.value() << " bytes)";
     }
-
     _connected = false;
   }
 
@@ -85,8 +84,8 @@ namespace kspp {
     }
 
     check_table_exists();
-
     _start_running = true;
+    return true;
   }
 
 
