@@ -205,7 +205,6 @@ int main(int argc, char **argv) {
   if (partition_list.size() == 0 || partition_list[0] == -1)
     partition_list = kspp::get_partition_list(nr_of_partitions);
   LOG(INFO) << "partition_list   : " << kspp::partition_list_to_string(partition_list);
-
   kspp::topology_builder builder(config);
   auto topology = builder.create_topology();
 

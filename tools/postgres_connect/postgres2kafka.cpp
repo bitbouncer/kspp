@@ -3,13 +3,16 @@
 #include <boost/program_options.hpp>
 #include <kspp/topology_builder.h>
 #include <kspp/serdes/text_serdes.h>
+#include <kspp/sources/kafka_source.h>
 #include <kspp/sinks/kafka_sink.h>
+#include <kspp/sinks/array_sink.h>
+#include <kspp/sources/mem_stream_source.h>
 #include <kspp/utils/env.h>
 #include <kspp/connect/postgres/postgres_generic_avro_source.h>
-#include <kspp/processors/transform.h>
 #include <kspp/processors/flat_map.h>
 #include <kspp/metrics/prometheus_pushgateway_reporter.h>
 #include <kspp/utils/string_utils.h>
+#include <kspp/utils/kafka_utils.h>
 
 #define SERVICE_NAME "postgres2kafka"
 
@@ -51,6 +54,7 @@ int main(int argc, char **argv) {
       ("offset_storage", boost::program_options::value<std::string>()->default_value(""), "offset_storage")
       ("filename", boost::program_options::value<std::string>(), "filename")
       ("metrics_namespace", boost::program_options::value<std::string>()->default_value(get_env_and_log("METRICS_NAMESPACE", "bb")),"metrics_namespace")
+      ("purge_topic", boost::program_options::value<std::string>()->default_value(get_env_and_log("PURGE_TOPIC", "false")),"purge_topic")
       ("oneshot", "run to eof and exit")
       ;
 
@@ -220,6 +224,13 @@ int main(int argc, char **argv) {
     metrics_namespace = vm["metrics_namespace"].as<std::string>();
   }
 
+  bool purge_topic = false;
+  if (vm.count("purge_topic")) {
+    auto s = vm["purge_topic"].as<std::string>();
+    if (s == "true")
+      purge_topic = true;
+  }
+
   bool oneshot=false;
   if (vm.count("oneshot"))
     oneshot=true;
@@ -254,6 +265,9 @@ int main(int argc, char **argv) {
   LOG(INFO) << "start_offset       : " << kspp::to_string(start_offset);
   LOG(INFO) << "pushgateway_uri    : " << config->get_pushgateway_uri();
   LOG(INFO) << "metrics_namespace  : " << metrics_namespace;
+  if (purge_topic)
+    LOG(INFO) << "purge_topic            : TRUE";
+
   if (oneshot)
     LOG(INFO) << "oneshot            : TRUE";
   kspp::connect::connection_params connection_params;
@@ -276,6 +290,29 @@ int main(int argc, char **argv) {
 
   LOG(INFO) << "discovering facts...";
 
+  if (purge_topic){
+    auto nr_of_partitions = kspp::kafka::get_number_partitions(config, topic);
+    auto partition_list = kspp::get_partition_list(nr_of_partitions);
+    kspp::topology_builder builder(config);
+    auto topology1 = builder.create_topology();
+    auto source1 = topology1->create_processors<kspp::kafka_source<kspp::generic_avro, void, kspp::avro_serdes, void>>(partition_list, topic, config->avro_serdes());
+    std::vector<std::shared_ptr<const kspp::krecord<kspp::generic_avro, void>>> buffer;
+    auto sink1 = topology1->create_sink<kspp::array_topic_sink<kspp::generic_avro, void>>(source1, &buffer);
+    topology1->start(kspp::OFFSET_BEGINNING);
+    topology1->flush(true);
+    LOG(INFO) << "at EOF, buffer.size() " << buffer.size();
+    auto topology2 = builder.create_topology();
+    auto source2 = topology2->create_processor<kspp::mem_stream_source<kspp::generic_avro, void>>(0);
+    topology2->create_sink<kspp::kafka_sink<kspp::generic_avro, void, kspp::avro_serdes, void>>(source2, topic, config->avro_serdes());
+
+    for(auto i : buffer)
+      source2->push_back(i);
+    buffer.clear();
+    topology2->start(kspp::OFFSET_BEGINNING);
+    topology2->flush(true);
+    LOG(INFO) << "purge done, " << topic;
+  }
+
   kspp::topology_builder builder(config);
   auto topology = builder.create_topology();
   std::string query_name = topic;
@@ -285,7 +322,7 @@ int main(int argc, char **argv) {
     //topology->create_sink<kspp::avro_file_sink>(source0, "/tmp/" + topic + ".avro");
   } else {
     if (codec == "avro"){
-    topology->create_sink<kspp::kafka_sink< kspp::generic_avro, kspp::generic_avro, kspp::avro_serdes, kspp::avro_serdes>>(source0, topic, config->avro_serdes(), config->avro_serdes());
+    topology->create_sink<kspp::kafka_sink<kspp::generic_avro, kspp::generic_avro, kspp::avro_serdes, kspp::avro_serdes>>(source0, topic, config->avro_serdes(), config->avro_serdes());
   } else if (codec == "text" ){
       auto extracted= topology->create_processors<kspp::flat_map<kspp::generic_avro, kspp::generic_avro, std::string, std::string>>(
           source0,

@@ -4,7 +4,7 @@
 #include <regex>
 #include <kspp/serdes/text_serdes.h>
 #include <kspp/topology_builder.h>
-#include <kspp/processors/generic_stream.h>
+#include <kspp/sources/mem_stream_source.h>
 #include <kspp/sources/kafka_source.h>
 #include <kspp/processors/flat_map.h>
 #include <kspp/processors/count.h>

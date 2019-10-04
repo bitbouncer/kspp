@@ -5,8 +5,7 @@
 #include <kspp/utils/kafka_utils.h>
 #include <kspp/topology_builder.h>
 #include <kspp/sinks/kafka_sink.h>
-#include <kspp/processors/generic_stream.h>
-#include <kspp/state_stores/mem_store.h>
+#include <kspp/sources/mem_stream_source.h>
 #include <kspp/sources/kafka_source.h>
 #include <kspp/sinks/null_sink.h>
 
@@ -101,7 +100,7 @@ int main(int argc, char **argv) {
     auto topology = builder.create_topology();
     auto streams = topology->create_processors<kspp::kafka_source<std::string, std::string, kspp::binary_serdes, kspp::binary_serdes>>(
         partition_list, "kspp_test5");
-    auto pipe = topology->create_processor<kspp::generic_stream<std::string, std::string>>(-1);
+    auto pipe = topology->create_processor<kspp::mem_stream_source<std::string, std::string>>(-1);
     auto table_stream = topology->create_sink<kspp::kafka_sink<std::string, std::string, kspp::binary_serdes, kspp::binary_serdes>>("kspp_test5");
     pipe->add_sink(table_stream);
     topology->start(kspp::OFFSET_STORED);
@@ -138,7 +137,7 @@ int main(int argc, char **argv) {
     auto topology = builder.create_topology();
     auto streams = topology->create_processors<kspp::kafka_source<std::string, std::string, kspp::binary_serdes, kspp::binary_serdes>>(
         partition_list, "kspp_test5", std::chrono::system_clock::now());
-    auto pipe = topology->create_processor<kspp::generic_stream<std::string, std::string>>(-1);
+    auto pipe = topology->create_processor<kspp::mem_stream_source<std::string, std::string>>(-1);
     auto table_stream = topology->create_sink<kspp::kafka_sink<std::string, std::string, kspp::binary_serdes, kspp::binary_serdes>>("kspp_test5");
     pipe->add_sink(table_stream);
     topology->start(kspp::OFFSET_BEGINNING);

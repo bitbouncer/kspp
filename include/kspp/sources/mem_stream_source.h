@@ -3,21 +3,21 @@
 
 namespace kspp {
   template<class K, class V>
-  class generic_stream : public event_consumer<K, V>, public partition_source<K, V> {
-    static constexpr const char* PROCESSOR_NAME = "generic_stream";
+  class mem_stream_source : public event_consumer<K, V>, public partition_source<K, V> {
+    static constexpr const char* PROCESSOR_NAME = "mem_stream_source";
   public:
     typedef K key_type;
     typedef V value_type;
     typedef kspp::kevent<K, V> record_type;
 
-    generic_stream(std::shared_ptr<cluster_config> config, int32_t partition)
+    mem_stream_source(std::shared_ptr<cluster_config> config, int32_t partition)
         : event_consumer<K, V>()
         , partition_source<K, V>(nullptr, partition) {
       this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
       this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(partition));
     }
 
-    generic_stream(std::shared_ptr<cluster_config> config, std::shared_ptr<kspp::partition_source<K, V>> upstream)
+    mem_stream_source(std::shared_ptr<cluster_config> config, std::shared_ptr<kspp::partition_source<K, V>> upstream)
         : event_consumer<K, V>()
         , partition_source<K, V>(upstream.get(), upstream->partition()) {
       upstream->add_sink([this](auto e) {
@@ -27,7 +27,7 @@ namespace kspp {
       this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(upstream->partition()));
     }
 
-    generic_stream(std::shared_ptr<cluster_config> config, std::vector<std::shared_ptr<kspp::partition_source<K, V>>> upstream, int32_t partition)
+    mem_stream_source(std::shared_ptr<cluster_config> config, std::vector<std::shared_ptr<kspp::partition_source<K, V>>> upstream, int32_t partition)
         : event_consumer<K, V>()
         , partition_source<K, V>(nullptr, partition) {
       for (auto i : upstream) {
@@ -78,21 +78,21 @@ namespace kspp {
 
 //<null, VALUE>
   template<class V>
-  class generic_stream<void, V> : public event_consumer<void, V>, public partition_source<void, V> {
-    static constexpr const char* PROCESSOR_NAME = "generic_stream";
+  class mem_stream_source<void, V> : public event_consumer<void, V>, public partition_source<void, V> {
+    static constexpr const char* PROCESSOR_NAME = "mem_stream_source";
   public:
     typedef void key_type;
     typedef V value_type;
     typedef kspp::kevent<void, V> record_type;
 
-    generic_stream(std::shared_ptr<cluster_config> config, int32_t partition)
+    mem_stream_source(std::shared_ptr<cluster_config> config, int32_t partition)
         : event_consumer<void, V>()
         , partition_source<void, V>(nullptr, partition) {
       this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
       this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(partition));
     }
 
-    generic_stream(std::shared_ptr<cluster_config> config, std::shared_ptr<kspp::partition_source<void, V>> upstream)
+    mem_stream_source(std::shared_ptr<cluster_config> config, std::shared_ptr<kspp::partition_source<void, V>> upstream)
         : event_consumer<void, V>(), partition_source<void, V>(upstream.get(), upstream->partition()) {
       if (upstream)
         upstream->add_sink([this](auto e) {
@@ -102,7 +102,7 @@ namespace kspp {
       this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(upstream->partition()));
     }
 
-    generic_stream(std::shared_ptr<cluster_config> config, std::vector<std::shared_ptr<kspp::partition_source<void, V>>> upstream, int32_t partition)
+    mem_stream_source(std::shared_ptr<cluster_config> config, std::vector<std::shared_ptr<kspp::partition_source<void, V>>> upstream, int32_t partition)
         : event_consumer<void, V>()
         , partition_source<void, V>(nullptr, partition) {
       for (auto i : upstream) {
@@ -152,21 +152,21 @@ namespace kspp {
   };
 
   template<class K>
-  class generic_stream<K, void> : public event_consumer<K, void>, public partition_source<K, void> {
-    static constexpr const char* PROCESSOR_NAME = "generic_stream";
+  class mem_stream_source<K, void> : public event_consumer<K, void>, public partition_source<K, void> {
+    static constexpr const char* PROCESSOR_NAME = "mem_stream_source";
   public:
     typedef K key_type;
     typedef void value_type;
     typedef kspp::kevent<K, void> record_type;
 
-    generic_stream(std::shared_ptr<cluster_config> config, int32_t partition)
+    mem_stream_source(std::shared_ptr<cluster_config> config, int32_t partition)
         : event_consumer<K, void>()
         , partition_source<K, void>(nullptr, partition) {
       this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
       this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(partition));
     }
 
-    generic_stream(std::shared_ptr<cluster_config> config, std::shared_ptr<kspp::partition_source<K, void>> upstream)
+    mem_stream_source(std::shared_ptr<cluster_config> config, std::shared_ptr<kspp::partition_source<K, void>> upstream)
         : event_consumer<K, void>()
         , partition_source<K, void>(upstream.get(), upstream->partition()) {
       if (upstream)
@@ -177,7 +177,7 @@ namespace kspp {
       this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(upstream->partition()));
     }
 
-    generic_stream(std::shared_ptr<cluster_config> config, std::vector<std::shared_ptr<kspp::partition_source<K, void>>> upstream, int32_t partition)
+    mem_stream_source(std::shared_ptr<cluster_config> config, std::vector<std::shared_ptr<kspp::partition_source<K, void>>> upstream, int32_t partition)
         : event_consumer<K, void>()
         , partition_source<K, void>(nullptr, partition) {
       this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");

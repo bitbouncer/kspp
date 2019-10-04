@@ -2,7 +2,7 @@
 #include <csignal>
 #include <boost/program_options.hpp>
 #include <kspp/utils/env.h>
-#include <kspp/processors/generic_stream.h>
+#include <kspp/sources/mem_stream_source.h>
 #include <kspp/connect/bitbouncer/grpc_avro_source.h>
 #include <kspp/connect/postgres/postgres_generic_avro_sink.h>
 #include <kspp/topology_builder.h>

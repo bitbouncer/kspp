@@ -1,4 +1,4 @@
-#include <kspp/processors/generic_stream.h>  // processor/generic_stream -> /sources/mem_stream_source
+#include <kspp/sources/mem_stream_source.h>
 #include <kspp/sinks/null_sink.h>
 #include <kspp/kspp.h>
 #include <kspp/topology_builder.h>
@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
   auto config = std::make_shared<kspp::cluster_config>("");
   kspp::topology_builder builder(config);
   auto topology = builder.create_topology();
-  std::shared_ptr<kspp::generic_stream<std::string, std::string>> source = topology->create_processor<kspp::generic_stream<std::string, std::string>>(0);
+  auto source = topology->create_processor<kspp::mem_stream_source<std::string, std::string>>(0);
   auto sink = topology->create_sink<kspp::null_sink<std::string, std::string>>(source);
 
   std::signal(SIGINT, sigterm);

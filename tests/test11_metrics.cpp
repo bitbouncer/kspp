@@ -3,7 +3,7 @@
 #include <kspp/kspp.h>
 #include <kspp/utils/kafka_utils.h>
 #include <kspp/topology_builder.h>
-#include <kspp/processors/generic_stream.h>
+#include <kspp/sources/mem_stream_source.h>
 #include <kspp/state_stores/mem_store.h>
 #include <kspp/processors/ktable.h>
 #include <kspp/processors/join.h>
@@ -28,8 +28,6 @@ make_left_join_record(KEY key, LEFT a, RIGHT b, int64_t ts) {
   auto pair = std::make_shared<std::pair<LEFT, std::optional<RIGHT>>>(a, b);
   return std::make_shared<kspp::krecord<KEY, std::pair<LEFT, std::optional<RIGHT>>>>(key, pair, ts);
 }
-
-
 
 void produce_stream1(kspp::event_consumer<int32_t, std::string>& stream) {
   stream.push_back(std::make_shared<kspp::krecord < int32_t, std::string>>(42, nullptr, 1));
@@ -66,9 +64,9 @@ int main(int argc, char **argv) {
     kspp::topology_builder builder(config);
     auto topology = builder.create_topology();
 
-    auto streamA = topology->create_processor<kspp::generic_stream<int32_t, std::string>>(0);
+    auto streamA = topology->create_processor<kspp::mem_stream_source<int32_t, std::string>>(0);
 
-    auto streamB = topology->create_processor<kspp::generic_stream<int32_t, std::string>>(0);
+    auto streamB = topology->create_processor<kspp::mem_stream_source<int32_t, std::string>>(0);
     auto ktableB = topology->create_processor<kspp::ktable<int32_t, std::string, kspp::mem_store>>(streamB);
 
     auto left_join = topology->create_processor<kspp::kstream_left_join<int32_t, std::string, std::string>>(streamA, ktableB);
