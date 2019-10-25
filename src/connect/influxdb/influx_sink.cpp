@@ -8,24 +8,25 @@ namespace kspp {
                            int32_t http_batch_size,
                            std::chrono::milliseconds http_timeout)
       : kspp::topic_sink<void, std::string>()
-      , _good(true)
-      , _closed(false)
-      , _start_running(false)
-      , _exit(false)
-      , _work(std::make_unique<boost::asio::io_service::work>(_ios))
-      , _asio_thread([this] { _ios.run(); })
-      , _bg([this] { _thread(); })
-      , _cp(cp)
-      , _http_handler(_ios, http_batch_size)
-      , _batch_size(http_batch_size)
-      , _next_time_to_send(kspp::milliseconds_since_epoch() + 100)
-      , _next_time_to_poll(0)
-      , _http_timeout(http_timeout)
-      , _http_bytes("http_bytes", "bytes")
-      , _http_requests("http_request", "msg")
-      , _http_timeouts("http_timeout", "msg")
-      , _http_error("http_error", "msg")
-      , _http_ok("http_ok", "msg") {
+        , _good(true)
+        , _closed(false)
+        , _start_running(false)
+        , _exit(false)
+        , batch_in_progress_(false)
+        , _work(std::make_unique<boost::asio::io_service::work>(_ios))
+        , _asio_thread([this] { _ios.run(); })
+        , _bg([this] { _thread(); })
+        , _cp(cp)
+        , _http_handler(_ios, http_batch_size)
+        , _batch_size(http_batch_size)
+        , _next_time_to_send(kspp::milliseconds_since_epoch() + 100)
+        , _next_time_to_poll(0)
+        , _http_timeout(http_timeout)
+        , _http_bytes("http_bytes", "bytes")
+        , _http_requests("http_request", "msg")
+        , _http_timeouts("http_timeout", "msg")
+        , _http_error("http_error", "msg")
+        , _http_ok("http_ok", "msg") {
     this->add_metric(&_lag);
     this->add_metric(&_http_bytes);
     this->add_metric(&_http_requests);
@@ -56,7 +57,7 @@ namespace kspp {
   }
 
   bool influx_sink::eof() const {
-    return ((this->_queue.size() == 0) && (_pending_for_delete.size()==0));
+    return (!batch_in_progress_ && (this->_queue.size() == 0) && (_pending_for_delete.size()==0));
   }
 
   size_t influx_sink::process(int64_t tick) {
@@ -92,6 +93,7 @@ namespace kspp {
         continue;
       }
 
+      batch_in_progress_ = true;
       size_t items_to_copy = std::min<size_t>(this->_queue.size(), _batch_size);
       std::string url = _cp.url + "/write?db=" + _cp.database_name;
       std::shared_ptr<kspp::http::request> request(new kspp::http::request(kspp::http::POST, url, {}, _http_timeout));
@@ -142,22 +144,26 @@ namespace kspp {
         _http_bytes += bytes_in_batch;
         break;
       }
+      batch_in_progress_ = false;
     } // while (!exit)
     DLOG(INFO) << "exiting thread";
   }
 
   void influx_sink::flush() {
+    LOG(INFO) << "flushing input";
     while (!eof()) {
       process(kspp::milliseconds_since_epoch());
       poll(0);
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
+    LOG(INFO) << "flushing output buffer";
     while (true) {
       int ec = 0; // TODO fixme
       //auto ec = _impl.flush(1000);
       if (ec == 0)
         break;
     }
+    LOG(INFO) << "flushing done";
   }
 } // namespace
 

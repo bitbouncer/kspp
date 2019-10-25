@@ -27,6 +27,7 @@ namespace kspp {
     bool _start_running;
     bool _good;
     bool _closed;
+    std::atomic<bool> batch_in_progress_;
 
     boost::asio::io_service _ios;
     std::unique_ptr<boost::asio::io_service::work> _work;
