@@ -145,6 +145,11 @@ namespace kspp {
       if (!i->eof())
         return false;
     }
+    for (auto&& i : _partition_processors){
+      if (!i->eof())
+        return false;
+    }
+
     return true;
   }
 

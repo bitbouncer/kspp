@@ -13,7 +13,7 @@ namespace kspp {
     mem_stream_source(std::shared_ptr<cluster_config> config, int32_t partition)
         : event_consumer<K, V>()
         , partition_source<K, V>(nullptr, partition) {
-      this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
+      this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
       this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(partition));
     }
 
@@ -23,7 +23,7 @@ namespace kspp {
       upstream->add_sink([this](auto e) {
         this->_queue.push_back(e);
       });
-      this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
+      this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
       this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(upstream->partition()));
     }
 
@@ -36,7 +36,7 @@ namespace kspp {
           this->_queue.push_back(e);
         });
       }
-      this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
+      this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
       this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(partition));
     }
 
@@ -60,6 +60,9 @@ namespace kspp {
       return processed;
     }
 
+    bool eof() const override {
+      return (event_consumer<K, V>::queue_size()==0);
+    }
 
     size_t queue_size() const override {
       return event_consumer<K, V>::queue_size();
@@ -136,6 +139,11 @@ namespace kspp {
       return processed;
     }
 
+    bool eof() const override {
+      return (event_consumer<void, V>::queue_size()==0);
+    }
+
+
     size_t queue_size() const override {
       return event_consumer<void, V>::queue_size();
     }
@@ -207,6 +215,10 @@ namespace kspp {
         ++processed;
       }
       return processed;
+    }
+
+    bool eof() const override {
+      return (event_consumer<K, void>::queue_size()==0);
     }
 
     size_t queue_size() const override {

@@ -135,6 +135,7 @@ namespace kspp {
           //std::this_thread::sleep_for(10s);
           //continue;
         }
+        LOG(INFO) << "wrote " << bytes_in_batch << " bytes , in_batch:" << in_batch.size();
 
         // OK...
         auto ts1 = kspp::milliseconds_since_epoch();
