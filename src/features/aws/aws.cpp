@@ -3,7 +3,7 @@
 
 namespace kspp {
   void init_aws() {
-    bool is_init = false;
+    static bool is_init = false;
     if (!is_init) {
       is_init = true;
       Aws::SDKOptions options;

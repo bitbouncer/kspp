@@ -11,6 +11,7 @@ option(ENABLE_INFLUXDB "enable influxdb support" ON)
 option(ENABLE_TDS "enable tds support" ON)
 option(ENABLE_ELASTICSEARCH "enable elastic search support" ON)
 option(ENABLE_S3 "enable S3 support" ON)
+option(ENABLE_KINESIS "enable KINESIS support" ON)
 option(ENABLE_GRPC "enable grpc support" ON)
 option(ENABLE_BITBOUNCER_STREAMING "enable bitbouncer streaming support" ON)
 
@@ -338,6 +339,33 @@ if (ENABLE_GRPC)
     SET(BB_GRPC_LIBS_STATIC kspp_grpc_s gRPC::grpc++_reflection gRPC::grpc++  gRPC::grpc protobuf::libprotobuf)
     SET(BB_GRPC_LIBS_SHARED kspp_grpc gRPC::grpc++_reflection gRPC::grpc++  gRPC::grpc protobuf::libprotobuf)
 endif () #ENABLE_GRPC
+
+
+if (ENABLE_KINESIS)
+    file(GLOB KINESIS_LIB_SRCS
+            include/connect/aws/*.h
+            src/connect/aws/*.cpp)
+
+    if (BUILD_STATIC_LIBS)
+        ADD_LIBRARY(kspp_kinesis_s STATIC ${KINESIS_LIB_SRCS})
+        INSTALL(TARGETS kspp_kinesis_s
+                LIBRARY DESTINATION lib
+                ARCHIVE DESTINATION lib
+                )
+        SET(AWS_KINESIS_LIBS kspp_kinesis_s aws-cpp-sdk-kinesis aws-cpp-sdk-s3 aws-cpp-sdk-core aws-c-event-stream aws-checksums aws-c-common)
+    endif ()
+
+    if (BUILD_SHARED_LIBS)
+        ADD_LIBRARY(kspp_kinesis SHARED ${KINESIS_LIB_SRCS})
+        INSTALL(TARGETS kspp_kinesis
+                LIBRARY DESTINATION lib
+                ARCHIVE DESTINATION lib
+                )
+
+        SET(AWS_KINESIS_LIBS kspp_kinesis aws-cpp-sdk-kinesis aws-cpp-sdk-s3 aws-cpp-sdk-core aws-c-event-stream aws-checksums aws-c-common)
+
+    endif ()
+endif() #ENABLE_KINESIS
 
 
 
