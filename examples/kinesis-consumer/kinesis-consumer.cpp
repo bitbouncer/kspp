@@ -22,10 +22,8 @@ int main(int argc, char **argv) {
 
   FLAGS_logtostderr = 1;
   google::InitGoogleLogging(argv[0]);
-  kspp::kinesis_consumer consumer(0, argv[1]);
 
   std::string stream_name = argv[1];
-
 
   /*auto nr_of_partitions = kspp::kafka::get_number_partitions(config, topic);
   if (partition_list.size() == 0 || partition_list[0] == -1)

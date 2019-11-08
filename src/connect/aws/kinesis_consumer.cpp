@@ -192,6 +192,9 @@ namespace kspp {
         //assert(e.get()!=nullptr);
         msg_cnt_++;
       }
+      int64_t sleep_time = 250 -(t1 - t0);
+      if (sleep_time>0 && sleep_time<250)
+        std::this_thread::sleep_for(std::chrono::milliseconds(sleep_time));
       shard_iterator_ = getRecordsResult.GetResult().GetNextShardIterator();
     }
     DLOG(INFO) << "exiting thread";

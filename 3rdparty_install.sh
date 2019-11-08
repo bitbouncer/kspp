@@ -8,6 +8,7 @@ export GRPC_VER="v1.22.1"
 export LIBRDKAFKA_VER="v1.1.0"
 export PROMETHEUS_CPP_VER="v0.7.0"
 export RAPIDJSON_VER="v1.1.0"
+export NLOHMANN_JSON_VER="3.7.1"
 export PROTOBUF_VER="3.7.0"
 export ROCKDB_VER="v5.18.3"
 
@@ -250,6 +251,23 @@ make -j "$(getconf _NPROCESSORS_ONLN)"
 sudo make install
 cd ../../..
 rm arrow.tar.gz
+
+
+wget -O nlomann.tar.gz "https://github.com/nlohmann/json/archive/v$NLOHMANN_JSON_VER.tar.gz" && \
+mkdir -p nlomann && \
+tar \
+  --extract \
+  --file nlomann.tar.gz \
+  --directory nlomann \
+  --strip-components 1 && \
+cd nlomann && \
+mkdir build && cd build
+cmake ..
+make -j "$(getconf _NPROCESSORS_ONLN)" && \
+sudo make install && \
+cd ../.. && \
+rm nlomann.tar.gz && \
+rm -rf nlomann
 
 #out of tmp
 cd ..
