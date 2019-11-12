@@ -3,11 +3,12 @@ kspp
 
 [![Join the chat at https://gitter.im/kspp/Lobby](https://badges.gitter.im/kspp/Lobby.svg)](https://gitter.im/kspp/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-A high performance / realtime C++17 stream-processing framework with avro support. The design is influenced by apache kafka streams library. Change data capture for a postgres and sql server. Export to kafka, postgres, elastic search, influxdb and avro
+A high performance / realtime C++17 stream-processing framework with avro support. The design is influenced by apache kafka streams library. Change data capture for a postgres and sql server. Export to kafka, mqtt, postgres, elastic search, influxdb and avrofiles
 
 Sources:
 - kafka (uses librdkafka)
-- kafka grpc proxy 
+- kafka grpc proxy
+- aws kinesis (experimental, using aws sdk) 
 - postgres (uses libpq)
 - microsoft sqlserver (uses freetds) 
 - memory stream
@@ -15,12 +16,13 @@ Sources:
 Offset storage:
 - kafka
 - file
-- S3
+- S3 (uses aws sdk)
  
 Sinks:
-- kafka
-- postgres
-- influxdb
+- kafka (using librdkafka)
+- mqtt (using paho libraries)
+- postgres (uses libpq)
+- influxdb 
 - elastic search
 - files (avro)
 - S3 (avro)
