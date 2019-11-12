@@ -19,6 +19,11 @@ export FLATBUFFERS_VER="v1.11.0"
 export THRIFT_VER="0.12.0"
 export ARROW_VER="apache-arrow-0.14.1"
 
+#for mqtt
+export PAHO_MQTT_C_VER="1.3.1"
+export PAHO_MQTT_CPP_VER="1.0.1"
+
+
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 
 rm -rf tmp
@@ -268,6 +273,41 @@ sudo make install && \
 cd ../.. && \
 rm nlomann.tar.gz && \
 rm -rf nlomann
+
+
+wget -O paho.mqtt.c.tar.gz "https://github.com/eclipse/paho.mqtt.c/archive/v$PAHO_MQTT_C_VER.tar.gz" && \
+mkdir -p paho.mqtt.c
+tar \
+  --extract \
+  --file paho.mqtt.c.tar.gz \
+  --directory paho.mqtt.c \
+  --strip-components 1
+cd paho.mqtt.c
+mkdir build && cd build 
+cmake -DPAHO_WITH_SSL=ON -DPAHO_ENABLE_TESTING=OFF ..
+make -j "$(getconf _NPROCESSORS_ONLN)"
+sudo make install
+cd ../.. 
+rm paho.mqtt.c.tar.gz
+rm -rf paho.mqtt.c
+
+wget -O paho.mqtt.cpp.tar.gz "https://github.com/eclipse/paho.mqtt.cpp/archive/v$PAHO_MQTT_CPP_VER.tar.gz" && \
+mkdir -p paho.mqtt.cpp
+tar \
+  --extract \
+  --file paho.mqtt.cpp.tar.gz \
+  --directory paho.mqtt.cpp \
+  --strip-components 1
+cd paho.mqtt.cpp
+mkdir build && cd build 
+cmake -DPAHO_WITH_SSL=ON ..
+make -j "$(getconf _NPROCESSORS_ONLN)"
+sudo make install
+cd ../.. 
+rm paho.mqtt.cpp.tar.gz
+rm -rf paho.mqtt.cpp
+
+
 
 #out of tmp
 cd ..
