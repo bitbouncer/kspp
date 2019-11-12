@@ -1,9 +1,6 @@
 #include <iostream>
 #include <csignal>
 #include <boost/program_options.hpp>
-//#include <boost/uuid/uuid.hpp>
-//#include <boost/uuid/uuid_generators.hpp>
-//#include <boost/uuid/uuid_io.hpp>
 #include <kspp/utils/env.h>
 #include <kspp/utils/kafka_utils.h>
 #include <kspp/topology_builder.h>

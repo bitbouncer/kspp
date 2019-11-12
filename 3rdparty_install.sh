@@ -3,11 +3,12 @@ set -ef
 export CPP_STANDARD="17"
 
 export AVRO_VER="release-1.9.0"
-export AWS_SDK_VER="1.7.181"
+export AWS_SDK_VER="1.7.220"
 export GRPC_VER="v1.22.1"
 export LIBRDKAFKA_VER="v1.1.0"
 export PROMETHEUS_CPP_VER="v0.7.0"
 export RAPIDJSON_VER="v1.1.0"
+export NLOHMANN_JSON_VER="3.7.1"
 export PROTOBUF_VER="3.7.0"
 export ROCKDB_VER="v5.18.3"
 
@@ -17,6 +18,11 @@ export BROTLI_VER="v1.0.7"
 export FLATBUFFERS_VER="v1.11.0"
 export THRIFT_VER="0.12.0"
 export ARROW_VER="apache-arrow-0.14.1"
+
+#for mqtt
+export PAHO_MQTT_C_VER="1.3.1"
+export PAHO_MQTT_CPP_VER="1.0.1"
+
 
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 
@@ -149,7 +155,7 @@ tar \
 cd aws-sdk
 mkdir build
 cd build
-cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DBUILD_ONLY="s3;kinesis" -DCPP_STANDARD=$CPP_STANDARD ..
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DBUILD_ONLY="s3;kinesis;iot" -DCPP_STANDARD=$CPP_STANDARD ..
 make -j "$(getconf _NPROCESSORS_ONLN)"
 sudo make install
 cd ../..
@@ -250,6 +256,58 @@ make -j "$(getconf _NPROCESSORS_ONLN)"
 sudo make install
 cd ../../..
 rm arrow.tar.gz
+
+
+wget -O nlomann.tar.gz "https://github.com/nlohmann/json/archive/v$NLOHMANN_JSON_VER.tar.gz" && \
+mkdir -p nlomann && \
+tar \
+  --extract \
+  --file nlomann.tar.gz \
+  --directory nlomann \
+  --strip-components 1 && \
+cd nlomann && \
+mkdir build && cd build
+cmake ..
+make -j "$(getconf _NPROCESSORS_ONLN)" && \
+sudo make install && \
+cd ../.. && \
+rm nlomann.tar.gz && \
+rm -rf nlomann
+
+
+wget -O paho.mqtt.c.tar.gz "https://github.com/eclipse/paho.mqtt.c/archive/v$PAHO_MQTT_C_VER.tar.gz" && \
+mkdir -p paho.mqtt.c
+tar \
+  --extract \
+  --file paho.mqtt.c.tar.gz \
+  --directory paho.mqtt.c \
+  --strip-components 1
+cd paho.mqtt.c
+mkdir build && cd build 
+cmake -DPAHO_WITH_SSL=ON -DPAHO_ENABLE_TESTING=OFF ..
+make -j "$(getconf _NPROCESSORS_ONLN)"
+sudo make install
+cd ../.. 
+rm paho.mqtt.c.tar.gz
+rm -rf paho.mqtt.c
+
+wget -O paho.mqtt.cpp.tar.gz "https://github.com/eclipse/paho.mqtt.cpp/archive/v$PAHO_MQTT_CPP_VER.tar.gz" && \
+mkdir -p paho.mqtt.cpp
+tar \
+  --extract \
+  --file paho.mqtt.cpp.tar.gz \
+  --directory paho.mqtt.cpp \
+  --strip-components 1
+cd paho.mqtt.cpp
+mkdir build && cd build 
+cmake -DPAHO_WITH_SSL=ON ..
+make -j "$(getconf _NPROCESSORS_ONLN)"
+sudo make install
+cd ../.. 
+rm paho.mqtt.cpp.tar.gz
+rm -rf paho.mqtt.cpp
+
+
 
 #out of tmp
 cd ..
