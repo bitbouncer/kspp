@@ -124,9 +124,14 @@ namespace kspp {
     do
     {
       Aws::Kinesis::Model::DescribeStreamOutcome describeStreamResult = client_->DescribeStream(describeStreamRequest);
+      if (!describeStreamResult.IsSuccess()){
+        LOG(INFO) << "Failed to open stream: " << describeStreamResult.GetError().GetMessage();
+        return false;
+      }
+
       Aws::Vector<Aws::Kinesis::Model::Shard> shardsTemp = describeStreamResult.GetResult().GetStreamDescription().GetShards();
       shards.insert(shards.end(), shardsTemp.begin(), shardsTemp.end());
-      LOG(INFO) << describeStreamResult.GetError().GetMessage();
+
       if (describeStreamResult.GetResult().GetStreamDescription().GetHasMoreShards() && shards.size() > 0)
       {
         exclusiveStartShardId = shards[shards.size() - 1].GetShardId();
@@ -155,7 +160,7 @@ namespace kspp {
     if (tmp>0)
       read_cursor_.set_eof(true); // use rescrape for the first item ie enabled
     */
-    initialize();
+    bool result = initialize();
   }
 
   void kinesis_consumer::_thread() {

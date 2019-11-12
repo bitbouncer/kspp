@@ -12,6 +12,7 @@ option(ENABLE_TDS "enable tds support" ON)
 option(ENABLE_ELASTICSEARCH "enable elastic search support" ON)
 option(ENABLE_S3 "enable S3 support" ON)
 option(ENABLE_KINESIS "enable KINESIS support" ON)
+option(ENABLE_MQTT "enable MQTT support" ON)
 option(ENABLE_GRPC "enable grpc support" ON)
 option(ENABLE_BITBOUNCER_STREAMING "enable bitbouncer streaming support" ON)
 
@@ -165,22 +166,6 @@ if (ENABLE_S3)
     SET(AWS_S3_LIBS aws-cpp-sdk-s3 aws-cpp-sdk-core aws-c-event-stream aws-checksums aws-c-common)
     add_definitions(-DKSPP_S3)
 endif()
-
-if (BUILD_STATIC_LIBS)
-    ADD_LIBRARY(kspp_s STATIC ${LIB_SRCS} ${KSPP_INCLUDE_FILES} ${S3_LIB_SRCS})
-    INSTALL(TARGETS kspp_s
-            LIBRARY DESTINATION lib
-            ARCHIVE DESTINATION lib
-            )
-endif ()
-
-if (BUILD_SHARED_LIBS)
-    ADD_LIBRARY(kspp SHARED ${LIB_SRCS} ${KSPP_INCLUDE_FILES} ${S3_LIB_SRCS})
-    INSTALL(TARGETS kspp
-            LIBRARY DESTINATION lib
-            ARCHIVE DESTINATION lib
-            )
-endif ()
 
 #EXTENSIONS
 
@@ -340,7 +325,6 @@ if (ENABLE_GRPC)
     SET(BB_GRPC_LIBS_SHARED kspp_grpc gRPC::grpc++_reflection gRPC::grpc++  gRPC::grpc protobuf::libprotobuf)
 endif () #ENABLE_GRPC
 
-
 if (ENABLE_KINESIS)
     file(GLOB KINESIS_LIB_SRCS
             include/connect/aws/*.h
@@ -352,7 +336,7 @@ if (ENABLE_KINESIS)
                 LIBRARY DESTINATION lib
                 ARCHIVE DESTINATION lib
                 )
-        SET(AWS_KINESIS_LIBS kspp_kinesis_s aws-cpp-sdk-kinesis aws-cpp-sdk-s3 aws-cpp-sdk-core aws-c-event-stream aws-checksums aws-c-common)
+        SET(AWS_KINESIS_LIBS kspp_kinesis_s aws-cpp-sdk-iot aws-cpp-sdk-kinesis aws-cpp-sdk-s3 aws-cpp-sdk-core aws-c-event-stream aws-checksums aws-c-common)
     endif ()
 
     if (BUILD_SHARED_LIBS)
@@ -361,16 +345,35 @@ if (ENABLE_KINESIS)
                 LIBRARY DESTINATION lib
                 ARCHIVE DESTINATION lib
                 )
-
-        SET(AWS_KINESIS_LIBS kspp_kinesis aws-cpp-sdk-kinesis aws-cpp-sdk-s3 aws-cpp-sdk-core aws-c-event-stream aws-checksums aws-c-common)
-
+        SET(AWS_KINESIS_LIBS kspp_kinesis aws-cpp-sdk-iot aws-cpp-sdk-kinesis aws-cpp-sdk-s3 aws-cpp-sdk-core aws-c-event-stream aws-checksums aws-c-common)
     endif ()
 endif() #ENABLE_KINESIS
 
+if (ENABLE_MQTT)
+    file(GLOB MQTT_LIB_SRCS
+            include/connect/mqtt/*.h
+            src/connect/mqtt/*.cpp)
+    SET(MQTT_LIBS paho-mqttpp3 paho-mqtt3cs)
+endif()
 
+if (BUILD_STATIC_LIBS)
+    ADD_LIBRARY(kspp_s STATIC ${LIB_SRCS} ${KSPP_INCLUDE_FILES} ${S3_LIB_SRCS} ${MQTT_LIB_SRCS})
+    INSTALL(TARGETS kspp_s
+            LIBRARY DESTINATION lib
+            ARCHIVE DESTINATION lib
+            )
+endif ()
 
-SET(EXT_LIBS_SHARED ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${PROMETHEUS_CPP_LIBS} ${BOOST_LIBS} ${PostgreSQL_LIBRARIES} ${AWS_S3_LIBS} ${BB_GRPC_LIBS_SHARED} glog gflags crypto ssl stdc++fs)
-SET(EXT_LIBS_STATIC ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${PROMETHEUS_CPP_LIBS} ${BOOST_LIBS} ${PostgreSQL_LIBRARIES} ${AWS_S3_LIBS} ${BB_GRPC_LIBS_STATIC} glog gflags crypto ssl stdc++fs)
+if (BUILD_SHARED_LIBS)
+    ADD_LIBRARY(kspp SHARED ${LIB_SRCS} ${KSPP_INCLUDE_FILES} ${S3_LIB_SRCS} ${MQTT_LIB_SRCS})
+    INSTALL(TARGETS kspp
+            LIBRARY DESTINATION lib
+            ARCHIVE DESTINATION lib
+            )
+endif ()
+
+SET(EXT_LIBS_SHARED ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${PROMETHEUS_CPP_LIBS} ${BOOST_LIBS} ${PostgreSQL_LIBRARIES} ${AWS_S3_LIBS} ${BB_GRPC_LIBS_SHARED} ${MQTT_LIBS} glog gflags crypto ssl stdc++fs)
+SET(EXT_LIBS_STATIC ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${PROMETHEUS_CPP_LIBS} ${BOOST_LIBS} ${PostgreSQL_LIBRARIES} ${AWS_S3_LIBS} ${BB_GRPC_LIBS_STATIC} ${MQTT_LIBS} glog gflags crypto ssl stdc++fs)
 SET(CSI_LIBS_SHARED kspp ${EXT_LIBS_SHARED})
 SET(CSI_LIBS_STATIC kspp_s ${EXT_LIBS_STATIC})
 

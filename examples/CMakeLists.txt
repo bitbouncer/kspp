@@ -18,9 +18,16 @@ add_subdirectory(example12-generic-avro)
 add_subdirectory(example14-raw-sink)
 
 if (ENABLE_KINESIS)
-    add_subdirectory(kinesis-consumer)
-    add_subdirectory(kinesis-test)
-
+    add_subdirectory(aws-kinesis-consumer)
+if (ENABLE_MQTT)
+    add_subdirectory(aws-iot-sample)
+endif()
+#    add_subdirectory(kinesis-test)
 endif ()
+
+if (ENABLE_MQTT)
+    add_subdirectory(mqtt-producer)
+    #add_subdirectory(mqtt-consumer)
+endif()
 
 
