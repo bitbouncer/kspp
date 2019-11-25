@@ -336,7 +336,7 @@ if (ENABLE_KINESIS)
                 LIBRARY DESTINATION lib
                 ARCHIVE DESTINATION lib
                 )
-        SET(AWS_KINESIS_LIBS kspp_kinesis_s aws-cpp-sdk-iot aws-cpp-sdk-kinesis aws-cpp-sdk-s3 aws-cpp-sdk-core aws-c-event-stream aws-checksums aws-c-common)
+        SET(AWS_KINESIS_LIBS kspp_kinesis_s aws-cpp-sdk-kinesis aws-cpp-sdk-s3 aws-cpp-sdk-core aws-c-event-stream aws-checksums aws-c-common)
     endif ()
 
     if (BUILD_SHARED_LIBS)
@@ -345,7 +345,7 @@ if (ENABLE_KINESIS)
                 LIBRARY DESTINATION lib
                 ARCHIVE DESTINATION lib
                 )
-        SET(AWS_KINESIS_LIBS kspp_kinesis aws-cpp-sdk-iot aws-cpp-sdk-kinesis aws-cpp-sdk-s3 aws-cpp-sdk-core aws-c-event-stream aws-checksums aws-c-common)
+        SET(AWS_KINESIS_LIBS kspp_kinesis aws-cpp-sdk-kinesis aws-cpp-sdk-s3 aws-cpp-sdk-core aws-c-event-stream aws-checksums aws-c-common)
     endif ()
 endif() #ENABLE_KINESIS
 

@@ -155,7 +155,7 @@ tar \
 cd aws-sdk
 mkdir build
 cd build
-cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DBUILD_ONLY="s3;kinesis;iot" -DCPP_STANDARD=$CPP_STANDARD ..
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DBUILD_ONLY="s3;kinesis" -DENABLE_TESTING=OFF -DCPP_STANDARD=$CPP_STANDARD ..
 make -j "$(getconf _NPROCESSORS_ONLN)"
 sudo make install
 cd ../..
