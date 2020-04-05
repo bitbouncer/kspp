@@ -16,11 +16,11 @@ namespace kspp {
     postgres_generic_avro_sink(std::shared_ptr<cluster_config> config,
                                std::string table,
                                const kspp::connect::connection_params& cp,
-                               std::string id_column,
+                               std::vector<std::string> keys,
                                std::string client_encoding="UTF8",
                                size_t max_items_in_insert=1000,
                                bool skip_delete = false)
-        : generic_avro_sink(config, std::make_shared<kspp::postgres_producer>(table, cp, id_column, client_encoding, max_items_in_insert, skip_delete)){
+        : generic_avro_sink(config, std::make_shared<kspp::postgres_producer>(table, cp, keys, client_encoding, max_items_in_insert, skip_delete)){
       this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
       this->add_metrics_label(KSPP_TOPIC_TAG, table);
 

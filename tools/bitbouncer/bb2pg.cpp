@@ -212,6 +212,8 @@ int main(int argc, char** argv) {
   LOG(INFO) << "pushgateway_uri              : " << config->get_pushgateway_uri();
   LOG(INFO) << "metrics_namespace            : " << metrics_namespace;
 
+  std::vector<std::string> keys = { id_column };
+
   kspp::connect::connection_params connection_params;
   connection_params.host = postgres_host;
   connection_params.port = postgres_port;
@@ -237,7 +239,7 @@ int main(int argc, char** argv) {
   auto t = builder.create_topology();
   auto offset_provider = get_offset_provider(offset_storage);
   auto stream = t->create_processor<kspp::grpc_avro_source<kspp::generic_avro,kspp::generic_avro>>(0, topic, offset_provider, channel, monitor_api_key, monitor_secret_access_key);
-  auto sink = t->create_sink<kspp::postgres_generic_avro_sink>(stream, postgres_tablename, connection_params, id_column, character_encoding, postgres_max_items_in_insert, postgres_disable_delete);
+  auto sink = t->create_sink<kspp::postgres_generic_avro_sink>(stream, postgres_tablename, connection_params, keys, character_encoding, postgres_max_items_in_insert, postgres_disable_delete);
 
   std::map<std::string, std::string> labels = {
       { "app_name", SERVICE_NAME },

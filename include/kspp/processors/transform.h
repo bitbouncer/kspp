@@ -1,8 +1,8 @@
 #include <functional>
+#include <deque>
 #include <glog/logging.h>
 #include <kspp/kspp.h>
-#include <deque>
-
+#include <kspp/internal/commit_chain.h>
 #pragma once
 
 namespace kspp {

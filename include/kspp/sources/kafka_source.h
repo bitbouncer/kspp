@@ -14,7 +14,7 @@ namespace kspp {
   class kafka_source_base : public partition_source<K, V> {
     static constexpr const char* PROCESSOR_NAME = "kafka_source";
   public:
-    virtual ~kafka_source_base() {
+     ~kafka_source_base() override {
       close();
     }
 

@@ -11,7 +11,7 @@ namespace kspp {
     class generic_record
     {
     public:
-      generic_record(const avro::GenericRecord &record)
+      generic_record(avro::GenericRecord &record)
           : record_(record){
       }
 
@@ -19,6 +19,14 @@ namespace kspp {
         if (!record_.hasField(member))
           throw std::invalid_argument(name() + "." + member + ": no such member, actual: " + to_json());
         return record_.field(member);
+      }
+
+      std::vector<std::string> members() const {
+        size_t sz = record_.schema()->names();
+        std::vector<std::string> v;
+        for (size_t i=0; i!=sz; ++i)
+          v.push_back(record_.schema()->nameAt(i));
+        return v;
       }
 
       template<class T>
@@ -33,6 +41,20 @@ namespace kspp {
 
         throw std::invalid_argument(name() + "." + member + ":  wrong type, expected:" + avro_utils::to_string( avro_utils::cpp_to_avro_type<T>()) +  ", actual: " +  avro_utils::to_string(datum.type()));
       }
+
+      template<class T>
+      void set(const std::string& member, const T& val) {
+        if (!record_.hasField(member))
+          throw std::invalid_argument("no such member: " + member);
+
+        avro::GenericDatum &datum = record_.field(member);
+
+        if(datum.type() != avro_utils::cpp_to_avro_type<T>())
+          throw std::invalid_argument(name() + "." + member + ":  wrong type, expected:" + avro_utils::to_string( avro_utils::cpp_to_avro_type<T>()) +  ", actual: " +  avro_utils::to_string(datum.type()));
+
+        datum.value<T>() = val;
+      }
+
 
       template<class T>
       std::optional<T> get_optional(const std::string& member) const{
@@ -101,7 +123,7 @@ namespace kspp {
       std::string to_json() const;
 
     private:
-      const avro::GenericRecord& record_;
+      avro::GenericRecord& record_;
     };
 
     generic_avro()
@@ -139,6 +161,14 @@ namespace kspp {
     }
 
     generic_avro::generic_record record() const {
+      if (generic_datum_->type() == avro::AVRO_RECORD) {
+        return generic_avro::generic_record(generic_datum_->value<avro::GenericRecord>());
+      } else {
+        throw std::invalid_argument(std::string("wrong type, expected: ") +  avro_utils::to_string(avro::AVRO_RECORD) + " actual: " +  avro_utils::to_string(generic_datum_->type()));
+      }
+    }
+
+    generic_avro::generic_record mutable_record()  {
       if (generic_datum_->type() == avro::AVRO_RECORD) {
         return generic_avro::generic_record(generic_datum_->value<avro::GenericRecord>());
       } else {

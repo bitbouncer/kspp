@@ -129,7 +129,7 @@ file(GLOB LIB_SRCS
         src/internal/serdes/*.cpp
         src/internal/hash/*.cpp
         src/internal/utils/*.cpp
-#        src/internal/grpc/*.cpp
+        #        src/internal/grpc/*.cpp
         src/utils/*.cpp
         src/beta/*.cpp
         #        src/connect/kafka_rest/kafka_rest_source.cpp
@@ -165,7 +165,7 @@ if (ENABLE_S3)
     #SET(LIBS3_LIBS s3)
     SET(AWS_S3_LIBS aws-cpp-sdk-s3 aws-cpp-sdk-core aws-c-event-stream aws-checksums aws-c-common)
     add_definitions(-DKSPP_S3)
-endif()
+endif ()
 
 #EXTENSIONS
 
@@ -291,19 +291,19 @@ if (ENABLE_GRPC)
     PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${PROTOS})
 
     # Print path to generated files
-    message ("PROTO_SRCS = ${PROTO_SRCS}")
-    message ("PROTO_HDRS = ${PROTO_HDRS}")
+    message("PROTO_SRCS = ${PROTO_SRCS}")
+    message("PROTO_HDRS = ${PROTO_HDRS}")
 
     grpc_generate_cpp(GRPC_SRCS GRPC_HDRS ${PROTO_SRC_DIR} ${PROTOS})
-    message ("GRPC_SRCS = ${GRPC_SRCS}")
-    message ("GRPC_HDRS = ${GRPC_HDRS}")
+    message("GRPC_SRCS = ${GRPC_SRCS}")
+    message("GRPC_HDRS = ${GRPC_HDRS}")
 
     file(GLOB BITBOUNCER_GRPC_LIB_SRCS
             include/internal/grpc/*.h
             src/internal/grpc/*.cpp)
 
     if (BUILD_STATIC_LIBS)
-        ADD_LIBRARY(kspp_grpc_s STATIC ${PROTO_SRCS}  ${GRPC_SRCS} ${BITBOUNCER_GRPC_LIB_SRCS})
+        ADD_LIBRARY(kspp_grpc_s STATIC ${PROTO_SRCS} ${GRPC_SRCS} ${BITBOUNCER_GRPC_LIB_SRCS})
         INSTALL(TARGETS kspp_grpc_s
                 LIBRARY DESTINATION lib
                 ARCHIVE DESTINATION lib
@@ -311,7 +311,7 @@ if (ENABLE_GRPC)
     endif ()
 
     if (BUILD_SHARED_LIBS)
-        ADD_LIBRARY(kspp_grpc SHARED ${PROTO_SRCS}  ${GRPC_SRCS} ${BITBOUNCER_GRPC_LIB_SRCS})
+        ADD_LIBRARY(kspp_grpc SHARED ${PROTO_SRCS} ${GRPC_SRCS} ${BITBOUNCER_GRPC_LIB_SRCS})
         INSTALL(TARGETS kspp_grpc
                 LIBRARY DESTINATION lib
                 ARCHIVE DESTINATION lib
@@ -321,8 +321,8 @@ if (ENABLE_GRPC)
     file(GLOB BITBOUNCER_LIB_SRCS
             include/connect/bitbouncer/*.h)
 
-    SET(BB_GRPC_LIBS_STATIC kspp_grpc_s gRPC::grpc++_reflection gRPC::grpc++  gRPC::grpc protobuf::libprotobuf)
-    SET(BB_GRPC_LIBS_SHARED kspp_grpc gRPC::grpc++_reflection gRPC::grpc++  gRPC::grpc protobuf::libprotobuf)
+    SET(BB_GRPC_LIBS_STATIC kspp_grpc_s gRPC::grpc++_reflection gRPC::grpc++ gRPC::grpc protobuf::libprotobuf)
+    SET(BB_GRPC_LIBS_SHARED kspp_grpc gRPC::grpc++_reflection gRPC::grpc++ gRPC::grpc protobuf::libprotobuf)
 endif () #ENABLE_GRPC
 
 if (ENABLE_KINESIS)
@@ -347,14 +347,14 @@ if (ENABLE_KINESIS)
                 )
         SET(AWS_KINESIS_LIBS kspp_kinesis aws-cpp-sdk-kinesis aws-cpp-sdk-s3 aws-cpp-sdk-core aws-c-event-stream aws-checksums aws-c-common)
     endif ()
-endif() #ENABLE_KINESIS
+endif () #ENABLE_KINESIS
 
 if (ENABLE_MQTT)
     file(GLOB MQTT_LIB_SRCS
             include/connect/mqtt/*.h
             src/connect/mqtt/*.cpp)
     SET(MQTT_LIBS paho-mqttpp3 paho-mqtt3cs)
-endif()
+endif ()
 
 if (BUILD_STATIC_LIBS)
     ADD_LIBRARY(kspp_s STATIC ${LIB_SRCS} ${KSPP_INCLUDE_FILES} ${S3_LIB_SRCS} ${MQTT_LIB_SRCS})

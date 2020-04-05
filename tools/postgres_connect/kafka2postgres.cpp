@@ -215,7 +215,9 @@ int main(int argc, char **argv) {
         insert(self, in);
       });
   */
-  topology->create_sink<kspp::postgres_generic_avro_sink>(source0, table_name, connection_params, id_column, character_encoding, postgres_max_items_in_insert, postgres_disable_delete);
+  std::vector<std::string> keys = { id_column };
+
+  topology->create_sink<kspp::postgres_generic_avro_sink>(source0, table_name, connection_params, keys, character_encoding, postgres_max_items_in_insert, postgres_disable_delete);
 
   std::string hostname = default_hostname();
 

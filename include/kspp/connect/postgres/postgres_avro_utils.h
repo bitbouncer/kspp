@@ -80,17 +80,17 @@ namespace kspp {
 
     // SINK UTILS
     std::string
-    avro2sql_create_table_statement(const std::string &tablename, std::string keys, const avro::ValidSchema &schema);
+    avro2sql_create_table_statement(const std::string &tablename, std::vector<std::string> keys, const avro::ValidSchema &schema);
 
     std::string avro2sql_build_insert_1(const std::string &tablename, const avro::ValidSchema &schema);
 
-    std::string avro2sql_build_upsert_2(const std::string &tablename, const std::string &primary_key, const avro::ValidSchema &schema);
+    std::string avro2sql_build_upsert_2(const std::string &tablename, const std::vector<std::string> &keys, const avro::ValidSchema &schema);
 
     std::string avro2sql_values(const avro::ValidSchema &schema, const avro::GenericDatum &datum);
 
-    std::string avro2sql_key_values(const avro::ValidSchema &schema, const std::string &key, const avro::GenericDatum &datum);
+    std::string avro2sql_key_values(const avro::ValidSchema &schema, const std::vector<std::string> &keys, const avro::GenericDatum &datum);
 
-    std::string avro2sql_delete_key_values(const avro::ValidSchema &schema, const std::string &key, const avro::GenericDatum &datum);
+    std::string avro2sql_delete_key_values(const avro::ValidSchema &schema,  const std::vector<std::string> &keys, const avro::GenericDatum &datum);
   } // namespace pq
 } // namespace kspp
 
