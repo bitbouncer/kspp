@@ -251,7 +251,8 @@ namespace kspp {
     }
 
     // creates and validates...
-    get_cluster_metadata()->validate();
+    if (has_feature(KAFKA))
+      get_cluster_metadata()->validate();
 
     if (has_feature(SCHEMA_REGISTRY)) {
       if (get_schema_registry_uri().size()) {

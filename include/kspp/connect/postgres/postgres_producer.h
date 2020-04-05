@@ -13,7 +13,7 @@ namespace kspp {
     enum { MAX_ERROR_BEFORE_BAD=200 };
     postgres_producer(std::string table,
                       const kspp::connect::connection_params& cp,
-                      std::string id_column,
+                      std::vector<std::string> keys,
                       std::string client_encoding,
                       size_t max_items_in_insert,
                       bool skip_delete=false);
@@ -69,7 +69,7 @@ namespace kspp {
     const std::string _table;
     const kspp::connect::connection_params cp_;
 
-    const std::string _id_column;
+    const std::vector<std::string> _id_columns;
     const std::string _client_encoding;
 
     event_queue<kspp::generic_avro, kspp::generic_avro> _incomming_msg;

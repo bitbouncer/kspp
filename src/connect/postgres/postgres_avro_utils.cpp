@@ -297,8 +297,8 @@ namespace kspp {
         case avro::AVRO_BOOL:
           return BOOLOID;
 
-        //case avro::AVRO_ARRAY: // we map arrays to a json string representation of the array eg [ 123, 123 ] or [ "nisse" ]
-        //return TEXTOID;
+          //case avro::AVRO_ARRAY: // we map arrays to a json string representation of the array eg [ 123, 123 ] or [ "nisse" ]
+          //return TEXTOID;
         case avro::AVRO_ARRAY:
           return TEXT_ARRAYOID;
 
@@ -356,8 +356,17 @@ namespace kspp {
       return (t == avro::AVRO_UNION);
     }
 
+    static std::string keys2string(std::vector<std::string> keys){
+      std::string s;
+      for (auto j : keys)
+        s += j + ","; // (to snanatize_pg_string...)
+      if (s.size())
+        s.pop_back();
+      return s;
+    }
+
     std::string
-    avro2sql_create_table_statement(const std::string &tablename, std::string keys, const avro::ValidSchema &schema) {
+    avro2sql_create_table_statement(const std::string &tablename, std::vector<std::string> keys, const avro::ValidSchema &schema) {
       auto root = schema.root();
       assert(root->type() == avro::AVRO_RECORD);
       std::string s = "CREATE TABLE " + tablename + " (\n";
@@ -378,9 +387,9 @@ namespace kspp {
           s += ",";
       }
 
-      if (keys.size() > 0)
-        s += ", PRIMARY KEY(" + keys + ") ";
-
+      std::string key_string = keys2string(keys);
+      if (key_string.size())
+        s += ", PRIMARY KEY(" + key_string + ") ";
       s += ")";
       return s;
     }
@@ -400,11 +409,10 @@ namespace kspp {
       return s;
     }
 
-    std::string avro2sql_build_upsert_2(const std::string &tablename, const std::string &primary_key,
-                                        const avro::ValidSchema &schema) {
+    std::string avro2sql_build_upsert_2(const std::string &tablename, const std::vector<std::string> &keys, const avro::ValidSchema &schema) {
       auto r = schema.root();
       assert(r->type() == avro::AVRO_RECORD);
-      std::string s = "ON CONFLICT (" + primary_key + ") DO UPDATE SET (\n";
+      std::string s = "ON CONFLICT (" + keys2string(keys) + ") DO UPDATE SET (\n";
       size_t sz = r->names();
       for (int i = 0; i != sz; ++i) {
         s += r->nameAt(i);
@@ -444,8 +452,11 @@ namespace kspp {
         case avro::AVRO_NULL:
           return "NULL";
           break;
-        case avro::AVRO_STRING:
+        case avro::AVRO_STRING: {
+          auto t = column.logicalType();
+          std::string s = column.value<std::string>();
           return escapeSQLstring(column.value<std::string>());
+        }
           break;
         case avro::AVRO_BYTES:
           return column.value<std::string>();
@@ -539,16 +550,22 @@ namespace kspp {
 
     // TODO multiple keys
     std::string
-    avro2sql_key_values(const avro::ValidSchema &schema, const std::string &key, const avro::GenericDatum &datum) {
+    avro2sql_key_values(const avro::ValidSchema &schema, const std::vector<std::string> &keys, const avro::GenericDatum &datum) {
       assert(datum.type() == avro::AVRO_RECORD);
       const avro::GenericRecord &record(datum.value<avro::GenericRecord>());
       std::string result;
-      auto x = record.field(key);
-      result += avro_2_sql_simple_column_value(x);
+      size_t sz = keys.size();
+      size_t last =sz-1;
+      for (size_t i=0; i!=sz; ++i) {
+        auto x = record.field(keys[i]);
+        result += avro_2_sql_simple_column_value(x);
+        if (i!=last)
+          result += ", ";
+      }
       return result;
     }
 
-    std::string avro2sql_delete_key_values(const avro::ValidSchema &schema, const std::string &key,
+    std::string avro2sql_delete_key_values(const avro::ValidSchema &schema, const std::vector<std::string> &keys,
                                            const avro::GenericDatum &datum) {
       if (datum.type() == avro::AVRO_RECORD) {
         auto root = schema.root();
@@ -566,7 +583,10 @@ namespace kspp {
         }
         return result;
       } else {
-        return key + "=" + avro_2_sql_simple_column_value(datum);
+        if (keys.size()!=1){
+          LOG(FATAL) << "keys size!=1 and signal value key";
+        }
+        return keys[0] + "=" + avro_2_sql_simple_column_value(datum);
       }
     }
 

@@ -11,7 +11,7 @@ using namespace std::chrono_literals;
 namespace kspp {
   postgres_producer::postgres_producer(std::string table,
                                        const kspp::connect::connection_params& cp,
-                                       std::string id_column,
+                                       std::vector<std::string> id_columns,
                                        std::string client_encoding,
                                        size_t max_items_in_insert,
                                        bool skip_delete)
@@ -24,7 +24,7 @@ namespace kspp {
       , _connection(std::make_unique<kspp_postgres::connection>())
       , _table(table)
       , cp_(cp)
-      , _id_column(id_column)
+      , _id_columns(id_columns)
       , _client_encoding(client_encoding)
       , _max_items_in_insert(max_items_in_insert)
       , _table_checked(false)
@@ -160,7 +160,7 @@ namespace kspp {
         // do not do this if this is a delete message
         if (msg->record()->value()) {
           //TODO verify that the data actually has the _id_column(s)
-          std::string statement = pq::avro2sql_create_table_statement(_table, _id_column,
+          std::string statement = pq::avro2sql_create_table_statement(_table, _id_columns,
                                                                       *msg->record()->value()->valid_schema());
           LOG(INFO) << "exec(" + statement + ")";
           auto res = _connection->exec(statement);
@@ -189,7 +189,7 @@ namespace kspp {
       // upsert?
       if (msg->record()->value()) {
         std::string statement = pq::avro2sql_build_insert_1(_table, *msg->record()->value()->valid_schema());
-        std::string upsert_part = pq::avro2sql_build_upsert_2(_table, _id_column, *msg->record()->value()->valid_schema());
+        std::string upsert_part = pq::avro2sql_build_upsert_2(_table, _id_columns, *msg->record()->value()->valid_schema());
 
         size_t msg_in_batch = 0;
         size_t bytes_in_batch = 0;
@@ -213,8 +213,9 @@ namespace kspp {
 
           // we cannot have the id columns of this update more than once
           // postgres::exec failed ERROR:  ON CONFLICT DO UPDATE command cannot affect row a second time
-          auto key_string = pq::avro2sql_key_values(*msg->record()->value()->valid_schema(), _id_column,
+          auto key_string = pq::avro2sql_key_values(*msg->record()->value()->valid_schema(), _id_columns,
                                                     *msg->record()->value()->generic_datum());
+          //LOG(INFO) << "key string " << key_string;
 
           auto res0 = unique_keys_in_batch2.find(key_string);
           if (res0 != unique_keys_in_batch2.end()){
@@ -239,6 +240,7 @@ namespace kspp {
           if (msg_in_batch > 0)
             statement += ", \n";
           statement += pq::avro2sql_values(*msg->record()->value()->valid_schema(), *msg->record()->value()->generic_datum());
+          //LOG(INFO) << statement;
           ++msg_in_batch;
           in_update_batch.push_back(msg);
           _incomming_msg.pop_front();
@@ -293,7 +295,7 @@ namespace kspp {
           }
           if (msg_in_batch > 0)
             statement += "OR \n ";
-          statement += pq::avro2sql_delete_key_values(*msg->record()->key().valid_schema(), _id_column, *msg->record()->key().generic_datum());
+          statement += pq::avro2sql_delete_key_values(*msg->record()->key().valid_schema(), _id_columns, *msg->record()->key().generic_datum());
           ++msg_in_batch;
           in_delete_batch.push_back(msg);
           _incomming_msg.pop_front();
