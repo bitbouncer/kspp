@@ -11,7 +11,7 @@ namespace kspp {
 
   std::vector<int32_t> get_partition_list(int32_t nr_of_partitions);
 
-  std::vector<std::string> parse_string_array(std::string s);
+  std::vector<std::string> parse_string_array(std::string s, std::string regexp="[\\,]");
   std::string to_string(std::vector<std::string> v);
   std::string to_string(std::set<std::string> v);
 }

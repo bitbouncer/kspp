@@ -32,7 +32,7 @@ namespace kspp {
     return result;
   }
 
-  std::vector<std::string> parse_string_array(std::string s) {
+  std::vector<std::string> parse_string_array(std::string s, std::string regexp) {
     std::vector<std::string> result;
     auto begin = s.find_first_of("[");
     auto end = s.find_first_of("]");
@@ -41,7 +41,9 @@ namespace kspp {
     auto sz = (end - begin) - 1;
     auto s2 = s.substr(begin + 1, sz);
     {
-      std::regex rgx("[,\\s+]");
+      //std::regex rgx("[,\\s+]");
+      //std::regex rgx("[\\,]");
+      std::regex rgx(regexp);
       std::sregex_token_iterator iter(s2.begin(), s2.end(), rgx, -1);
       std::sregex_token_iterator end;
       for (; iter != end; ++iter) {

@@ -7,7 +7,7 @@ namespace kspp {
 class generic_avro_file_source : public partition_source<void, kspp::generic_avro> {
     static constexpr const char *PROCESSOR_NAME = "avro_file_source";
   public:
-    generic_avro_file_source(std::shared_ptr<cluster_config> config, int32_t partition, std::string filename);
+    generic_avro_file_source(std::shared_ptr<cluster_config> config, int32_t partition, std::string source);
 
     ~generic_avro_file_source() override;
 
@@ -39,7 +39,7 @@ class generic_avro_file_source : public partition_source<void, kspp::generic_avr
     bool exit_ = false;
     bool eof_ = false;
     std::thread thread_;
-    std::string filename_;
+    std::string source_;
     int64_t messages_in_file_ = 0;
     event_queue<void, kspp::generic_avro> incomming_msg_;
   };

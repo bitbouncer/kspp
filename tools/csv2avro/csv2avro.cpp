@@ -15,15 +15,23 @@
 #include <kspp/utils/kspp_utils.h>
 #include <boost/program_options.hpp>
 
-static std::map<std::string, std::string> s_translation = {
-  { "table", "_table_" }
-};
+const std::string WHITESPACE = " \n\r\t\f\v";
 
-std::string sanitize_column_name(std::string name){
-  auto item = s_translation.find(name);
-  if (item != s_translation.end())
-    return item->second;
-  return name;
+std::string ltrim(const std::string& s)
+{
+  size_t start = s.find_first_not_of(WHITESPACE);
+  return (start == std::string::npos) ? "" : s.substr(start);
+}
+
+std::string rtrim(const std::string& s)
+{
+  size_t end = s.find_last_not_of(WHITESPACE);
+  return (end == std::string::npos) ? "" : s.substr(0, end + 1);
+}
+
+std::string trim(const std::string& s)
+{
+  return rtrim(ltrim(s));
 }
 
 /*
@@ -34,6 +42,47 @@ std::string sanitize_column_name(std::string name){
 
 namespace fs = std::experimental::filesystem;
 using json = nlohmann::json;
+
+static std::string to_lower(std::string s) {
+  std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) {
+    return std::tolower(c);
+  });
+  return s;
+}
+
+static std::string remove_non_alpha_num(std::string s) {
+  s.erase(std::remove_if(s.begin(), s.end(), [](char ch) {
+    return !(::isalnum(ch) || ch == '_');
+  }), s.end());
+  return s;
+}
+
+static std::string replace_space(std::string s) {
+  std::transform(s.begin(), s.end(), s.begin(), [](char ch) {
+    return ch == ' ' ? '_' : ch;
+  });
+  return s;
+}
+
+static std::map<std::string, std::string> s_translation = {
+  { "table", "_table_" }
+};
+
+static std::string translate_forbidden_keywords(std::string s) {
+  auto item = s_translation.find(s);
+  if (item != s_translation.end())
+    return item->second;
+  return s;
+}
+
+static std::string sanitize_column_name(std::string s){
+  s = trim(s);
+  s = to_lower(s);
+  s = replace_space(s);
+  s = remove_non_alpha_num(s);
+  s = translate_forbidden_keywords(s);
+  return s;
+}
 
 enum class CSVState {
   UnquotedField,
@@ -80,6 +129,12 @@ static std::vector<std::string> parseCSVRow(const std::string &row) {
         break;
     }
   }
+  //cleanup leading or trailing whitespaces
+  if (fields.size()){
+    fields[0] = trim(fields[0]);
+    fields[fields.size()-1] = trim(fields[fields.size()-1]);
+  }
+
   return fields;
 }
 
@@ -98,8 +153,6 @@ void set_member(avro::GenericRecord& record, std::string member, std::string val
   //throw std::invalid_argument(name() + "." + member + ": wrong type, expected:" + avro_utils::to_string( avro_utils::cpp_to_avro_type<T>()) +  ", actual: " +  avro_utils::to_string(datum.type()));
 }
 
-
-
 int main(int argc, char** argv) {
   FLAGS_logtostderr = 1;
   google::InitGoogleLogging(argv[0]);
@@ -108,7 +161,8 @@ int main(int argc, char** argv) {
     ("help", "produce help message")
     ("src", boost::program_options::value<std::string>(), "src")
     ("dst", boost::program_options::value<std::string>(), "dst")
-    //("nullable_columns", boost::program_options::value<std::string>(), "nullable_columns")
+    ("column_names", boost::program_options::value<std::string>(), "column_names")
+    ("static_column", boost::program_options::value<std::string>(), "static_column")
     ("keys", boost::program_options::value<std::string>(), "keys");
 
   boost::program_options::variables_map vm;
@@ -136,15 +190,6 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  /*std::set<std::string> nullables_columns;
-  if (vm.count("nullable_columns")) {
-    std::string nullables = vm["nullable_columns"].as<std::string>();
-    auto v = kspp::parse_string_array(nullables);
-    for (auto i : v)
-      nullables_columns.insert(i);
-  }
-  */
-
   std::set<std::string> keys;
   if (vm.count("keys")) {
     std::string s = vm["keys"].as<std::string>();
@@ -153,10 +198,32 @@ int main(int argc, char** argv) {
       keys.insert(sanitize_column_name(i));
   }
 
-  LOG(INFO) << "src : " << src;
-  LOG(INFO) << "dst : " << dst;
-  LOG(INFO) << "keys: " << kspp::to_string(keys);
-  //LOG(INFO) << "nullables_columns: " << kspp::to_string(nullables_columns);
+  std::vector<std::string> column_names_in_csv;
+  if (vm.count("column_names")) {
+    std::string s = vm["column_names"].as<std::string>();
+    column_names_in_csv = kspp::parse_string_array(s);
+    for (auto &i : column_names_in_csv)
+      i = sanitize_column_name(i);
+  }
+
+  std::string static_column;
+  std::string static_column_value;
+  if (vm.count("static_column")) {
+    auto s = vm["static_column"].as<std::string>();
+    size_t delim = s.find("=");
+    if (delim!=std::string::npos){
+      static_column = sanitize_column_name(s.substr(0, delim));
+      static_column_value = s.substr(delim+1);
+    }
+  }
+
+  LOG(INFO) << "src:           " << src;
+  LOG(INFO) << "dst:           " << dst;
+  if (column_names_in_csv.size())
+    LOG(INFO) << "column_names:  " << kspp::to_string(column_names_in_csv);
+  LOG(INFO) << "keys:          " << kspp::to_string(keys);
+  if (static_column.size())
+    LOG(INFO) << "static_column: " << static_column << " -> " << static_column_value;
 
   std::vector<std::vector<std::string>> table;
   std::string row;
@@ -169,11 +236,21 @@ int main(int argc, char** argv) {
   std::fstream in(src, std::ios::binary | std::ios::in);
 
   // read first line and make an avro schema
-  std::getline(in, row);
-  auto column_names = parseCSVRow(row);
+  //if we were given column names then skip reading of them in file
+  if (column_names_in_csv.size() == 0){
+    LOG(INFO) << "scanning column names from file";
+    std::getline(in, row);
+    column_names_in_csv = parseCSVRow(row);
+    for (auto &i :column_names_in_csv)
+      i = sanitize_column_name(i);
+    LOG(INFO) << "column_names:  " << kspp::to_string(column_names_in_csv);
+  }
 
-  for (auto& i :column_names)
-    i = sanitize_column_name(i);
+  std::vector<std::string> column_names_in_schema = column_names_in_csv;
+
+  if (static_column.size()){
+    column_names_in_schema.push_back(static_column);
+  }
 
   json nullable_string = json::array();
   nullable_string.push_back("null");
@@ -184,7 +261,7 @@ int main(int argc, char** argv) {
   j["name"] = "csv_import";
   j["fields"] = json::array();
 
-  for (auto i : column_names) {
+  for (auto i : column_names_in_schema) {
     std::cout << i << ", ";
     json column;
     column["name"] = i;
@@ -222,20 +299,27 @@ int main(int argc, char** argv) {
     }
     auto fields = parseCSVRow(row);
 
-    if (fields.size() != column_names.size()) {
+    if (fields.size() != column_names_in_csv.size()) {
       std::cerr << "skipping row with to different nr of columns" << std::endl;
       continue;
     }
 
+
     auto gd = std::make_shared<avro::GenericDatum>(valid_schema_);
     avro::GenericRecord &record = gd->value<avro::GenericRecord>();
-    int sz = column_names.size();
+    int sz = column_names_in_csv.size();
     for (int i = 0; i != sz; ++i) {
       // skip assigning columns with empty strings - keys will be empty and the rest NULL
       if (fields[i].size() == 0)
         continue;
-      set_member(record, column_names[i], fields[i]);
+      set_member(record, column_names_in_csv[i], fields[i]);
     }
+
+    if (static_column.size()){
+      if (static_column_value.size())
+        set_member(record, static_column, static_column_value);
+    }
+
     ++messages_in_file;
     file_writer->write(*gd);
 

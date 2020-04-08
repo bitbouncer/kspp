@@ -195,13 +195,6 @@ int main(int argc, char **argv) {
     }
   }
 
-  /*auto null_schema = std::make_shared<avro::ValidSchema>();
-  std::stringstream s;
-  s << R"({ "type": "null" })";
-  avro::compileJsonSchema(s, *null_schema);
-  //std::shared_ptr<avro::GenericDatum> null_datum = std::make_shared<avro::GenericDatum>(null_schema);
-  kspp::generic_avro null_datum(null_schema, -1);
-  */
   kspp::generic_avro key_datum(key_schema, -1);
 
   LOG(INFO) << "discovering facts...";
