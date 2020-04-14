@@ -44,9 +44,7 @@ include_directories("${PROJECT_BINARY_DIR}")
 if (ENABLE_POSTGRES)
     find_package(PostgreSQL REQUIRED)
     include_directories(${PostgreSQL_INCLUDE_DIRS})
-    #PostgreSQL_LIBRARIES
-    #PostgreSQL_VERSION_STRING
-endif () #POSTGRES
+endif ()
 
 find_package(Boost COMPONENTS program_options system REQUIRED)
 
@@ -132,6 +130,15 @@ file(GLOB LIB_SRCS
         #        src/internal/grpc/*.cpp
         src/utils/*.cpp
         src/beta/*.cpp
+
+        IF(ENABLE_ROCKSDB)
+        src/internal/rocksdb/*.cpp
+        endif ()
+
+        if (ENABLE_S3)
+        include/features/aws/*.h
+        src/features/aws/*.cpp
+        endif()
         #        src/connect/kafka_rest/kafka_rest_source.cpp
         )
 
@@ -161,8 +168,6 @@ if (ENABLE_S3)
     file(GLOB S3_LIB_SRCS
             include/features/aws/*.h
             src/features/aws/*.cpp)
-
-    #SET(LIBS3_LIBS s3)
     SET(AWS_S3_LIBS aws-cpp-sdk-s3 aws-cpp-sdk-core aws-c-event-stream aws-checksums aws-c-common)
     add_definitions(-DKSPP_S3)
 endif ()
@@ -171,113 +176,47 @@ endif ()
 
 IF (ENABLE_ROCKSDB)
     file(GLOB ROCKDB_LIB_SRCS
-            src/internal/rocksdb/*.cpp)
-
-    if (BUILD_STATIC_LIBS)
-        ADD_LIBRARY(kspp_rocksdb_s STATIC ${ROCKDB_LIB_SRCS})
-        INSTALL(TARGETS kspp_rocksdb_s
-                LIBRARY DESTINATION lib
-                ARCHIVE DESTINATION lib
-                )
-    endif ()
-
-    if (BUILD_SHARED_LIBS)
-        ADD_LIBRARY(kspp_rocksdb SHARED ${ROCKDB_LIB_SRCS})
-        INSTALL(TARGETS kspp_rocksdb
-                LIBRARY DESTINATION lib
-                ARCHIVE DESTINATION lib
-                )
-    endif ()
+     src/internal/rocksdb/*.cpp)
 ENDIF ()
 
 if (ENABLE_POSTGRES)
     file(GLOB POSTGRES_LIB_SRCS
             include/connect/postgres/*.h
             src/connect/postgres/*.cpp)
-
-    if (BUILD_STATIC_LIBS)
-        ADD_LIBRARY(kspp_pg_s STATIC ${POSTGRES_LIB_SRCS})
-        INSTALL(TARGETS kspp_pg_s
-                LIBRARY DESTINATION lib
-                ARCHIVE DESTINATION lib
-                )
-    endif ()
-
-    if (BUILD_SHARED_LIBS)
-        ADD_LIBRARY(kspp_pg SHARED ${POSTGRES_LIB_SRCS})
-        INSTALL(TARGETS kspp_pg
-                LIBRARY DESTINATION lib
-                ARCHIVE DESTINATION lib
-                )
-    endif ()
 ENDIF ()
 
 IF (ENABLE_TDS)
     file(GLOB TDS_LIB_SRCS
             include/connect/tds/*.h
             src/connect/tds/*.cpp)
-
-    if (BUILD_STATIC_LIBS)
-        ADD_LIBRARY(kspp_tds_s STATIC ${TDS_LIB_SRCS})
-        INSTALL(TARGETS kspp_tds_s
-                LIBRARY DESTINATION lib
-                ARCHIVE DESTINATION lib
-                )
-    endif ()
-
-    if (BUILD_SHARED_LIBS)
-        ADD_LIBRARY(kspp_tds SHARED ${TDS_LIB_SRCS})
-        INSTALL(TARGETS kspp_tds
-                LIBRARY DESTINATION lib
-                ARCHIVE DESTINATION lib
-                )
-    endif ()
+    SET(TDS_LIBS sybdb)
 ENDIF ()
 
 IF (ENABLE_ELASTICSEARCH)
     file(GLOB ELASTICSEARCH_LIB_SRCS
             include/connect/elasticsearch/*.h
             src/connect/elasticsearch/*.cpp)
-
-    if (BUILD_STATIC_LIBS)
-        ADD_LIBRARY(kspp_es_s STATIC ${ELASTICSEARCH_LIB_SRCS})
-        INSTALL(TARGETS kspp_es_s
-                LIBRARY DESTINATION lib
-                ARCHIVE DESTINATION lib
-                )
-    endif ()
-
-    if (BUILD_SHARED_LIBS)
-        ADD_LIBRARY(kspp_es SHARED ${ELASTICSEARCH_LIB_SRCS})
-        INSTALL(TARGETS kspp_es
-                LIBRARY DESTINATION lib
-                ARCHIVE DESTINATION lib
-                )
-    endif ()
 ENDIF ()
 
-#INFLUXDB
 IF (ENABLE_INFLUXDB)
     file(GLOB INFLUXDB_LIB_SRCS
             include/connect/influxdb/*.h
             src/connect/influxdb/*.cpp)
-
-    if (BUILD_STATIC_LIBS)
-        ADD_LIBRARY(kspp_influxdb_s STATIC ${INFLUXDB_LIB_SRCS})
-        INSTALL(TARGETS kspp_influxdb_s
-                LIBRARY DESTINATION lib
-                ARCHIVE DESTINATION lib
-                )
-    endif ()
-
-    if (BUILD_SHARED_LIBS)
-        ADD_LIBRARY(kspp_influxdb SHARED ${INFLUXDB_LIB_SRCS})
-        INSTALL(TARGETS kspp_influxdb
-                LIBRARY DESTINATION lib
-                ARCHIVE DESTINATION lib
-                )
-    endif ()
 ENDIF ()
+
+if (ENABLE_KINESIS)
+    file(GLOB KINESIS_LIB_SRCS
+            include/connect/aws/*.h
+            src/connect/aws/*.cpp)
+    SET(AWS_KINESIS_LIBS aws-cpp-sdk-kinesis aws-cpp-sdk-s3 aws-cpp-sdk-core aws-c-event-stream aws-checksums aws-c-common)
+endif () #ENABLE_KINESIS
+
+if (ENABLE_MQTT)
+    file(GLOB MQTT_LIB_SRCS
+            include/connect/mqtt/*.h
+            src/connect/mqtt/*.cpp)
+    SET(MQTT_LIBS paho-mqttpp3 paho-mqtt3cs)
+endif ()
 
 
 if (ENABLE_GRPC)
@@ -325,39 +264,9 @@ if (ENABLE_GRPC)
     SET(BB_GRPC_LIBS_SHARED kspp_grpc gRPC::grpc++_reflection gRPC::grpc++ gRPC::grpc protobuf::libprotobuf)
 endif () #ENABLE_GRPC
 
-if (ENABLE_KINESIS)
-    file(GLOB KINESIS_LIB_SRCS
-            include/connect/aws/*.h
-            src/connect/aws/*.cpp)
-
-    if (BUILD_STATIC_LIBS)
-        ADD_LIBRARY(kspp_kinesis_s STATIC ${KINESIS_LIB_SRCS})
-        INSTALL(TARGETS kspp_kinesis_s
-                LIBRARY DESTINATION lib
-                ARCHIVE DESTINATION lib
-                )
-        SET(AWS_KINESIS_LIBS kspp_kinesis_s aws-cpp-sdk-kinesis aws-cpp-sdk-s3 aws-cpp-sdk-core aws-c-event-stream aws-checksums aws-c-common)
-    endif ()
-
-    if (BUILD_SHARED_LIBS)
-        ADD_LIBRARY(kspp_kinesis SHARED ${KINESIS_LIB_SRCS})
-        INSTALL(TARGETS kspp_kinesis
-                LIBRARY DESTINATION lib
-                ARCHIVE DESTINATION lib
-                )
-        SET(AWS_KINESIS_LIBS kspp_kinesis aws-cpp-sdk-kinesis aws-cpp-sdk-s3 aws-cpp-sdk-core aws-c-event-stream aws-checksums aws-c-common)
-    endif ()
-endif () #ENABLE_KINESIS
-
-if (ENABLE_MQTT)
-    file(GLOB MQTT_LIB_SRCS
-            include/connect/mqtt/*.h
-            src/connect/mqtt/*.cpp)
-    SET(MQTT_LIBS paho-mqttpp3 paho-mqtt3cs)
-endif ()
 
 if (BUILD_STATIC_LIBS)
-    ADD_LIBRARY(kspp_s STATIC ${LIB_SRCS} ${KSPP_INCLUDE_FILES} ${S3_LIB_SRCS} ${MQTT_LIB_SRCS})
+    ADD_LIBRARY(kspp_s STATIC ${LIB_SRCS} ${KSPP_INCLUDE_FILES} ${S3_LIB_SRCS} ${MQTT_LIB_SRCS} ${ROCKDB_LIB_SRCS} ${POSTGRES_LIB_SRCS} ${TDS_LIB_SRCS} ${ELASTICSEARCH_LIB_SRCS} ${INFLUXDB_LIB_SRCS} ${KINESIS_LIB_SRCS})
     INSTALL(TARGETS kspp_s
             LIBRARY DESTINATION lib
             ARCHIVE DESTINATION lib
@@ -365,15 +274,15 @@ if (BUILD_STATIC_LIBS)
 endif ()
 
 if (BUILD_SHARED_LIBS)
-    ADD_LIBRARY(kspp SHARED ${LIB_SRCS} ${KSPP_INCLUDE_FILES} ${S3_LIB_SRCS} ${MQTT_LIB_SRCS})
+    ADD_LIBRARY(kspp SHARED ${LIB_SRCS} ${KSPP_INCLUDE_FILES} ${S3_LIB_SRCS} ${MQTT_LIB_SRCS} ${ROCKDB_LIB_SRCS} ${POSTGRES_LIB_SRCS} ${TDS_LIB_SRCS} ${ELASTICSEARCH_LIB_SRCS} ${INFLUXDB_LIB_SRCS} ${KINESIS_LIB_SRCS})
     INSTALL(TARGETS kspp
             LIBRARY DESTINATION lib
             ARCHIVE DESTINATION lib
             )
 endif ()
 
-SET(EXT_LIBS_SHARED ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${PROMETHEUS_CPP_LIBS} ${BOOST_LIBS} ${PostgreSQL_LIBRARIES} ${AWS_S3_LIBS} ${BB_GRPC_LIBS_SHARED} ${MQTT_LIBS} glog gflags crypto ssl stdc++fs)
-SET(EXT_LIBS_STATIC ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${PROMETHEUS_CPP_LIBS} ${BOOST_LIBS} ${PostgreSQL_LIBRARIES} ${AWS_S3_LIBS} ${BB_GRPC_LIBS_STATIC} ${MQTT_LIBS} glog gflags crypto ssl stdc++fs)
+SET(EXT_LIBS_SHARED ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${PROMETHEUS_CPP_LIBS} ${BOOST_LIBS} ${PostgreSQL_LIBRARIES} ${AWS_S3_LIBS} ${BB_GRPC_LIBS_SHARED} ${MQTT_LIBS} ${AWS_KINESIS_LIBS} ${TDS_LIBS} glog gflags crypto ssl stdc++fs)
+SET(EXT_LIBS_STATIC ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${PROMETHEUS_CPP_LIBS} ${BOOST_LIBS} ${PostgreSQL_LIBRARIES} ${AWS_S3_LIBS} ${BB_GRPC_LIBS_STATIC} ${MQTT_LIBS} ${AWS_KINESIS_LIBS} ${TDS_LIBS} glog gflags crypto ssl stdc++fs)
 SET(CSI_LIBS_SHARED kspp ${EXT_LIBS_SHARED})
 SET(CSI_LIBS_STATIC kspp_s ${EXT_LIBS_STATIC})
 

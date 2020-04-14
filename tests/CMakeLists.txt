@@ -17,15 +17,15 @@ add_test(NAME test2_mem_counter_store COMMAND $<TARGET_FILE:test2_mem_counter_st
 
 if (ENABLE_ROCKSDB)
     add_executable(test2_rocksdb_store test2_rocksdb_store.cpp)
-    target_link_libraries(test2_rocksdb_store kspp_rocksdb_s ${CSI_LIBS_STATIC})
+    target_link_libraries(test2_rocksdb_store ${CSI_LIBS_STATIC})
     add_test(NAME test2_rocksdb_store COMMAND $<TARGET_FILE:test2_rocksdb_store>)
 
     add_executable(test2_rocksdb_windowed_store test2_rocksdb_windowed_store.cpp)
-    target_link_libraries(test2_rocksdb_windowed_store kspp_rocksdb_s ${CSI_LIBS_STATIC})
+    target_link_libraries(test2_rocksdb_windowed_store ${CSI_LIBS_STATIC})
     add_test(NAME test2_rocksdb_windowed_store COMMAND $<TARGET_FILE:test2_rocksdb_windowed_store>)
 
     add_executable(test2_rocksdb_counter_store test2_rocksdb_counter_store.cpp)
-    target_link_libraries(test2_rocksdb_counter_store kspp_rocksdb_s ${CSI_LIBS_STATIC})
+    target_link_libraries(test2_rocksdb_counter_store ${CSI_LIBS_STATIC})
     add_test(NAME test2_rocksdb_counter_store COMMAND $<TARGET_FILE:test2_rocksdb_counter_store>)
 endif ()
 
