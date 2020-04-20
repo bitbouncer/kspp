@@ -3,6 +3,10 @@
 #include <cmath>
 #include <functional>
 #include <prometheus/registry.h>
+#include <prometheus/counter.h>
+#include <prometheus/summary.h>
+#include <prometheus/histogram.h>
+#include <prometheus/detail/ckms_quantiles.h>
 #pragma once
 
 #define KSPP_KEY_TYPE_TAG "key_type"

@@ -90,8 +90,9 @@ namespace kspp {
               return std::to_string( avro_utils::convert<double>(datum));
             case avro::AVRO_BOOL:
               return std::to_string( avro_utils::convert<bool>(datum));
+          default:
+            throw std::invalid_argument(name() + "." + member + ": , cannot convert to string, actual type: "  +  avro_utils::to_string(datum.type()));
           }
-        throw std::invalid_argument(name() + "." + member + ": , cannot convert to string, actual type: "  +  avro_utils::to_string(datum.type()));
       }
 
       template<class T>

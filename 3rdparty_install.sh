@@ -2,11 +2,11 @@ set -ef
 
 export CPP_STANDARD="17"
 
-export AVRO_VER="release-1.9.0"
+export AVRO_VER="release-1.9.2"
 export AWS_SDK_VER="1.7.220"
 export GRPC_VER="v1.22.1"
-export LIBRDKAFKA_VER="v1.1.0"
-export PROMETHEUS_CPP_VER="v0.7.0"
+export LIBRDKAFKA_VER="v1.4.0"
+export PROMETHEUS_CPP_VER="v0.9.0"
 export RAPIDJSON_VER="v1.1.0"
 export NLOHMANN_JSON_VER="3.7.1"
 export PROTOBUF_VER="3.7.0"

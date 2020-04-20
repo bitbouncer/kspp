@@ -35,11 +35,8 @@ namespace kspp {
       if (key_ != other.key_)
         return false;
 
-      if (value_.get() == nullptr)
-        if (other.value_.get() == nullptr)
-          return true;
-        else
-          return false;
+      if (value_.get() == nullptr || other.value_.get() == nullptr)
+        return (value_.get() == nullptr && other.value_.get() == nullptr);
 
       return (*value_.get() == *other.value_.get());
     }
