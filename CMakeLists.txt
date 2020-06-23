@@ -4,17 +4,18 @@ project(kspp)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
 #FEATURES
-option(ENABLE_ROCKSDB "enable rocksdb support" ON)
+option(ENABLE_ROCKSDB "enable rocksdb support" OFF)
 option(ENABLE_ZK "enable zk support" OFF)
-option(ENABLE_POSTGRES "enable postgres support" ON)
+option(ENABLE_POSTGRES "enable postgres support" OFF)
 option(ENABLE_INFLUXDB "enable influxdb support" ON)
-option(ENABLE_TDS "enable tds support" ON)
-option(ENABLE_ELASTICSEARCH "enable elastic search support" ON)
-option(ENABLE_S3 "enable S3 support" ON)
-option(ENABLE_KINESIS "enable KINESIS support" ON)
-option(ENABLE_MQTT "enable MQTT support" ON)
-option(ENABLE_GRPC "enable grpc support" ON)
-option(ENABLE_BITBOUNCER_STREAMING "enable bitbouncer streaming support" ON)
+option(ENABLE_TDS "enable tds support" OFF)
+option(ENABLE_ELASTICSEARCH "enable elastic search support" OFF)
+
+option(ENABLE_S3 "enable S3 support" OFF)
+option(ENABLE_KINESIS "enable KINESIS support" OFF)
+option(ENABLE_MQTT "enable MQTT support" OFF)
+option(ENABLE_GRPC "enable grpc support" OFF)
+option(ENABLE_BITBOUNCER_STREAMING "enable bitbouncer streaming support" OFF)
 
 option(BUILD_TOOLS "build tools" ON)
 option(BUILD_SAMPLES "build examples" ON)
@@ -135,10 +136,10 @@ file(GLOB LIB_SRCS
         src/internal/rocksdb/*.cpp
         endif ()
 
-        if (ENABLE_S3)
-        include/features/aws/*.h
-        src/features/aws/*.cpp
-        endif()
+        #if (ENABLE_S3)
+        #include/features/aws/*.h
+        #src/features/aws/*.cpp
+        #endif()
         #        src/connect/kafka_rest/kafka_rest_source.cpp
         )
 
@@ -165,11 +166,11 @@ file(GLOB KSPP_INCLUDE_FILES
         )
 
 if (ENABLE_S3)
+    add_definitions(-DKSPP_S3)
     file(GLOB S3_LIB_SRCS
             include/features/aws/*.h
             src/features/aws/*.cpp)
     SET(AWS_S3_LIBS aws-cpp-sdk-s3 aws-cpp-sdk-core aws-c-event-stream aws-checksums aws-c-common)
-    add_definitions(-DKSPP_S3)
 endif ()
 
 #EXTENSIONS
@@ -180,6 +181,7 @@ IF (ENABLE_ROCKSDB)
 ENDIF ()
 
 if (ENABLE_POSTGRES)
+    add_definitions(-DKSPP_POSTGRES)
     file(GLOB POSTGRES_LIB_SRCS
             include/connect/postgres/*.h
             src/connect/postgres/*.cpp)
@@ -205,6 +207,7 @@ IF (ENABLE_INFLUXDB)
 ENDIF ()
 
 if (ENABLE_KINESIS)
+    add_definitions(-DKSPP_KINESIS)
     file(GLOB KINESIS_LIB_SRCS
             include/connect/aws/*.h
             src/connect/aws/*.cpp)
@@ -212,6 +215,7 @@ if (ENABLE_KINESIS)
 endif () #ENABLE_KINESIS
 
 if (ENABLE_MQTT)
+    add_definitions(-DKSPP_MQTT)
     file(GLOB MQTT_LIB_SRCS
             include/connect/mqtt/*.h
             src/connect/mqtt/*.cpp)
@@ -220,6 +224,7 @@ endif ()
 
 
 if (ENABLE_GRPC)
+    add_definitions(-DKSPP_GRPC)
     find_package(Protobuf REQUIRED)
     message(STATUS "Using protobuf ${protobuf_VERSION}")
     find_package(GRPC REQUIRED)

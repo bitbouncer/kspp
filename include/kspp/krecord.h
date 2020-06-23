@@ -12,23 +12,22 @@ namespace kspp {
   class krecord {
   public:
     krecord(const K &k, const V &v, int64_t ts = milliseconds_since_epoch())
-        : event_time_(ts), key_(k), value_(std::make_shared<V>(v)) {
+        : key_(k), value_(std::make_shared<V>(v)), event_time_(ts) {
     }
 
     krecord(const K &k, std::shared_ptr<const V> v, int64_t ts = milliseconds_since_epoch())
-        : event_time_(ts), key_(k), value_(v) {
+        : key_(k), value_(v), event_time_(ts) {
     }
 
     krecord(const K &k, std::nullptr_t nullp, int64_t ts = milliseconds_since_epoch())
-        : event_time_(ts), key_(k), value_(nullptr) {
+        : key_(k), value_(nullptr), event_time_(ts) {
     }
 
     krecord(const krecord& a)
-        : event_time_(a.event_time_), key_(a.key_), value_(a.value_) {
+        : key_(a.key_), value_(a.value_), event_time_(a.event_time_) {
     }
 
-    inline bool operator==(const krecord<K,V>& other) const
-    {
+    inline bool operator==(const krecord<K,V>& other) const {
       if (event_time_ != other.event_time_)
         return false;
 
@@ -68,15 +67,15 @@ namespace kspp {
   class krecord<void, V> {
   public:
     krecord(const V &v, int64_t ts = milliseconds_since_epoch())
-        : event_time_(ts), value_(std::make_shared<V>(v)) {
+        : value_(std::make_shared<V>(v)), event_time_(ts) {
     }
 
     krecord(std::shared_ptr<const V> v, int64_t ts = milliseconds_since_epoch())
-        : event_time_(ts), value_(v) {
+        : value_(v), event_time_(ts) {
     }
 
     krecord(const krecord& a)
-        : event_time_(a.event_time_), value_(a.value_) {
+        : value_(a.value_), event_time_(a.event_time_) {
     }
 
     inline bool operator==(const krecord<void, V>& other) const
@@ -84,12 +83,12 @@ namespace kspp {
       if (event_time_ != other.event_time_)
         return false;
 
-      if (value_.get() == nullptr)
+      if (value_.get() == nullptr) {
         if (other.value_.get() == nullptr)
           return true;
-        else
-          return false;
-
+      } else {
+        return false;
+      }
       return (*value_.get() == *other.value_.get());
     }
 
@@ -116,11 +115,11 @@ namespace kspp {
   class krecord<K, void> {
   public:
     krecord(const K &k, int64_t ts = milliseconds_since_epoch())
-        : event_time_(ts), key_(k) {
+        : key_(k), event_time_(ts) {
     }
 
     krecord(const krecord& a)
-        : event_time_(a.event_time_), key_(a.key_) {
+        : key_(a.key_), event_time_(a.event_time_) {
     }
 
     inline bool operator==(const krecord<K,void>& other) const

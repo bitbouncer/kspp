@@ -141,7 +141,7 @@ namespace kspp {
       DLOG(INFO) << "consumption phase";
 
       while(!_exit) {
-        auto tick = kspp::milliseconds_since_epoch();
+        //auto tick = kspp::milliseconds_since_epoch();
         while (auto p = _impl.consume()) {
           auto decoded_msg = parse(p);
           if (decoded_msg) {

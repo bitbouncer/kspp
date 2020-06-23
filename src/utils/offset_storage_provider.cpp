@@ -84,7 +84,7 @@ namespace kspp {
       return s3_offset_storage::create(uri);
 #else
       LOG(ERROR) << "feature S3 not enabled";
-      return nullptr
+      return nullptr;
 #endif
     }
 

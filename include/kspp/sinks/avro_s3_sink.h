@@ -1,3 +1,4 @@
+#ifdef KSPP_S3
 #include <memory>
 #include <iostream>
 #include <fstream>
@@ -206,3 +207,4 @@ namespace kspp {
     int64_t messages_in_file_=0;
   };
 }
+#endif

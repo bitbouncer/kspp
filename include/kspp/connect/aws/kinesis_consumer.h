@@ -1,3 +1,4 @@
+#ifdef KSPP_KINESIS
 #include <chrono>
 #include <memory>
 #include <aws/core/Aws.h>
@@ -70,4 +71,4 @@ namespace kspp {
     uint64_t msg_cnt_=0; // TODO move to metrics
   };
 }
-
+#endif

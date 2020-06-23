@@ -16,7 +16,7 @@ static void sigterm(int sig) {
 //valgrind  --leak-check=yes --leak-check=full --show-leak-kinds=all
 
 int main(int argc, char** argv) {
-  auto config = std::make_shared<kspp::cluster_config>("");
+  auto config = std::make_shared<kspp::cluster_config>("", kspp::cluster_config::NONE);
   kspp::topology_builder builder(config);
   auto topology = builder.create_topology();
   auto source = topology->create_processor<kspp::mem_stream_source<std::string, std::string>>(0);

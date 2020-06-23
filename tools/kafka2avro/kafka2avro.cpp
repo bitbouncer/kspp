@@ -6,7 +6,11 @@
 #include <kspp/topology_builder.h>
 #include <kspp/sources/kafka_source.h>
 #include <kspp/sinks/avro_file_sink.h>
+
+#ifdef KSPP_S3
 #include <kspp/sinks/avro_s3_sink.h>
+#endif
+
 #include <kspp/utils/url.h>
 #include <kspp/utils/string_utils.h>
 
@@ -137,8 +141,10 @@ int main(int argc, char** argv) {
 
   if (dst_uri.scheme()=="file")
     auto sink1 = t->create_sink<kspp::avro_file_sink<kspp::generic_avro>>(source, dst_uri.path(), topic, window_size);
+#ifdef KSPP_S3
   if (dst_uri.scheme()=="s3")
     auto sink2 = t->create_sink<kspp::avro_s3_sink<kspp::generic_avro>>(source, dst_uri, topic, window_size);
+#endif
 
   t->start(start_offset);
 

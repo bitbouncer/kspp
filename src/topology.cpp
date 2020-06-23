@@ -48,6 +48,8 @@ namespace kspp {
       i->add_metrics_label(KSPP_VALUE_TYPE_TAG, escape_influx(i->value_type_name()));
       i->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(i->partition()));
 
+      prometheus::Registry* xx = _prom_registry.get();
+
       for (auto &&j : i->get_metrics()) {
         j->finalize_labels(_prom_registry); // maybe add string escape function here...
       }
@@ -58,6 +60,8 @@ namespace kspp {
         i->add_metrics_label(j.first, j.second);
       i->add_metrics_label(KSPP_KEY_TYPE_TAG, escape_influx(i->key_type_name()));
       i->add_metrics_label(KSPP_VALUE_TYPE_TAG, escape_influx(i->value_type_name()));
+
+      prometheus::Registry* xx = _prom_registry.get();
 
       for (auto &&j : i->get_metrics()) {
         j->finalize_labels(_prom_registry);

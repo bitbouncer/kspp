@@ -1,3 +1,4 @@
+#ifdef KSPP_KINESIS
 #include <memory>
 #include <strstream>
 #include <thread>
@@ -83,4 +84,4 @@ class kinesis_string_source : public partition_source<std::string, std::string> 
     kinesis_consumer _impl;
   };
 }
-
+#endif

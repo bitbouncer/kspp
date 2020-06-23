@@ -2,8 +2,15 @@
 #include <kspp/cluster_config.h>
 #include <kspp/utils/offset_storage_provider.h>
 #include <kspp/sources/kafka_source.h>
+
+#ifdef KSPP_GRPC
 #include <kspp/connect/bitbouncer/grpc_avro_source.h>
+#endif
+
+#ifdef KSPP_POSTGRES
 #include <kspp/connect/postgres/postgres_consumer.h>
+#endif
+
 #pragma once
 
 namespace kspp{
@@ -36,6 +43,7 @@ namespace kspp{
           return nullptr;
         case source_parts::TDS:
           return nullptr;
+#ifdef KSPP_POSTGRES
         case source_parts::POSTGRES: {
           std::string consumer_group = "";
           kspp::connect::connection_params connection_params;
@@ -46,6 +54,9 @@ namespace kspp{
           //std::make_shared<postgres_consumer<K, V>>(parts.partition, parts.topic, consumer_group, connection_params, table_params, query, id_column, ts_column, config->get_schema_registry());
         }
           return nullptr;
+#endif
+
+#ifdef KSPP_GRPC
         case source_parts::BB_GRPC: {
           // bb://host:port/topic:partition
           std::string uri;
@@ -53,6 +64,7 @@ namespace kspp{
           std::string secret_access_key;
           return std::make_shared<grpc_avro_source<K, V>>(config, parts.partition, parts.topic, offset_store, uri, api_key, secret_access_key);
         }
+#endif
       }
     }
 }
