@@ -7,7 +7,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 option(ENABLE_ROCKSDB "enable rocksdb support" OFF)
 option(ENABLE_ZK "enable zk support" OFF)
 option(ENABLE_POSTGRES "enable postgres support" OFF)
-option(ENABLE_INFLUXDB "enable influxdb support" ON)
+option(ENABLE_INFLUXDB "enable influxdb support" OFF)
 option(ENABLE_TDS "enable tds support" OFF)
 option(ENABLE_ELASTICSEARCH "enable elastic search support" OFF)
 
@@ -15,7 +15,7 @@ option(ENABLE_S3 "enable S3 support" OFF)
 option(ENABLE_KINESIS "enable KINESIS support" OFF)
 option(ENABLE_MQTT "enable MQTT support" OFF)
 option(ENABLE_GRPC "enable grpc support" OFF)
-option(ENABLE_BITBOUNCER_STREAMING "enable bitbouncer streaming support" OFF)
+#option(ENABLE_BITBOUNCER_STREAMING "enable bitbouncer streaming support" OFF)
 
 option(BUILD_TOOLS "build tools" ON)
 option(BUILD_SAMPLES "build examples" ON)
@@ -35,12 +35,12 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -Wpedantic -Wreturn-ty
 
 # configure a header file to pass some of the CMake settings
 # to the source code
-configure_file(
-        "${PROJECT_SOURCE_DIR}/kspp_config.h.in"
-        "${PROJECT_BINARY_DIR}/kspp_config.h"
-)
-include_directories("${PROJECT_BINARY_DIR}")
+#configure_file(
+#        "${PROJECT_SOURCE_DIR}/kspp_config.h.in"
+#        "${PROJECT_BINARY_DIR}/kspp_config.h"
+#)
 
+include_directories("${PROJECT_BINARY_DIR}")
 
 if (ENABLE_POSTGRES)
     find_package(PostgreSQL REQUIRED)
@@ -59,7 +59,6 @@ find_package(Boost COMPONENTS program_options system REQUIRED)
 #        )
 
 set(BOOST_LIBS boost_program_options boost_iostreams boost_filesystem boost_system boost_regex z bz2 pthread rt c)
-
 
 SET(CSI_INCLUDE_PATH ${Boost_INCLUDE_DIR})
 
@@ -86,7 +85,8 @@ endif (SNAPPY_FOUND)
 SET(CSI_INCLUDE_PATH
         ${CSI_INCLUDE_PATH}
         ${RAPIDJSON_INCLUDEDIR}
-        ${AVRO_INCLUDE_DIRS})
+        ${AVRO_INCLUDE_DIRS}
+        )
 
 #        SET(AVRO_LIBS avrocpp_s curl)
 SET(AVRO_LIBS ${AVRO_LIBRARIES} curl ${SNAPPY_LIBRARIES})
@@ -176,9 +176,10 @@ endif ()
 #EXTENSIONS
 
 IF (ENABLE_ROCKSDB)
+    add_definitions(-DKSPP_ROCKSDB)
     file(GLOB ROCKDB_LIB_SRCS
      src/internal/rocksdb/*.cpp)
-ENDIF ()
+ENDIF()
 
 if (ENABLE_POSTGRES)
     add_definitions(-DKSPP_POSTGRES)
@@ -188,6 +189,7 @@ if (ENABLE_POSTGRES)
 ENDIF ()
 
 IF (ENABLE_TDS)
+    add_definitions(-DKSPP_TDS)
     file(GLOB TDS_LIB_SRCS
             include/connect/tds/*.h
             src/connect/tds/*.cpp)
