@@ -10,7 +10,7 @@ export PROMETHEUS_CPP_VER="v0.9.0"
 export RAPIDJSON_VER="v1.1.0"
 export NLOHMANN_JSON_VER="3.7.1"
 export PROTOBUF_VER="3.7.0"
-export ROCKDB_VER="v5.18.3"
+export ROCKDB_VER="v6.11.4"
 
 #deps for arrow
 export DOUBLE_CONVERSION_VER="v3.1.5"
