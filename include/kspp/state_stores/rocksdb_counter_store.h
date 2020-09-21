@@ -1,3 +1,4 @@
+#ifdef KSPP_ROCKSDB
 #include <memory>
 #include <strstream>
 #include <fstream>
@@ -226,3 +227,4 @@ namespace kspp {
     int64_t _last_flushed_offset;
   };
 }
+#endif

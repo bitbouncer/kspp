@@ -3,4 +3,4 @@ SET(SRCS
         )
 
 add_executable(aws-kinesis-consumer ${SRCS})
-target_link_libraries(aws-kinesis-consumer ${AWS_KINESIS_LIBS} ${CSI_LIBS_STATIC})
+target_link_libraries(aws-kinesis-consumer ${AWS_KINESIS_LIBS} ${ALL_LIBS})

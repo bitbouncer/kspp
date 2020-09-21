@@ -1,9 +1,5 @@
 add_executable(kafka2influxdb kafka2influxdb.cpp)
 
-if (LINK_SHARED)
-    target_link_libraries(kafka2influxdb ${CSI_LIBS_SHARED})
-else ()
-    target_link_libraries(kafka2influxdb ${CSI_LIBS_STATIC})
-endif ()
+target_link_libraries(kafka2influxdb ${ALL_LIBS})
 
 INSTALL(TARGETS kafka2influxdb RUNTIME DESTINATION bin)

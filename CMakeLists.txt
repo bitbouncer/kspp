@@ -19,8 +19,9 @@ option(ENABLE_GRPC "enable grpc support" OFF)
 
 option(BUILD_TOOLS "build tools" ON)
 option(BUILD_SAMPLES "build examples" ON)
-option(BUILD_STATIC_LIBS "enable static linking support" OFF)
 option(BUILD_SHARED_LIBS "enable static linking support" ON)
+option(BUILD_STATIC_LIBS "enable static linking support" OFF)
+
 option(BUILD_TESTS "build tests" ON)
 option(LINK_SHARED "link shared" ON)
 
@@ -65,7 +66,7 @@ SET(CSI_INCLUDE_PATH ${Boost_INCLUDE_DIR})
 if (ENABLE_ROCKSDB)
     find_package(RocksDB REQUIRED)
     SET(CSI_INCLUDE_PATH ${CSI_INCLUDE_PATH} ${ROCKSDB_INCLUDE_DIRS})
-    SET(ROCKSDB_LIBS ${ROCKSDB_LIBRARIES} snappy bz2 z)
+    SET(ROCKSDB_LIBS ${ROCKSDB_LIBRARIES} snappy bz2 z dl)
 endif ()
 
 find_package(rapidjson REQUIRED)
@@ -160,10 +161,16 @@ file(GLOB KSPP_INCLUDE_FILES
         include/kspp/internal/sinks/*.h
         include/kspp/internal/serdes/*.h
         include/kspp/internal/hash/*.h
+        if (ENABLE_ROCKSDB)
         include/kspp/internal/rocksdb/*.h
+        endif()
         include/kspp/internal/grpc/*.h
         include/kspp/beta/*.h
         )
+
+if (ENABLE_ROCKSDB)
+    add_definitions(-DKSPP_ROCKSDB)
+endif()
 
 if (ENABLE_S3)
     add_definitions(-DKSPP_S3)
@@ -288,10 +295,13 @@ if (BUILD_SHARED_LIBS)
             )
 endif ()
 
-SET(EXT_LIBS_SHARED ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${PROMETHEUS_CPP_LIBS} ${BOOST_LIBS} ${PostgreSQL_LIBRARIES} ${AWS_S3_LIBS} ${BB_GRPC_LIBS_SHARED} ${MQTT_LIBS} ${AWS_KINESIS_LIBS} ${TDS_LIBS} glog gflags crypto ssl stdc++fs)
-SET(EXT_LIBS_STATIC ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${PROMETHEUS_CPP_LIBS} ${BOOST_LIBS} ${PostgreSQL_LIBRARIES} ${AWS_S3_LIBS} ${BB_GRPC_LIBS_STATIC} ${MQTT_LIBS} ${AWS_KINESIS_LIBS} ${TDS_LIBS} glog gflags crypto ssl stdc++fs)
-SET(CSI_LIBS_SHARED kspp ${EXT_LIBS_SHARED})
-SET(CSI_LIBS_STATIC kspp_s ${EXT_LIBS_STATIC})
+SET(EXT_LIBS ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${PROMETHEUS_CPP_LIBS} ${BOOST_LIBS} ${PostgreSQL_LIBRARIES} ${AWS_S3_LIBS} ${BB_GRPC_LIBS_SHARED} ${MQTT_LIBS} ${AWS_KINESIS_LIBS} ${TDS_LIBS} gflags glog crypto ssl stdc++fs pthread)
+
+if (LINK_SHARED)
+    SET(ALL_LIBS kspp ${EXT_LIBS})
+else()
+    SET(ALL_LIBS kspp_s ${EXT_LIBS})
+endif()
 
 INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/include/ DESTINATION include)
 

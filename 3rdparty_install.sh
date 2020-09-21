@@ -4,7 +4,7 @@ export CPP_STANDARD="17"
 
 export AVRO_VER="release-1.9.2"
 export AWS_SDK_VER="1.7.220"
-export GRPC_VER="v1.22.1"
+export GRPC_VER="v1.32.0"
 export LIBRDKAFKA_VER="v1.4.0"
 export PROMETHEUS_CPP_VER="v0.9.0"
 export RAPIDJSON_VER="v1.1.0"
@@ -91,9 +91,16 @@ tar \
   --directory grpc \
   --strip-components 1 && \
 cd grpc && \
+mkdir -p build && cd build && \
+cmake \
+ -DgRPC_RE2_PROVIDER=package \
+ -DgRPC_ABSL_PROVIDER=package \
+ -DgRPC_SSL_PROVIDER=package \
+ -DgRPC_ZLIB_PROVIDER=package \
+.. && \
 make -j "$(getconf _NPROCESSORS_ONLN)" && \
 sudo make install && \
-cd .. && \
+cd ..\.. && \
 rm grpc.tar.gz && \
 rm -rf grpc
 

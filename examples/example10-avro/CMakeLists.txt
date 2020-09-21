@@ -5,4 +5,4 @@ SET(SRCS
         )
 
 add_executable(example10-avro ${SRCS})
-target_link_libraries(example10-avro ${CSI_LIBS_STATIC})
+target_link_libraries(example10-avro ${ALL_LIBS})

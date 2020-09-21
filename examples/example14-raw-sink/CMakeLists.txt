@@ -5,4 +5,4 @@ SET(SRCS
         )
 
 add_executable(example14-raw-sink ${SRCS})
-target_link_libraries(example14-raw-sink ${CSI_LIBS_STATIC})
+target_link_libraries(example14-raw-sink ${ALL_LIBS})

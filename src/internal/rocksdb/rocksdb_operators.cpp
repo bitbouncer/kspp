@@ -1,3 +1,5 @@
+#ifdef KSPP_ROCKSDB
+
 #include <memory>
 #include <rocksdb/env.h>
 #include <rocksdb/merge_operator.h>
@@ -43,3 +45,4 @@ namespace rocksdb {
     return std::make_shared<Int64AddOperator>();
   }
 }
+#endif //  KSPP_ROCKSDB

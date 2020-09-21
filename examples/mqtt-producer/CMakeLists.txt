@@ -3,4 +3,4 @@ SET(SRCS
         )
 
 add_executable(mqtt-producer ${SRCS})
-target_link_libraries(mqtt-producer ${CSI_LIBS_STATIC})
+target_link_libraries(mqtt-producer ${ALL_LIBS})

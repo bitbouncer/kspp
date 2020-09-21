@@ -5,4 +5,4 @@ example5-repartition.cpp
 )
 
 add_executable(example5-repartition ${SRCS})
-target_link_libraries(example5-repartition ${CSI_LIBS_STATIC})
+target_link_libraries(example5-repartition ${ALL_LIBS})
