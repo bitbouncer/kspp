@@ -124,7 +124,7 @@ namespace kspp {
         incomming_msg_.push_back(ev);
         datum = std::make_shared<generic_avro>(valid_schema, -1); // create a new item to send
         // to much work in queue - back off and let the consumers work
-        size_t sz = incomming_msg_.size();
+        //size_t sz = incomming_msg_.size();
         while (incomming_msg_.size() > max_incomming_queue_size_ && !exit_) {
           std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }

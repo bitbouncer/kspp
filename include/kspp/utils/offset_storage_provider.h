@@ -38,7 +38,7 @@ namespace kspp {
 
     int64_t last_commited_offset_=UNKNOWN_OFFSET;
     int64_t last_flushed_offset_=UNKNOWN_OFFSET-1;
-    size_t max_pending_offsets_=3600000;
+    int64_t max_pending_offsets_=3600000;
     int flush_offset_timeout_ms_=1000;
   };
 

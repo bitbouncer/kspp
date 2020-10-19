@@ -35,22 +35,22 @@ namespace kspp {
   }
 
   kafka_consumer::kafka_consumer(std::shared_ptr<cluster_config> config, std::string topic, int32_t partition, std::string consumer_group, bool check_cluster)
-      : _config(config)
-      , _topic(topic)
-      , _partition(partition)
-      , _consumer_group(consumer_group)
-      , _can_be_committed(-1)
-      , _last_committed(-1)
-      , _max_pending_commits(5000)
-      , _eof(false)
-      , _msg_cnt(0)
-      , _msg_bytes(0)
-      , _closed(false) {
+    : _config(config)
+    , _topic(topic)
+    , _partition(partition)
+    , _consumer_group(consumer_group)
+    , _can_be_committed(-1)
+    , _last_committed(-1)
+    , _max_pending_commits(5000)
+    , _msg_cnt(0)
+    , _msg_bytes(0)
+    , _eof(false)
+    , _closed(false) {
     // really try to make sure the partition & group exist before we continue
 
     if (check_cluster) {
       LOG_IF(FATAL, config->get_cluster_metadata()->wait_for_topic_partition(topic, _partition, config->get_cluster_state_timeout()) == false)
-      << "failed to wait for topic leaders, topic:" << topic << ":" << _partition;
+          << "failed to wait for topic leaders, topic:" << topic << ":" << _partition;
       //wait_for_partition(_consumer.get(), _topic, _partition);
       //kspp::kafka::wait_for_group(brokers, consumer_group); something seems to wrong in rdkafka master.... TODO
     }
@@ -260,7 +260,7 @@ namespace kspp {
       } else {
         LOG(ERROR) << "kafka_consumer topic:" << _topic << ":" << _partition << ", consumer group: " << _consumer_group <<  ", failed to commit, reason:" << RdKafka::err2str(ec);
       }
-    } else if ((_last_committed + _max_pending_commits) < _can_be_committed) {
+    } else if ((int64_t) (_last_committed + _max_pending_commits) < _can_be_committed) {
       DLOG(INFO) << "kafka_consumer topic:" << _topic << ":" << _partition << ", consumer group: " << _consumer_group << ", lazy commit: offset:" << _can_be_committed;
       _topic_partition[0]->set_offset(_can_be_committed);
       ec = _consumer->commitAsync(_topic_partition);
@@ -276,7 +276,7 @@ namespace kspp {
   //virtual ErrorCode metadata (bool all_topics, const Topic *only_rkt,  Metadata **metadatap, int timeout_ms) = 0;
 
   bool kafka_consumer::consumer_group_exists(std::string consumer_group, std::chrono::seconds timeout) const {
-    char errstr[128];
+    //char errstr[128];
     auto expires = milliseconds_since_epoch() + 1000 * timeout.count();
     rd_kafka_resp_err_t err = RD_KAFKA_RESP_ERR_NO_ERROR;
     const struct rd_kafka_group_list *grplist = nullptr;

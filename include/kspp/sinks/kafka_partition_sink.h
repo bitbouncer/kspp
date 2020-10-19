@@ -19,13 +19,13 @@ namespace kspp {
                               int32_t partition,
                               std::shared_ptr<KEY_CODEC> key_codec,
                               std::shared_ptr<VAL_CODEC> val_codec)
-        : partition_sink<K, V>(partition)
-        ,_key_codec(key_codec)
-        ,_val_codec(val_codec)
-        ,_key_schema_id(-1)
-        ,_val_schema_id(-1)
-        , _impl(cconfig, topic)
-        , _fixed_partition(partition) {
+      : partition_sink<K, V>(partition)
+      ,_key_codec(key_codec)
+      ,_val_codec(val_codec)
+      ,_key_schema_id(-1)
+      ,_val_schema_id(-1)
+      , _fixed_partition(partition)
+      , _impl(cconfig, topic){
       this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "kafka_partition_sink");
       this->add_metrics_label(KSPP_TOPIC_TAG, topic);
       this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(partition));
@@ -107,13 +107,12 @@ namespace kspp {
 
   protected:
     virtual int handle_event(std::shared_ptr<kevent < K, V>>) = 0;
-
-    kafka_producer _impl;
     std::shared_ptr<KEY_CODEC> _key_codec;
     std::shared_ptr<VAL_CODEC> _val_codec;
     int32_t _key_schema_id;
     int32_t _val_schema_id;
     size_t _fixed_partition;
+    kafka_producer _impl;
   };
 
   template<class K, class V, class KEY_CODEC, class VAL_CODEC>
@@ -124,11 +123,11 @@ namespace kspp {
                          std::string topic,
                          std::shared_ptr<KEY_CODEC> key_codec = std::make_shared<KEY_CODEC>(),
                          std::shared_ptr<VAL_CODEC> val_codec = std::make_shared<VAL_CODEC>())
-        : kafka_partition_sink_base<K, V, KEY_CODEC, VAL_CODEC>(config,
-                                                                topic,
-                                                                partition,
-                                                                key_codec,
-                                                                val_codec) {
+      : kafka_partition_sink_base<K, V, KEY_CODEC, VAL_CODEC>(config,
+                                                              topic,
+                                                              partition,
+                                                              key_codec,
+                                                              val_codec) {
     }
 
     ~kafka_partition_sink() override {
@@ -179,11 +178,11 @@ namespace kspp {
                          int32_t partition,
                          std::string topic,
                          std::shared_ptr<VAL_CODEC> val_codec = std::make_shared<VAL_CODEC>())
-        : kafka_partition_sink_base<void, V, void, VAL_CODEC>(config,
-                                                              topic,
-                                                              partition,
-                                                              nullptr,
-                                                              val_codec) {
+      : kafka_partition_sink_base<void, V, void, VAL_CODEC>(config,
+                                                            topic,
+                                                            partition,
+                                                            nullptr,
+                                                            val_codec) {
     }
 
     ~kafka_partition_sink() override {
@@ -224,11 +223,11 @@ namespace kspp {
                          int32_t partition,
                          std::string topic,
                          std::shared_ptr<KEY_CODEC> key_codec = std::make_shared<KEY_CODEC>())
-        : kafka_partition_sink_base<K, void, KEY_CODEC, void>(config,
-                                                              topic,
-                                                              partition,
-                                                              key_codec,
-                                                              nullptr) {
+      : kafka_partition_sink_base<K, void, KEY_CODEC, void>(config,
+                                                            topic,
+                                                            partition,
+                                                            key_codec,
+                                                            nullptr) {
     }
 
     ~kafka_partition_sink() override {

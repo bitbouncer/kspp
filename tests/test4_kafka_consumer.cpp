@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
     while (std::chrono::system_clock::now() < end) {
       auto p = consumer.consume();
       if (p) {
-        int64_t offset = p->offset();
+        //int64_t offset = p->offset();
         record r;
         r.key.assign((const char *) p->key_pointer(), p->key_len());
         r.value.assign((const char *) p->payload(), p->len());
@@ -112,7 +112,7 @@ int main(int argc, char **argv) {
       {
         // produce some
         for (auto i : test_data) {
-          int ec = producer.produce(0, kspp::kafka_producer::COPY, (void *) i.key.data(), i.key.size(),
+          producer.produce(0, kspp::kafka_producer::COPY, (void *) i.key.data(), i.key.size(),
                                     (void *) i.value.data(), i.value.size(), timestamp2, nullptr);
         }
         assert(producer.flush(1000) == 0);
@@ -204,7 +204,7 @@ int main(int argc, char **argv) {
     // produce some
     {
       for (auto i : test_data) {
-        int ec = producer.produce(0, kspp::kafka_producer::COPY, (void *) i.key.data(), i.key.size(),
+        producer.produce(0, kspp::kafka_producer::COPY, (void *) i.key.data(), i.key.size(),
                                   (void *) i.value.data(), i.value.size(), timestamp3, nullptr);
       }
       assert(producer.flush(1000) == 0);

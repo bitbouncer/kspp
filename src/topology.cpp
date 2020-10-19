@@ -8,12 +8,13 @@ using namespace std::chrono_literals;
 
 namespace kspp {
   topology::topology(std::shared_ptr<cluster_config> config, std::string topology_id, bool internal)
-      : _cluster_config(config)
-      , _is_started(false)
-      , _topology_id(topology_id)
-      , _next_gc_ts(0)
-      , _min_buffering_ms(config->get_min_topology_buffering().count())
-      , _max_pending_sink_messages(config->get_max_pending_sink_messages()) {
+    : _cluster_config(config)
+    , _is_started(false)
+    , _topology_id(topology_id)
+    , _next_gc_ts(0)
+    , _min_buffering_ms(config->get_min_topology_buffering().count())
+    , _max_pending_sink_messages(config->get_max_pending_sink_messages())
+    , _allow_commit_chain_gc(true){
     if (internal)
       _allow_commit_chain_gc=false;
     _prom_registry = std::make_shared<prometheus::Registry>();
@@ -48,7 +49,7 @@ namespace kspp {
       i->add_metrics_label(KSPP_VALUE_TYPE_TAG, escape_influx(i->value_type_name()));
       i->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(i->partition()));
 
-      prometheus::Registry* xx = _prom_registry.get();
+      //prometheus::Registry* xx = _prom_registry.get();
 
       for (auto &&j : i->get_metrics()) {
         j->finalize_labels(_prom_registry); // maybe add string escape function here...
@@ -61,7 +62,7 @@ namespace kspp {
       i->add_metrics_label(KSPP_KEY_TYPE_TAG, escape_influx(i->key_type_name()));
       i->add_metrics_label(KSPP_VALUE_TYPE_TAG, escape_influx(i->value_type_name()));
 
-      prometheus::Registry* xx = _prom_registry.get();
+      //prometheus::Registry* xx = _prom_registry.get();
 
       for (auto &&j : i->get_metrics()) {
         j->finalize_labels(_prom_registry);
@@ -223,7 +224,7 @@ namespace kspp {
 
   std::size_t topology::process_1s(){
     if (_allow_commit_chain_gc)
-    autocommit_marker_gc();
+      autocommit_marker_gc();
     for (auto &&i : _sinks)
       i->poll(0);
     for (auto &&i : _partition_processors)
@@ -251,8 +252,8 @@ namespace kspp {
       ev_count += i->process(max_ts);
 
     for (int64_t ts = min_ts; ts < max_ts; ++ts)
-    for (auto &&i : _partition_processors)
-      ev_count += i->process(ts);
+      for (auto &&i : _partition_processors)
+        ev_count += i->process(ts);
 
     for (auto &&i : _sinks)
       ev_count +=  i->process(max_ts);

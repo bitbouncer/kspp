@@ -58,30 +58,21 @@ namespace kspp {
 
     bool _exit;
     bool _start_running;
-    bool _good;
     bool _closed;
     bool _connected; // ??
-
-
     std::thread _bg;
     std::unique_ptr<kspp_postgres::connection> _connection;
-
     const std::string _table;
     const kspp::connect::connection_params cp_;
-
     const std::vector<std::string> _id_columns;
     const std::string _client_encoding;
-
     event_queue<kspp::generic_avro, kspp::generic_avro> _incomming_msg;
     event_queue<kspp::generic_avro, kspp::generic_avro> _done;  // waiting to be deleted in poll();
     size_t _max_items_in_insert;
-
     bool _table_checked;
     bool _table_exists;
     bool _skip_delete2;
-
     size_t _current_error_streak;
-
     metric_counter _connection_errors;
     metric_counter _insert_errors;
     metric_counter _msg_cnt;

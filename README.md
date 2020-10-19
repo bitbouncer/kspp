@@ -50,6 +50,7 @@ Platforms: Linux (Windows and Mac build are outdated)
 Remove stuff that you should not have...
 ```
 sudo apt-get purge libprotobuf-dev libgrpc++-dev protobuf-compiler
+sudo apt-get purge openssl-dev
 ```
 
 Install build tools

@@ -67,8 +67,8 @@ namespace kspp {
     void _thread();
     bool exit_;
     bool start_running_;
-    bool eof_;
     bool closed_;
+    bool eof_;
     std::thread bg_;
     std::unique_ptr<kspp_postgres::connection> connection_;
     const std::string logical_name_;

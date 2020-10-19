@@ -6,52 +6,76 @@ using namespace std::chrono_literals;
 namespace kspp {
   namespace http {
 
+/*#define CURLEASY_THROW_NOT_OK(res) \
+ if (res!=CURLE_OK) {          \
+   throw std::invalid_argument(curl_easy_strerror(res)); \
+   }
+*/
+
+inline void CURLEASY_THROW_NOT_OK(CURLcode res){
+  if (res!=CURLE_OK)
+    throw std::invalid_argument(curl_easy_strerror(res));
+}
+
+inline void CURLMULTI_THROW_NOT_OK(CURLMcode res){
+      if (res!=CURLM_OK)
+        throw std::invalid_argument(curl_multi_strerror(res));
+    }
+
+
+/*#define CURLMULTI_THROW_NOT_OK(res) \
+ if (res!=CURLM_OK) {          \
+   throw std::invalid_argument(curl_multi_strerror(res)); \
+   }
+*/
+
     const std::string &to_string(kspp::http::method_t e) {
       static const std::string table[kspp::http::PURGE + 1]
-          {
-              "DELETE",
-              "GET",
-              "HEAD",
-              "POST",
-              "PUT",
-              /* pathological */
-              "CONNECT",
-              "OPTIONS",
-              "TRACE",
-              /* webdav */
-              "COPY",
-              "LOCK",
-              "MKCOL",
-              "MOVE",
-              "PROPFIND",
-              "PROPPATCH",
-              "SEARCH",
-              "UNLOCK",
-              /* subversion */
-              "REPORT",
-              "MKACTIVITY",
-              "CHECKOUT",
-              "MERGE",
-              /* upnp */
-              "MSEARCH",
-              "NOTIFY",
-              "SUBSCRIBE",
-              "UNSUBSCRIBE",
-              /* RFC-5789 */
-              "PATCH",
-              "PURGE"
-          };
+        {
+          "DELETE",
+          "GET",
+          "HEAD",
+          "POST",
+          "PUT",
+          /* pathological */
+          "CONNECT",
+          "OPTIONS",
+          "TRACE",
+          /* webdav */
+          "COPY",
+          "LOCK",
+          "MKCOL",
+          "MOVE",
+          "PROPFIND",
+          "PROPPATCH",
+          "SEARCH",
+          "UNLOCK",
+          /* subversion */
+          "REPORT",
+          "MKACTIVITY",
+          "CHECKOUT",
+          "MERGE",
+          /* upnp */
+          "MSEARCH",
+          "NOTIFY",
+          "SUBSCRIBE",
+          "UNSUBSCRIBE",
+          /* RFC-5789 */
+          "PATCH",
+          "PURGE"
+        };
       return table[e];
     }
 
 
     // static helpers
-    static size_t write_callback_std_stream(void *ptr, size_t size, size_t nmemb, std::ostream *stream) {
+    /*static size_t write_callback_std_stream(void *ptr, size_t size, size_t nmemb, std::ostream *stream) {
       size_t sz = size * nmemb;
       //BOOST_LOG_TRIVIAL(trace) << BOOST_CURRENT_FUNCTION << ", in size: " << sz;
       stream->write((char *) ptr, sz);
       return sz;
     }
+    */
 
     static size_t write_callback_buffer(void *ptr, size_t size, size_t nmemb, kspp::http::buffer *buf) {
       size_t sz = size * nmemb;
@@ -79,7 +103,7 @@ namespace kspp {
           //std::transform(begin, separator, begin, ::tolower);
           char *value_begin = separator + 1;
           while (isspace(*value_begin)) value_begin++; // leading white spaces
-          size_t datalen = newline - value_begin;
+          //size_t datalen = newline - value_begin;
           v->emplace_back(kspp::http::header_t(std::string(begin, separator), std::string(value_begin, newline)));
         }
       }
@@ -93,7 +117,7 @@ namespace kspp {
                         void *userp)
     {
       std::string* request_id = (std::string*) userp; //
-      const char *text;
+      //const char *text;
       //(void)handle; /* prevent compiler warning */
 
       switch(type) {
@@ -146,16 +170,16 @@ namespace kspp {
                      const std::vector<std::string> &headers,
                      std::chrono::milliseconds timeout
     )
-        : _transport_ok(true)
-        , _method(method)
-        , _uri(uri)
-        , _timeout(timeout)
-        , _http_result(kspp::http::undefined)
-        , _tx_headers(headers)
+      : _method(method)
+      , _uri(uri)
+      , _tx_headers(headers)
+      , _timeout(timeout)
+      , _http_result(kspp::http::undefined)
 //        , _tx_stream(std::ios_base::ate | std::ios_base::in | std::ios_base::out)
-        , _curl_easy(NULL)
-        , _curl_headerlist(NULL)
-        , _curl_done(false) {
+      , _transport_ok(true)
+      , _curl_easy(NULL)
+      , _curl_headerlist(NULL)
+      , _curl_done(false) {
       _curl_easy = curl_easy_init();
     }
 
@@ -173,9 +197,9 @@ namespace kspp {
     }
 
     void request::set_basic_auth(const std::string& user, const std::string& password){
-      curl_easy_setopt(_curl_easy, CURLOPT_HTTPAUTH, (long)CURLAUTH_BASIC);
-      curl_easy_setopt(_curl_easy, CURLOPT_USERNAME, user.c_str());
-      curl_easy_setopt(_curl_easy, CURLOPT_PASSWORD, password.c_str());
+      CURLEASY_THROW_NOT_OK(curl_easy_setopt(_curl_easy, CURLOPT_HTTPAUTH, (long)CURLAUTH_BASIC));
+      CURLEASY_THROW_NOT_OK(curl_easy_setopt(_curl_easy, CURLOPT_USERNAME, user.c_str()));
+      CURLEASY_THROW_NOT_OK(curl_easy_setopt(_curl_easy, CURLOPT_PASSWORD, password.c_str()));
     }
 
     void request::set_ca_cert_path(std::string path)
@@ -207,9 +231,8 @@ namespace kspp {
     }
 
     void request::set_trace_level(trace_log_level level) {
-      trace_log_level _log_level = level;
+       _log_level = level;
     }
-
 
     void request::curl_start(std::shared_ptr<request> self) {
       // lets clear state if this is a restarted transfer...
@@ -251,7 +274,10 @@ namespace kspp {
     }
 
     client::client(boost::asio::io_service &io_service, size_t max_connection_cache)
-        : _io_service(io_service), _timer(_io_service), _closing(false), _user_agent_header("User-Agent:csi-http/0.1") {
+      : _io_service(io_service)
+      , _timer(_io_service)
+      , _user_agent_header("User-Agent:csi-http/0.1")
+      , _closing(false){
       _multi = curl_multi_init();
       curl_multi_setopt(_multi, CURLMOPT_SOCKETFUNCTION, _sock_cb);
       curl_multi_setopt(_multi, CURLMOPT_SOCKETDATA, this);
@@ -306,122 +332,128 @@ namespace kspp {
     }
 
     void client::_perform(std::shared_ptr<kspp::http::request> request) {
-      CURLcode res;
-      request->curl_start(request); // increments usage count and keeps object around until curl thinks its done.
-      res = curl_easy_setopt(request->_curl_easy, CURLOPT_DEBUGFUNCTION, my_trace); // not active if not using CURLOPT_VERBOSE==1
-      res = curl_easy_setopt(request->_curl_easy, CURLOPT_DEBUGDATA, &request->_request_id);
-      res = curl_easy_setopt(request->_curl_easy, CURLOPT_OPENSOCKETFUNCTION, &client::_opensocket_cb);
-      res = curl_easy_setopt(request->_curl_easy, CURLOPT_OPENSOCKETDATA, this);
+      try {
+        request->curl_start(request); // increments usage count and keeps object around until curl thinks its done.
+        CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_DEBUGFUNCTION,
+                                               my_trace)); // not active if not using CURLOPT_VERBOSE==1
+        CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_DEBUGDATA, &request->_request_id));
+        CURLEASY_THROW_NOT_OK(
+          curl_easy_setopt(request->_curl_easy, CURLOPT_OPENSOCKETFUNCTION, &client::_opensocket_cb));
+        CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_OPENSOCKETDATA, this));
+        CURLEASY_THROW_NOT_OK(
+          curl_easy_setopt(request->_curl_easy, CURLOPT_CLOSESOCKETFUNCTION, &client::_closesocket_cb));
+        CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_CLOSESOCKETDATA, this));
+        CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_NOSIGNAL,
+                                               1L)); // try to avoid signals to timeout address resolution calls
+        CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_URL, request->_uri.c_str()));
 
-      res = curl_easy_setopt(request->_curl_easy, CURLOPT_CLOSESOCKETFUNCTION, &client::_closesocket_cb);
-      res = curl_easy_setopt(request->_curl_easy, CURLOPT_CLOSESOCKETDATA, this);
+        // should we should skip the ssl stuff below if the url does not begin with https?
+        // it does not seem to hurt to init ssl on a http connection
 
-      res = curl_easy_setopt(request->_curl_easy, CURLOPT_NOSIGNAL, 1L); // try to avoid signals to timeout address resolution calls
+        //SSL OPTIONS
 
-      res = curl_easy_setopt(request->_curl_easy, CURLOPT_URL, request->_uri.c_str());
+        if (request->_ca_cert.size() == 0) {
+          CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_SSL_VERIFYPEER, 0L));   // unsafe
+          CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_SSL_VERIFYHOST, 0L));  // unsafe
+          //res = curl_easy_setopt(request->_curl_easy, CURLOPT_VERBOSE, 1L);
+        } else {
+          CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_SSL_VERIFYPEER, 1L));
+          if (request->_verify_host) {
+            CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_SSL_VERIFYHOST, 2L));
+          } else {
+            CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_SSL_VERIFYHOST, 0L));  // unsafe
+          }
+          CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_CAINFO, request->_ca_cert.c_str()));
+        }
 
-      // should we should skip the ssl stuff below if the url does not begin with https?
-      // it does not seem to hurt to init ssl on a http connection
+        if (request->_client_cert.size() > 0) {
+          CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_SSLCERT, request->_client_cert.c_str()));
+          CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_SSLKEY, request->_client_key.c_str()));
+          CURLEASY_THROW_NOT_OK(
+            curl_easy_setopt(request->_curl_easy, CURLOPT_SSLKEYPASSWD, request->_client_key_passphrase.c_str()));
+          CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_SSLKEYTYPE, "PEM"));
+        }
 
-      //SSL OPTIONS
+        // retrieve cert info
+        //curl_easy_setopt(_curl, CURLOPT_CERTINFO, 1);
 
-      if (request->_ca_cert.size()==0) {
-        res = curl_easy_setopt(request->_curl_easy, CURLOPT_SSL_VERIFYPEER, 0L);   // unsafe
-        res = curl_easy_setopt(request->_curl_easy, CURLOPT_SSL_VERIFYHOST, 0L);  // unsafe
-        //res = curl_easy_setopt(request->_curl_easy, CURLOPT_VERBOSE, 1L);
-      } else {
-        res = curl_easy_setopt(request->_curl_easy, CURLOPT_SSL_VERIFYPEER, 1L);
-        if (request->_verify_host)
-          res = curl_easy_setopt(request->_curl_easy, CURLOPT_SSL_VERIFYHOST, 2L);
-        else
-          res = curl_easy_setopt(request->_curl_easy, CURLOPT_SSL_VERIFYHOST, 0L);  // unsafe
-        res = curl_easy_setopt(request->_curl_easy, CURLOPT_CAINFO, request->_ca_cert.c_str());
-      }
+        if (request->_log_level == TRACE_LOG_VERBOSE)
+          CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_VERBOSE, 1L));
 
-      if (request->_client_cert.size()>0) {
-        res = curl_easy_setopt(request->_curl_easy, CURLOPT_SSLCERT, request->_client_cert.c_str());
-        res = curl_easy_setopt(request->_curl_easy, CURLOPT_SSLKEY, request->_client_key.c_str());
-        res = curl_easy_setopt(request->_curl_easy, CURLOPT_SSLKEYPASSWD, request->_client_key_passphrase.c_str());
-        res = curl_easy_setopt(request->_curl_easy, CURLOPT_SSLKEYTYPE, "PEM");
-      }
+        switch (request->_method) {
+          case kspp::http::GET:
+            CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_HTTPGET, 1));
+            //curl_easy_setopt(request->_curl_easy, CURLOPT_FOLLOWLOCATION, 1L);
+            break;
 
-      // retrieve cert info
-      //curl_easy_setopt(_curl, CURLOPT_CERTINFO, 1);
+          case kspp::http::PUT:
+            /* only works with read callbacks
+             * res = curl_easy_setopt(request->_curl_easy, CURLOPT_UPLOAD, 1L);
+            * res = curl_easy_setopt(request->_curl_easy, CURLOPT_INFILESIZE_LARGE, (curl_off_t) request->tx_content_length());
+            */
+            // this seems to be the right way with PUT and strings
+            CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_CUSTOMREQUEST, "PUT")); /* !!! */
+            CURLEASY_THROW_NOT_OK(
+              curl_easy_setopt(request->_curl_easy, CURLOPT_POSTFIELDS, request->tx_content().data()));
+            CURLEASY_THROW_NOT_OK(
+              curl_easy_setopt(request->_curl_easy, CURLOPT_POSTFIELDSIZE, (long) request->tx_content_length()));
+            break;
 
-      if (request->_log_level == TRACE_LOG_VERBOSE)
-        res = curl_easy_setopt(request->_curl_easy, CURLOPT_VERBOSE, 1L);
-
-      switch (request->_method) {
-        case kspp::http::GET:
-          res = curl_easy_setopt(request->_curl_easy, CURLOPT_HTTPGET, 1);
-          //curl_easy_setopt(request->_curl_easy, CURLOPT_FOLLOWLOCATION, 1L);
-          break;
-
-        case kspp::http::PUT:
-          /* only works with read callbacks
-           * res = curl_easy_setopt(request->_curl_easy, CURLOPT_UPLOAD, 1L);
-          * res = curl_easy_setopt(request->_curl_easy, CURLOPT_INFILESIZE_LARGE, (curl_off_t) request->tx_content_length());
-          */
-          // this seems to be the right way with PUT and strings
-          curl_easy_setopt(request->_curl_easy, CURLOPT_CUSTOMREQUEST, "PUT"); /* !!! */
-          res = curl_easy_setopt(request->_curl_easy, CURLOPT_POSTFIELDS, request->tx_content().data());
-          res = curl_easy_setopt(request->_curl_easy, CURLOPT_POSTFIELDSIZE, (long) request->tx_content_length());
-          break;
-
-        case kspp::http::POST: {
-          //res = curl_easy_setopt(request->_curl_easy, CURLOPT_POST, 1);
-          curl_easy_setopt(request->_curl_easy, CURLOPT_BUFFERSIZE, 102400L);
-          curl_easy_setopt(request->_curl_easy, CURLOPT_CUSTOMREQUEST, "POST");
-          // must be different in post and put???
-          //res = curl_easy_setopt(request->_curl_easy, CURLOPT_POSTFIELDS, NULL);
-          res = curl_easy_setopt(request->_curl_easy, CURLOPT_POSTFIELDS, request->tx_content().data());
+          case kspp::http::POST: {
+            //res = curl_easy_setopt(request->_curl_easy, CURLOPT_POST, 1);
+            CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_BUFFERSIZE, 102400L));
+            CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_CUSTOMREQUEST, "POST"));
+            // must be different in post and put???
+            //res = curl_easy_setopt(request->_curl_easy, CURLOPT_POSTFIELDS, NULL);
+            CURLEASY_THROW_NOT_OK(
+              curl_easy_setopt(request->_curl_easy, CURLOPT_POSTFIELDS, request->tx_content().data()));
             size_t sz = request->tx_content_length();
             //LOG(INFO) << "sending - content lenght " << sz;
-            res = curl_easy_setopt(request->_curl_easy, CURLOPT_POSTFIELDSIZE, (long) sz);
+            CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_POSTFIELDSIZE, (long) sz));
           }
-          break;
+            break;
 
-        case kspp::http::DELETE_:
-          res = curl_easy_setopt(request->_curl_easy, CURLOPT_CUSTOMREQUEST, "DELETE");
-          break;
+          case kspp::http::DELETE_:
+            CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_CUSTOMREQUEST, "DELETE"));
+            break;
 
-        default:
-          LOG(FATAL) << "unsupported method: " << request->_method;
-      };
+          default:
+            LOG(FATAL) << "unsupported method: " << request->_method;
+        };
 
-      /* the request */
-      //res = curl_easy_setopt(request->_curl_easy, CURLOPT_READFUNCTION, read_callback_std_stream);
-      //res = curl_easy_setopt(request->_curl_easy, CURLOPT_READDATA, &request->_tx_stream);
+        /* the request */
+        //res = curl_easy_setopt(request->_curl_easy, CURLOPT_READFUNCTION, read_callback_std_stream);
+        //res = curl_easy_setopt(request->_curl_easy, CURLOPT_READDATA, &request->_tx_stream);
 
-      /* the reply */
-      res = curl_easy_setopt(request->_curl_easy, CURLOPT_WRITEFUNCTION, write_callback_buffer);
-      res = curl_easy_setopt(request->_curl_easy, CURLOPT_WRITEDATA, &request->_rx_buffer);
+        /* the reply */
+        CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_WRITEFUNCTION, write_callback_buffer));
+        CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_WRITEDATA, &request->_rx_buffer));
 
-      res = curl_easy_setopt(request->_curl_easy, CURLOPT_LOW_SPEED_TIME, 3L);
-      res = curl_easy_setopt(request->_curl_easy, CURLOPT_LOW_SPEED_LIMIT, 10L);
+        CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_LOW_SPEED_TIME, 3L));
+        CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_LOW_SPEED_LIMIT, 10L));
 
-      // if this is a resend we have to clear this before using it again
-      if (request->_curl_headerlist) {
-        //assert(false); // is this really nessessary??
-        curl_slist_free_all(request->_curl_headerlist);
-        request->_curl_headerlist = NULL;
-      }
+        // if this is a resend we have to clear this before using it again
+        if (request->_curl_headerlist) {
+          //assert(false); // is this really nessessary??
+          curl_slist_free_all(request->_curl_headerlist);
+          request->_curl_headerlist = NULL;
+        }
 
-      static const char buf[] = "Expect:";
-      /* initalize custom header list (stating that Expect: 100-continue is not wanted */
-      request->_curl_headerlist = curl_slist_append(request->_curl_headerlist, buf);
-      request->_curl_headerlist = curl_slist_append(request->_curl_headerlist, _user_agent_header.c_str());
-      for (std::vector<std::string>::const_iterator i = request->_tx_headers.begin();
-           i != request->_tx_headers.end(); ++i)
-        request->_curl_headerlist = curl_slist_append(request->_curl_headerlist, i->c_str());
-      res = curl_easy_setopt(request->_curl_easy, CURLOPT_HTTPHEADER, request->_curl_headerlist);
-      res = curl_easy_setopt(request->_curl_easy, CURLOPT_TIMEOUT_MS, request->_timeout.count());
-      res = curl_easy_setopt(request->_curl_easy, CURLOPT_HEADERDATA, &request->_rx_headers);
-      res = curl_easy_setopt(request->_curl_easy, CURLOPT_HEADERFUNCTION, parse_headers);
-      res = curl_easy_setopt(request->_curl_easy, CURLOPT_FOLLOWLOCATION, 1L);
-      //curl_easy_setopt(request->_curl_easy, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+        static const char buf[] = "Expect:";
+        /* initalize custom header list (stating that Expect: 100-continue is not wanted */
+        request->_curl_headerlist = curl_slist_append(request->_curl_headerlist, buf);
+        request->_curl_headerlist = curl_slist_append(request->_curl_headerlist, _user_agent_header.c_str());
+        for (std::vector<std::string>::const_iterator i = request->_tx_headers.begin();
+             i != request->_tx_headers.end(); ++i)
+          request->_curl_headerlist = curl_slist_append(request->_curl_headerlist, i->c_str());
+        CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_HTTPHEADER, request->_curl_headerlist));
+        CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_TIMEOUT_MS, request->_timeout.count()));
+        CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_HEADERDATA, &request->_rx_headers));
+        CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_HEADERFUNCTION, parse_headers));
+        CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_FOLLOWLOCATION, 1L));
+        //CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4));
 
-      request->_start_ts = std::chrono::steady_clock::now();
+        request->_start_ts = std::chrono::steady_clock::now();
 
 //DEBUF ONLY
 /*        if (request->_method == http::GET) {
@@ -439,7 +471,10 @@ namespace kspp {
       }
 */
 
-      CURLMcode rc = curl_multi_add_handle(_multi, request->_curl_easy);
+        CURLMULTI_THROW_NOT_OK(curl_multi_add_handle(_multi, request->_curl_easy));
+      } catch(std::exception& e){
+        LOG(ERROR) << "http request failed: " << e.what();
+      }
     }
 
     // must not be called within curl callbacks - post a asio message instead
@@ -578,8 +613,12 @@ namespace kspp {
     void client::socket_rx_cb(const boost::system::error_code &ec, boost::asio::ip::tcp::socket *tcp_socket,
                               std::shared_ptr<request> context) {
       if (!ec && !context->_curl_done) {
-        CURLMcode rc = curl_multi_socket_action(_multi, tcp_socket->native_handle(), CURL_CSELECT_IN,
-                                                &_curl_handles_still_running);
+        try {
+          CURLMULTI_THROW_NOT_OK(curl_multi_socket_action(_multi, tcp_socket->native_handle(), CURL_CSELECT_IN,
+                                                          &_curl_handles_still_running));
+        } catch (std::exception& e){
+          LOG(ERROR) << "socket_rx_cb failed: " << e.what();
+        }
         if (!context->_curl_done)
           tcp_socket->async_read_some(boost::asio::null_buffers(),
                                       [this, tcp_socket, context](const boost::system::error_code &ec,
@@ -592,9 +631,13 @@ namespace kspp {
 
     void client::socket_tx_cb(const boost::system::error_code &ec, boost::asio::ip::tcp::socket *tcp_socket,
                               std::shared_ptr<request> context) {
-      //LOG(INFO) << ", socket_tx_cb, EC: " << ec;
       if (!ec) {
-        CURLMcode rc = curl_multi_socket_action(_multi, tcp_socket->native_handle(), CURL_CSELECT_OUT, &_curl_handles_still_running);
+        try {
+          CURLMULTI_THROW_NOT_OK(curl_multi_socket_action(_multi, tcp_socket->native_handle(), CURL_CSELECT_OUT,
+                                                          &_curl_handles_still_running));
+       } catch (std::exception& e){
+        LOG(ERROR) << "socket_tx_cb failed: " << e.what();
+        }
         if (!context->_curl_done)
           tcp_socket->async_write_some(boost::asio::null_buffers(),
                                        [this, tcp_socket, context](const boost::system::error_code &ec, std::size_t bytes_transferred) {
@@ -607,7 +650,12 @@ namespace kspp {
     void client::timer_cb(const boost::system::error_code &ec) {
       if (!ec) {
         // CURL_SOCKET_TIMEOUT, 0 is corrent on timeouts http://curl.haxx.se/libcurl/c/curl_multi_socket_action.html
-        CURLMcode rc = curl_multi_socket_action(_multi, CURL_SOCKET_TIMEOUT, 0, &_curl_handles_still_running);
+        try {
+          CURLMULTI_THROW_NOT_OK(
+            curl_multi_socket_action(_multi, CURL_SOCKET_TIMEOUT, 0, &_curl_handles_still_running));
+        }catch (std::exception& e){
+          LOG(ERROR) << "timer_cb failed: " << e.what();
+        }
         check_completed();
         //check_multi_info(); //TBD kolla om denna ska vara här
       }
@@ -648,22 +696,22 @@ namespace kspp {
     }
 
     int client::closesocket_cb(curl_socket_t item) {
-        spinlock::scoped_lock xxx(_spinlock);
-        {
-          std::map<curl_socket_t, boost::asio::ip::tcp::socket *>::iterator it = _socket_map.find(item);
-          if (it != _socket_map.end()) {
-            boost::system::error_code ec;
-            it->second->cancel(ec);
-            it->second->close(ec);
-            boost::asio::ip::tcp::socket *s = it->second;
+      spinlock::scoped_lock xxx(_spinlock);
+      {
+        std::map<curl_socket_t, boost::asio::ip::tcp::socket *>::iterator it = _socket_map.find(item);
+        if (it != _socket_map.end()) {
+          boost::system::error_code ec;
+          it->second->cancel(ec);
+          it->second->close(ec);
+          boost::asio::ip::tcp::socket *s = it->second;
 
-            //curl_multi_assign(_multi, it->first, NULL); // we need to remove this at once since curl likes to reuse sockets
-            _socket_map.erase(it);
-            _io_service.post([this, s]() {
-              delete s; // must be deleted after operations on socket completed. therefore the _io_service.post
-            });
-          }
+          //curl_multi_assign(_multi, it->first, NULL); // we need to remove this at once since curl likes to reuse sockets
+          _socket_map.erase(it);
+          _io_service.post([this, s]() {
+            delete s; // must be deleted after operations on socket completed. therefore the _io_service.post
+          });
         }
+      }
       return 0;
     }
 
@@ -713,9 +761,9 @@ namespace kspp {
           if (context->_transport_ok) {
             std::string content_length_str = context->get_rx_header("Content-Length");
             if (content_length_str.size()) {
-              if (context->rx_content_length() < atoi(content_length_str.c_str())) {
+              if ((int) context->rx_content_length() < atoi(content_length_str.c_str())) {
                 context->_transport_ok = false;
-                DLOG(WARNING) << "content length header not matchng actual content - failing request";
+                DLOG(WARNING) << "content length header not matching actual content - failing request";
               }
             }
           }

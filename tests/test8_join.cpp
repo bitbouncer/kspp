@@ -118,7 +118,7 @@ int main(int argc, char **argv) {
 
   //KStream-KTable LEFT Join
   {
-    auto partition_list = {0};
+    //auto partition_list = {0};
     kspp::topology_builder builder(config);
     auto topology = builder.create_topology();
 
@@ -149,13 +149,13 @@ int main(int argc, char **argv) {
       topology->process(ts);
 
     assert(expected.size() == actual.size());
-    for (int i = 0; i != expected.size(); ++i)
+    for (size_t i = 0; i != expected.size(); ++i)
       assert(*expected[i] == *actual[i]);
   }
 
 //KStream-KTable INNER Join
   {
-    auto partition_list = {0};
+    //auto partition_list = {0};
     kspp::topology_builder builder(config);
     auto topology = builder.create_topology();
 
@@ -183,13 +183,13 @@ int main(int argc, char **argv) {
     topology->process_1s();
 
     assert(expected.size() == actual.size());
-    for (int i = 0; i != expected.size(); ++i)
+    for (size_t i = 0; i != expected.size(); ++i)
       assert(*expected[i] == *actual[i]);
   }
 
   //KTable-KTable LEFT Join - OLD SEMANTICS (IE MORE null values)
   {
-    auto partition_list = {0};
+    //auto partition_list = {0};
     kspp::topology_builder builder(config);
     auto topology = builder.create_topology();
 
@@ -231,13 +231,13 @@ int main(int argc, char **argv) {
     topology->process_1s();
 
     assert(expected.size() == actual.size());
-    for (int i = 0; i != expected.size(); ++i)
+    for (size_t i = 0; i != expected.size(); ++i)
       assert(*expected[i] == *actual[i]);
   }
 
   //KTable-KTable INNER Join - OLD SEMANTICS (IE MORE null values)
   {
-    auto partition_list = {0};
+    //auto partition_list = {0};
     kspp::topology_builder builder(config);
     auto topology = builder.create_topology();
 
@@ -279,13 +279,13 @@ int main(int argc, char **argv) {
     topology->process_1s();
 
     assert(expected.size() == actual.size());
-    for (int i = 0; i != expected.size(); ++i)
+    for (size_t i = 0; i != expected.size(); ++i)
       assert(*expected[i] == *actual[i]);
   }
 
   //KTable-KTable OUTER Join - OLD SEMANTICS (IE MORE null values)
   {
-    auto partition_list = {0};
+    //auto partition_list = {0};
     kspp::topology_builder builder(config);
     auto topology = builder.create_topology();
 
@@ -328,7 +328,7 @@ int main(int argc, char **argv) {
 
 
     assert(expected.size() == actual.size());
-    for (int i = 0; i != expected.size(); ++i)
+    for (size_t i = 0; i != expected.size(); ++i)
       assert(*expected[i] == *actual[i]);
   }
 

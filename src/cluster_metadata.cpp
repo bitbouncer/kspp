@@ -108,7 +108,7 @@ namespace kspp{
     if (_missing_consumer_groups.find(consumer_group)!=_missing_consumer_groups.end())
       return false;
 
-    char errstr[128];
+    //char errstr[128];
     auto expires = milliseconds_since_epoch() + 1000 * timeout.count();
     rd_kafka_resp_err_t err = RD_KAFKA_RESP_ERR_NO_ERROR;
     const struct rd_kafka_group_list *grplist = nullptr;
@@ -294,7 +294,7 @@ namespace kspp{
 //  }
 
 
-  int32_t cluster_metadata::get_number_partitions(std::string topic) {
+  uint32_t cluster_metadata::get_number_partitions(std::string topic) {
     std::lock_guard<std::mutex> guard(_mutex);
     auto item = _topic_data.find(topic);
     if (item != _topic_data.end()) {
@@ -307,7 +307,7 @@ namespace kspp{
     if (!_rd_topic) {
       LOG(FATAL) << "failed to create RdKafka::Topic:" << errstr;
     }
-    int32_t nr_of_partitions = 0;
+    uint32_t nr_of_partitions = 0;
     while (nr_of_partitions == 0) {
       RdKafka::Metadata *md = nullptr;
       auto ec = _rk_handle->metadata(false, _rd_topic.get(), &md, 5000);

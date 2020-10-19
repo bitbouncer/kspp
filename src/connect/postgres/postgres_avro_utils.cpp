@@ -265,7 +265,7 @@ namespace kspp {
       assert(r->type() == avro::AVRO_RECORD);
       std::string s = "(";
       size_t sz = r->names();
-      for (int i = 0; i != sz; ++i) {
+      for (size_t i = 0; i != sz; ++i) {
         s += r->nameAt(i);
         if (i != sz - 1)
           s += ",";
@@ -351,10 +351,11 @@ namespace kspp {
     }
 
     // this is hackish - if the column is a union type we assume that it can be null
-    static bool avro2sql_is_column_nullable(const avro::GenericDatum &column) {
+    /*static bool avro2sql_is_column_nullable(const avro::GenericDatum &column) {
       auto t = column.type();
       return (t == avro::AVRO_UNION);
     }
+    */
 
     static std::string keys2string(std::vector<std::string> keys){
       std::string s;
@@ -371,7 +372,7 @@ namespace kspp {
       assert(root->type() == avro::AVRO_RECORD);
       std::string s = "CREATE TABLE " + tablename + " (\n";
       size_t sz = root->names();
-      for (int i = 0; i != sz; ++i) {
+      for (size_t i = 0; i != sz; ++i) {
         auto leaf = root->leafAt(i);
 
         // nullable or not??
@@ -400,7 +401,7 @@ namespace kspp {
       assert(r->type() == avro::AVRO_RECORD);
       std::string s = "INSERT INTO " + tablename + "(\n";
       size_t sz = r->names();
-      for (int i = 0; i != sz; ++i) {
+      for (size_t i = 0; i != sz; ++i) {
         s += r->nameAt(i);
         if (i != sz - 1)
           s += ",";
@@ -414,14 +415,14 @@ namespace kspp {
       assert(r->type() == avro::AVRO_RECORD);
       std::string s = "ON CONFLICT (" + keys2string(keys) + ") DO UPDATE SET (\n";
       size_t sz = r->names();
-      for (int i = 0; i != sz; ++i) {
+      for (size_t i = 0; i != sz; ++i) {
         s += r->nameAt(i);
         if (i != sz - 1)
           s += ",";
       }
       s += ") = \n(";
 
-      for (int i = 0; i != sz; ++i) {
+      for (size_t i = 0; i != sz; ++i) {
         s += "EXCLUDED." + r->nameAt(i);
         if (i != sz - 1)
           s += ",";
@@ -453,7 +454,7 @@ namespace kspp {
           return "NULL";
           break;
         case avro::AVRO_STRING: {
-          auto t = column.logicalType();
+          //auto t = column.logicalType();
           std::string s = column.value<std::string>();
           return escapeSQLstring(column.value<std::string>());
         }
@@ -538,7 +539,7 @@ namespace kspp {
       assert(datum.type() == avro::AVRO_RECORD);
       const avro::GenericRecord &record(datum.value<avro::GenericRecord>());
       size_t nFields = record.fieldCount();
-      for (int i = 0; i < nFields; i++) {
+      for (size_t i = 0; i < nFields; i++) {
         std::string val = avro_2_sql_simple_column_value(record.fieldAt(i));
         if (i < (nFields - 1))
           result += val + ", ";
@@ -573,7 +574,7 @@ namespace kspp {
         std::string result = "(";
         const avro::GenericRecord &record(datum.value<avro::GenericRecord>());
         size_t nFields = record.fieldCount();
-        for (int i = 0; i < nFields; i++) {
+        for (size_t i = 0; i < nFields; i++) {
           result += root->nameAt(i) + "=";
           std::string val = avro_2_sql_simple_column_value(record.fieldAt(i));
           if (i < (nFields - 1))
@@ -604,7 +605,7 @@ namespace kspp {
       assert(avro->type() == avro::AVRO_RECORD);
       avro::GenericRecord& record(avro->generic_datum()->value<avro::GenericRecord>());
       size_t nFields = record.fieldCount();
-      for (int j = 0; j < nFields; j++)
+      for (size_t j = 0; j < nFields; j++)
       {
         avro::GenericDatum& col = record.fieldAt(j); // expected union
         if (!record.fieldAt(j).isUnion()) // this should not hold - but we fail to create correct schemas for not null columns

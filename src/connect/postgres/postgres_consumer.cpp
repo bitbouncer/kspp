@@ -17,24 +17,24 @@ namespace kspp {
                                        std::string id_column,
                                        std::string ts_column,
                                        std::shared_ptr<kspp::avro_schema_registry> schema_registry)
-      : closed_(false)
-      , eof_(false)
-      , start_running_(false)
-      , exit_(false)
-      , bg_([this] { _thread(); })
-      , connection_(std::make_unique<kspp_postgres::connection>())
-      , logical_name_(avro_utils::sanitize_schema_name(logical_name))
-      , partition_(partition)
-      , cp_(cp)
-      , tp_(tp)
-      , query_(query)
-      , read_cursor_(tp, id_column, ts_column)
-      , commit_chain_(logical_name, partition)
-      , id_column_(id_column)
-      , schema_registry_(schema_registry)
-      , key_schema_id_(-1)
-      , value_schema_id_(-1)
-      , _msg_cnt(0) {
+    : exit_(false)
+    , start_running_(false)
+    , closed_(false)
+    , eof_(false)
+    , bg_([this] { _thread(); })
+    , connection_(std::make_unique<kspp_postgres::connection>())
+    , logical_name_(avro_utils::sanitize_schema_name(logical_name))
+    , query_(query)
+    , read_cursor_(tp, id_column, ts_column)
+    , commit_chain_(logical_name, partition)
+    , partition_(partition)
+    , cp_(cp)
+    , tp_(tp)
+    , id_column_(id_column)
+    , schema_registry_(schema_registry)
+    , key_schema_id_(-1)
+    , value_schema_id_(-1)
+    , _msg_cnt(0) {
     offset_storage_ = get_offset_provider(tp.offset_storage);
   }
 

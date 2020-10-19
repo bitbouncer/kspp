@@ -28,8 +28,8 @@ namespace kspp {
       public:
         result(size_t nr_of_tasks, end_condition_t end, async_vcallback1 callback) :
           _cb(callback),
-          _result_reported(false),
           _end_condition(end),
+          _result_reported(false),
           _result(nr_of_tasks, result_type()),
           _done(nr_of_tasks, false),
           _nr_done(0),

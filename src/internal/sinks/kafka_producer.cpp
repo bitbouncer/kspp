@@ -11,12 +11,12 @@ namespace kspp {
   struct producer_user_data
   {
     producer_user_data(void* key, size_t keysz, void* val, size_t valsz, uint32_t hash, std::shared_ptr<event_done_marker> marker)
-        : key_ptr(key)
-        , key_sz(keysz)
-        , val_ptr(val)
-        , val_sz(valsz)
-        , partition_hash(hash)
-        , done_marker(marker) {
+      : partition_hash(hash)
+      , done_marker(marker)
+      , key_ptr(key)
+      , key_sz(keysz)
+      , val_ptr(val)
+      , val_sz(valsz){
     }
 
     ~producer_user_data() {
@@ -44,7 +44,7 @@ namespace kspp {
   }
 
   kafka_producer::MyDeliveryReportCb::MyDeliveryReportCb() :
-      _status(RdKafka::ErrorCode::ERR_NO_ERROR) {}
+    _status(RdKafka::ErrorCode::ERR_NO_ERROR) {}
 
   void kafka_producer::MyDeliveryReportCb::dr_cb(RdKafka::Message& message) {
     producer_user_data* extra = (producer_user_data*) message.msg_opaque();
@@ -60,36 +60,36 @@ namespace kspp {
   }
 
   void kafka_producer::MyEventCb::event_cb (RdKafka::Event &event) {
-      switch (event.type())
-      {
-        case RdKafka::Event::EVENT_ERROR:
-          LOG(ERROR) << RdKafka::err2str(event.err()) << " " << event.str();
-          //if (event.err() == RdKafka::ERR__ALL_BROKERS_DOWN) TODO
-          //  run = false;
-          break;
+    switch (event.type())
+    {
+      case RdKafka::Event::EVENT_ERROR:
+        LOG(ERROR) << RdKafka::err2str(event.err()) << " " << event.str();
+        //if (event.err() == RdKafka::ERR__ALL_BROKERS_DOWN) TODO
+        //  run = false;
+        break;
 
-        case RdKafka::Event::EVENT_STATS:
-          LOG(INFO) << "STATS: " << event.str();
-          break;
+      case RdKafka::Event::EVENT_STATS:
+        LOG(INFO) << "STATS: " << event.str();
+        break;
 
-        case RdKafka::Event::EVENT_LOG:
-          LOG(INFO) << event.fac() << ", " << event.str();
-          break;
+      case RdKafka::Event::EVENT_LOG:
+        LOG(INFO) << event.fac() << ", " << event.str();
+        break;
 
-        default:
-          LOG(INFO) << "EVENT " << event.type() << " (" << RdKafka::err2str(event.err()) << "): " << event.str();
-          break;
-      }
+      default:
+        LOG(INFO) << "EVENT " << event.type() << " (" << RdKafka::err2str(event.err()) << "): " << event.str();
+        break;
     }
+  }
 
   kafka_producer::kafka_producer(std::shared_ptr<cluster_config> cconfig, std::string topic)
-      : _topic(topic)
-      , _msg_cnt(0)
-      , _msg_bytes(0)
-      , _closed(false)
-      , _nr_of_partitions(0) {
+    : _topic(topic)
+    , _closed(false)
+    , _nr_of_partitions(0)
+    , _msg_cnt(0)
+    , _msg_bytes(0) {
     LOG_IF(FATAL, cconfig->get_cluster_metadata()->wait_for_topic_leaders(topic, cconfig->get_cluster_state_timeout())==false)
-    <<  "failed to wait for topic leaders, topic:" << topic;
+        <<  "failed to wait for topic leaders, topic:" << topic;
 
     /*
     * Create configuration objects

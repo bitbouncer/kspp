@@ -4,26 +4,26 @@ project(kspp)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
 #FEATURES
-option(ENABLE_ROCKSDB "enable rocksdb support" OFF)
+option(ENABLE_ROCKSDB "enable rocksdb support" ON)
 option(ENABLE_ZK "enable zk support" OFF)
-option(ENABLE_POSTGRES "enable postgres support" OFF)
-option(ENABLE_INFLUXDB "enable influxdb support" OFF)
+option(ENABLE_POSTGRES "enable postgres support" ON)
+option(ENABLE_INFLUXDB "enable influxdb support" ON)
 option(ENABLE_TDS "enable tds support" OFF)
 option(ENABLE_ELASTICSEARCH "enable elastic search support" OFF)
 
-option(ENABLE_S3 "enable S3 support" OFF)
+option(ENABLE_S3 "enable S3 support" ON)
 option(ENABLE_KINESIS "enable KINESIS support" OFF)
 option(ENABLE_MQTT "enable MQTT support" OFF)
-option(ENABLE_GRPC "enable grpc support" OFF)
+option(ENABLE_GRPC "enable grpc support" ON)
 #option(ENABLE_BITBOUNCER_STREAMING "enable bitbouncer streaming support" OFF)
 
 option(BUILD_TOOLS "build tools" ON)
 option(BUILD_SAMPLES "build examples" ON)
-option(BUILD_SHARED_LIBS "enable static linking support" ON)
-option(BUILD_STATIC_LIBS "enable static linking support" OFF)
+option(BUILD_SHARED_LIBS "build shared libs" OFF)
+option(BUILD_STATIC_LIBS "build static libs" ON)
 
 option(BUILD_TESTS "build tests" ON)
-option(LINK_SHARED "link shared" ON)
+option(LINK_SHARED "link shared" OFF)
 
 set(KSPP_VERSION_MAJOR 1)
 set(KSPP_VERSION_MINOR 0)
@@ -62,6 +62,8 @@ find_package(Boost COMPONENTS program_options system REQUIRED)
 set(BOOST_LIBS boost_program_options boost_iostreams boost_filesystem boost_system boost_regex z bz2 pthread rt c)
 
 SET(CSI_INCLUDE_PATH ${Boost_INCLUDE_DIR})
+
+find_package(absl REQUIRED)
 
 if (ENABLE_ROCKSDB)
     find_package(RocksDB REQUIRED)
@@ -295,12 +297,16 @@ if (BUILD_SHARED_LIBS)
             )
 endif ()
 
-SET(EXT_LIBS ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${PROMETHEUS_CPP_LIBS} ${BOOST_LIBS} ${PostgreSQL_LIBRARIES} ${AWS_S3_LIBS} ${BB_GRPC_LIBS_SHARED} ${MQTT_LIBS} ${AWS_KINESIS_LIBS} ${TDS_LIBS} gflags glog crypto ssl stdc++fs pthread)
+SET(BB_GRPC_LIBS gRPC::grpc++_reflection gRPC::grpc++ gRPC::grpc protobuf::libprotobuf gpr upb address_sorting re2 boringssl-ssl boringssl-crypto)
+SET(ABSEIL_LIBS absl::time absl::status absl::synchronization absl::strings absl::str_format absl::memory absl::base)
+SET(EXT_LIBS ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${PROMETHEUS_CPP_LIBS} ${BOOST_LIBS} ${PostgreSQL_LIBRARIES} ${AWS_S3_LIBS} ${MQTT_LIBS} ${AWS_KINESIS_LIBS} ${TDS_LIBS} ${BB_GRPC_LIBS} ${ABSEIL_LIBS} gflags glog stdc++fs pthread)
+#crypto ssl
+
 
 if (LINK_SHARED)
-    SET(ALL_LIBS kspp ${EXT_LIBS})
+    SET(ALL_LIBS ${BB_GRPC_LIBS_SHARED} kspp ${EXT_LIBS})
 else()
-    SET(ALL_LIBS kspp_s ${EXT_LIBS})
+    SET(ALL_LIBS ${BB_GRPC_LIBS_STATIC} kspp_s ${EXT_LIBS})
 endif()
 
 INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/include/ DESTINATION include)

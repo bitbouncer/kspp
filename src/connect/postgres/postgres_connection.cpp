@@ -12,9 +12,9 @@ namespace kspp_postgres {
   inline static std::shared_ptr<PGresult> make_shared(PGresult* p) { return std::shared_ptr<PGresult>(p, PQclear); }
 
   connection::connection(std::string trace_id)
-      : _pg_conn(nullptr)
-      , _warn_timeout(60000)
-      , _trace_id(trace_id) {
+    : _pg_conn(nullptr)
+    , _trace_id(trace_id)
+    , _warn_timeout(60000){
     if (!_trace_id.size()) {
       auto uuid = boost::uuids::random_generator();
       _trace_id = to_string(uuid());
@@ -73,7 +73,7 @@ namespace kspp_postgres {
     int res = PQsetClientEncoding(_pg_conn, s.c_str());
     if (res==0)
       return 0;
-   LOG(ERROR) << _trace_id << " set_client_encoding " << s  << " failed, error: " << last_error();
+    LOG(ERROR) << _trace_id << " set_client_encoding " << s  << " failed, error: " << last_error();
     return res;
   }
 

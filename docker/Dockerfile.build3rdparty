@@ -1,0 +1,351 @@
+FROM ubuntu:20.04
+
+WORKDIR /src
+
+MAINTAINER sk svante.karlsson@csi.se
+
+
+ENV TZ=GMT
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+
+RUN apt-get update && apt-get install -y sudo build-essential cmake wget pax-utils automake autogen shtool libtool unzip pkg-config sed bison flex git gcc-10 g++-10
+
+RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 100 --slave /usr/bin/g++ g++ /usr/bin/g++-10 --slave /usr/bin/gcov gcov /usr/bin/gcov-10
+
+RUN apt-get install -y libboost-all-dev
+
+#avro deps
+RUN apt-get install -y libsnappy-dev
+
+#aws deps
+RUN apt-get install -y  libssl-dev libcurl4-openssl-dev libgoogle-glog-dev
+#RUN apt-get install -y  libssl-dev libcurl4-nss-dev libgoogle-glog-dev
+
+#deps for arrow
+RUN  apt-get install -y liblz4-dev libutf8proc-dev libre2-dev llvm-7 clang libz-dev liblzma-dev libzstd-dev libbz2-dev
+
+#deps for tensorflow
+RUN  apt-get install -y libeigen3-dev
+
+#deps for kspp
+RUN apt-get install -y libpq-dev freetds-dev 
+
+ENV CPP_STANDARD="17"
+ENV AVRO_VER="release-1.10.0"
+ENV ABSEIL_CPP_VER="20200225.3"
+ENV AWS_SDK_VER="1.7.220"
+ENV GRPC_VER="v1.32.0"
+
+#deps for arrow
+ENV DOUBLE_CONVERSION_VER="v3.1.5"
+ENV BROTLI_VER="v1.0.9"
+ENV FLATBUFFERS_VER="v1.11.0"
+ENV THRIFT_VER="0.12.0"
+ENV RAPIDJSON_VER="v1.1.0"
+
+ENV ARROW_VER="apache-arrow-1.0.1"
+#
+#for mqtt
+ENV NLOHMANN_JSON_VER="v3.9.1"
+ENV PAHO_MQTT_C_VER="1.3.1"
+ENV PAHO_MQTT_CPP_VER="1.0.1"
+ENV ROCKDB_VER="v6.11.4"
+ENV LIBRDKAFKA_VER="v1.5.0-RC1"
+ENV PROMETHEUS_CPP_VER="v0.9.0"
+
+
+RUN mkdir tmp && cd tmp
+
+RUN wget -O avro.tar.gz "https://github.com/apache/avro/archive/$AVRO_VER.tar.gz" && \
+mkdir -p avro && \
+tar \
+  --extract \
+  --file avro.tar.gz \
+  --directory avro \
+  --strip-components 1 && \
+sed -i.bak1 's/-std=c++11/-std=c++17/g' avro/lang/c++/CMakeLists.txt && \
+cat avro/lang/c++/CMakeLists.txt && \
+cd avro/lang/c++/  && \
+mkdir build && \
+cd build && \
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_STANDARD=$CPP_STANDARD .. && \
+make -j "$(getconf _NPROCESSORS_ONLN)" && \
+sudo make install && \
+cd ../../../.. && \
+rm avro.tar.gz && \
+rm -rf arvo 
+
+RUN git clone --recursiv --depth 1 --branch master-with-bazel https://github.com/google/boringssl.git && \
+cd boringssl && \
+mkdir build && cd build && \
+cmake -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_CXX_STANDARD=$CPP_STANDARD \
+  .. && \
+make -j "$(getconf _NPROCESSORS_ONLN)" && \
+sudo cp libcrypto.a /usr/local/lib/libboringssl-crypto.a && \
+sudo cp libssl.a /usr/local/lib/libboringssl-ssl.a && \
+cd ../..
+
+RUN wget -O abseil-cpp.tar.gz "https://github.com/abseil/abseil-cpp/archive/$ABSEIL_CPP_VER.tar.gz" && \
+mkdir -p abseil-cpp && \
+tar \
+  --extract \
+  --file abseil-cpp.tar.gz \
+  --directory abseil-cpp \
+  --strip-components 1 && \
+cd abseil-cpp && \
+mkdir build && \
+cd build && \
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=$CPP_STANDARD .. && \
+make -j "$(getconf _NPROCESSORS_ONLN)" && \
+sudo make install && \
+cd ../.. && \
+rm abseil-cpp.tar.gz
+
+
+RUN git clone --recursiv --depth 1 --branch $GRPC_VER https://github.com/grpc/grpc.git && \
+cd grpc  && \
+mkdir -p build && cd build  && \
+cmake ..  && \
+make -j "$(getconf _NPROCESSORS_ONLN)" && \
+sudo make install && \
+cd ../.. && \
+rm -r grpc
+
+
+RUN wget -O aws-sdk.tar.gz "https://github.com/aws/aws-sdk-cpp/archive/$AWS_SDK_VER.tar.gz" && \
+mkdir -p aws-sdk && \
+tar \
+  --extract \
+  --file aws-sdk.tar.gz \
+  --directory aws-sdk \
+  --strip-components 1  && \
+cd aws-sdk && \
+mkdir build-shared && \
+cd build-shared && \
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DBUILD_ONLY="config;s3;transfer" -DENABLE_TESTING=OFF -DCPP_STANDARD=$CPP_STANDARD .. && \
+make -j "$(getconf _NPROCESSORS_ONLN)"  && \
+sudo make install && \
+cd .. && \
+mkdir build-static && \
+cd build-static && \
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DBUILD_ONLY="config;s3;transfer" -DENABLE_TESTING=OFF -DCPP_STANDARD=$CPP_STANDARD .. && \
+make -j "$(getconf _NPROCESSORS_ONLN)"  && \
+sudo make install && \
+cd ../..
+
+RUN wget -O double-conversion.tar.gz "https://github.com/google/double-conversion/archive/$DOUBLE_CONVERSION_VER.tar.gz" && \
+mkdir -p double-conversion && \
+tar \
+  --extract \
+  --file double-conversion.tar.gz \
+  --directory double-conversion \
+  --strip-components 1 && \
+cd double-conversion && \
+mkdir build && \
+cd build && \
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_STANDARD=$CPP_STANDARD .. && \
+make -j "$(getconf _NPROCESSORS_ONLN)" && \
+sudo make install && \
+cd ../.. && \
+rm double-conversion.tar.gz
+
+RUN wget -O brotli.tar.gz "https://github.com/google/brotli/archive/$BROTLI_VER.tar.gz" && \
+mkdir -p brotli && \
+tar \
+  --extract \
+  --file brotli.tar.gz \
+  --directory brotli \
+  --strip-components 1 && \
+cd brotli && \
+mkdir build && \
+cd build && \
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_STANDARD=$CPP_STANDARD .. && \
+make -j "$(getconf _NPROCESSORS_ONLN)" && \
+sudo make install && \
+cd ../.. && \
+rm brotli.tar.gz
+
+
+RUN wget -O flatbuffers.tar.gz "https://github.com/google/flatbuffers/archive/$FLATBUFFERS_VER.tar.gz" && \
+mkdir -p flatbuffers && \
+tar \
+  --extract \
+  --file flatbuffers.tar.gz \
+  --directory flatbuffers \
+  --strip-components 1 && \
+cd flatbuffers && \
+mkdir build && \
+cd build && \
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DFLATBUFFERS_BUILD_TESTS=OFF -DCMAKE_CXX_STANDARD=$CPP_STANDARD .. && \
+make -j "$(getconf _NPROCESSORS_ONLN)" && \
+sudo make install && \
+cd ../.. && \
+rm flatbuffers.tar.gz
+
+RUN wget -O thrift.tar.gz "https://github.com/apache/thrift/archive/$THRIFT_VER.tar.gz" && \
+mkdir -p thrift && \
+tar \
+  --extract \
+  --file thrift.tar.gz \
+  --directory thrift \
+  --strip-components 1 && \
+cd thrift && \
+mkdir -p build && cd build && \
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_STANDARD=$CPP_STANDARD .. && \
+make -j "$(getconf _NPROCESSORS_ONLN)" && \
+sudo make install && \
+cd ../.. && \
+rm thrift.tar.gz
+
+
+RUN wget -O rapidjson.tar.gz "https://github.com/miloyip/rapidjson/archive/$RAPIDJSON_VER.tar.gz" && \
+mkdir -p rapidjson && \
+tar \
+   --extract \
+   --file rapidjson.tar.gz \
+   --directory rapidjson \
+   --strip-components 1 && \
+cd rapidjson && \
+mkdir build && \
+cd build && \
+cmake -DRAPIDJSON_BUILD_EXAMPLES=OFF -DRAPIDJSON_BUILD_DOC=OFF -DRAPIDJSON_BUILD_TESTS=OFF -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_STANDARD=$CPP_STANDARD .. && \
+sudo make install && \
+sudo rm -rf /usr/local/share/doc/RapidJSON && \
+cd ../.. && \
+rm rapidjson.tar.gz && \
+rm -rf rapidjson
+
+RUN wget -O arrow.tar.gz "https://github.com/apache/arrow/archive/$ARROW_VER.tar.gz" && \
+mkdir -p arrow && \
+tar \
+  --extract \
+  --file arrow.tar.gz \
+  --directory arrow \
+  --strip-components 1 && \
+cd arrow/cpp && \
+mkdir build && \
+cd build && \
+cmake \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DARROW_DEPENDENCY_SOURCE=SYSTEM \
+  -DCMAKE_CXX_STANDARD=$CPP_STANDARD \
+  -DARROW_BUILD_UTILITIES=ON \
+  -DARROW_CUDA=OFF \
+  -DARROW_GANDIVA=ON \
+  -DARROW_WITH_BZ2=ON \
+  -DARROW_WITH_ZLIB=ON \
+  -DARROW_WITH_ZSTD=ON \
+  -DARROW_WITH_LZ4=ON \
+  -DARROW_WITH_SNAPPY=ON \
+  -DARROW_WITH_BROTLI=ON \
+  -DARROW_COMPUTE=ON \
+  -DARROW_JEMALLOC=ON \
+  -DARROW_CSV=ON \
+  -DARROW_DATASET=ON \
+  -DARROW_FILESYSTEM=ON \
+  -DARROW_JSON=ON \
+  -DARROW_PARQUET=ON \
+  -DARROW_PLASMA=ON \
+  -DARROW_PYTHON=OFF \
+  -DARROW_S3=ON \
+  -DARROW_USE_GLOG=ON \
+  -DPARQUET_BUILD_EXECUTABLES=ON \
+  -DPARQUET_BUILD_EXAMPLES=ON \
+   .. && \
+make -j "$(getconf _NPROCESSORS_ONLN)" && \
+sudo make install && \
+cd ../../.. && \
+rm arrow.tar.gz
+
+
+
+RUN wget -O rocksdb.tar.gz "https://github.com/facebook/rocksdb/archive/$ROCKDB_VER.tar.gz" && \
+mkdir -p rocksdb && \
+tar \
+    --extract \
+    --file rocksdb.tar.gz \
+    --directory rocksdb \
+    --strip-components 1 && \
+cd rocksdb && \
+export USE_RTTI=1 && \
+make -j "$(getconf _NPROCESSORS_ONLN)" shared_lib && \
+sudo make install-shared && \
+cd ..
+
+RUN wget -O prometheus-cpp.tar.gz "https://github.com/jupp0r/prometheus-cpp/archive/$PROMETHEUS_CPP_VER.tar.gz" && \
+mkdir -p prometheus-cpp && \
+tar \
+  --extract \
+  --file prometheus-cpp.tar.gz \
+  --directory prometheus-cpp \
+  --strip-components 1 && \
+cd prometheus-cpp && \
+mkdir build && cd build && \
+cmake  -DCMAKE_BUILD_TYPE=Release -DENABLE_PULL=OFF -DUSE_THIRDPARTY_LIBRARIES=OFF -DENABLE_TESTING=OFF -DBUILD_SHARED_LIBS=ON -DOVERRIDE_CXX_STANDARD_FLAGS=OFF -DCMAKE_CXX_STANDARD=$CPP_STANDARD .. && \
+make -j "$(getconf _NPROCESSORS_ONLN)" && \
+sudo make install && \
+cd ../.. && \
+rm prometheus-cpp.tar.gz && \
+rm -rf prometheus-cpp
+
+RUN wget -O librdkafka.tar.gz "https://github.com/edenhill/librdkafka/archive/$LIBRDKAFKA_VER.tar.gz" && \
+mkdir -p librdkafka && \
+tar \
+  --extract \
+  --file librdkafka.tar.gz \
+  --directory librdkafka \
+  --strip-components 1 && \
+cd librdkafka && \
+#./configure --prefix=/usr/local && \
+./configure --disable-ssl --prefix=/usr/local && \
+make -j "$(getconf _NPROCESSORS_ONLN)" && \
+sudo make install && \
+cd ..
+
+RUN wget -O nlomann.tar.gz "https://github.com/nlohmann/json/archive/$NLOHMANN_JSON_VER.tar.gz" && \
+mkdir -p nlomann && \
+tar \
+  --extract \
+  --file nlomann.tar.gz \
+  --directory nlomann \
+  --strip-components 1 && \
+cd nlomann && \
+mkdir build && cd build && \
+cmake .. && \
+make -j "$(getconf _NPROCESSORS_ONLN)" && \
+sudo make install && \
+cd ../..
+
+
+RUN wget -O paho.mqtt.c.tar.gz "https://github.com/eclipse/paho.mqtt.c/archive/v$PAHO_MQTT_C_VER.tar.gz" && \
+mkdir -p paho.mqtt.c && \
+tar \
+  --extract \
+  --file paho.mqtt.c.tar.gz \
+  --directory paho.mqtt.c \
+  --strip-components 1 && \
+cd paho.mqtt.c && \
+mkdir build && cd build  && \
+cmake -DPAHO_WITH_SSL=ON -DPAHO_ENABLE_TESTING=OFF .. && \
+make -j "$(getconf _NPROCESSORS_ONLN)" && \
+sudo make install && \
+cd ../.. 
+
+RUN wget -O paho.mqtt.cpp.tar.gz "https://github.com/eclipse/paho.mqtt.cpp/archive/v$PAHO_MQTT_CPP_VER.tar.gz" && \
+mkdir -p paho.mqtt.cpp && \
+tar \
+  --extract \
+  --file paho.mqtt.cpp.tar.gz \
+  --directory paho.mqtt.cpp \
+  --strip-components 1 && \
+cd paho.mqtt.cpp && \
+mkdir build && cd build && \
+cmake -DPAHO_WITH_SSL=ON .. && \
+make -j "$(getconf _NPROCESSORS_ONLN)" && \
+sudo make install && \
+cd ../.. 
+
+

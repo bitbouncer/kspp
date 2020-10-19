@@ -2,27 +2,30 @@ set -ef
 
 export CPP_STANDARD="17"
 
-export AVRO_VER="release-1.9.2"
+export AVRO_VER="release-1.10.0"
 export AWS_SDK_VER="1.7.220"
+export ABSEIL_CPP_VER="20200225.3"
 export GRPC_VER="v1.32.0"
-export LIBRDKAFKA_VER="v1.4.0"
-export PROMETHEUS_CPP_VER="v0.9.0"
+
 export RAPIDJSON_VER="v1.1.0"
-export NLOHMANN_JSON_VER="3.7.1"
-export PROTOBUF_VER="3.7.0"
-export ROCKDB_VER="v6.11.4"
 
 #deps for arrow
 export DOUBLE_CONVERSION_VER="v3.1.5"
-export BROTLI_VER="v1.0.7"
+export BROTLI_VER="v1.0.9"
 export FLATBUFFERS_VER="v1.11.0"
 export THRIFT_VER="0.12.0"
-export ARROW_VER="apache-arrow-0.14.1"
+
+export ARROW_VER="apache-arrow-1.0.1"
 
 #for mqtt
+export NLOHMANN_JSON_VER="v3.9.1"
 export PAHO_MQTT_C_VER="1.3.1"
 export PAHO_MQTT_CPP_VER="1.0.1"
 
+
+export ROCKDB_VER="v6.11.4"
+export LIBRDKAFKA_VER="v1.5.0-RC1"
+export PROMETHEUS_CPP_VER="v0.9.0"
 
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 
@@ -30,34 +33,14 @@ rm -rf tmp
 mkdir tmp
 cd tmp
 
-
-wget -O boost.tar.gz "https://dl.bintray.com/boostorg/release/1.70.0/source/boost_1_70_0.tar.gz" && \
-mkdir -p boost && \
-tar \
-  --extract \
-  --file boost.tar.gz \
-  --directory boost \
-  --strip-components 1
-cd boost
-./bootstrap.sh
-./b2 cxxstd=17 --with-program_options --with-iostreams --with-filesystem --with-regex --with-system --with-date_time  -j "$(getconf _NPROCESSORS_ONLN)" stage
-sudo ./b2 cxxstd=17 --with-program_options --with-iostreams --with-filesystem --with-regex --with-system --with-date_time install
-cd ..
-rm boost.tar.gz
-rm -rf boost
-
 wget -O avro.tar.gz "https://github.com/apache/avro/archive/$AVRO_VER.tar.gz"
 mkdir -p avro
 tar \
   --extract \
   --file avro.tar.gz \
   --directory avro \
-  --strip-components 1
+  --strip-components 1 
 sed -i.bak1 's/-std=c++11/-std=c++17/g' avro/lang/c++/CMakeLists.txt
-sed -i.bak2 '/regex system)/a SET(Boost_LIBRARIES boost_program_options boost_iostreams boost_filesystem boost_regex boost_system z bz2)' avro/lang/c++/CMakeLists.txt
-#sed -i.bak3 '/find_package (Boost/d' avro/lang/c++/CMakeLists.txt
-#sed -i.bak4 '/regex system)/d' avro/lang/c++/CMakeLists.txt
-cat avro/lang/c++/CMakeLists.txt
 cd avro/lang/c++/ 
 mkdir build 
 cd build
@@ -65,44 +48,133 @@ cmake -DCMAKE_BUILD_TYPE=Release .. -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_STANDARD=
 make -j "$(getconf _NPROCESSORS_ONLN)"
 sudo make install
 cd ../../../..
-rm avro.tar.gz
-rm -rf arvo
 
-wget -O protobuf.tar.gz "https://github.com/protocolbuffers/protobuf/releases/download/v$PROTOBUF_VER/protobuf-cpp-$PROTOBUF_VER.tar.gz" && \
-mkdir -p protobuf && \
+
+wget -O abseil-cpp.tar.gz "https://github.com/abseil/abseil-cpp/archive/$ABSEIL_CPP_VER.tar.gz" && \
+mkdir -p abseil-cpp && \
 tar \
   --extract \
-  --file protobuf.tar.gz \
-  --directory protobuf \
+  --file abseil-cpp.tar.gz \
+  --directory abseil-cpp \
   --strip-components 1 && \
-cd protobuf && \
-./configure && \
+cd abseil-cpp && \
+mkdir build && \
+cd build && \
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=$CPP_STANDARD .. && \
 make -j "$(getconf _NPROCESSORS_ONLN)" && \
 sudo make install && \
-cd .. && \
-rm protobuf.tar.gz && \
-rm -rf protobuf
+cd ../.. && \
+rm abseil-cpp.tar.gz
 
-wget -O grpc.tar.gz "https://github.com/grpc/grpc/archive/$GRPC_VER.tar.gz" && \
-mkdir -p grpc && \
+git clone --recursiv --depth 1 --branch master-with-bazel https://github.com/google/boringssl.git && \
+cd boringssl && \
+mkdir build && cd build && \
+cmake -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_CXX_STANDARD=$CPP_STANDARD \
+  .. && \
+make -j "$(getconf _NPROCESSORS_ONLN)" && \
+sudo cp libcrypto.a /usr/local/lib/libboringssl-crypto.a && \
+sudo cp libssl.a /usr/local/lib/libboringssl-ssl.a && \
+cd ../..
+
+git clone --recursiv --depth 1 --branch $GRPC_VER https://github.com/grpc/grpc.git
+cd grpc
+mkdir build && cd build
+cmake -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_CXX_STANDARD=$CPP_STANDARD \
+  -DgRPC_ABSL_PROVIDER=module .. \
+make -j "$(getconf _NPROCESSORS_ONLN)" && \
+sudo make install && \
+cd ../..
+
+wget -O aws-sdk.tar.gz "https://github.com/aws/aws-sdk-cpp/archive/$AWS_SDK_VER.tar.gz" && \
+mkdir -p aws-sdk && \
 tar \
   --extract \
-  --file grpc.tar.gz \
-  --directory grpc \
+  --file aws-sdk.tar.gz \
+  --directory aws-sdk \
+  --strip-components 1
+cd aws-sdk
+
+mkdir build-shared
+cd build-shared
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DBUILD_ONLY="config;s3;transfer" -DENABLE_TESTING=OFF -DCPP_STANDARD=$CPP_STANDARD ..
+make -j "$(getconf _NPROCESSORS_ONLN)"
+sudo make install
+cd ..
+
+mkdir build-static
+cd build-static
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DBUILD_ONLY="config;s3;transfer" -DENABLE_TESTING=OFF -DCPP_STANDARD=$CPP_STANDARD ..
+make -j "$(getconf _NPROCESSORS_ONLN)"
+sudo make install
+cd ..
+
+cd ..
+
+
+
+
+wget -O double-conversion.tar.gz "https://github.com/google/double-conversion/archive/$DOUBLE_CONVERSION_VER.tar.gz" && \
+mkdir -p double-conversion && \
+tar \
+  --extract \
+  --file double-conversion.tar.gz \
+  --directory double-conversion \
+  --strip-components 1
+cd double-conversion
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_STANDARD=$CPP_STANDARD ..
+make -j "$(getconf _NPROCESSORS_ONLN)"
+sudo make install
+cd ../..
+
+wget -O brotli.tar.gz "https://github.com/google/brotli/archive/$BROTLI_VER.tar.gz" && \
+mkdir -p brotli && \
+tar \
+  --extract \
+  --file brotli.tar.gz \
+  --directory brotli \
+  --strip-components 1
+cd brotli
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_STANDARD=$CPP_STANDARD ..
+make -j "$(getconf _NPROCESSORS_ONLN)"
+sudo make install
+cd ../..
+
+
+wget -O flatbuffers.tar.gz "https://github.com/google/flatbuffers/archive/$FLATBUFFERS_VER.tar.gz" && \
+mkdir -p flatbuffers && \
+tar \
+  --extract \
+  --file flatbuffers.tar.gz \
+  --directory flatbuffers \
+  --strip-components 1
+cd flatbuffers
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DFLATBUFFERS_BUILD_TESTS=OFF -DCMAKE_CXX_STANDARD=$CPP_STANDARD ..
+make -j "$(getconf _NPROCESSORS_ONLN)"
+sudo make install
+cd ../..
+
+wget -O thrift.tar.gz "https://github.com/apache/thrift/archive/$THRIFT_VER.tar.gz" && \
+mkdir -p thrift && \
+tar \
+  --extract \
+  --file thrift.tar.gz \
+  --directory thrift \
   --strip-components 1 && \
-cd grpc && \
+cd thrift && \
 mkdir -p build && cd build && \
-cmake \
- -DgRPC_RE2_PROVIDER=package \
- -DgRPC_ABSL_PROVIDER=package \
- -DgRPC_SSL_PROVIDER=package \
- -DgRPC_ZLIB_PROVIDER=package \
-.. && \
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_STANDARD=$CPP_STANDARD -DBUILD_JAVA=OFF -DBUILD_PYTHON=OFF -DBUILD_TESTING=OFF -DBUILD_TUTORIALS=OFF .. && \
 make -j "$(getconf _NPROCESSORS_ONLN)" && \
 sudo make install && \
-cd ..\.. && \
-rm grpc.tar.gz && \
-rm -rf grpc
+cd ../..
+
 
 wget -O rapidjson.tar.gz "https://github.com/miloyip/rapidjson/archive/$RAPIDJSON_VER.tar.gz" && \
 mkdir -p rapidjson && \
@@ -117,9 +189,46 @@ cd build && \
 cmake -DRAPIDJSON_BUILD_EXAMPLES=OFF -DRAPIDJSON_BUILD_DOC=OFF -DRAPIDJSON_BUILD_TESTS=OFF -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_STANDARD=$CPP_STANDARD .. && \
 sudo make install && \
 sudo rm -rf /usr/local/share/doc/RapidJSON && \
-cd ../.. && \
-rm rapidjson.tar.gz && \
-rm -rf rapidjson
+cd ../..
+
+
+wget -O arrow.tar.gz "https://github.com/apache/arrow/archive/$ARROW_VER.tar.gz" && \
+mkdir -p arrow && \
+tar \
+  --extract \
+  --file arrow.tar.gz \
+  --directory arrow \
+  --strip-components 1
+cd arrow/cpp
+mkdir build
+cd build
+cmake \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DARROW_DEPENDENCY_SOURCE=SYSTEM \
+  -DCMAKE_CXX_STANDARD=$CPP_STANDARD \
+  -DARROW_BUILD_UTILITIES=ON \
+  -DARROW_CUDA=OFF \
+  -DARROW_GANDIVA=ON \
+  -DARROW_WITH_BZ2=ON \
+  -DARROW_WITH_ZLIB=ON \
+  -DARROW_WITH_ZSTD=ON \
+  -DARROW_WITH_LZ4=ON \
+  -DARROW_WITH_SNAPPY=ON \
+  -DARROW_WITH_BROTLI=ON \
+  -DARROW_COMPUTE=ON \
+  -DARROW_JEMALLOC=ON \
+  -DARROW_CSV=ON \
+  -DARROW_DATASET=ON \
+  -DARROW_FILESYSTEM=ON \
+  -DARROW_JSON=ON \
+  -DARROW_PARQUET=ON \
+  -DARROW_PLASMA=ON \
+  -DARROW_PYTHON=OFF \
+  -DARROW_S3=ON \
+  -DARROW_USE_GLOG=ON \
+  -DPARQUET_BUILD_EXECUTABLES=ON \
+  -DPARQUET_BUILD_EXAMPLES=ON \
+   ..
 
 wget -O rocksdb.tar.gz "https://github.com/facebook/rocksdb/archive/$ROCKDB_VER.tar.gz" && \
 mkdir -p rocksdb && \
@@ -133,8 +242,6 @@ export USE_RTTI=1
 make -j "$(getconf _NPROCESSORS_ONLN)" shared_lib
 sudo make install-shared
 cd ..
-rm rocksdb.tar.gz
-rm -rf rocksdb
 
 wget -O prometheus-cpp.tar.gz "https://github.com/jupp0r/prometheus-cpp/archive/$PROMETHEUS_CPP_VER.tar.gz" && \
 mkdir -p prometheus-cpp && \
@@ -152,21 +259,6 @@ cd ../..
 rm prometheus-cpp.tar.gz
 rm -rf prometheus-cpp
 
-wget -O aws-sdk.tar.gz "https://github.com/aws/aws-sdk-cpp/archive/$AWS_SDK_VER.tar.gz" && \
-mkdir -p aws-sdk && \
-tar \
-  --extract \
-  --file aws-sdk.tar.gz \
-  --directory aws-sdk \
-  --strip-components 1
-cd aws-sdk
-mkdir build
-cd build
-cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DBUILD_ONLY="s3;kinesis" -DENABLE_TESTING=OFF -DCPP_STANDARD=$CPP_STANDARD ..
-make -j "$(getconf _NPROCESSORS_ONLN)"
-sudo make install
-cd ../..
-
 wget -O librdkafka.tar.gz "https://github.com/edenhill/librdkafka/archive/$LIBRDKAFKA_VER.tar.gz" && \
 mkdir -p librdkafka && \
 tar \
@@ -175,94 +267,11 @@ tar \
   --directory librdkafka \
   --strip-components 1
 cd librdkafka
-./configure --prefix=/usr/local
+#./configure --prefix=/usr/local
+./configure --disable-ssl --prefix=/usr/local && \
 make -j "$(getconf _NPROCESSORS_ONLN)"
 sudo make install
 cd ..
-rm librdkafka.tar.gz
-rm -rf librdkafka
-
-wget -O double-conversion.tar.gz "https://github.com/google/double-conversion/archive/$DOUBLE_CONVERSION_VER.tar.gz" && \
-mkdir -p double-conversion && \
-tar \
-  --extract \
-  --file double-conversion.tar.gz \
-  --directory double-conversion \
-  --strip-components 1
-cd double-conversion
-mkdir build
-cd build
-cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_STANDARD=$CPP_STANDARD ..
-make -j "$(getconf _NPROCESSORS_ONLN)"
-sudo make install
-cd ../..
-rm double-conversion.tar.gz
-
-wget -O brotli.tar.gz "https://github.com/google/brotli/archive/$BROTLI_VER.tar.gz" && \
-mkdir -p brotli && \
-tar \
-  --extract \
-  --file brotli.tar.gz \
-  --directory brotli \
-  --strip-components 1
-cd brotli
-mkdir build
-cd build
-cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_STANDARD=$CPP_STANDARD ..
-make -j "$(getconf _NPROCESSORS_ONLN)"
-sudo make install
-cd ../..
-rm brotli.tar.gz
-
-
-wget -O flatbuffers.tar.gz "https://github.com/google/flatbuffers/archive/$FLATBUFFERS_VER.tar.gz" && \
-mkdir -p flatbuffers && \
-tar \
-  --extract \
-  --file flatbuffers.tar.gz \
-  --directory flatbuffers \
-  --strip-components 1
-cd flatbuffers
-mkdir build
-cd build
-cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DFLATBUFFERS_BUILD_TESTS=OFF -DCMAKE_CXX_STANDARD=$CPP_STANDARD ..
-make -j "$(getconf _NPROCESSORS_ONLN)"
-sudo make install
-cd ../..
-rm flatbuffers.tar.gz
-
-wget -O thrift.tar.gz "https://github.com/apache/thrift/archive/$THRIFT_VER.tar.gz" && \
-mkdir -p thrift && \
-tar \
-  --extract \
-  --file thrift.tar.gz \
-  --directory thrift \
-  --strip-components 1
-cd thrift
-./bootstrap.sh
-./configure CXXFLAGS='-g -O2' --with-boost=/usr/local --without-nodejs --without-python --without-lua --without-go --without-java --enable-tests=no --enable-static=no
-#thrift seems to have probles when doing parallell compliation
-make -j 1
-sudo make install
-cd ..
-rm thrift.tar.gz
-
-
-wget -O arrow.tar.gz "https://github.com/apache/arrow/archive/$ARROW_VER.tar.gz" && \
-mkdir -p arrow && \
-tar \
-  --extract \
-  --file arrow.tar.gz \
-  --directory arrow \
-  --strip-components 1
-cd arrow/cpp
-mkdir build
-cd build
-cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DARROW_PARQUET=ON -DARROW_DEPENDENCY_SOURCE=SYSTEM -DCMAKE_CXX_STANDARD=$CPP_STANDARD ..
-make -j "$(getconf _NPROCESSORS_ONLN)"
-sudo make install
-cd ../../..
-rm arrow.tar.gz
 
 
 wget -O nlomann.tar.gz "https://github.com/nlohmann/json/archive/v$NLOHMANN_JSON_VER.tar.gz" && \
@@ -277,9 +286,7 @@ mkdir build && cd build
 cmake ..
 make -j "$(getconf _NPROCESSORS_ONLN)" && \
 sudo make install && \
-cd ../.. && \
-rm nlomann.tar.gz && \
-rm -rf nlomann
+cd ../..
 
 
 wget -O paho.mqtt.c.tar.gz "https://github.com/eclipse/paho.mqtt.c/archive/v$PAHO_MQTT_C_VER.tar.gz" && \
@@ -295,8 +302,6 @@ cmake -DPAHO_WITH_SSL=ON -DPAHO_ENABLE_TESTING=OFF ..
 make -j "$(getconf _NPROCESSORS_ONLN)"
 sudo make install
 cd ../.. 
-rm paho.mqtt.c.tar.gz
-rm -rf paho.mqtt.c
 
 wget -O paho.mqtt.cpp.tar.gz "https://github.com/eclipse/paho.mqtt.cpp/archive/v$PAHO_MQTT_CPP_VER.tar.gz" && \
 mkdir -p paho.mqtt.cpp
@@ -311,10 +316,6 @@ cmake -DPAHO_WITH_SSL=ON ..
 make -j "$(getconf _NPROCESSORS_ONLN)"
 sudo make install
 cd ../.. 
-rm paho.mqtt.cpp.tar.gz
-rm -rf paho.mqtt.cpp
-
-
 
 #out of tmp
 cd ..

@@ -144,10 +144,10 @@ namespace kspp {
   protected:
     void init_metrics();
     void init_processing_graph();
-    bool _is_started;
     std::shared_ptr<cluster_config> _cluster_config;
+    bool _is_started;
     std::string _topology_id;
-    std::experimental::filesystem::path _root_path;
+    //std::experimental::filesystem::path _root_path;
     std::vector<std::shared_ptr<partition_processor>> _partition_processors;
     std::vector<std::shared_ptr<processor>> _sinks;
     std::vector<std::shared_ptr<partition_processor>> _top_partition_processors;
@@ -156,7 +156,7 @@ namespace kspp {
     size_t _max_pending_sink_messages;
     std::set<std::string> _precondition_topics;
     std::string _precondition_consumer_group;
-    bool _allow_commit_chain_gc=true;
+    bool _allow_commit_chain_gc;
 
     std::map<std::string, std::string> _labels;
     std::shared_ptr<prometheus::Registry> _prom_registry;

@@ -148,7 +148,7 @@ namespace kspp {
         typename std::map<K, std::shared_ptr<bucket>>::iterator item = _buckets.find(record->key());
         if (item == _buckets.end()) {
           auto b = std::make_shared<bucket>(_config.capacity);
-          for (size_t i = 0; i != *record->value(); ++i)
+          for (V i = 0; i != *record->value(); ++i)
             b->consume_one(&_config, record->event_time());
           _buckets[record->key()] = b;
           return;

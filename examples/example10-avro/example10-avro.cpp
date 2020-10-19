@@ -22,7 +22,7 @@ int main(int argc, char **argv) {
   FLAGS_logtostderr = 1;
   google::InitGoogleLogging(argv[0]);
 
-  size_t join_count = 0;
+  //size_t join_count = 0;
 
   std::string consumer_group("kspp-examples");
   auto config = std::make_shared<kspp::cluster_config>(consumer_group);

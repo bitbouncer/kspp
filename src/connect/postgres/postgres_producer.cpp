@@ -15,27 +15,26 @@ namespace kspp {
                                        std::string client_encoding,
                                        size_t max_items_in_insert,
                                        bool skip_delete)
-      : _good(true)
-      , _closed(false)
-      , _start_running(false)
-      , _connected(false)
-      , _exit(false)
-      , _bg([this] { _thread(); })
-      , _connection(std::make_unique<kspp_postgres::connection>())
-      , _table(table)
-      , cp_(cp)
-      , _id_columns(id_columns)
-      , _client_encoding(client_encoding)
-      , _max_items_in_insert(max_items_in_insert)
-      , _table_checked(false)
-      , _table_exists(false)
-      , _skip_delete2(skip_delete)
-      , _current_error_streak(0)
-      , _request_time("pg_request_time", "ms", { 0.9, 0.99 })
-      , _connection_errors("connection_errors", "msg")
-      , _insert_errors("insert_errors", "msg")
-      , _msg_cnt("inserted", "msg")
-      , _msg_bytes("bytes_sent", "bytes"){
+    : _exit(false)
+    , _start_running(false)
+    , _closed(false)
+    , _connected(false)
+    , _bg([this] { _thread(); })
+    , _connection(std::make_unique<kspp_postgres::connection>())
+    , _table(table)
+    , cp_(cp)
+    , _id_columns(id_columns)
+    , _client_encoding(client_encoding)
+    , _max_items_in_insert(max_items_in_insert)
+    , _table_checked(false)
+    , _table_exists(false)
+    , _skip_delete2(skip_delete)
+    , _current_error_streak(0)
+    , _connection_errors("connection_errors", "msg")
+    , _insert_errors("insert_errors", "msg")
+    , _msg_cnt("inserted", "msg")
+    , _msg_bytes("bytes_sent", "bytes")
+    , _request_time("pg_request_time", "ms", { 0.9, 0.99 }){
     initialize();
   }
 
@@ -232,8 +231,8 @@ namespace kspp {
           auto res = unique_keys_in_batch.insert(key_string);
           if (res.second == false) {
             DLOG(INFO)
-                << "breaking up upsert due to 'ON CONFLICT DO UPDATE command cannot affect row a second time...' batch size: "
-                << msg_in_batch;
+              << "breaking up upsert due to 'ON CONFLICT DO UPDATE command cannot affect row a second time...' batch size: "
+              << msg_in_batch;
             break;
           }
 

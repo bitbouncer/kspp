@@ -7,26 +7,23 @@ namespace kspp {
                            const kspp::connect::connection_params& cp,
                            int32_t http_batch_size,
                            std::chrono::milliseconds http_timeout)
-      : kspp::topic_sink<void, std::string>()
-        , _good(true)
-        , _closed(false)
-        , _start_running(false)
-        , _exit(false)
-        , batch_in_progress_(false)
-        , _work(std::make_unique<boost::asio::io_service::work>(_ios))
-        , _asio_thread([this] { _ios.run(); })
-        , _bg([this] { _thread(); })
-        , _cp(cp)
-        , _http_handler(_ios, http_batch_size)
-        , _batch_size(http_batch_size)
-        , _next_time_to_send(kspp::milliseconds_since_epoch() + 100)
-        , _next_time_to_poll(0)
-        , _http_timeout(http_timeout)
-        , _http_bytes("http_bytes", "bytes")
-        , _http_requests("http_request", "msg")
-        , _http_timeouts("http_timeout", "msg")
-        , _http_error("http_error", "msg")
-        , _http_ok("http_ok", "msg") {
+    : kspp::topic_sink<void, std::string>()
+    , _exit(false)
+    , _start_running(false)
+    , _closed(false)
+    , batch_in_progress_(false)
+    , _work(std::make_unique<boost::asio::io_service::work>(_ios))
+    , _asio_thread([this] { _ios.run(); })
+    , _bg([this] { _thread(); })
+    , _cp(cp)
+    , _http_handler(_ios, http_batch_size)
+    , _batch_size(http_batch_size)
+    , _http_timeout(http_timeout)
+    , _http_requests("http_request", "msg")
+    , _http_timeouts("http_timeout", "msg")
+    , _http_error("http_error", "msg")
+    , _http_ok("http_ok", "msg")
+    , _http_bytes("http_bytes", "bytes") {
     this->add_metric(&_lag);
     this->add_metric(&_http_bytes);
     this->add_metric(&_http_requests);
@@ -34,11 +31,9 @@ namespace kspp {
     this->add_metric(&_http_error);
     this->add_metric(&_http_ok);
     this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "influx_sink");
-
     curl_global_init(CURL_GLOBAL_NOTHING); /* minimal */
     _http_handler.set_user_agent(
-        "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36");
-
+      "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36");
     _start_running = true;
   }
 
@@ -94,7 +89,7 @@ namespace kspp {
       }
 
       batch_in_progress_ = true;
-      size_t items_to_copy = std::min<size_t>(this->_queue.size(), _batch_size);
+      //size_t items_to_copy = std::min<size_t>(this->_queue.size(), _batch_size);
       std::string url = _cp.url + "/write?db=" + _cp.database_name;
       std::shared_ptr<kspp::http::request> request(new kspp::http::request(kspp::http::POST, url, {}, _http_timeout));
 
@@ -117,7 +112,7 @@ namespace kspp {
       //DLOG(INFO) << request->uri();
       //DLOG(INFO) << request->tx_content();
 
-      auto ts0 = kspp::milliseconds_since_epoch();
+      //auto ts0 = kspp::milliseconds_since_epoch();
       // retry sent till we have to exit
       while(!_exit) {
         auto res = _http_handler.perform(request);
@@ -138,7 +133,7 @@ namespace kspp {
         LOG(INFO) << "wrote " << bytes_in_batch << " bytes , in_batch:" << in_batch.size();
 
         // OK...
-        auto ts1 = kspp::milliseconds_since_epoch();
+        //auto ts1 = kspp::milliseconds_since_epoch();
         while (!in_batch.empty())
           _pending_for_delete.push_back(in_batch.pop_front_and_get());
         //_msg_cnt += msg_in_batch;

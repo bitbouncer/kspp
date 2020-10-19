@@ -74,15 +74,15 @@ namespace kspp {
       }
 
     private:
-      kspp::async::scheduling_t _read_policy;
       kspp::http::client _http;
+      kspp::async::scheduling_t _read_policy;
       std::chrono::milliseconds _http_timeout;
       std::vector<kspp::url> _base_urls;
       const std::string _ca_cert_path;
       const std::string _client_cert_path;
       const std::string _private_key_path;
       const std::string _private_key_passphrase;
-      bool _verify_host = { false };
+      bool _verify_host;
       std::map<int32_t, std::shared_ptr<const avro::ValidSchema>> _registry;
     };
 } // kspp

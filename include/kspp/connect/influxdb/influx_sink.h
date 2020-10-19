@@ -25,7 +25,6 @@ namespace kspp {
 
     bool _exit;
     bool _start_running;
-    bool _good;
     bool _closed;
     std::atomic<bool> batch_in_progress_;
 
@@ -37,8 +36,6 @@ namespace kspp {
     const kspp::connect::connection_params _cp;
     kspp::http::client _http_handler;
     size_t _batch_size;
-    int64_t _next_time_to_send;
-    int64_t _next_time_to_poll;
     std::chrono::milliseconds _http_timeout;
     kspp::metric_streaming_lag _lag;
     kspp::metric_counter _http_requests;

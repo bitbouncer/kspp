@@ -22,16 +22,16 @@ namespace kspp {
   }
 
   cluster_config::cluster_config(std::string consumer_group, uint64_t flags)
-      : consumer_group_(consumer_group_or_random(consumer_group))
-        , min_topology_buffering_(std::chrono::milliseconds(1000))
-        , producer_buffering_(std::chrono::milliseconds(1000))
-        , producer_message_timeout_(std::chrono::milliseconds(0))
-        , consumer_buffering_(std::chrono::milliseconds(1000))
-        , schema_registry_timeout_(std::chrono::milliseconds(10000))
-        , cluster_state_timeout_(std::chrono::seconds(60))
-        , max_pending_sink_messages_(50000)
-        , fail_fast_(true)
-        , flags_(flags){
+    : flags_(flags)
+    , consumer_group_(consumer_group_or_random(consumer_group))
+    , min_topology_buffering_(std::chrono::milliseconds(1000))
+    , producer_buffering_(std::chrono::milliseconds(1000))
+    , producer_message_timeout_(std::chrono::milliseconds(0))
+    , consumer_buffering_(std::chrono::milliseconds(1000))
+    , schema_registry_timeout_(std::chrono::milliseconds(10000))
+    , cluster_state_timeout_(std::chrono::seconds(60))
+    , max_pending_sink_messages_(50000)
+    , fail_fast_(true) {
   }
 
   void cluster_config::load_config_from_env() {
@@ -73,7 +73,7 @@ namespace kspp {
 
   void cluster_config::set_storage_root(std::string root_path) {
     if (!std::experimental::filesystem::exists(root_path)) {
-      auto res = std::experimental::filesystem::create_directories(root_path);
+      std::experimental::filesystem::create_directories(root_path);
       // seems to be a bug in boost - always return false...
       if (!std::experimental::filesystem::exists(root_path))
         LOG(FATAL) << "cluster_config, failed to create storage path at : " << root_path;
@@ -246,7 +246,7 @@ namespace kspp {
       for (auto url : v) {
         if (url.scheme() == "ssl")
           LOG_IF(FATAL, ca_cert_path_.size() == 0)
-          << "cluster_config, schema registry using https and no ca cert configured";
+              << "cluster_config, schema registry using https and no ca cert configured";
       }
     }
 
@@ -286,9 +286,9 @@ namespace kspp {
 
     if (has_feature(SCHEMA_REGISTRY)) {
       LOG_IF(INFO, get_schema_registry_uri().size() > 0)
-      << "cluster_config, schema_registry: " << get_schema_registry_uri();
+          << "cluster_config, schema_registry: " << get_schema_registry_uri();
       LOG_IF(INFO, get_schema_registry_uri().size() > 0)
-      << "cluster_config, schema_registry_timeout: " << get_schema_registry_timeout().count() << " ms";
+          << "cluster_config, schema_registry_timeout: " << get_schema_registry_timeout().count() << " ms";
     }
     LOG(INFO) << "kafka cluster_state_timeout: " << get_cluster_state_timeout().count() << " s";
   }

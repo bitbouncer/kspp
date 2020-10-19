@@ -824,7 +824,7 @@ static const string IN("input");
 static const string INCLUDE_PREFIX("include-prefix");
 static const string NO_UNION_TYPEDEF("no-union-typedef");
 
-static string readGuard(const string &filename) {
+/*static string readGuard(const string &filename) {
   std::ifstream ifs(filename.c_str());
   string buf;
   string candidate;
@@ -844,6 +844,7 @@ static string readGuard(const string &filename) {
   }
   return candidate;
 }
+*/
 
 int main(int argc, char **argv) {
   po::options_description desc("Allowed options");
