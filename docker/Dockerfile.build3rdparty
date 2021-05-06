@@ -33,9 +33,9 @@ RUN  apt-get install -y libeigen3-dev
 RUN apt-get install -y libpq-dev freetds-dev 
 
 ENV CPP_STANDARD="17"
-ENV AVRO_VER="release-1.10.0"
+ENV AVRO_VER="release-1.10.1"
 ENV ABSEIL_CPP_VER="20200225.3"
-ENV AWS_SDK_VER="1.7.220"
+ENV AWS_SDK_VER="1.8.134"
 ENV GRPC_VER="v1.32.0"
 
 #deps for arrow
@@ -45,16 +45,15 @@ ENV FLATBUFFERS_VER="v1.11.0"
 ENV THRIFT_VER="0.12.0"
 ENV RAPIDJSON_VER="v1.1.0"
 
-ENV ARROW_VER="apache-arrow-1.0.1"
+ENV ARROW_VER="apache-arrow-3.0.0"
 #
 #for mqtt
 ENV NLOHMANN_JSON_VER="v3.9.1"
 ENV PAHO_MQTT_C_VER="1.3.1"
 ENV PAHO_MQTT_CPP_VER="1.0.1"
 ENV ROCKDB_VER="v6.11.4"
-ENV LIBRDKAFKA_VER="v1.5.0-RC1"
+ENV LIBRDKAFKA_VER="v1.7.0-RC4"
 ENV PROMETHEUS_CPP_VER="v0.9.0"
-
 
 RUN mkdir tmp && cd tmp
 
@@ -106,14 +105,13 @@ rm abseil-cpp.tar.gz
 
 
 RUN git clone --recursiv --depth 1 --branch $GRPC_VER https://github.com/grpc/grpc.git && \
-cd grpc  && \
-mkdir -p build && cd build  && \
-cmake ..  && \
+cd grpc && \
+rm -r third_party/boringssl-with-bazel && \
+mkdir build && cd build && \
+cmake -DgRPC_SSL_PROVIDER=package .. && \
 make -j "$(getconf _NPROCESSORS_ONLN)" && \
 sudo make install && \
-cd ../.. && \
-rm -r grpc
-
+cd ../..
 
 RUN wget -O aws-sdk.tar.gz "https://github.com/aws/aws-sdk-cpp/archive/$AWS_SDK_VER.tar.gz" && \
 mkdir -p aws-sdk && \
@@ -125,16 +123,18 @@ tar \
 cd aws-sdk && \
 mkdir build-shared && \
 cd build-shared && \
-cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DBUILD_ONLY="config;s3;transfer" -DENABLE_TESTING=OFF -DCPP_STANDARD=$CPP_STANDARD .. && \
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DBUILD_ONLY="config;s3;transfer;sts;cognito-identity;identity-management" -DENABLE_TESTING=OFF -DCPP_STANDARD=$CPP_STANDARD .. && \
 make -j "$(getconf _NPROCESSORS_ONLN)"  && \
 sudo make install && \
 cd .. && \
 mkdir build-static && \
 cd build-static && \
-cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DBUILD_ONLY="config;s3;transfer" -DENABLE_TESTING=OFF -DCPP_STANDARD=$CPP_STANDARD .. && \
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DBUILD_ONLY="config;s3;transfer;sts;cognito-identity;identity-management" -DENABLE_TESTING=OFF -DCPP_STANDARD=$CPP_STANDARD .. && \
 make -j "$(getconf _NPROCESSORS_ONLN)"  && \
 sudo make install && \
-cd ../..
+cd ../.. && \
+rm -rf aws-sdk.tar.gz && \
+rm -rf aws-sdk
 
 RUN wget -O double-conversion.tar.gz "https://github.com/google/double-conversion/archive/$DOUBLE_CONVERSION_VER.tar.gz" && \
 mkdir -p double-conversion && \

@@ -2,30 +2,33 @@ set -ef
 
 export CPP_STANDARD="17"
 
-export AVRO_VER="release-1.10.0"
-export AWS_SDK_VER="1.7.220"
+export AVRO_VER="release-1.10.1"
 export ABSEIL_CPP_VER="20200225.3"
+export AWS_SDK_VER="1.8.134"
 export GRPC_VER="v1.32.0"
-
-export RAPIDJSON_VER="v1.1.0"
 
 #deps for arrow
 export DOUBLE_CONVERSION_VER="v3.1.5"
 export BROTLI_VER="v1.0.9"
 export FLATBUFFERS_VER="v1.11.0"
 export THRIFT_VER="0.12.0"
+export RAPIDJSON_VER="v1.1.0"
 
-export ARROW_VER="apache-arrow-1.0.1"
-
-#for mqtt
-export NLOHMANN_JSON_VER="v3.9.1"
-export PAHO_MQTT_C_VER="1.3.1"
-export PAHO_MQTT_CPP_VER="1.0.1"
+export ARROW_VER="apache-arrow-3.0.0"
+export NLOHMANN_JSON_VER="3.9.1"
 
 
 export ROCKDB_VER="v6.11.4"
-export LIBRDKAFKA_VER="v1.5.0-RC1"
+export LIBRDKAFKA_VER="v1.7.0-RC4"
 export PROMETHEUS_CPP_VER="v0.9.0"
+export HOWARD_HINNANT_VER="v3.0.0"
+export CATCH2_VER="v2.13.2"
+export RESTINIO_VER="v.0.6.10"
+
+#for mqtt
+export PAHO_MQTT_C_VER="1.3.1"
+export PAHO_MQTT_CPP_VER="1.0.1"
+
 
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 
@@ -66,23 +69,11 @@ sudo make install && \
 cd ../.. && \
 rm abseil-cpp.tar.gz
 
-git clone --recursiv --depth 1 --branch master-with-bazel https://github.com/google/boringssl.git && \
-cd boringssl && \
+git clone --recursiv --depth 1 --branch $GRPC_VER https://github.com/grpc/grpc.git && \
+cd grpc && \
+rm -r third_party/boringssl-with-bazel && \
 mkdir build && cd build && \
-cmake -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_CXX_STANDARD=$CPP_STANDARD \
-  .. && \
-make -j "$(getconf _NPROCESSORS_ONLN)" && \
-sudo cp libcrypto.a /usr/local/lib/libboringssl-crypto.a && \
-sudo cp libssl.a /usr/local/lib/libboringssl-ssl.a && \
-cd ../..
-
-git clone --recursiv --depth 1 --branch $GRPC_VER https://github.com/grpc/grpc.git
-cd grpc
-mkdir build && cd build
-cmake -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_CXX_STANDARD=$CPP_STANDARD \
-  -DgRPC_ABSL_PROVIDER=module .. \
+cmake -DgRPC_SSL_PROVIDER=package .. && \
 make -j "$(getconf _NPROCESSORS_ONLN)" && \
 sudo make install && \
 cd ../..
@@ -96,12 +87,12 @@ tar \
   --strip-components 1
 cd aws-sdk
 
-mkdir build-shared
-cd build-shared
-cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DBUILD_ONLY="config;s3;transfer" -DENABLE_TESTING=OFF -DCPP_STANDARD=$CPP_STANDARD ..
-make -j "$(getconf _NPROCESSORS_ONLN)"
-sudo make install
-cd ..
+#mkdir build-shared
+#cd build-shared
+#cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DBUILD_ONLY="config;s3;transfer" -DENABLE_TESTING=OFF -DCPP_STANDARD=$CPP_STANDARD ..
+#make -j "$(getconf _NPROCESSORS_ONLN)"
+#sudo make install
+#cd ..
 
 mkdir build-static
 cd build-static

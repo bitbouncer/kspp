@@ -28,7 +28,7 @@ namespace kspp {
     void close();
 
     inline bool eof() const {
-      return (_incomming_msg.size() == 0) && eof_;
+      return (incomming_msg_.size() == 0) && eof_;
     }
 
     inline std::string logical_name() const {
@@ -44,11 +44,11 @@ namespace kspp {
     void subscribe();
 
     inline event_queue<kspp::generic_avro, kspp::generic_avro>& queue(){
-      return _incomming_msg;
+      return incomming_msg_;
     };
 
     inline const event_queue<kspp::generic_avro, kspp::generic_avro>& queue() const {
-      return _incomming_msg;
+      return incomming_msg_;
     };
 
     void commit(bool flush) {
@@ -90,9 +90,9 @@ namespace kspp {
 
     int32_t key_schema_id_;
     int32_t value_schema_id_;
-    event_queue<kspp::generic_avro, kspp::generic_avro> _incomming_msg;
+    event_queue<kspp::generic_avro, kspp::generic_avro> incomming_msg_;
     // move
-    uint64_t _msg_cnt; // TODO move to metrics
+    uint64_t msg_cnt_; // TODO move to metrics
   };
 }
 

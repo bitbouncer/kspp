@@ -8,13 +8,13 @@ option(ENABLE_ROCKSDB "enable rocksdb support" ON)
 option(ENABLE_ZK "enable zk support" OFF)
 option(ENABLE_POSTGRES "enable postgres support" ON)
 option(ENABLE_INFLUXDB "enable influxdb support" ON)
-option(ENABLE_TDS "enable tds support" OFF)
-option(ENABLE_ELASTICSEARCH "enable elastic search support" OFF)
+option(ENABLE_TDS "enable tds support" ON)
+option(ENABLE_ELASTICSEARCH "enable elastic search support" ON)
 
 option(ENABLE_S3 "enable S3 support" ON)
 option(ENABLE_KINESIS "enable KINESIS support" OFF)
 option(ENABLE_MQTT "enable MQTT support" OFF)
-option(ENABLE_GRPC "enable grpc support" ON)
+option(ENABLE_GRPC "enable grpc support" OFF)
 #option(ENABLE_BITBOUNCER_STREAMING "enable bitbouncer streaming support" OFF)
 
 option(BUILD_TOOLS "build tools" ON)
@@ -107,7 +107,7 @@ if (ENABLE_ZK)
 endif () #ZK
 
 
-SET(LIBRDKAFKA_LIBS rdkafka++ rdkafka)
+SET(LIBRDKAFKA_LIBS rdkafka++ rdkafka crypto ssl lz4 zstd z)
 SET(PROMETHEUS_CPP_LIBS prometheus-cpp-core prometheus-cpp-push)
 
 SET(LIBRARY_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/lib)
@@ -297,9 +297,13 @@ if (BUILD_SHARED_LIBS)
             )
 endif ()
 
-SET(BB_GRPC_LIBS gRPC::grpc++_reflection gRPC::grpc++ gRPC::grpc protobuf::libprotobuf gpr upb address_sorting re2 boringssl-ssl boringssl-crypto)
+if (ENABLE_GRPC)
+ SET(BB_GRPC_LIBS gRPC::grpc++_reflection gRPC::grpc++ gRPC::grpc protobuf::libprotobuf gpr upb address_sorting re2 crypto ssl)
+endif()
+
 SET(ABSEIL_LIBS absl::time absl::status absl::synchronization absl::strings absl::str_format absl::memory absl::base)
-SET(EXT_LIBS ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${PROMETHEUS_CPP_LIBS} ${BOOST_LIBS} ${PostgreSQL_LIBRARIES} ${AWS_S3_LIBS} ${MQTT_LIBS} ${AWS_KINESIS_LIBS} ${TDS_LIBS} ${BB_GRPC_LIBS} ${ABSEIL_LIBS} gflags glog stdc++fs pthread)
+
+SET(EXT_LIBS ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${PROMETHEUS_CPP_LIBS} ${BOOST_LIBS} ${PostgreSQL_LIBRARIES} ${AWS_S3_LIBS} ${MQTT_LIBS} ${AWS_KINESIS_LIBS} ${TDS_LIBS} ${BB_GRPC_LIBS} ${ABSEIL_LIBS} gflags glog stdc++fs curl z zstd pthread)
 #crypto ssl
 
 

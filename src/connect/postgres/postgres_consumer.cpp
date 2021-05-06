@@ -34,7 +34,7 @@ namespace kspp {
     , schema_registry_(schema_registry)
     , key_schema_id_(-1)
     , value_schema_id_(-1)
-    , _msg_cnt(0) {
+    , msg_cnt_(0) {
     offset_storage_ = get_offset_provider(tp.offset_storage);
   }
 
@@ -58,7 +58,7 @@ namespace kspp {
 
     if (connection_) {
       connection_->close();
-      LOG(INFO) << "postgres_consumer table:" << logical_name_ << ":" << partition_ << ", closed - consumed " << _msg_cnt << " messages";
+      LOG(INFO) << "postgres_consumer table:" << logical_name_ << ":" << partition_ << ", closed - consumed " << msg_cnt_ << " messages";
     }
   }
 
@@ -204,13 +204,13 @@ namespace kspp {
       //assert(e.get()!=nullptr);
 
       //should we wait a bit if we fill incomming queue to much??
-      while(_incomming_msg.size()>10000 && !exit_) {
+      while(incomming_msg_.size()>10000 && !exit_) {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        DLOG(INFO) << "c_incomming_msg.size() " << _incomming_msg.size();
+        DLOG(INFO) << "c_incomming_msg.size() " << incomming_msg_.size();
       }
 
-      _incomming_msg.push_back(e);
-      ++_msg_cnt;
+      incomming_msg_.push_back(e);
+      ++msg_cnt_;
     }
     return 0;
   }
@@ -247,7 +247,7 @@ namespace kspp {
 
       DLOG(INFO) << "exec(" + statement + ")";
       auto ts0 = kspp::milliseconds_since_epoch();
-      auto last_msg_count = _msg_cnt;
+      auto last_msg_count = msg_cnt_;
       auto res = connection_->exec(statement);
       if (res.first) {
         LOG(ERROR) << "exec failed - disconnecting and retrying e: " << connection_->last_error();
@@ -271,19 +271,19 @@ namespace kspp {
       }
       auto ts1 = kspp::milliseconds_since_epoch();
 
-      if ((_msg_cnt - last_msg_count) != tp_.max_items_in_fetch)
+      if ((msg_cnt_ - last_msg_count) != tp_.max_items_in_fetch)
         eof_ = true;
 
       read_cursor_.set_eof(eof_);
 
-      size_t messages_in_batch = _msg_cnt - last_msg_count;
+      size_t messages_in_batch = msg_cnt_ - last_msg_count;
 
       if (messages_in_batch==0) {
-        LOG_EVERY_N(INFO, 100) << "empty poll done, table: " << logical_name_ << " total: " << _msg_cnt << ", last ts: "
+        LOG_EVERY_N(INFO, 100) << "empty poll done, table: " << logical_name_ << " total: " << msg_cnt_ << ", last ts: "
                                << read_cursor_.last_ts() << " duration " << ts1 - ts0 << " ms";
       }  else {
         LOG(INFO) << "poll done, table: " << logical_name_ << " retrieved: " << messages_in_batch << " messages, total: "
-                  << _msg_cnt << ", last ts: " << read_cursor_.last_ts() << " duration " << ts1 - ts0 << " ms";
+                  << msg_cnt_ << ", last ts: " << read_cursor_.last_ts() << " duration " << ts1 - ts0 << " ms";
       }
 
       commit(false);
