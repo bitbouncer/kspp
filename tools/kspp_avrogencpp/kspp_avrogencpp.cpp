@@ -379,9 +379,10 @@ string CodeGen::generateRecordType(const NodePtr &n) {
     os_ << "\n";
   }
   os_ << "        { }\n";
-  os_ << "};\n\n";
 
   maybe_generateExt(n, decoratedName);
+
+  os_ << "};\n\n";
 
   return decoratedName;
 }
