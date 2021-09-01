@@ -23,6 +23,7 @@ namespace kspp {
     }
 
     void start(int64_t offset) override {
+      _thread = std::thread(&kafka_source_base::thread_f, this);
       _impl.start(offset);
       _started = true;
     }
@@ -92,7 +93,6 @@ namespace kspp {
         : partition_source<K, V>(nullptr, partition)
         , _started(false)
         , _exit(false)
-        , _thread(&kafka_source_base::thread_f, this)
         , _impl(config, topic, partition, consumer_group)
         , _key_codec(key_codec)
         , _val_codec(val_codec)
