@@ -218,7 +218,6 @@ namespace kspp {
     
     ~kafka_source() override
     {
-        this->close();
         while (!this->_thread_f_finished)
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
@@ -307,7 +306,6 @@ namespace kspp {
 
     ~kafka_source() override
     {
-        this->close();
         while (!this->_thread_f_finished)
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
@@ -372,7 +370,6 @@ namespace kspp {
 
     ~kafka_source() override
     {
-        this->close();
         while (!this->_thread_f_finished)
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
