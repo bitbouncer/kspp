@@ -143,7 +143,7 @@ namespace kspp {
 
       while(!_exit) {
         //auto tick = kspp::milliseconds_since_epoch();
-        while ((auto p = _impl.consume()) && !_exit) {
+        while (auto p = _impl.consume()) {
           auto decoded_msg = parse(p);
           if (decoded_msg) {
             _incomming_msg.push_back(decoded_msg);
@@ -218,8 +218,8 @@ namespace kspp {
     
     ~kafka_source() override
     {
-        kafka_source_base<K, V, KEY_CODEC, VAL_CODEC>::close();
-        while (!kafka_source_base<K, V, KEY_CODEC, VAL_CODEC>::_thread_f_finished)
+        this->close();
+        while (!this->_thread_f_finished)
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
@@ -305,6 +305,13 @@ namespace kspp {
         val_codec) {
     }
 
+    ~kafka_source() override
+    {
+        this->close();
+        while (!this->_thread_f_finished)
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+
   protected:
     std::shared_ptr<kevent<void, V>> parse(const std::unique_ptr<RdKafka::Message> &ref) override {
       if (!ref)
@@ -361,6 +368,13 @@ namespace kspp {
         start_point,
         key_codec,
         nullptr) {
+    }
+
+    ~kafka_source() override
+    {
+        this->close();
+        while (!this->_thread_f_finished)
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
   protected:
