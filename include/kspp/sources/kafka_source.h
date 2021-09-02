@@ -93,6 +93,7 @@ namespace kspp {
         : partition_source<K, V>(nullptr, partition)
         , _started(false)
         , _exit(false)
+        , _thread_f_finished(false)
         , _impl(config, topic, partition, consumer_group)
         , _key_codec(key_codec)
         , _val_codec(val_codec)
@@ -163,12 +164,14 @@ namespace kspp {
         _commit_chain_size.set(_commit_chain.size());
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
       }
+      _thread_f_finished = true;
       DLOG(INFO) << "exiting thread";
     }
 
     size_t _max_incomming_queue_size=1000;
     bool _started;
     bool _exit;
+    bool _thread_f_finished;
     std::thread _thread;
     event_queue<K, V> _incomming_msg;
     kafka_consumer _impl;
@@ -211,6 +214,13 @@ namespace kspp {
         start_point,
         key_codec,
         val_codec) {
+    }
+    
+    ~kafka_source() override
+    {
+        kafka_source_base<K, V, KEY_CODEC, VAL_CODEC>::close();
+        while (!kafka_source_base<K, V, KEY_CODEC, VAL_CODEC>::_thread_f_finished)
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
   protected:
