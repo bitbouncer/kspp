@@ -143,7 +143,7 @@ namespace kspp {
 
       while(!_exit) {
         //auto tick = kspp::milliseconds_since_epoch();
-        while (auto p = _impl.consume() && !_exit) {
+        while ((auto p = _impl.consume()) && !_exit) {
           auto decoded_msg = parse(p);
           if (decoded_msg) {
             _incomming_msg.push_back(decoded_msg);
