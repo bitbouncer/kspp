@@ -245,7 +245,8 @@ namespace kspp {
       auto r = schema->root();
       assert(r->type() == avro::AVRO_RECORD);
       if (r->hasName()) {
-        std::string name = r->name();
+        auto n = r->name();
+        std::string name = n.fullname();
 
         //since we use convention tablename.key / table_name.value (until we know what bottledwater does...)
         // return namesapace as table name
@@ -254,7 +255,7 @@ namespace kspp {
           std::string ns = name.substr(0, found);
           return ns;
         }
-        return r->name();
+        return n.fullname();
       }
       assert(false);
       return "unknown_table_name";
