@@ -2,10 +2,10 @@ set -ef
 
 export CPP_STANDARD="17"
 
-export AVRO_VER="release-1.10.1"
-export ABSEIL_CPP_VER="20200225.3"
-export AWS_SDK_VER="1.8.134"
-export GRPC_VER="v1.32.0"
+export AVRO_VER="release-1.11.1"
+#export ABSEIL_CPP_VER="20200225.3"
+export AWS_SDK_VER="1.9.242"
+export GRPC_VER="v1.42.0"
 
 #deps for arrow
 export DOUBLE_CONVERSION_VER="v3.1.5"
@@ -14,16 +14,21 @@ export FLATBUFFERS_VER="v1.11.0"
 export THRIFT_VER="0.12.0"
 export RAPIDJSON_VER="v1.1.0"
 
-export ARROW_VER="apache-arrow-3.0.0"
-export NLOHMANN_JSON_VER="3.9.1"
+#package not working on ubuntu 22.04 yet
+export GLOG_VER="v0.6.0"
 
 
-export ROCKDB_VER="v6.11.4"
-export LIBRDKAFKA_VER="v1.7.0-RC4"
-export PROMETHEUS_CPP_VER="v0.9.0"
+export ARROW_VER="apache-arrow-7.0.0"
+export NLOHMANN_JSON_VER="v3.10.5"
+
+
+export ROCKDB_VER="v7.2.0"
+export LIBRDKAFKA_VER="v1.9.0-RC3"
+export PROMETHEUS_CPP_VER="v1.0.0"
 export HOWARD_HINNANT_VER="v3.0.0"
 export CATCH2_VER="v2.13.2"
 export RESTINIO_VER="v.0.6.10"
+
 
 #for mqtt
 export PAHO_MQTT_C_VER="1.3.1"
