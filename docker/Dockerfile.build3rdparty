@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 WORKDIR /src
 
@@ -10,33 +10,37 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 
-RUN apt-get update && apt-get install -y sudo build-essential cmake wget pax-utils automake autogen shtool libtool unzip pkg-config sed bison flex git gcc-10 g++-10
+RUN apt-get update && apt-get install -y software-properties-common sudo build-essential cmake wget pax-utils automake autogen shtool libtool unzip pkg-config sed bison flex git curl apt-utils
 
-RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 100 --slave /usr/bin/g++ g++ /usr/bin/g++-10 --slave /usr/bin/gcov gcov /usr/bin/gcov-10
+#add repos and key servers for gcc and clang
+RUN curl -sSL https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
+RUN apt-add-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-13 main"
+RUN add-apt-repository -y ppa:ubuntu-toolchain-r/test
 
-RUN apt-get install -y libboost-all-dev
+RUN apt-get update && apt-get install -y clang-13
+
+RUN apt-get install -y libboost-all-dev libsnappy-dev libfmt-dev libpcre2-dev libhttp-parser-dev libpq-dev freetds-dev libgtest-dev libgflags-dev
 
 #avro deps
-RUN apt-get install -y libsnappy-dev
+RUN apt-get update && apt-get install -y libsnappy-dev
 
 #aws deps
-RUN apt-get install -y  libssl-dev libcurl4-openssl-dev libgoogle-glog-dev
-#RUN apt-get install -y  libssl-dev libcurl4-nss-dev libgoogle-glog-dev
+RUN apt-get update &&  apt-get install -y  libssl-dev libcurl4-openssl-dev google-mock libgtest-dev libc-ares-dev 
 
 #deps for arrow
-RUN  apt-get install -y liblz4-dev libutf8proc-dev libre2-dev llvm-7 clang libz-dev liblzma-dev libzstd-dev libbz2-dev
+RUN  apt-get update && apt-get install -y liblz4-dev libutf8proc-dev libre2-dev libz-dev liblzma-dev libzstd-dev libbz2-dev libgtest-dev libgflags-dev
+RUN  apt-get update && apt-get install -y llvm-13 clang-13
 
 #deps for tensorflow
-RUN  apt-get install -y libeigen3-dev
+RUN  apt-get update && apt-get install -y libeigen3-dev
 
 #deps for kspp
-RUN apt-get install -y libpq-dev freetds-dev 
+RUN apt-get update && apt-get install -y libpq-dev freetds-dev
 
 ENV CPP_STANDARD="17"
-ENV AVRO_VER="release-1.10.1"
-ENV ABSEIL_CPP_VER="20200225.3"
-ENV AWS_SDK_VER="1.8.134"
-ENV GRPC_VER="v1.32.0"
+ENV AVRO_VER="release-1.11.0"
+ENV AWS_SDK_VER="1.9.242"
+ENV GRPC_VER="v1.42.0"
 
 #deps for arrow
 ENV DOUBLE_CONVERSION_VER="v3.1.5"
@@ -45,15 +49,22 @@ ENV FLATBUFFERS_VER="v1.11.0"
 ENV THRIFT_VER="0.12.0"
 ENV RAPIDJSON_VER="v1.1.0"
 
-ENV ARROW_VER="apache-arrow-3.0.0"
+ENV GLOG_VER="v0.6.0"
+
+ENV ARROW_VER="apache-arrow-7.0.0"
 #
 #for mqtt
-ENV NLOHMANN_JSON_VER="v3.9.1"
-ENV PAHO_MQTT_C_VER="1.3.1"
-ENV PAHO_MQTT_CPP_VER="1.0.1"
-ENV ROCKDB_VER="v6.11.4"
-ENV LIBRDKAFKA_VER="v1.7.0-RC4"
-ENV PROMETHEUS_CPP_VER="v0.9.0"
+ENV NLOHMANN_JSON_VER="v3.10.5"
+ENV PAHO_MQTT_C_VER="1.3.10"
+ENV PAHO_MQTT_CPP_VER="1.2.0"
+ENV ROCKDB_VER="v7.2.0"
+ENV LIBRDKAFKA_VER="v1.9.0-RC7"
+ENV PROMETHEUS_CPP_VER="v1.0.0"
+ENV HOWARD_HINNANT_VER="v3.0.0"
+ENV CATCH2_VER="v2.13.2"
+ENV RESTINIO_VER="v.0.6.10"
+
+
 
 RUN mkdir tmp && cd tmp
 
@@ -76,34 +87,6 @@ cd ../../../.. && \
 rm avro.tar.gz && \
 rm -rf arvo 
 
-RUN git clone --recursiv --depth 1 --branch master-with-bazel https://github.com/google/boringssl.git && \
-cd boringssl && \
-mkdir build && cd build && \
-cmake -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_CXX_STANDARD=$CPP_STANDARD \
-  .. && \
-make -j "$(getconf _NPROCESSORS_ONLN)" && \
-sudo cp libcrypto.a /usr/local/lib/libboringssl-crypto.a && \
-sudo cp libssl.a /usr/local/lib/libboringssl-ssl.a && \
-cd ../..
-
-RUN wget -O abseil-cpp.tar.gz "https://github.com/abseil/abseil-cpp/archive/$ABSEIL_CPP_VER.tar.gz" && \
-mkdir -p abseil-cpp && \
-tar \
-  --extract \
-  --file abseil-cpp.tar.gz \
-  --directory abseil-cpp \
-  --strip-components 1 && \
-cd abseil-cpp && \
-mkdir build && \
-cd build && \
-cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=$CPP_STANDARD .. && \
-make -j "$(getconf _NPROCESSORS_ONLN)" && \
-sudo make install && \
-cd ../.. && \
-rm abseil-cpp.tar.gz
-
-
 RUN git clone --recursiv --depth 1 --branch $GRPC_VER https://github.com/grpc/grpc.git && \
 cd grpc && \
 rm -r third_party/boringssl-with-bazel && \
@@ -113,28 +96,14 @@ make -j "$(getconf _NPROCESSORS_ONLN)" && \
 sudo make install && \
 cd ../..
 
-RUN wget -O aws-sdk.tar.gz "https://github.com/aws/aws-sdk-cpp/archive/$AWS_SDK_VER.tar.gz" && \
-mkdir -p aws-sdk && \
-tar \
-  --extract \
-  --file aws-sdk.tar.gz \
-  --directory aws-sdk \
-  --strip-components 1  && \
-cd aws-sdk && \
-mkdir build-shared && \
-cd build-shared && \
-cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DBUILD_ONLY="config;s3;transfer;sts;cognito-identity;identity-management" -DENABLE_TESTING=OFF -DCPP_STANDARD=$CPP_STANDARD .. && \
-make -j "$(getconf _NPROCESSORS_ONLN)"  && \
-sudo make install && \
-cd .. && \
-mkdir build-static && \
-cd build-static && \
-cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DBUILD_ONLY="config;s3;transfer;sts;cognito-identity;identity-management" -DENABLE_TESTING=OFF -DCPP_STANDARD=$CPP_STANDARD .. && \
-make -j "$(getconf _NPROCESSORS_ONLN)"  && \
-sudo make install && \
-cd ../.. && \
-rm -rf aws-sdk.tar.gz && \
-rm -rf aws-sdk
+RUN git clone --recurse-submodules --depth 1 --branch $AWS_SDK_VER https://github.com/aws/aws-sdk-cpp && \
+cd aws-sdk-cpp && \
+mkdir build-shared && cd build-shared && \
+cmake -DCMAKE_BUILD_TYPE=Release  -D CMAKE_CXX_FLAGS="-Wno-error=deprecated-declarations" -DBUILD_SHARED_LIBS=ON -DBUILD_DEPS=ON DBUILD_ONLY="config;s3;transfer;sts;cognito-identity;identity-management" -DENABLE_TESTING=OFF -DCPP_STANDARD=$CPP_STANDARD .. && \
+make -j "$(getconf _NPROCESSORS_ONLN)" && \
+make install && \
+cd ../..
+
 
 RUN wget -O double-conversion.tar.gz "https://github.com/google/double-conversion/archive/$DOUBLE_CONVERSION_VER.tar.gz" && \
 mkdir -p double-conversion && \
@@ -201,6 +170,20 @@ cd ../.. && \
 rm thrift.tar.gz
 
 
+RUN wget -O nlomann.tar.gz "https://github.com/nlohmann/json/archive/$NLOHMANN_JSON_VER.tar.gz" && \
+mkdir -p nlomann && \
+tar \
+  --extract \
+  --file nlomann.tar.gz \
+  --directory nlomann \
+  --strip-components 1 && \
+cd nlomann && \
+mkdir build && cd build && \
+cmake .. && \
+make -j "$(getconf _NPROCESSORS_ONLN)" && \
+sudo make install && \
+cd ../..
+
 RUN wget -O rapidjson.tar.gz "https://github.com/miloyip/rapidjson/archive/$RAPIDJSON_VER.tar.gz" && \
 mkdir -p rapidjson && \
 tar \
@@ -217,6 +200,15 @@ sudo rm -rf /usr/local/share/doc/RapidJSON && \
 cd ../.. && \
 rm rapidjson.tar.gz && \
 rm -rf rapidjson
+
+RUN git clone --recursiv --depth 1 --branch $GLOG_VER https://github.com/google/glog.git && \
+cd glog && \
+mkdir build && cd build && \
+cmake .. && \
+make -j "$(getconf _NPROCESSORS_ONLN)" && \
+make install && \
+cd ../..
+
 
 RUN wget -O arrow.tar.gz "https://github.com/apache/arrow/archive/$ARROW_VER.tar.gz" && \
 mkdir -p arrow && \
@@ -291,6 +283,58 @@ cd ../.. && \
 rm prometheus-cpp.tar.gz && \
 rm -rf prometheus-cpp
 
+RUN wget -O hh.tar.gz "https://github.com/HowardHinnant/date/archive/$HOWARD_HINNANT_VER.tar.gz" && \
+mkdir -p hh && \
+tar \
+  --extract \
+  --file hh.tar.gz \
+  --directory hh \
+  --strip-components 1 && \
+cd hh && \
+mkdir build && cd build && \
+cmake -DUSE_SYSTEM_TZ_DB=ON -DBUILD_TZ_LIB=ON .. && \
+make -j "$(getconf _NPROCESSORS_ONLN)" && \
+make install && \
+cd ../.. && \
+rm hh.tar.gz && \
+rm -rf hh
+
+RUN wget -O catch2.tar.gz "https://github.com/catchorg/Catch2/archive/$CATCH2_VER.tar.gz" && \
+mkdir -p catch2 && \
+tar \
+   --extract \
+   --file catch2.tar.gz \
+   --directory catch2 \
+   --strip-components 1 && \
+cd catch2 && \
+mkdir build && cd build && \
+cmake -DCATCH_BUILD_TESTING=OFF -DCATCH_INSTALL_DOCS=OFF .. && \
+make -j "$(getconf _NPROCESSORS_ONLN)" && \
+make install && \
+cd ../.. && \
+rm catch2.tar.gz && \
+rm -rf catch2
+
+RUN wget -O restinio.tar.gz "https://github.com/Stiffstream/restinio/archive/$RESTINIO_VER.tar.gz" && \
+mkdir -p restinio && \
+tar \
+   --extract \
+   --file restinio.tar.gz \
+   --directory restinio \
+   --strip-components 1 && \
+cd restinio && \
+cd dev && \
+sed -i.bak1 '/find_package(unofficial-http-parser/d' CMakeLists.txt && \
+mkdir build && cd build && \
+cmake -DRESTINIO_TEST=OFF -DRESTINIO_SAMPLE=OFF -DRESTINIO_INSTALL_SAMPLES=OFF -DRESTINIO_BENCH=OFF -DRESTINIO_INSTALL_BENCHES=OFF -DRESTINIO_FIND_DEPS=ON -DRESTINIO_ALLOW_SOBJECTIZER=OFF .. && \
+make -j "$(getconf _NPROCESSORS_ONLN)" && \
+make install && \
+cd ../../.. && \
+rm restinio.tar.gz && \
+rm -rf restinio
+
+
+
 RUN wget -O librdkafka.tar.gz "https://github.com/edenhill/librdkafka/archive/$LIBRDKAFKA_VER.tar.gz" && \
 mkdir -p librdkafka && \
 tar \
@@ -299,25 +343,12 @@ tar \
   --directory librdkafka \
   --strip-components 1 && \
 cd librdkafka && \
-#./configure --prefix=/usr/local && \
-./configure --disable-ssl --prefix=/usr/local && \
+./configure --prefix=/usr/local && \
+#./configure --disable-ssl --prefix=/usr/local && \
 make -j "$(getconf _NPROCESSORS_ONLN)" && \
 sudo make install && \
 cd ..
 
-RUN wget -O nlomann.tar.gz "https://github.com/nlohmann/json/archive/$NLOHMANN_JSON_VER.tar.gz" && \
-mkdir -p nlomann && \
-tar \
-  --extract \
-  --file nlomann.tar.gz \
-  --directory nlomann \
-  --strip-components 1 && \
-cd nlomann && \
-mkdir build && cd build && \
-cmake .. && \
-make -j "$(getconf _NPROCESSORS_ONLN)" && \
-sudo make install && \
-cd ../..
 
 
 RUN wget -O paho.mqtt.c.tar.gz "https://github.com/eclipse/paho.mqtt.c/archive/v$PAHO_MQTT_C_VER.tar.gz" && \

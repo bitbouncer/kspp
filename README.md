@@ -64,8 +64,10 @@ sudo apt-get install -y g++ sudo pax-utils automake autogen shtool libtool git w
 Install build deps
 ```
 sudo apt-get install -y python-dev autotools-dev libicu-dev zlib1g-dev openssl libssl-dev libbz2-dev libsnappy-dev liblz4-dev libzstd-dev \
-    libgoogle-glog-dev libgflags-dev libcurl4-openssl-dev libc-ares-dev liblzma-dev libpq-dev freetds-dev libxml2-dev \
+    libgflags-dev libcurl4-openssl-dev libc-ares-dev liblzma-dev libpq-dev freetds-dev libxml2-dev \
     libfmt-dev libpcre2-dev libhttp-parser-dev 
+    
+#    libgoogle-glog-dev missing packet for u22.04    
 
 ```
 
