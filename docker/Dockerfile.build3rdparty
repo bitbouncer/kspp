@@ -51,7 +51,7 @@ ENV RAPIDJSON_VER="v1.1.0"
 
 ENV GLOG_VER="v0.6.0"
 
-ENV ARROW_VER="apache-arrow-7.0.0"
+ENV ARROW_VER="apache-arrow-8.0.0"
 #
 #for mqtt
 ENV NLOHMANN_JSON_VER="v3.10.5"

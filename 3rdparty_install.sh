@@ -17,7 +17,7 @@ export RAPIDJSON_VER="v1.1.0"
 #package not working on ubuntu 22.04 yet
 export GLOG_VER="v0.6.0"
 
-export ARROW_VER="apache-arrow-7.0.0"
+export ARROW_VER="apache-arrow-8.0.0"
 export NLOHMANN_JSON_VER="v3.10.5"
 
 export ROCKDB_VER="v7.2.0"
@@ -164,14 +164,18 @@ sudo make install && \
 sudo rm -rf /usr/local/share/doc/RapidJSON && \
 cd ../..
 
-#we now again have to build glog
-git clone --recursiv --depth 1 --branch $GLOG_VER https://github.com/google/glog.git && \
-cd glog && \
-mkdir build && cd build && \
-cmake .. && \
-make -j "$(getconf _NPROCESSORS_ONLN)" && \
-sudo make install && \
-cd ../..
+#if package is installed - skip source build
+if [ $(dpkg-query -W -f='${Status}' libgoogle-glog-dev 2>/dev/null | grep -c "ok installed") -eq 0 ];
+then
+  echo "glog found skipping source build."
+  git clone --recursiv --depth 1 --branch $GLOG_VER https://github.com/google/glog.git && \
+  cd glog && \
+  mkdir build && cd build && \
+  cmake .. && \
+  make -j "$(getconf _NPROCESSORS_ONLN)" && \
+  sudo make install && \
+  cd ../..
+fi
 
 
 wget -O arrow.tar.gz "https://github.com/apache/arrow/archive/$ARROW_VER.tar.gz" && \
@@ -210,7 +214,12 @@ cmake \
   -DARROW_USE_GLOG=ON \
   -DPARQUET_BUILD_EXECUTABLES=ON \
   -DPARQUET_BUILD_EXAMPLES=ON \
-   ..
+   .. && \
+make -j "$(getconf _NPROCESSORS_ONLN)" && \
+sudo make install && \
+cd ../../..
+
+
 
 wget -O rocksdb.tar.gz "https://github.com/facebook/rocksdb/archive/$ROCKDB_VER.tar.gz" && \
 mkdir -p rocksdb && \

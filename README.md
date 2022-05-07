@@ -45,7 +45,7 @@ It is intended to be run in kubernetes but works equally well standalone
 Platforms: Linux (Windows and Mac build are outdated)
 
 
-## Ubuntu 18.04 x64:
+## Ubuntu 22.04 x64:
 
 Remove stuff that you should not have...
 ```
@@ -86,7 +86,7 @@ sudo make install
 cd ..
 ```
 
-build docker image / ubuntu 18.04
+build docker image / ubuntu 22.04
 ```
 cd docker-ubuntu
 ./build_3rdparty.sh
