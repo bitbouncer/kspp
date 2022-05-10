@@ -13,17 +13,18 @@ COPY include     include
 COPY src         src
 COPY tests       tests
 COPY tools       tools
-COPY proto       proto
+COPY libraries   libraries
 COPY CMakeLists.txt    .
 COPY kspp_config.h.in  .
 
 RUN mkdir build && \
     cd build && \
-    cmake  -DCMAKE_BUILD_TYPE=Release -DENABLE_ROCKSDB=ON -DENABLE_POSTGRES=ON -DENABLE_TDS=ON -DENABLE_ELASTICSEARCH=ON -DENABLE_INFLUXDB=ON -DENABLE_POSTGRES=ON -DBUILD_TOOLS=ON -DBUILD_SAMPLES=OFF -DBUILD_TESTS=OFF -DBUILD_STATIC_LIBS=OFF -DBUILD_SHARED_LIBS=ON -DLINK_SHARED=ON .. && \
+    cmake  -DCMAKE_BUILD_TYPE=Release -DENABLE_ROCKSDB=ON -DENABLE_POSTGRES=ON -DENABLE_TDS=ON -DENABLE_ELASTICSEARCH=ON -DENABLE_INFLUXDB=ON -DENABLE_POSTGRES=ON -DBUILD_TOOLS=ON -DBUILD_SAMPLES=OFF -DBUILD_TESTS=OFF -DBUILD_STATIC_LIBS=ON -DBUILD_SHARED_LIBS=ON -DLINK_SHARED=ON .. && \
     make -j "$(getconf _NPROCESSORS_ONLN)" && \
     make install && \
     strip --strip-all /usr/local/lib/*.so* && \
-    strip --strip-unneeded /usr/local/bin/*
+    strip --strip-unneeded /usr/local/bin/*  && \
+    cd .. && rm -rf build    
 
 RUN runDeps="$( \
       scanelf --needed --nobanner --recursive /usr/local \

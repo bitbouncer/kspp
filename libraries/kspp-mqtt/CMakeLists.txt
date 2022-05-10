@@ -1,0 +1,30 @@
+SET(SIMPLE_NAME kspp-mqtt)
+
+file(GLOB LIB_SRCS *.cpp)
+file(GLOB LIB_HEADERS *.h)
+
+if (BUILD_STATIC_LIBS)
+ADD_LIBRARY(${SIMPLE_NAME}_s STATIC ${LIB_SRCS} ${LIB_HEADERS})
+INSTALL(TARGETS ${SIMPLE_NAME}_s
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib)
+endif()
+
+
+if (BUILD_SHARED_LIBS)
+ADD_LIBRARY(${SIMPLE_NAME} STATIC ${LIB_SRCS} ${LIB_HEADERS})
+INSTALL(TARGETS ${SIMPLE_NAME}
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib)
+endif()
+
+INSTALL(FILES ${LIB_HEADERS} DESTINATION include/${SIMPLE_NAME})
+
+SET(PAHO_LIBS_STATIC paho-mqttpp3 paho-mqtt3cs paho-mqtt3as)
+SET(PAHO_LIBS_SHARED paho-mqttpp3 paho-mqtt3c paho-mqtt3a)
+
+IF (BUILD_SAMPLES)
+    add_subdirectory(examples)
+ENDIF ()
+
+

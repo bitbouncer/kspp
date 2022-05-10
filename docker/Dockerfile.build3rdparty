@@ -100,7 +100,8 @@ RUN git clone --recurse-submodules --depth 1 --branch $AWS_SDK_VER https://githu
 cd aws-sdk-cpp && \
 mkdir build-shared && cd build-shared && \
 cmake -DCMAKE_BUILD_TYPE=Release  -D CMAKE_CXX_FLAGS="-Wno-error=deprecated-declarations" -DBUILD_SHARED_LIBS=ON -DBUILD_DEPS=ON DBUILD_ONLY="config;s3;transfer;sts;cognito-identity;identity-management" -DENABLE_TESTING=OFF -DCPP_STANDARD=$CPP_STANDARD .. && \
-make -j "$(getconf _NPROCESSORS_ONLN)" && \
+#make -j "$(getconf _NPROCESSORS_ONLN)" && \
+make -j 2 && \
 make install && \
 cd ../..
 

@@ -4,18 +4,19 @@ project(kspp)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
 #FEATURES
-option(ENABLE_ROCKSDB "enable rocksdb support" ON)
-option(ENABLE_ZK "enable zk support" OFF)
 option(ENABLE_POSTGRES "enable postgres support" ON)
 option(ENABLE_INFLUXDB "enable influxdb support" ON)
 option(ENABLE_TDS "enable tds support" ON)
 option(ENABLE_ELASTICSEARCH "enable elastic search support" ON)
+option(ENABLE_MQTT "enable MQTT support" ON)
+option(ENABLE_BITBOUNCER_STREAMING "enable bitbouncer streaming support" OFF)
 
+
+option(ENABLE_ROCKSDB "enable rocksdb support" ON)
+option(ENABLE_ZK "enable zk support" OFF)
 option(ENABLE_S3 "enable S3 support" ON)
-option(ENABLE_KINESIS "enable KINESIS support" OFF)
-option(ENABLE_MQTT "enable MQTT support" OFF)
-option(ENABLE_GRPC "enable grpc support" OFF)
-#option(ENABLE_BITBOUNCER_STREAMING "enable bitbouncer streaming support" OFF)
+#option(ENABLE_KINESIS "enable KINESIS support" ON)
+
 
 option(BUILD_TOOLS "build tools" ON)
 option(BUILD_SAMPLES "build examples" ON)
@@ -131,19 +132,12 @@ file(GLOB LIB_SRCS
         src/internal/serdes/*.cpp
         src/internal/hash/*.cpp
         src/internal/utils/*.cpp
-        #        src/internal/grpc/*.cpp
         src/utils/*.cpp
         src/beta/*.cpp
 
         IF(ENABLE_ROCKSDB)
         src/internal/rocksdb/*.cpp
         endif ()
-
-        #if (ENABLE_S3)
-        #include/features/aws/*.h
-        #src/features/aws/*.cpp
-        #endif()
-        #        src/connect/kafka_rest/kafka_rest_source.cpp
         )
 
 file(GLOB KSPP_INCLUDE_FILES
@@ -182,104 +176,11 @@ if (ENABLE_S3)
     SET(AWS_S3_LIBS aws-cpp-sdk-s3 aws-cpp-sdk-core aws-c-event-stream aws-checksums aws-c-common)
 endif ()
 
-#EXTENSIONS
-
 IF (ENABLE_ROCKSDB)
     add_definitions(-DKSPP_ROCKSDB)
     file(GLOB ROCKDB_LIB_SRCS
      src/internal/rocksdb/*.cpp)
 ENDIF()
-
-if (ENABLE_POSTGRES)
-    add_definitions(-DKSPP_POSTGRES)
-    file(GLOB POSTGRES_LIB_SRCS
-            include/connect/postgres/*.h
-            src/connect/postgres/*.cpp)
-ENDIF ()
-
-IF (ENABLE_TDS)
-    add_definitions(-DKSPP_TDS)
-    file(GLOB TDS_LIB_SRCS
-            include/connect/tds/*.h
-            src/connect/tds/*.cpp)
-    SET(TDS_LIBS sybdb)
-ENDIF ()
-
-IF (ENABLE_ELASTICSEARCH)
-    file(GLOB ELASTICSEARCH_LIB_SRCS
-            include/connect/elasticsearch/*.h
-            src/connect/elasticsearch/*.cpp)
-ENDIF ()
-
-IF (ENABLE_INFLUXDB)
-    file(GLOB INFLUXDB_LIB_SRCS
-            include/connect/influxdb/*.h
-            src/connect/influxdb/*.cpp)
-ENDIF ()
-
-if (ENABLE_KINESIS)
-    add_definitions(-DKSPP_KINESIS)
-    file(GLOB KINESIS_LIB_SRCS
-            include/connect/aws/*.h
-            src/connect/aws/*.cpp)
-    SET(AWS_KINESIS_LIBS aws-cpp-sdk-kinesis aws-cpp-sdk-s3 aws-cpp-sdk-core aws-c-event-stream aws-checksums aws-c-common)
-endif () #ENABLE_KINESIS
-
-if (ENABLE_MQTT)
-    add_definitions(-DKSPP_MQTT)
-    file(GLOB MQTT_LIB_SRCS
-            include/connect/mqtt/*.h
-            src/connect/mqtt/*.cpp)
-    SET(MQTT_LIBS paho-mqttpp3 paho-mqtt3cs)
-endif ()
-
-
-if (ENABLE_GRPC)
-    add_definitions(-DKSPP_GRPC)
-    find_package(Protobuf REQUIRED)
-    message(STATUS "Using protobuf ${protobuf_VERSION}")
-    find_package(GRPC REQUIRED)
-
-    SET(PROTOS ./proto/bb_streaming.proto)
-    set(PROTO_SRC_DIR ${CMAKE_CURRENT_BINARY_DIR})
-
-    PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${PROTOS})
-
-    # Print path to generated files
-    message("PROTO_SRCS = ${PROTO_SRCS}")
-    message("PROTO_HDRS = ${PROTO_HDRS}")
-
-    grpc_generate_cpp(GRPC_SRCS GRPC_HDRS ${PROTO_SRC_DIR} ${PROTOS})
-    message("GRPC_SRCS = ${GRPC_SRCS}")
-    message("GRPC_HDRS = ${GRPC_HDRS}")
-
-    file(GLOB BITBOUNCER_GRPC_LIB_SRCS
-            include/internal/grpc/*.h
-            src/internal/grpc/*.cpp)
-
-    if (BUILD_STATIC_LIBS)
-        ADD_LIBRARY(kspp_grpc_s STATIC ${PROTO_SRCS} ${GRPC_SRCS} ${BITBOUNCER_GRPC_LIB_SRCS})
-        INSTALL(TARGETS kspp_grpc_s
-                LIBRARY DESTINATION lib
-                ARCHIVE DESTINATION lib
-                )
-    endif ()
-
-    if (BUILD_SHARED_LIBS)
-        ADD_LIBRARY(kspp_grpc SHARED ${PROTO_SRCS} ${GRPC_SRCS} ${BITBOUNCER_GRPC_LIB_SRCS})
-        INSTALL(TARGETS kspp_grpc
-                LIBRARY DESTINATION lib
-                ARCHIVE DESTINATION lib
-                )
-    endif ()
-
-    file(GLOB BITBOUNCER_LIB_SRCS
-            include/connect/bitbouncer/*.h)
-
-    SET(BB_GRPC_LIBS_STATIC kspp_grpc_s gRPC::grpc++_reflection gRPC::grpc++ gRPC::grpc protobuf::libprotobuf)
-    SET(BB_GRPC_LIBS_SHARED kspp_grpc gRPC::grpc++_reflection gRPC::grpc++ gRPC::grpc protobuf::libprotobuf)
-endif () #ENABLE_GRPC
-
 
 if (BUILD_STATIC_LIBS)
     ADD_LIBRARY(kspp_s STATIC ${LIB_SRCS} ${KSPP_INCLUDE_FILES} ${S3_LIB_SRCS} ${MQTT_LIB_SRCS} ${ROCKDB_LIB_SRCS} ${POSTGRES_LIB_SRCS} ${TDS_LIB_SRCS} ${ELASTICSEARCH_LIB_SRCS} ${INFLUXDB_LIB_SRCS} ${KINESIS_LIB_SRCS})
@@ -315,6 +216,8 @@ endif()
 
 INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/include/ DESTINATION include)
 
+add_subdirectory(libraries)
+
 IF (BUILD_TOOLS)
     add_subdirectory(tools)
 ENDIF ()
@@ -329,6 +232,8 @@ IF (BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
 ENDIF ()
+
+
 
 
 
