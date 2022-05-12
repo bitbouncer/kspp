@@ -1,5 +1,5 @@
 add_executable(postgres2kafka postgres2kafka.cpp)
-target_link_libraries(postgres2kafka kspp-pg_s ${ALL_LIBS})
+target_link_libraries(postgres2kafka kspp-pg_s ${ALL_LIBS} rdkafka)
 INSTALL(TARGETS postgres2kafka RUNTIME DESTINATION bin)
 
 add_executable(kafka2postgres kafka2postgres.cpp)

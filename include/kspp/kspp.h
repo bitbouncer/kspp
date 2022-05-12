@@ -18,20 +18,25 @@
 #include <kspp/type_name.h>
 #include <kspp/cluster_config.h>
 #include <kspp/internal/event_queue.h>
-#include <kspp/internal/hash/murmurhash2.h>
 #include <kspp/utils/kspp_utils.h>
 #include <kspp/event_consumer.h>
+
 #pragma once
+
 namespace kspp {
+  // public version of what's in librdkafka
+  uint32_t rd_murmur2(const void *key, size_t len);
+
   class topology;
 
   class processor {
   protected:
     processor() :
-      _processed_count("processed", "msg") {
+        _processed_count("processed", "msg") {
       add_metric(&_processed_count);
       add_metric(&_lag);
     }
+
   public:
     virtual ~processor() {}
 
@@ -63,7 +68,7 @@ namespace kspp {
      * note: not fast but useful for debugging
      */
     int64_t get_metric(std::string name) {
-      for (auto &&i : _metrics) {
+      for (auto &&i: _metrics) {
         if (i->_name == name)
           return i->value();
       }
@@ -150,8 +155,8 @@ namespace kspp {
     }
 
     void add_metrics_label(std::string key, std::string value) {
-       for (auto i : _metrics)
-         i->add_label(key, value);
+      for (auto i: _metrics)
+        i->add_label(key, value);
     }
 
     // must be valid for processor lifetime  (cannot be removed)
@@ -171,23 +176,23 @@ namespace kspp {
     virtual ~partition_processor() {}
 
     size_t depth() const {
-      size_t depth =0;
-      for(auto i : upstream_) {
-        std::max<size_t>(depth, i->depth()+1);
+      size_t depth = 0;
+      for (auto i: upstream_) {
+        std::max<size_t>(depth, i->depth() + 1);
       }
       return depth;
     }
 
     virtual bool eof() const {
-      for(auto i : upstream_) {
-        if (i->eof()==false)
+      for (auto i: upstream_) {
+        if (i->eof() == false)
           return false;
       }
       return true;
     }
 
     virtual void close() {
-      for(auto i : upstream_){
+      for (auto i: upstream_) {
         i->close();
       }
       upstream_.clear();
@@ -201,7 +206,7 @@ namespace kspp {
       while (!eof())
         if (!process(kspp::milliseconds_since_epoch())) { ;
         }
-      for(auto i : upstream_)
+      for (auto i: upstream_)
         i->flush();
       while (!eof())
         if (!process(kspp::milliseconds_since_epoch())) { ;
@@ -210,7 +215,7 @@ namespace kspp {
     }
 
     virtual void start(int64_t offset) {
-      for(auto i : upstream_)
+      for (auto i: upstream_)
         i->start(offset);
     }
 
@@ -218,14 +223,13 @@ namespace kspp {
 
     bool is_upstream(const partition_processor *node) const {
       // direct children?
-      for(auto i : upstream_)
-      {
+      for (auto i: upstream_) {
         if (i == node)
           return true;
       }
 
       // further up?
-      for(auto i : upstream_){
+      for (auto i: upstream_) {
         if (i->is_upstream(node))
           return true;
       }
@@ -239,11 +243,11 @@ namespace kspp {
         upstream_.push_back(upstream);
     }
 
-    void add_upstream(partition_processor* p){
+    void add_upstream(partition_processor *p) {
       upstream_.push_back(p);
     }
 
-    std::vector<partition_processor*> upstream_;
+    std::vector<partition_processor *> upstream_;
     const int32_t _partition;
   };
 
@@ -278,16 +282,19 @@ namespace kspp {
 
   template<class PK, class CODEC>
   inline uint32_t get_partition_hash(const PK &key, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>()) {
-    enum { MAX_KEY_SIZE = 1000 };
+    enum {
+      MAX_KEY_SIZE = 1000
+    };
     uint32_t partition_hash = 0;
     char key_buf[MAX_KEY_SIZE];
-    size_t ksize = 0;
     std::strstream s(key_buf, MAX_KEY_SIZE);
-    ksize = codec->encode(key, s);
+    auto ksize = codec->encode(key, s);
     //partition_hash = djb_hash(key_buf, ksize);
-    partition_hash = MurmurHash2(key_buf, (int) ksize, 0x9747b28c);
+    //partition_hash = MurmurHash2(key_buf, (int) ksize, 0x9747b28c);
+    partition_hash = rd_murmur2(key_buf, ksize);
     return partition_hash;
   }
+
 
   template<class PK, class CODEC>
   inline uint32_t
@@ -374,10 +381,10 @@ namespace kspp {
 
   protected:
 
-    virtual void send_to_sinks(std::shared_ptr<kevent<K, V>> p)  {
+    virtual void send_to_sinks(std::shared_ptr<kevent<K, V>> p) {
       if (!p)
         return;
-      for (auto f : _sinks)
+      for (auto f: _sinks)
         f(p);
     }
 
@@ -444,7 +451,8 @@ namespace kspp {
 
     virtual std::experimental::filesystem::path get_storage_path(std::experimental::filesystem::path storage_path) {
       std::experimental::filesystem::path p(std::move(storage_path));
-      p /= sanitize_filename(this->log_name() + this->record_type_name() + "#" + std::to_string(this->partition()));
+      p /= sanitize_filename(
+          this->log_name() + this->record_type_name() + "#" + std::to_string(this->partition()));
       return p;
     }
   };

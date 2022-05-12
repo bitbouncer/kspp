@@ -2,6 +2,8 @@ SET(SIMPLE_NAME kspp-pg)
 file(GLOB LIB_SRCS *.cpp)
 file(GLOB LIB_HEADERS *.h)
 
+find_package(PostgreSQL REQUIRED)
+include_directories(${PostgreSQL_INCLUDE_DIRS})
 
 if (BUILD_STATIC_LIBS)
 ADD_LIBRARY(${SIMPLE_NAME}_s STATIC ${LIB_SRCS} ${LIB_HEADERS})

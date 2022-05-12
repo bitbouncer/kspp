@@ -10,3 +10,5 @@ void set_config(RdKafka::Conf* conf, std::string key, RdKafka::PartitionerCb* pa
 void set_config(RdKafka::Conf* conf, std::string key, RdKafka::EventCb* event_cb);
 
 void set_broker_config(RdKafka::Conf* rd_conf, const kspp::cluster_config* config);
+
+

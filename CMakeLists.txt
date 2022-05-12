@@ -11,12 +11,9 @@ option(ENABLE_ELASTICSEARCH "enable elastic search support" ON)
 option(ENABLE_MQTT "enable MQTT support" ON)
 option(ENABLE_BITBOUNCER_STREAMING "enable bitbouncer streaming support" OFF)
 
-
 option(ENABLE_ROCKSDB "enable rocksdb support" ON)
-option(ENABLE_ZK "enable zk support" OFF)
 option(ENABLE_S3 "enable S3 support" ON)
-#option(ENABLE_KINESIS "enable KINESIS support" ON)
-
+option(ENABLE_KINESIS "enable KINESIS support" ON)
 
 option(BUILD_TOOLS "build tools" ON)
 option(BUILD_SAMPLES "build examples" ON)
@@ -35,13 +32,6 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wpedantic -Wreturn-type -g -O2")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -Wpedantic -Wreturn-type -g -O0")
 
-# configure a header file to pass some of the CMake settings
-# to the source code
-#configure_file(
-#        "${PROJECT_SOURCE_DIR}/kspp_config.h.in"
-#        "${PROJECT_BINARY_DIR}/kspp_config.h"
-#)
-
 include_directories("${PROJECT_BINARY_DIR}")
 
 if (ENABLE_POSTGRES)
@@ -50,15 +40,6 @@ if (ENABLE_POSTGRES)
 endif ()
 
 find_package(Boost COMPONENTS program_options system REQUIRED)
-
-#it seems we cannot longer find boost 1.7.0 with cmake???
-#set(BOOST_LIBS
-#        ${Boost_PROGRAM_OPTIONS_LIBRARY}
-#        ${Boost_SYSTEM_LIBRARY}
-#        pthread
-#        rt
-#        c
-#        )
 
 set(BOOST_LIBS boost_program_options boost_iostreams boost_filesystem boost_system boost_regex z bz2 pthread rt c)
 
@@ -95,19 +76,6 @@ SET(CSI_INCLUDE_PATH
 #        SET(AVRO_LIBS avrocpp_s curl)
 SET(AVRO_LIBS ${AVRO_LIBRARIES} curl ${SNAPPY_LIBRARIES})
 
-if (ENABLE_ZK)
-    SET(CSI_INCLUDE_PATH
-            ${CSI_INCLUDE_PATH}
-            ${CMAKE_SOURCE_DIR}/../zk/src
-            )
-    file(GLOB zk_lib_files
-            ${CMAKE_CURRENT_SOURCE_DIR}/../zk/src/*.*
-            )
-    add_library(csi-zk STATIC ${zk_lib_files})
-    SET(LIBZK_LIBS csi-zk)
-endif () #ZK
-
-
 SET(LIBRDKAFKA_LIBS rdkafka++ rdkafka crypto ssl lz4 zstd z)
 SET(PROMETHEUS_CPP_LIBS prometheus-cpp-core prometheus-cpp-push)
 
@@ -130,12 +98,11 @@ file(GLOB LIB_SRCS
         src/internal/sources/*.cpp
         src/internal/sinks/*.cpp
         src/internal/serdes/*.cpp
-        src/internal/hash/*.cpp
         src/internal/utils/*.cpp
         src/utils/*.cpp
         src/beta/*.cpp
 
-        IF(ENABLE_ROCKSDB)
+        IF (ENABLE_ROCKSDB)
         src/internal/rocksdb/*.cpp
         endif ()
         )
@@ -143,7 +110,6 @@ file(GLOB LIB_SRCS
 file(GLOB KSPP_INCLUDE_FILES
         include/kspp/*.h
         include/kspp/avro/*.h
-        include/kspp/connect/avro_file/*.h
         include/kspp/utils/*
         include/kspp/utils.h
         include/kspp/metrics/*.h
@@ -156,31 +122,29 @@ file(GLOB KSPP_INCLUDE_FILES
         include/kspp/internal/sources/*.h
         include/kspp/internal/sinks/*.h
         include/kspp/internal/serdes/*.h
-        include/kspp/internal/hash/*.h
         if (ENABLE_ROCKSDB)
         include/kspp/internal/rocksdb/*.h
-        endif()
-        include/kspp/internal/grpc/*.h
-        include/kspp/beta/*.h
+        endif ()
         )
 
 if (ENABLE_ROCKSDB)
     add_definitions(-DKSPP_ROCKSDB)
-endif()
+endif ()
 
 if (ENABLE_S3)
     add_definitions(-DKSPP_S3)
     file(GLOB S3_LIB_SRCS
             include/features/aws/*.h
             src/features/aws/*.cpp)
-    SET(AWS_S3_LIBS aws-cpp-sdk-s3 aws-cpp-sdk-core aws-c-event-stream aws-checksums aws-c-common)
+    #SET(AWS_S3_LIBS aws-cpp-sdk-s3 aws-cpp-sdk-core aws-c-event-stream aws-checksums aws-c-common)
+    SET(AWS_S3_LIBS aws-cpp-sdk-s3 aws-cpp-sdk-core aws-checksums aws-c-common)
 endif ()
 
 IF (ENABLE_ROCKSDB)
     add_definitions(-DKSPP_ROCKSDB)
     file(GLOB ROCKDB_LIB_SRCS
-     src/internal/rocksdb/*.cpp)
-ENDIF()
+            src/internal/rocksdb/*.cpp)
+ENDIF ()
 
 if (BUILD_STATIC_LIBS)
     ADD_LIBRARY(kspp_s STATIC ${LIB_SRCS} ${KSPP_INCLUDE_FILES} ${S3_LIB_SRCS} ${MQTT_LIB_SRCS} ${ROCKDB_LIB_SRCS} ${POSTGRES_LIB_SRCS} ${TDS_LIB_SRCS} ${ELASTICSEARCH_LIB_SRCS} ${INFLUXDB_LIB_SRCS} ${KINESIS_LIB_SRCS})
@@ -199,8 +163,8 @@ if (BUILD_SHARED_LIBS)
 endif ()
 
 if (ENABLE_GRPC)
- SET(BB_GRPC_LIBS gRPC::grpc++_reflection gRPC::grpc++ gRPC::grpc protobuf::libprotobuf gpr upb address_sorting re2 crypto ssl)
-endif()
+    SET(BB_GRPC_LIBS gRPC::grpc++_reflection gRPC::grpc++ gRPC::grpc protobuf::libprotobuf gpr upb address_sorting re2 crypto ssl)
+endif ()
 
 SET(ABSEIL_LIBS absl::time absl::status absl::synchronization absl::strings absl::str_format absl::memory absl::base)
 
@@ -210,9 +174,9 @@ SET(EXT_LIBS ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${PRO
 
 if (LINK_SHARED)
     SET(ALL_LIBS ${BB_GRPC_LIBS_SHARED} kspp ${EXT_LIBS})
-else()
+else ()
     SET(ALL_LIBS ${BB_GRPC_LIBS_STATIC} kspp_s ${EXT_LIBS})
-endif()
+endif ()
 
 INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/include/ DESTINATION include)
 
