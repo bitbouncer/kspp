@@ -8,12 +8,13 @@ namespace kspp {
     client_context.AddMetadata(API_KEY_HEADER, api_key);
   }
 
-  void add_api_key_secret(grpc::ClientContext &client_context, const std::string &api_key, const std::string &secret_access_key) {
+  void add_api_key_secret(grpc::ClientContext &client_context, const std::string &api_key,
+                          const std::string &secret_access_key) {
     client_context.AddMetadata(API_KEY_HEADER, api_key);
     client_context.AddMetadata(SECRET_ACCESS_KEY_HEADER, secret_access_key);
   }
 
-  void set_channel_args(grpc::ChannelArguments& channelArgs){
+  void set_channel_args(grpc::ChannelArguments &channelArgs) {
     //channelArgs.SetInt(GRPC_ARG_HTTP2_BDP_PROBE, 1);
 
     channelArgs.SetInt(GRPC_ARG_KEEPALIVE_TIME_MS, 1000);

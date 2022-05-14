@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <chrono>
 #include <kspp/typedefs.h>
+
 #pragma once
 
 namespace kspp {
@@ -25,8 +26,10 @@ namespace kspp {
   }
 
   kspp::start_offset_t to_offset(std::string);
+
   std::string to_string(start_offset_t);
 
   std::chrono::seconds to_duration(std::string s);
+
   std::string to_string(std::chrono::seconds s);
 }

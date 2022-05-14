@@ -3,21 +3,21 @@
 #include <glog/logging.h>
 #include <kspp/kspp.h>
 #include <kspp/internal/commit_chain.h>
+
 #pragma once
 
 namespace kspp {
   template<class K, class SV, class RV>
   class transform_value : public event_consumer<K, SV>, public partition_source<K, RV> {
-    static constexpr const char* PROCESSOR_NAME = "transform_value";
+    static constexpr const char *PROCESSOR_NAME = "transform_value";
   public:
     //typedef std::function<void(std::shared_ptr<const krecord <K, SV>> record, transform_value *self)> extractor;
-    typedef std::function<void(const krecord <K, SV>& record, transform_value *self)> extractor;
+    typedef std::function<void(const krecord<K, SV> &record, transform_value *self)> extractor;
 
-    transform_value(std::shared_ptr<cluster_config> config, std::shared_ptr <partition_source<K, SV>> source, extractor f)
-        : event_consumer<K, SV>()
-        , partition_source<K, RV>(source.get(), source->partition())
-        , source_(source),
-    extractor_(f) {
+    transform_value(std::shared_ptr<cluster_config> config, std::shared_ptr<partition_source<K, SV>> source,
+                    extractor f)
+        : event_consumer<K, SV>(), partition_source<K, RV>(source.get(), source->partition()), source_(source),
+          extractor_(f) {
       source_->add_sink([this](auto r) {
         this->_queue.push_back(r);
       });
@@ -43,8 +43,8 @@ namespace kspp {
 
     size_t process(int64_t tick) override {
       source_->process(tick);
-      size_t processed=0;
-      while (this->_queue.next_event_time()<=tick){
+      size_t processed = 0;
+      while (this->_queue.next_event_time() <= tick) {
         auto trans = this->_queue.pop_front_and_get();
         ++processed;
         this->_lag.add_event_time(tick, trans->event_time());
@@ -60,7 +60,7 @@ namespace kspp {
     /**
     * use from from extractor callback
     */
-    inline void push_back(std::shared_ptr<krecord<K, RV>>record) {
+    inline void push_back(std::shared_ptr<krecord<K, RV>> record) {
       this->send_to_sinks(std::make_shared<kevent<K, RV>>(record, currrent_id_));
     }
 
@@ -83,7 +83,7 @@ namespace kspp {
     }
 
   private:
-    std::shared_ptr <partition_source<K, SV>> source_;
+    std::shared_ptr<partition_source<K, SV>> source_;
     extractor extractor_;
     std::shared_ptr<commit_chain::autocommit_marker> currrent_id_; // used to briefly hold the commit open during process one
   };
@@ -91,16 +91,14 @@ namespace kspp {
 
   template<class K, class V>
   class transform : public event_consumer<K, V>, public partition_source<K, V> {
-    static constexpr const char* PROCESSOR_NAME = "transform";
+    static constexpr const char *PROCESSOR_NAME = "transform";
   public:
     //typedef std::function<void(std::shared_ptr<const krecord <K, V>> record, transform *self)> extractor;
-    typedef std::function<void(const krecord <K, V>& record, transform *self)> extractor;
+    typedef std::function<void(const krecord<K, V> &record, transform *self)> extractor;
 
-    transform(topology &unused, std::shared_ptr <partition_source<K, V>> source, extractor f)
-        : event_consumer<K, V>()
-        , partition_source<K, V>(source.get(), source->partition())
-        , source_(source)
-        , extractor_(f) {
+    transform(topology &unused, std::shared_ptr<partition_source<K, V>> source, extractor f)
+        : event_consumer<K, V>(), partition_source<K, V>(source.get(), source->partition()), source_(source),
+          extractor_(f) {
       source_->add_sink([this](auto r) {
         this->_queue.push_back(r);
       });
@@ -126,8 +124,8 @@ namespace kspp {
 
     size_t process(int64_t tick) override {
       source_->process(tick);
-      size_t processed=0;
-      while (this->_queue.next_event_time()<=tick){
+      size_t processed = 0;
+      while (this->_queue.next_event_time() <= tick) {
         auto trans = this->_queue.pop_front_and_get();
         ++processed;
         this->_lag.add_event_time(tick, trans->event_time());
@@ -143,7 +141,7 @@ namespace kspp {
     /**
     * use from from extractor callback
     */
-    inline void push_back(std::shared_ptr<krecord<K, V>>record) {
+    inline void push_back(std::shared_ptr<krecord<K, V>> record) {
       this->send_to_sinks(std::make_shared<kevent<K, V>>(record, currrent_id_));
     }
 
@@ -164,9 +162,9 @@ namespace kspp {
     }
 
   private:
-    std::shared_ptr <partition_source<K, V>> source_;
+    std::shared_ptr<partition_source<K, V>> source_;
     extractor extractor_;
-    std::shared_ptr <commit_chain::autocommit_marker> currrent_id_; // used to briefly hold the commit open during process one
+    std::shared_ptr<commit_chain::autocommit_marker> currrent_id_; // used to briefly hold the commit open during process one
   };
 }
 

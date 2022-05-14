@@ -1,10 +1,11 @@
 #include <memory>
 #include <kspp/avro/generic_avro.h>
 #include <kspp/kspp.h>
+
 #pragma once
 
 namespace kspp {
-class generic_avro_file_source : public partition_source<void, kspp::generic_avro> {
+  class generic_avro_file_source : public partition_source<void, kspp::generic_avro> {
     static constexpr const char *PROCESSOR_NAME = "avro_file_source";
   public:
     generic_avro_file_source(std::shared_ptr<cluster_config> config, int32_t partition, std::string source);

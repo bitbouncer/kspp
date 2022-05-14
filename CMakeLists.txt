@@ -86,6 +86,7 @@ add_definitions(-fPIC)
 add_definitions(-Wno-deprecated)
 
 include_directories(${CSI_INCLUDE_PATH} ${CMAKE_SOURCE_DIR}/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include) # this is needed if using kspp as submodule
 link_directories(${CSI_LIBRARY_PATH})
 
 #TARGETS

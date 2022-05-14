@@ -1,6 +1,7 @@
 #include <avro/Generic.hh>
 #include <avro/Schema.hh>
 #include <kspp/avro/generic_avro.h>
+
 #pragma once
 
 namespace kspp {
@@ -10,7 +11,9 @@ namespace kspp {
   //no decoration
   std::string avro_2_raw_column_value(const avro::GenericDatum &column);
 
-  std::string avro2elastic_key_values(const avro::ValidSchema &schema, const std::string &key, const avro::GenericDatum &datum);
+  std::string
+  avro2elastic_key_values(const avro::ValidSchema &schema, const std::string &key, const avro::GenericDatum &datum);
+
   std::string avro2elastic_json(const avro::ValidSchema &schema, const avro::GenericDatum &datum);
 
   class avro2elastic_IsChars {
@@ -23,6 +26,7 @@ namespace kspp {
       }
       return false;
     }
+
   private:
     const char *chars;
   };

@@ -9,16 +9,15 @@
 namespace kspp {
   template<class K, class V, template<typename, typename, typename> class STATE_STORE, class CODEC = void>
   class count_by_value : public materialized_source<K, V> {
-    static constexpr const char* PROCESSOR_NAME = "count_by_value";
+    static constexpr const char *PROCESSOR_NAME = "count_by_value";
   public:
     template<typename... Args>
-    count_by_value(std::shared_ptr<cluster_config> config, std::shared_ptr <partition_source<K, V>> source, std::chrono::milliseconds punctuate_intervall, Args... args)
-        : materialized_source<K, V>(source.get(), source->partition())
-        , stream_(source)
-        , counter_store_(this->get_storage_path(config->get_storage_root()), args...)
-        , punctuate_intervall_(punctuate_intervall.count()) // tbd we should use intervalls since epoch similar to windowed
-        , next_punctuate_(0)
-        , dirty_(false) {
+    count_by_value(std::shared_ptr<cluster_config> config, std::shared_ptr<partition_source<K, V>> source,
+                   std::chrono::milliseconds punctuate_intervall, Args... args)
+        : materialized_source<K, V>(source.get(), source->partition()), stream_(source),
+          counter_store_(this->get_storage_path(config->get_storage_root()), args...), punctuate_intervall_(
+            punctuate_intervall.count()) // tbd we should use intervalls since epoch similar to windowed
+        , next_punctuate_(0), dirty_(false) {
       source->add_sink([this](auto e) { this->_queue.push_back(e); });
       this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "count_by_value");
       this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(source->partition()));
@@ -46,7 +45,7 @@ namespace kspp {
       stream_->process(tick);
       size_t processed = 0;
       //forward up this timestamp
-      while (this->_queue.next_event_time()<=tick){
+      while (this->_queue.next_event_time() <= tick) {
         auto trans = this->_queue.pop_front_and_get();
         // should this be on processing time our message time???
         // what happens at end of stream if on messaage time...
@@ -96,16 +95,16 @@ namespace kspp {
     */
     void punctuate(int64_t timestamp) override {
       //if (_dirty) { // keep event timestamts in counter store and only include the updated ones... TBD
-      for (auto i : counter_store_) {
+      for (auto i: counter_store_) {
         i->event_time = timestamp;
-        this->send_to_sinks(std::make_shared < kevent < K, V >> (i));
+        this->send_to_sinks(std::make_shared<kevent<K, V >>(i));
       }
       //}
       dirty_ = false;
     }
 
     // inherited from kmaterialized_source
-    std::shared_ptr<const krecord <K, V>> get(const K &key) const override {
+    std::shared_ptr<const krecord<K, V>> get(const K &key) const override {
       return counter_store_.get(key);
     }
 
@@ -118,7 +117,7 @@ namespace kspp {
     }
 
   private:
-    std::shared_ptr <partition_source<K, V>> stream_;
+    std::shared_ptr<partition_source<K, V>> stream_;
     STATE_STORE<K, V, CODEC> counter_store_;
     int64_t punctuate_intervall_;
     int64_t next_punctuate_;

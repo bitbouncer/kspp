@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
       std::regex rgx("\\s+");
       auto word_streams = topology->create_processors<kspp::flat_map<void, std::string, std::string, void>>(
           sources, [&rgx](const auto record, auto stream) {
-            std::sregex_token_iterator iter(record.value()->begin(), record.value()->end(), rgx,-1);
+            std::sregex_token_iterator iter(record.value()->begin(), record.value()->end(), rgx, -1);
             std::sregex_token_iterator end;
             for (; iter != end; ++iter) {
               insert(stream, (std::string) *iter);
@@ -68,33 +68,36 @@ int main(int argc, char **argv) {
           });
 
       // this should be possible to do in memory
-      auto word_counts = topology->create_processors<kspp::count_by_key<std::string, int64_t, kspp::rocksdb_counter_store, kspp::binary_serdes>>(filtered_streams, 100ms);
+      auto word_counts = topology->create_processors<kspp::count_by_key<std::string, int64_t, kspp::rocksdb_counter_store, kspp::binary_serdes>>(
+          filtered_streams, 100ms);
 
-      auto ex1 = topology->create_processors<kspp::ktable<std::string, int64_t, kspp::rocksdb_store, kspp::binary_serdes>>(word_counts);
+      auto ex1 = topology->create_processors<kspp::ktable<std::string, int64_t, kspp::rocksdb_store, kspp::binary_serdes>>(
+          word_counts);
       auto ex2 = topology->create_processors<kspp::ktable<std::string, int64_t, kspp::mem_store>>(word_counts);
-      auto ex3 = topology->create_processors<kspp::ktable<std::string, int64_t, kspp::mem_windowed_store>>(word_counts, 500ms, 10);
+      auto ex3 = topology->create_processors<kspp::ktable<std::string, int64_t, kspp::mem_windowed_store>>(word_counts,
+                                                                                                           500ms, 10);
 
       topology->start(kspp::OFFSET_STORED);
       topology->flush();
 
       std::cerr << "using range iterators " << std::endl;
-      for (auto &&i : ex1)
-        for (auto &&j : *i)
+      for (auto &&i: ex1)
+        for (auto &&j: *i)
           std::cerr << "item : " << j->key() << ": " << *j->value() << std::endl;
 
       std::cerr << "using range iterators " << std::endl;
-      for (auto &&i : ex1)
-        for (auto &&j : *i)
+      for (auto &&i: ex1)
+        for (auto &&j: *i)
           std::cerr << "item : " << j->key() << ": " << *j->value() << std::endl;
 
       std::cerr << "using iterators " << std::endl;
-      for (auto &&i : ex2)
+      for (auto &&i: ex2)
         for (auto &&j = i->begin(), end = i->end(); j != end; ++j)
           std::cerr << "item : " << (*j)->key() << ": " << *(*j)->value() << std::endl;
 
       std::cerr << "using range iterators " << std::endl;
-      for (auto &&i : ex3)
-        for (auto &&j : *i)
+      for (auto &&i: ex3)
+        for (auto &&j: *i)
           std::cerr << "item : " << j->key() << ": " << *j->value() << std::endl;
 
       topology->commit(true);

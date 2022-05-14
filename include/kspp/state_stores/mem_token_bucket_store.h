@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <kspp/kspp.h>
 #include "state_store.h"
+
 #pragma once
 
 namespace kspp {
@@ -11,8 +12,8 @@ namespace kspp {
   protected:
     struct config {
       config(int64_t filltime_, V capacity_)
-              : filltime(filltime_), capacity(capacity_), min_tick(std::max<int64_t>(1, filltime_ / capacity_)),
-                fillrate_per_ms(((double) capacity) / filltime) {}
+          : filltime(filltime_), capacity(capacity_), min_tick(std::max<int64_t>(1, filltime_ / capacity_)),
+            fillrate_per_ms(((double) capacity) / filltime) {}
 
       int64_t filltime;
       V capacity;
@@ -23,7 +24,7 @@ namespace kspp {
     class bucket {
     public:
       bucket(V capacity)
-              : _tokens(capacity), _tstamp(0) {}
+          : _tokens(capacity), _tstamp(0) {}
 
       inline bool consume_one(const config *conf, int64_t ts) {
         __age(conf, ts);
@@ -56,12 +57,14 @@ namespace kspp {
     }; // class bucket
 
     class iterator_impl
-            : public kmaterialized_source_iterator_impl<K, V> {
+        : public kmaterialized_source_iterator_impl<K, V> {
     public:
-      enum seek_pos_e { BEGIN, END };
+      enum seek_pos_e {
+        BEGIN, END
+      };
 
       iterator_impl(const std::map<K, std::shared_ptr<bucket>> &container, seek_pos_e pos)
-              : _container(container), _it(pos == BEGIN ? _container.begin() : _container.end()) {}
+          : _container(container), _it(pos == BEGIN ? _container.begin() : _container.end()) {}
 
       bool valid() const override {
         return _it != _container.end();
@@ -96,7 +99,7 @@ namespace kspp {
 
   public:
     mem_token_bucket_store(std::chrono::milliseconds agetime, V capacity)
-            : state_store<K, V>(), _config(agetime.count(), capacity), _current_offset(-1) {
+        : state_store<K, V>(), _config(agetime.count(), capacity), current_offset_(-1) {
     }
 
     static std::string type_name() {
@@ -117,23 +120,23 @@ namespace kspp {
     * returns last offset
     */
     int64_t offset() const override {
-      return _current_offset;
+      return current_offset_;
     }
 
     void start(int64_t offset) override {
-      _current_offset = offset;
+      current_offset_ = offset;
     }
 
     /**
     * Adds count to bucket
     * returns true if bucket has capacity
     */
-    bool consume(const K &key, int64_t timestamp)  {
-      typename std::map<K, std::shared_ptr<bucket>>::iterator item = _buckets.find(key);
-      if (item == _buckets.end()) {
+    bool consume(const K &key, int64_t timestamp) {
+      typename std::map<K, std::shared_ptr<bucket>>::iterator item = buckets_.find(key);
+      if (item == buckets_.end()) {
         auto b = std::make_shared<bucket>(_config.capacity);
         bool res = b->consume_one(&_config, timestamp);
-        _buckets[key] = b;
+        buckets_[key] = b;
         return res;
       }
       return item->second->consume_one(&_config, timestamp);
@@ -141,16 +144,16 @@ namespace kspp {
 
     //this can and will override bucket capacity but bucket will stay in correct state
     void _insert(std::shared_ptr<const krecord<K, V>> record, int64_t offset) override {
-      _current_offset = std::max<int64_t>(_current_offset, offset);
+      current_offset_ = std::max<int64_t>(current_offset_, offset);
       if (record->value() == nullptr) {
-        _buckets.erase(record->key());
+        buckets_.erase(record->key());
       } else {
-        typename std::map<K, std::shared_ptr<bucket>>::iterator item = _buckets.find(record->key());
-        if (item == _buckets.end()) {
+        typename std::map<K, std::shared_ptr<bucket>>::iterator item = buckets_.find(record->key());
+        if (item == buckets_.end()) {
           auto b = std::make_shared<bucket>(_config.capacity);
           for (V i = 0; i != *record->value(); ++i)
             b->consume_one(&_config, record->event_time());
-          _buckets[record->key()] = b;
+          buckets_[record->key()] = b;
           return;
         }
         for (V i = 0; i != *record->value(); ++i) // bug only works por posituve...
@@ -161,50 +164,50 @@ namespace kspp {
     /**
     * Deletes a counter
     */
-    void del(const K &key)  {
-      _buckets.erase(key);
+    void del(const K &key) {
+      buckets_.erase(key);
     }
 
     /**
     * erases all counters
     */
     void clear() override {
-      _buckets.clear();
-      _current_offset = -1;
+      buckets_.clear();
+      current_offset_ = -1;
     }
 
     /**
     * Returns the counter for the given key
     */
     std::shared_ptr<const kspp::krecord<K, V>> get(const K &key) const override {
-      typename std::map<K, std::shared_ptr<bucket>>::const_iterator item = _buckets.find(key);
-      if (item == _buckets.end()) {
+      typename std::map<K, std::shared_ptr<bucket>>::const_iterator item = buckets_.find(key);
+      if (item == buckets_.end()) {
         return std::make_shared<kspp::krecord<K, V>>(key, _config.capacity, -1);
       }
       return std::make_shared<kspp::krecord<K, V>>(key, item->second->token(), item->second->timestamp());
     }
 
     size_t aprox_size() const override {
-      return _buckets.size();
+      return buckets_.size();
     }
 
     size_t exact_size() const override {
-      return _buckets.size();
+      return buckets_.size();
     }
 
     typename kspp::materialized_source<K, V>::iterator begin(void) const override {
       return typename kspp::materialized_source<K, V>::iterator(
-              std::make_shared<iterator_impl>(_buckets, iterator_impl::BEGIN));
+          std::make_shared<iterator_impl>(buckets_, iterator_impl::BEGIN));
     }
 
     typename kspp::materialized_source<K, V>::iterator end() const override {
       return typename kspp::materialized_source<K, V>::iterator(
-              std::make_shared<iterator_impl>(_buckets, iterator_impl::END));
+          std::make_shared<iterator_impl>(buckets_, iterator_impl::END));
     }
 
   protected:
     const config _config;
-    std::map<K, std::shared_ptr<bucket>> _buckets;
-    int64_t _current_offset;
+    std::map<K, std::shared_ptr<bucket>> buckets_;
+    int64_t current_offset_;
   };
 }

@@ -1,10 +1,10 @@
 #include <avro/Generic.hh>
 #include <avro/Compiler.hh>
 #include <boost/uuid/uuid.hpp>
+
 #pragma once
 
-namespace kspp
-{
+namespace kspp {
   namespace avro_utils {
     std::string normalize(const avro::ValidSchema &vs);
 
@@ -58,7 +58,9 @@ namespace kspp
     T convert(const avro::GenericDatum &datum) {
       if (cpp_to_avro_type<T>() == datum.type())
         return datum.value<T>();
-      throw std::invalid_argument(std::string("avro convert: wrong type, expected: [") + to_string(cpp_to_avro_type<T>()) + "], actual: " + to_string(datum.type()));
+      throw std::invalid_argument(
+          std::string("avro convert: wrong type, expected: [") + to_string(cpp_to_avro_type<T>()) + "], actual: " +
+          to_string(datum.type()));
     }
 
     template<>
@@ -69,7 +71,8 @@ namespace kspp
         case avro::AVRO_INT:
           return datum.value<int32_t>();
         default:
-          throw std::invalid_argument(std::string("avro convert: wrong type, expected: [LONG, INT], actual: ") + to_string(datum.type()));
+          throw std::invalid_argument(
+              std::string("avro convert: wrong type, expected: [LONG, INT], actual: ") + to_string(datum.type()));
       }
     }
 
@@ -87,8 +90,9 @@ namespace kspp
       }
 
       static std::shared_ptr<const avro::ValidSchema> valid_schema(const T &dummy) {
-        static const std::shared_ptr<const ::avro::ValidSchema> _validSchema(std::make_shared<const ::avro::ValidSchema>(
-            ::avro::compileJsonSchemaFromString(schema_as_string(dummy))));
+        static const std::shared_ptr<const ::avro::ValidSchema> _validSchema(
+            std::make_shared<const ::avro::ValidSchema>(
+                ::avro::compileJsonSchemaFromString(schema_as_string(dummy))));
         return _validSchema;
       }
     };
@@ -97,7 +101,8 @@ namespace kspp
     inline std::string avro_utils<std::string>::schema_name(const std::string &dummy) { return "string"; }
 
     template<>
-    inline std::string avro_utils<std::string>::schema_as_string(const std::string &dummy) { return "{\"type\":\"string\"}"; }
+    inline std::string
+    avro_utils<std::string>::schema_as_string(const std::string &dummy) { return "{\"type\":\"string\"}"; }
 
 
     template<>
@@ -133,15 +138,18 @@ namespace kspp
     inline std::string avro_utils<double>::schema_as_string(const double &dummy) { return "{\"type\":\"double\"}"; }
 
     template<>
-    inline std::string avro_utils<std::vector<uint8_t>>::schema_name(const std::vector<uint8_t> &dummy) { return "bytes"; }
+    inline std::string
+    avro_utils<std::vector<uint8_t>>::schema_name(const std::vector<uint8_t> &dummy) { return "bytes"; }
 
     template<>
-    inline std::string avro_utils<std::vector<uint8_t>>::schema_as_string(const std::vector<uint8_t> &dummy) { return "{\"type\":\"bytes\"}"; }
+    inline std::string avro_utils<std::vector<uint8_t>>::schema_as_string(
+        const std::vector<uint8_t> &dummy) { return "{\"type\":\"bytes\"}"; }
 
     template<>
     inline std::string avro_utils<boost::uuids::uuid>::schema_name(const boost::uuids::uuid &dummy) { return "uuid"; }
 
     template<>
-    inline std::string avro_utils<boost::uuids::uuid>::schema_as_string(const boost::uuids::uuid &dummy) { return "{\"type\":\"string\"}"; }
+    inline std::string avro_utils<boost::uuids::uuid>::schema_as_string(
+        const boost::uuids::uuid &dummy) { return "{\"type\":\"string\"}"; }
   }
 } // namespace

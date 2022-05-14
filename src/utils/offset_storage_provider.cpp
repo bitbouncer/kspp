@@ -5,13 +5,15 @@
 #include <kspp/utils/url.h>
 
 #ifdef KSPP_S3
+
 #include <kspp/features/aws/s3_offset_storage_provider.h>
+
 #endif
 
 namespace kspp {
 
   //TODO should we set commited offset and flushed offset to this??? probably?!
-  int64_t offset_storage::start(int64_t offset){
+  int64_t offset_storage::start(int64_t offset) {
     if (offset == kspp::OFFSET_STORED) {
       return load_offset(flush_offset_timeout_ms_);
     } else if (offset == kspp::OFFSET_BEGINNING) {
@@ -26,19 +28,18 @@ namespace kspp {
   }
 
   fs_offset_storage::fs_offset_storage(std::string path)
-      : offset_storage()
-      , offset_storage_path_(path){
-    if (!offset_storage_path_.empty()){
+      : offset_storage(), offset_storage_path_(path) {
+    if (!offset_storage_path_.empty()) {
       std::experimental::filesystem::create_directories(offset_storage_path_.parent_path());
     }
   }
 
-  fs_offset_storage::~fs_offset_storage(){
+  fs_offset_storage::~fs_offset_storage() {
     persist_offset(last_commited_offset_, 1000);
   }
 
-  int64_t fs_offset_storage::load_offset(int timeout_ms_not_used){
-    if (!std::experimental::filesystem::exists(offset_storage_path_)){
+  int64_t fs_offset_storage::load_offset(int timeout_ms_not_used) {
+    if (!std::experimental::filesystem::exists(offset_storage_path_)) {
       LOG(INFO) << "start(OFFSET_STORED), missing file " << offset_storage_path_ << ", starting from OFFSET_BEGINNING";
       return kspp::OFFSET_BEGINNING;
     }
@@ -65,21 +66,21 @@ namespace kspp {
   }
 
   std::shared_ptr<offset_storage> get_offset_provider(std::string uri) {
-    if (uri.size()==0)
+    if (uri.size() == 0)
       return std::make_shared<null_offset_storage>();
 
     kspp::url u(uri, "file");
 
-    if (!u.good()){
+    if (!u.good()) {
       LOG(ERROR) << "bad uri: " << uri;
       return nullptr;
     }
 
-    if (u.scheme()=="null"){
+    if (u.scheme() == "null") {
       return std::make_shared<null_offset_storage>();
     }
 
-    if (u.scheme()=="s3"){
+    if (u.scheme() == "s3") {
 #ifdef KSPP_S3
       return s3_offset_storage::create(uri);
 #else
@@ -88,7 +89,7 @@ namespace kspp {
 #endif
     }
 
-    if (u.scheme()=="file"){
+    if (u.scheme() == "file") {
       return std::make_shared<fs_offset_storage>(uri);
     }
 

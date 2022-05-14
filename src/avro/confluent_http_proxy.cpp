@@ -73,23 +73,23 @@ namespace kspp {
     return true;
   }
 
-  confluent_http_proxy::confluent_http_proxy(boost::asio::io_service &ios, const kspp::cluster_config& config)
-      : _http(ios)
-      , _read_policy(kspp::async::PARALLEL) // move to config
-      , _http_timeout(config.get_schema_registry_timeout())
-      , _ca_cert_path(config.get_ca_cert_path())
-      , _client_cert_path(config.get_client_cert_path())
-      , _private_key_path(config.get_private_key_path())
-      , _private_key_passphrase(config.get_private_key_passphrase())
-      , _verify_host(false) {
-    _base_urls = kspp::split_url_list(config.get_schema_registry_uri(), "http");
-    LOG_IF(FATAL, _base_urls.size()==0) << "confluent_http_proxy bad url: " << config.get_schema_registry_uri();
+  confluent_http_proxy::confluent_http_proxy(boost::asio::io_service &ios, const kspp::cluster_config &config)
+      : http_(ios)
+        , read_policy_(kspp::async::PARALLEL) // move to config
+        , http_timeout_(config.get_schema_registry_timeout())
+        , ca_cert_path_(config.get_ca_cert_path())
+        , client_cert_path_(config.get_client_cert_path())
+        , private_key_path_(config.get_private_key_path())
+        , private_key_passphrase_(config.get_private_key_passphrase()) {
+    base_urls_ = kspp::split_url_list(config.get_schema_registry_uri(), "http");
+    LOG_IF(FATAL, base_urls_.size() == 0) << "confluent_http_proxy bad url: " << config.get_schema_registry_uri();
   }
 
   void confluent_http_proxy::get_config(get_top_level_config_callback cb) {
     auto shared_result = std::make_shared<rpc_get_config_result>();
-    auto work = std::make_shared<kspp::async::work<int>>(_read_policy, kspp::async::FIRST_SUCCESS); // should we do random order??  can we send rpc result to work...
-    for (auto &&i : _base_urls) {
+    auto work = std::make_shared<kspp::async::work<int>>(read_policy_,
+                                                         kspp::async::FIRST_SUCCESS); // should we do random order??  can we send rpc result to work...
+    for (auto &&i: base_urls_) {
       std::string uri = i.str() + "/config";
       work->push_back([this, uri, shared_result](kspp::async::work<int>::callback cb) {
         std::vector<std::string> headers = {"Accept: application/vnd.schemaregistry.v1+json"};
@@ -97,13 +97,13 @@ namespace kspp {
             kspp::http::GET,
             uri,
             headers,
-            _http_timeout);
-        request->set_timeout(_http_timeout);
-        request->set_ca_cert_path(_ca_cert_path);
-        request->set_verify_host(_verify_host);
-        request->set_client_credentials(_client_cert_path,
-                                        _private_key_path,
-                                        _private_key_passphrase);
+            http_timeout_);
+        request->set_timeout(http_timeout_);
+        request->set_ca_cert_path(ca_cert_path_);
+        request->set_verify_host(verify_host_);
+        request->set_client_credentials(client_cert_path_,
+                                        private_key_path_,
+                                        private_key_passphrase_);
 
 #ifndef NDEBUG
         request->set_trace_level(http::TRACE_LOG_VERBOSE);
@@ -111,7 +111,7 @@ namespace kspp {
         request->set_request_id(to_string(uuid));
         DLOG(INFO) << to_string(uuid) << ", getting config from " << uri;
 #endif
-        _http.perform_async(request, [cb, shared_result](std::shared_ptr<kspp::http::request> request) {
+        http_.perform_async(request, [cb, shared_result](std::shared_ptr<kspp::http::request> request) {
           if (request->http_result() >= 200 && request->http_result() < 300) {
             shared_result->config = request->rx_content();
             cb(0);
@@ -135,7 +135,7 @@ namespace kspp {
     auto encoded_string = encode_put_schema_request(schema);
     //std::cerr << encoded_string << std::endl;
 
-    for (auto &&i : _base_urls) {
+    for (auto &&i: base_urls_) {
       std::string uri = i.str() + "/subjects/" + schema_name + "/versions";
       work->push_back([this, uri, encoded_string, shared_result, schema_name](kspp::async::work<int>::callback cb) {
         std::vector<std::string> headers = {"Content-Type: application/vnd.schemaregistry.v1+json"};
@@ -143,14 +143,14 @@ namespace kspp {
             kspp::http::POST,
             uri,
             headers,
-            _http_timeout);
-        request->set_ca_cert_path(_ca_cert_path);
-        request->set_verify_host(_verify_host);
-        request->set_client_credentials(_client_cert_path,
-                                        _private_key_path,
-                                        _private_key_passphrase);
+            http_timeout_);
+        request->set_ca_cert_path(ca_cert_path_);
+        request->set_verify_host(verify_host_);
+        request->set_client_credentials(client_cert_path_,
+                                        private_key_path_,
+                                        private_key_passphrase_);
         request->append(encoded_string);
-        _http.perform_async(request, [cb, schema_name, shared_result](std::shared_ptr<kspp::http::request> request) {
+        http_.perform_async(request, [cb, schema_name, shared_result](std::shared_ptr<kspp::http::request> request) {
           if (request->http_result() >= 200 && request->http_result() < 300) {
 #ifdef KSPP_DEBUG
             // the json parser overwrites the internal buffer so copy the response
@@ -166,10 +166,12 @@ namespace kspp {
 #ifdef KSPP_DEBUG
               LOG(ERROR) << "confluent_http_proxy put_schema return value unexpected bytes:" << copy_of_bytes;
 #else
-              LOG(ERROR) << "confluent_http_proxy cannot parse response";
+            LOG(ERROR) << "confluent_http_proxy cannot parse response";
 #endif
           }
-          LOG(ERROR) << "confluent_http_proxy http_response_code: " <<  request->http_result() << ", schema_name: " << schema_name << ", response: " << std::string(request->rx_content(), request->rx_content_length());
+          LOG(ERROR) << "confluent_http_proxy http_response_code: " << request->http_result() << ", schema_name: "
+                     << schema_name << ", response: "
+                     << std::string(request->rx_content(), request->rx_content_length());
           cb(-1);
         });
       });
@@ -182,9 +184,9 @@ namespace kspp {
 
   void confluent_http_proxy::get_schema(int32_t schema_id, get_callback get_cb) {
     auto shared_result = std::make_shared<rpc_get_result>();
-    auto work = std::make_shared<kspp::async::work<int>>(_read_policy,
+    auto work = std::make_shared<kspp::async::work<int>>(read_policy_,
                                                          kspp::async::FIRST_SUCCESS); // should we do random order??  can we send rpc result to work...
-    for (auto &&i : _base_urls) {
+    for (auto &&i: base_urls_) {
       std::string uri = i.str() + "/schemas/ids/" + std::to_string(schema_id);
       work->push_back([this, uri, shared_result](kspp::async::work<int>::callback cb) {
         std::vector<std::string> headers = {"Accept: application/vnd.schemaregistry.v1+json"};
@@ -192,14 +194,14 @@ namespace kspp {
             kspp::http::GET,
             uri,
             headers,
-            _http_timeout);
-        request->set_ca_cert_path(_ca_cert_path);
-        request->set_verify_host(_verify_host);
-        request->set_client_credentials(_client_cert_path,
-                                        _private_key_path,
-                                        _private_key_passphrase);
+            http_timeout_);
+        request->set_ca_cert_path(ca_cert_path_);
+        request->set_verify_host(verify_host_);
+        request->set_client_credentials(client_cert_path_,
+                                        private_key_path_,
+                                        private_key_passphrase_);
 
-        _http.perform_async(request, [cb, shared_result](std::shared_ptr<kspp::http::request> request) {
+        http_.perform_async(request, [cb, shared_result](std::shared_ptr<kspp::http::request> request) {
           if (request->http_result() >= 200 && request->http_result() < 300) {
             shared_result->schema = std::make_shared<avro::ValidSchema>();
 #ifdef KSPP_DEBUG
@@ -216,7 +218,7 @@ namespace kspp {
 #ifdef KSPP_DEBUG
               LOG(ERROR) << "confluent_http_proxy get_schema return value unexpected bytes:" << copy_of_bytes;
 #else
-              LOG(ERROR) << "confluent_http_proxy cannot parse response";
+            LOG(ERROR) << "confluent_http_proxy cannot parse response";
 #endif
           }
           if (request->transport_result())

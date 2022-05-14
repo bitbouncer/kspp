@@ -9,13 +9,14 @@ using namespace std::chrono_literals;
 
 /* Exit flag for main loop */
 static bool run = true;
+
 static void sigterm(int sig) {
   run = false;
 }
 
 //valgrind  --leak-check=yes --leak-check=full --show-leak-kinds=all
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   auto config = std::make_shared<kspp::cluster_config>("", kspp::cluster_config::NONE);
   kspp::topology_builder builder(config);
   auto topology = builder.create_topology();

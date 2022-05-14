@@ -10,10 +10,10 @@
 namespace fs = std::experimental::filesystem;
 
 namespace kspp {
-  generic_avro_file_source::generic_avro_file_source(std::shared_ptr<cluster_config> config, int32_t partition, std::string source)
-    : partition_source<void, kspp::generic_avro>(nullptr, partition)
-      ,thread_(&generic_avro_file_source::thread_f, this)
-      , source_(source) {
+  generic_avro_file_source::generic_avro_file_source(std::shared_ptr<cluster_config> config, int32_t partition,
+                                                     std::string source)
+      : partition_source<void, kspp::generic_avro>(nullptr, partition),
+        thread_(&generic_avro_file_source::thread_f, this), source_(source) {
     this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
     // if a given  a directory scan directory and add all avro files??
   }
@@ -22,12 +22,12 @@ namespace kspp {
     this->close();
   }
 
-  void generic_avro_file_source::start(int64_t offset){
+  void generic_avro_file_source::start(int64_t offset) {
     started_ = true;
   }
 
   void generic_avro_file_source::commit(bool flush) {
-  // do nothing - since we only support start from beginning
+    // do nothing - since we only support start from beginning
   }
 
   void generic_avro_file_source::close() {
@@ -35,7 +35,7 @@ namespace kspp {
       exit_ = true;
       thread_.join();
     }
-    LOG(INFO) << PROCESSOR_NAME << " processor closed - produced " << this->_processed_count.value() << " messages";
+    LOG(INFO) << PROCESSOR_NAME << " processor closed - produced " << this->processed_count_.value() << " messages";
   }
 
   bool generic_avro_file_source::eof() const {
@@ -60,9 +60,9 @@ namespace kspp {
         return processed;
       incomming_msg_.pop_front();
       this->send_to_sinks(p);
-      ++(this->_processed_count);
+      ++(this->processed_count_);
       ++processed;
-      this->_lag.add_event_time(tick, p->event_time());
+      this->lag_.add_event_time(tick, p->event_time());
     }
     return processed;
   }
@@ -76,15 +76,15 @@ namespace kspp {
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
     DLOG(INFO) << "starting thread";
 
-    if (!fs::exists(source_)){
+    if (!fs::exists(source_)) {
       std::cerr << "source does not exist: " << source_ << std::endl;
       eof_ = true;
       return; // exit thread
     }
     std::vector<fs::path> sources;
-    if (fs::is_directory(source_)){
+    if (fs::is_directory(source_)) {
       LOG(INFO) << "directory mode ";
-      for(auto& p: fs::recursive_directory_iterator(source_)) {
+      for (auto &p: fs::recursive_directory_iterator(source_)) {
         if (p.path().extension() == ".avro") {
           sources.push_back(p.path());
         }
@@ -97,7 +97,7 @@ namespace kspp {
 
     bool first_time = true;
 
-    for (auto f : sources) {
+    for (auto f: sources) {
       LOG(INFO) << "opening file: " << f;
       avro::DataFileReader<generic_avro> reader(f.c_str());
       auto dataSchema = reader.dataSchema();

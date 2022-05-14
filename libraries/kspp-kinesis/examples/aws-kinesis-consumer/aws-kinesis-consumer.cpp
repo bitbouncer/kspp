@@ -10,12 +10,13 @@ using namespace kspp;
 using json = nlohmann::json;
 
 static bool run = true;
+
 static void sigterm(int sig) {
   run = false;
 }
 
 int main(int argc, char **argv) {
-  if (argc!=2){
+  if (argc != 2) {
     std::cerr << "usage: " << argv[0] << " stream_name";
     return -1;
   }
@@ -35,17 +36,18 @@ int main(int argc, char **argv) {
   kspp::topology_builder generic_builder(config);
 
   auto t = generic_builder.create_topology();
-  auto source0 = t->create_processors<kspp::kinesis_string_source>({0},stream_name);
-  auto vistor = t->create_processors<kspp::visitor<std::string, std::string>>(source0, [](const auto record){
+  auto source0 = t->create_processors<kspp::kinesis_string_source>({0}, stream_name);
+  auto vistor = t->create_processors<kspp::visitor<std::string, std::string>>(source0, [](const auto record) {
     if (record.value()) {
       json j = json::parse(*record.value());
       double t0 = j["ts"];
       auto now = kspp::milliseconds_since_epoch();
       int64_t kinesis_lag = now - record.event_time();
-      int64_t total_lag = now -t0;
-      LOG(INFO) << *record.value() << " kinesis ts: " << record.event_time() << ", kinesis lag: " << kinesis_lag << " total_lag: " << total_lag;
+      int64_t total_lag = now - t0;
+      LOG(INFO) << *record.value() << " kinesis ts: " << record.event_time() << ", kinesis lag: " << kinesis_lag
+                << " total_lag: " << total_lag;
     }
-    });
+  });
 
   std::signal(SIGINT, sigterm);
   std::signal(SIGTERM, sigterm);

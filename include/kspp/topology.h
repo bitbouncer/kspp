@@ -3,23 +3,24 @@
 #include <limits>
 #include <set>
 #include <prometheus/registry.h>
+
 #pragma once
 
 namespace kspp {
   class topology {
   public:
-    topology(std::shared_ptr<cluster_config> c_config, std::string topology_id, bool internal=false);
+    topology(std::shared_ptr<cluster_config> c_config, std::string topology_id, bool internal = false);
 
     virtual ~topology();
 
     std::shared_ptr<cluster_config> get_cluster_config() {
-      return _cluster_config;
+      return cluster_config_;
     }
 
     std::chrono::milliseconds max_buffering_time() const;
 
-    void add_labels(const std::map<std::string, std::string>& labels){
-      _labels.insert(labels.begin(), labels.end());
+    void add_labels(const std::map<std::string, std::string> &labels) {
+      labels_.insert(labels.begin(), labels.end());
     }
 
     void for_each_metrics(std::function<void(kspp::metric &)> f);
@@ -29,7 +30,9 @@ namespace kspp {
     bool eof();
 
     std::size_t process_1s();
+
     std::size_t process_1ms();
+
     std::size_t process(int64_t ts); // =milliseconds_since_epoch()
 
     void close();
@@ -46,10 +49,10 @@ namespace kspp {
     template<class pp, typename... Args>
     typename std::enable_if<std::is_base_of<kspp::partition_processor, pp>::value, std::vector<std::shared_ptr<pp>>>::type
     create_processors(std::vector<int> partition_list, Args... args) {
-      std::vector <std::shared_ptr<pp>> result;
-      for (auto i : partition_list) {
+      std::vector<std::shared_ptr<pp>> result;
+      for (auto i: partition_list) {
         auto p = std::make_shared<pp>(this->get_cluster_config(), i, args...);
-        _partition_processors.push_back(p);
+        partition_processors_.push_back(p);
         result.push_back(p);
       }
       return result;
@@ -60,7 +63,7 @@ namespace kspp {
     typename std::enable_if<std::is_base_of<kspp::partition_processor, pp>::value, std::shared_ptr<pp>>::type
     create_processor(Args... args) {
       auto p = std::make_shared<pp>(this->get_cluster_config(), args...);
-      _partition_processors.push_back(p);
+      partition_processors_.push_back(p);
       return p;
     }
 
@@ -68,10 +71,10 @@ namespace kspp {
     template<class pp, class ps, typename... Args>
     typename std::enable_if<std::is_base_of<kspp::partition_processor, pp>::value, std::vector<std::shared_ptr<pp>>>::type
     create_processors(std::vector<std::shared_ptr<ps>> sources, Args... args) {
-      std::vector <std::shared_ptr<pp>> result;
-      for (auto i : sources) {
+      std::vector<std::shared_ptr<pp>> result;
+      for (auto i: sources) {
         auto p = std::make_shared<pp>(this->get_cluster_config(), i, args...);
-        _partition_processors.push_back(p);
+        partition_processors_.push_back(p);
         result.push_back(p);
       }
       return result;
@@ -87,13 +90,13 @@ namespace kspp {
         std::vector<std::shared_ptr<sourceT>> v1,
         std::vector<std::shared_ptr<leftT>> v2,
         Args... args) {
-      std::vector <std::shared_ptr<pp>> result;
+      std::vector<std::shared_ptr<pp>> result;
       auto i = v1.begin();
       auto j = v2.begin();
       auto end = v1.end();
       for (; i != end; ++i, ++j) {
         auto p = std::make_shared<pp>(this->get_cluster_config(), *i, *j, args...);
-        _partition_processors.push_back(std::static_pointer_cast<kspp::partition_processor>(p));
+        partition_processors_.push_back(std::static_pointer_cast<kspp::partition_processor>(p));
         result.push_back(p);
       }
       return result;
@@ -105,7 +108,7 @@ namespace kspp {
     typename std::enable_if<std::is_base_of<kspp::processor, pp>::value, std::shared_ptr<pp>>::type
     create_sink(Args... args) {
       auto p = std::make_shared<pp>(this->get_cluster_config(), args...);
-      _sinks.push_back(p);
+      sinks_.push_back(p);
       return p;
     }
 
@@ -114,7 +117,7 @@ namespace kspp {
     typename std::enable_if<std::is_base_of<kspp::processor, pp>::value, std::shared_ptr<pp>>::type
     create_sink(std::shared_ptr<source> src, Args... args) {
       auto p = std::make_shared<pp>(this->get_cluster_config(), args...);
-      _sinks.push_back(p);
+      sinks_.push_back(p);
       src->add_sink(p);
       return p;
     }
@@ -124,41 +127,44 @@ namespace kspp {
     typename std::enable_if<std::is_base_of<kspp::processor, pp>::value, std::shared_ptr<pp>>::type
     create_sink(std::vector<std::shared_ptr<source>> sources, Args... args) {
       auto p = std::make_shared<pp>(this->get_cluster_config(), args...);
-      _sinks.push_back(p);
-      for (auto i : sources)
+      sinks_.push_back(p);
+      for (auto i: sources)
         i->add_sink(p);
       return p;
     }
 
     std::shared_ptr<prometheus::Registry> get_prometheus_registry() {
-      return _prom_registry;
+      return prom_registry_;
     }
 
-    prometheus::Counter& metrics_counter_add(std::string what, metric::mtype t, std::string unit, const std::map<std::string, std::string>& labels){
-      auto& counter_family = prometheus::BuildCounter().Name("kspp_" + what).Labels(_labels).Register(*_prom_registry);
+    prometheus::Counter &metrics_counter_add(std::string what, metric::mtype t, std::string unit,
+                                             const std::map<std::string, std::string> &labels) {
+      auto &counter_family = prometheus::BuildCounter().Name("kspp_" + what).Labels(labels_).Register(*prom_registry_);
       std::map<std::string, std::string> l(labels);
-      l["unit"]=unit;
+      l["unit"] = unit;
       return counter_family.Add(l);
     }
 
   protected:
     void init_metrics();
-    void init_processing_graph();
-    std::shared_ptr<cluster_config> _cluster_config;
-    bool _is_started;
-    std::string _topology_id;
-    //std::experimental::filesystem::path _root_path;
-    std::vector<std::shared_ptr<partition_processor>> _partition_processors;
-    std::vector<std::shared_ptr<processor>> _sinks;
-    std::vector<std::shared_ptr<partition_processor>> _top_partition_processors;
-    int64_t _next_gc_ts;
-    int64_t _min_buffering_ms;
-    size_t _max_pending_sink_messages;
-    std::set<std::string> _precondition_topics;
-    std::string _precondition_consumer_group;
-    bool _allow_commit_chain_gc;
 
-    std::map<std::string, std::string> _labels;
-    std::shared_ptr<prometheus::Registry> _prom_registry;
+    void init_processing_graph();
+
+    std::shared_ptr<cluster_config> cluster_config_;
+    bool is_started_=false;
+    std::string topology_id_;
+    //std::experimental::filesystem::path _root_path;
+    std::vector<std::shared_ptr<partition_processor>> partition_processors_;
+    std::vector<std::shared_ptr<processor>> sinks_;
+    std::vector<std::shared_ptr<partition_processor>> top_partition_processors_;
+    int64_t next_gc_ts_=0;
+    int64_t min_buffering_ms_;
+    size_t max_pending_sink_messages_;
+    std::set<std::string> precondition_topics_;
+    std::string precondition_consumer_group_;
+    bool allow_commit_chain_gc_ = true;
+
+    std::map<std::string, std::string> labels_;
+    std::shared_ptr<prometheus::Registry> prom_registry_;
   };
 } // namespace

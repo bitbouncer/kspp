@@ -1,7 +1,7 @@
 #include <kspp/avro/avro_utils.h>
 #include <sstream>
 
-namespace kspp{
+namespace kspp {
   namespace avro_utils {
     std::string normalize(const avro::ValidSchema &vs) {
       std::stringstream ss;

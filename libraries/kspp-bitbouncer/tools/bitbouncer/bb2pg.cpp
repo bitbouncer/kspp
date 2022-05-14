@@ -17,38 +17,57 @@ using namespace std::chrono_literals;
 using namespace kspp;
 
 static bool run = true;
+
 static void sigterm(int sig) {
   run = false;
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   FLAGS_logtostderr = 1;
   google::InitGoogleLogging(argv[0]);
 
   boost::program_options::options_description desc("options");
   desc.add_options()
       ("help", "produce help message")
-      ("monitor_uri", boost::program_options::value<std::string>()->default_value(get_env_and_log("MONITOR_URI", DEFAULT_SRC_URI)), "monitor_uri")
-      ("monitor_api_key", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("MONITOR_API_KEY", "")), "monitor_api_key")
-      ("monitor_secret_access_key", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("MONITOR_SECRET_ACCESS_KEY", "")), "monitor_secret_access_key")
+      ("monitor_uri",
+       boost::program_options::value<std::string>()->default_value(get_env_and_log("MONITOR_URI", DEFAULT_SRC_URI)),
+       "monitor_uri")
+      ("monitor_api_key",
+       boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("MONITOR_API_KEY", "")),
+       "monitor_api_key")
+      ("monitor_secret_access_key", boost::program_options::value<std::string>()->default_value(
+          get_env_and_log_hidden("MONITOR_SECRET_ACCESS_KEY", "")), "monitor_secret_access_key")
       ("topic", boost::program_options::value<std::string>()->default_value("logs"), "topic")
-      ("offset_storage", boost::program_options::value<std::string>()->default_value(get_env_and_log("OFFSET_STORAGE", "")), "offset_storage")
+      ("offset_storage",
+       boost::program_options::value<std::string>()->default_value(get_env_and_log("OFFSET_STORAGE", "")),
+       "offset_storage")
       ("start_offset", boost::program_options::value<std::string>()->default_value("OFFSET_BEGINNING"), "start_offset")
-      ("postgres_host", boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_HOST")), "postgres_host")
+      ("postgres_host", boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_HOST")),
+       "postgres_host")
       ("postgres_port", boost::program_options::value<int32_t>()->default_value(5432), "postgres_port")
-      ("postgres_user", boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_USER")), "postgres_user")
-      ("postgres_password", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("POSTGRES_PASSWORD")), "postgres_password")
-      ("postgres_dbname", boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_DBNAME")), "postgres_dbname")
-      ("postgres_tablename", boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_TABLENAME")), "postgres_tablename")
-      ("postgres_max_items_in_insert", boost::program_options::value<int32_t>()->default_value(1000), "postgres_max_items_in_insert")
-      ("postgres_warning_timeout", boost::program_options::value<int32_t>()->default_value(1000), "postgres_warning_timeout")
+      ("postgres_user", boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_USER")),
+       "postgres_user")
+      ("postgres_password",
+       boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("POSTGRES_PASSWORD")),
+       "postgres_password")
+      ("postgres_dbname",
+       boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_DBNAME")),
+       "postgres_dbname")
+      ("postgres_tablename",
+       boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_TABLENAME")),
+       "postgres_tablename")
+      ("postgres_max_items_in_insert", boost::program_options::value<int32_t>()->default_value(1000),
+       "postgres_max_items_in_insert")
+      ("postgres_warning_timeout", boost::program_options::value<int32_t>()->default_value(1000),
+       "postgres_warning_timeout")
       ("postgres_disable_delete", boost::program_options::value<int32_t>(), "postgres_disable_delete")
       ("id_column", boost::program_options::value<std::string>()->default_value("id"), "id_column")
       ("table_prefix", boost::program_options::value<std::string>()->default_value("kafka_"), "table_prefix")
       ("character_encoding", boost::program_options::value<std::string>()->default_value("UTF8"), "character_encoding")
-      ("metrics_namespace", boost::program_options::value<std::string>()->default_value(get_env_and_log("METRICS_NAMESPACE", "bb")),"metrics_namespace")
-      ("oneshot", "run to eof and exit")
-      ;
+      ("metrics_namespace",
+       boost::program_options::value<std::string>()->default_value(get_env_and_log("METRICS_NAMESPACE", "bb")),
+       "metrics_namespace")
+      ("oneshot", "run to eof and exit");
 
   boost::program_options::variables_map vm;
   boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
@@ -76,7 +95,7 @@ int main(int argc, char** argv) {
     monitor_api_key = vm["monitor_api_key"].as<std::string>();
   }
 
-  if (monitor_api_key.size()==0){
+  if (monitor_api_key.size() == 0) {
     std::cerr << "--monitor_api_key must be defined" << std::endl;
     return -1;
   }
@@ -97,12 +116,12 @@ int main(int argc, char** argv) {
     topic = vm["topic"].as<std::string>();
   }
 
-  kspp::start_offset_t start_offset=kspp::OFFSET_BEGINNING;
+  kspp::start_offset_t start_offset = kspp::OFFSET_BEGINNING;
   try {
     if (vm.count("start_offset"))
       start_offset = kspp::to_offset(vm["start_offset"].as<std::string>());
   }
-  catch(std::exception& e) {
+  catch (std::exception &e) {
     std::cerr << "start_offset must be one of OFFSET_BEGINNING / OFFSET_END / OFFSET_STORED";
     return -1;
   }
@@ -177,7 +196,7 @@ int main(int argc, char** argv) {
   }
 
 
-  bool postgres_disable_delete=false;
+  bool postgres_disable_delete = false;
   if (vm.count("postgres_disable_delete")) {
     postgres_disable_delete = (vm["postgres_disable_delete"].as<int>() > 0);
   }
@@ -188,9 +207,9 @@ int main(int argc, char** argv) {
   }
 
 
-  bool oneshot=false;
+  bool oneshot = false;
   if (vm.count("oneshot"))
-    oneshot=true;
+    oneshot = true;
 
   LOG(INFO) << "monitor_uri                  : " << monitor_uri;
   LOG(INFO) << "monitor_api_key              : " << monitor_api_key;
@@ -213,7 +232,7 @@ int main(int argc, char** argv) {
   LOG(INFO) << "pushgateway_uri              : " << config->get_pushgateway_uri();
   LOG(INFO) << "metrics_namespace            : " << metrics_namespace;
 
-  std::vector<std::string> keys = { id_column };
+  std::vector<std::string> keys = {id_column};
 
   kspp::connect::connection_params connection_params;
   connection_params.host = postgres_host;
@@ -239,17 +258,23 @@ int main(int argc, char** argv) {
   kspp::topology_builder builder(config);
   auto t = builder.create_topology();
   auto offset_provider = get_offset_provider(offset_storage);
-  auto stream = t->create_processor<kspp::grpc_avro_source<kspp::generic_avro,kspp::generic_avro>>(0, topic, offset_provider, channel, monitor_api_key, monitor_secret_access_key);
-  auto sink = t->create_sink<kspp::postgres_generic_avro_sink>(stream, postgres_tablename, connection_params, keys, character_encoding, postgres_max_items_in_insert, postgres_disable_delete);
+  auto stream = t->create_processor<kspp::grpc_avro_source<kspp::generic_avro, kspp::generic_avro>>(0, topic,
+                                                                                                    offset_provider,
+                                                                                                    channel,
+                                                                                                    monitor_api_key,
+                                                                                                    monitor_secret_access_key);
+  auto sink = t->create_sink<kspp::postgres_generic_avro_sink>(stream, postgres_tablename, connection_params, keys,
+                                                               character_encoding, postgres_max_items_in_insert,
+                                                               postgres_disable_delete);
 
   std::map<std::string, std::string> labels = {
-      { "app_name", SERVICE_NAME },
+      {"app_name", SERVICE_NAME},
       //{ "app_realm", app_realm },
-      { "hostname", default_hostname() },
-      { "src_topic", topic },
-      { "dst_uri", postgres_host },
-      { "dst_database", postgres_dbname },
-      { "dst_table", postgres_tablename }
+      {"hostname",     default_hostname()},
+      {"src_topic",    topic},
+      {"dst_uri",      postgres_host},
+      {"dst_database", postgres_dbname},
+      {"dst_table",    postgres_tablename}
   };
 
   t->add_labels(labels);
@@ -271,7 +296,7 @@ int main(int argc, char** argv) {
 
     // send metrics
 
-    }
+  }
 
   LOG(INFO) << "exiting";
   return 0;

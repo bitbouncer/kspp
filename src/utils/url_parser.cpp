@@ -3,7 +3,7 @@
 
 namespace kspp {
   std::vector<url> split_url_list(std::string s, std::string default_scheme) {
-  // remove internal whitespaces in s to make sure we do not create empty urls later...
+    // remove internal whitespaces in s to make sure we do not create empty urls later...
     s.erase(remove_if(s.begin(), s.end(), isspace), s.end());
 
     std::vector<std::string> splitted_urls;
@@ -14,7 +14,7 @@ namespace kspp {
       splitted_urls.push_back(*iter);
 
     std::vector<url> result;
-    for (auto str : splitted_urls) {
+    for (auto str: splitted_urls) {
       url a_url(str, default_scheme);
       if (a_url.good())
         result.push_back(a_url);

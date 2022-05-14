@@ -33,22 +33,34 @@ int main(int argc, char **argv) {
   auto partition_list = kspp::get_partition_list(partitions);
   auto topology = builder.create_topology();
   auto sources = topology->create_processors<kspp::kafka_source<void, kspp::generic_avro, void, kspp::avro_serdes>>(
-          partition_list, "postgres_mqtt_device_auth_view", config->avro_serdes());
-  auto parsed = topology->create_processors<kspp::flat_map<void, kspp::generic_avro, int, std::string>>(sources, [](const kspp::krecord<void, kspp::generic_avro>& in, auto stream) {
-      try {
-        auto record = in.value()->record();
-        auto id = record.get_optional<int32_t>("id");
-        auto pid = record.get_optional<std::string>("pid");
-        auto hash = record.get_optional<std::string>("api_key_hash");
-        auto broker_uri = record.get_optional<std::string>("broker_url");
-        if (id) {
-          insert(stream, *id, "nisse"s);
-        }
-      }
-      catch (std::exception& e){
-        LOG(ERROR) << "not my kind of avro" << e.what();
-      }
-  });
+      partition_list, "postgres_mqtt_device_auth_view", config->avro_serdes());
+  auto parsed = topology->create_processors<kspp::flat_map<void, kspp::generic_avro, int, std::string>>(sources,
+                                                                                                        [](const kspp::krecord<void, kspp::generic_avro> &in,
+                                                                                                           auto stream) {
+                                                                                                          try {
+                                                                                                            auto record = in.value()->record();
+                                                                                                            auto id = record.get_optional<int32_t>(
+                                                                                                                "id");
+                                                                                                            auto pid = record.get_optional<std::string>(
+                                                                                                                "pid");
+                                                                                                            auto hash = record.get_optional<std::string>(
+                                                                                                                "api_key_hash");
+                                                                                                            auto broker_uri = record.get_optional<std::string>(
+                                                                                                                "broker_url");
+                                                                                                            if (id) {
+                                                                                                              insert(
+                                                                                                                  stream,
+                                                                                                                  *id,
+                                                                                                                  "nisse"s);
+                                                                                                            }
+                                                                                                          }
+                                                                                                          catch (
+                                                                                                              std::exception &e) {
+                                                                                                            LOG(ERROR)
+                                                                                                                << "not my kind of avro"
+                                                                                                                << e.what();
+                                                                                                          }
+                                                                                                        });
   auto stored_parsed = topology->create_processors<kspp::ktable<int, std::string, kspp::mem_store>>(parsed);
 
   topology->start(kspp::OFFSET_BEGINNING);

@@ -12,21 +12,26 @@
 #endif
 
 #include <rocksdb/db.h>
+
 #pragma once
 
 namespace kspp {
   template<class K, class V, class CODEC>
   class rocksdb_store
-          : public state_store<K, V> {
+      : public state_store<K, V> {
   public:
-    enum { MAX_KEY_SIZE = 10000, MAX_VALUE_SIZE = 100000 };
+    enum {
+      MAX_KEY_SIZE = 10000, MAX_VALUE_SIZE = 100000
+    };
 
     class iterator_impl : public kmaterialized_source_iterator_impl<K, V> {
     public:
-      enum seek_pos_e { BEGIN, END };
+      enum seek_pos_e {
+        BEGIN, END
+      };
 
       iterator_impl(rocksdb::DB *db, std::shared_ptr<CODEC> codec, seek_pos_e pos)
-              : _it(db->NewIterator(rocksdb::ReadOptions())), _codec(codec) {
+          : _it(db->NewIterator(rocksdb::ReadOptions())), _codec(codec) {
         if (pos == BEGIN) {
           _it->SeekToFirst();
         } else {
@@ -95,36 +100,34 @@ namespace kspp {
 
     };
 
-    rocksdb_store(std::experimental::filesystem::path storage_path, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
-            : _offset_storage_path(storage_path)
-            , _codec(codec)
-            , _current_offset(kspp::OFFSET_BEGINNING)
-            , _last_comitted_offset(kspp::OFFSET_BEGINNING)
-            , _last_flushed_offset(kspp::OFFSET_BEGINNING) {
-      LOG_IF(FATAL, storage_path.generic_string().size()==0);
+    rocksdb_store(std::experimental::filesystem::path storage_path,
+                  std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
+        : offset_storage_path_(storage_path), codec_(codec), current_offset_(kspp::OFFSET_BEGINNING),
+          last_comitted_offset_(kspp::OFFSET_BEGINNING), last_flushed_offset_(kspp::OFFSET_BEGINNING) {
+      LOG_IF(FATAL, storage_path.generic_string().size() == 0);
       std::experimental::filesystem::create_directories(storage_path);
-      _offset_storage_path /= "kspp_offset.bin";
+      offset_storage_path_ /= "kspp_offset.bin";
       rocksdb::Options options;
       options.create_if_missing = true;
       options.IncreaseParallelism(); // should be #cores
       options.OptimizeLevelStyleCompaction();
       rocksdb::DB *tmp = nullptr;
       auto s = rocksdb::DB::Open(options, storage_path.generic_string(), &tmp);
-      _db.reset(tmp);
+      db_.reset(tmp);
       if (!s.ok()) {
         LOG(FATAL) << "rocksdb_store, failed to open rocks db, path:" << storage_path.generic_string();
         throw std::runtime_error(
-                std::string("rocksdb_store, failed to open rocks db, path:") + storage_path.generic_string());
+            std::string("rocksdb_store, failed to open rocks db, path:") + storage_path.generic_string());
       }
 
-      if (std::experimental::filesystem::exists(_offset_storage_path)) {
-        std::ifstream is(_offset_storage_path.generic_string(), std::ios::binary);
+      if (std::experimental::filesystem::exists(offset_storage_path_)) {
+        std::ifstream is(offset_storage_path_.generic_string(), std::ios::binary);
         int64_t tmp;
         is.read((char *) &tmp, sizeof(int64_t));
         if (is.good()) {
-          _current_offset = tmp;
-          _last_comitted_offset = tmp;
-          _last_flushed_offset = tmp;
+          current_offset_ = tmp;
+          last_comitted_offset_ = tmp;
+          last_flushed_offset_ = tmp;
         }
       }
     }
@@ -138,11 +141,11 @@ namespace kspp {
     }
 
     void close() override {
-      _db = nullptr;
+      db_ = nullptr;
     }
 
     void _insert(std::shared_ptr<const krecord<K, V>> record, int64_t offset) override {
-      _current_offset = std::max<int64_t>(_current_offset, offset);
+      current_offset_ = std::max<int64_t>(current_offset_, offset);
       char key_buf[MAX_KEY_SIZE];
       char val_buf[MAX_VALUE_SIZE];
 
@@ -152,7 +155,7 @@ namespace kspp {
       if (record->value()) {
         {
           std::strstream s(key_buf, MAX_KEY_SIZE);
-          ksize = _codec->encode(record->key(), s);
+          ksize = codec_->encode(record->key(), s);
         }
 
         // write timestamp
@@ -160,27 +163,27 @@ namespace kspp {
         memcpy(val_buf, &tmp, sizeof(int64_t));
         {
           std::strstream s(val_buf + sizeof(int64_t), MAX_VALUE_SIZE - sizeof(int64_t));
-          vsize = _codec->encode(*record->value(), s) + +sizeof(int64_t);
+          vsize = codec_->encode(*record->value(), s) + +sizeof(int64_t);
         }
-        rocksdb::Status status = _db->Put(rocksdb::WriteOptions(), rocksdb::Slice((char *) key_buf, ksize),
+        rocksdb::Status status = db_->Put(rocksdb::WriteOptions(), rocksdb::Slice((char *) key_buf, ksize),
                                           rocksdb::Slice(val_buf, vsize));
       } else {
         std::strstream s(key_buf, MAX_KEY_SIZE);
-        ksize = _codec->encode(record->key(), s);
-        auto status = _db->Delete(rocksdb::WriteOptions(), rocksdb::Slice(key_buf, ksize));
+        ksize = codec_->encode(record->key(), s);
+        auto status = db_->Delete(rocksdb::WriteOptions(), rocksdb::Slice(key_buf, ksize));
       }
     }
 
-    std::shared_ptr<const krecord<K, V>> get(const K &key) const override{
+    std::shared_ptr<const krecord<K, V>> get(const K &key) const override {
       char key_buf[MAX_KEY_SIZE];
       size_t ksize = 0;
       {
         std::ostrstream s(key_buf, MAX_KEY_SIZE);
-        ksize = _codec->encode(key, s);
+        ksize = codec_->encode(key, s);
       }
 
       std::string payload;
-      rocksdb::Status s = _db->Get(rocksdb::ReadOptions(), rocksdb::Slice(key_buf, ksize), &payload);
+      rocksdb::Status s = db_->Get(rocksdb::ReadOptions(), rocksdb::Slice(key_buf, ksize), &payload);
       if (!s.ok())
         return nullptr;
 
@@ -193,7 +196,7 @@ namespace kspp {
       // read value
       size_t actual_sz = payload.size() - sizeof(int64_t);
       auto tmp_value = std::make_shared<V>();
-      size_t consumed = _codec->decode(payload.data() + sizeof(int64_t), actual_sz, *tmp_value);
+      size_t consumed = codec_->decode(payload.data() + sizeof(int64_t), actual_sz, *tmp_value);
       if (consumed != actual_sz) {
         LOG(ERROR) << "rockdb_store, decode payload failed, consumed:" << consumed << ", actual sz:" << actual_sz;
         return nullptr;
@@ -203,7 +206,7 @@ namespace kspp {
 
     //should we allow writing -2 in store??
     void start(int64_t offset) override {
-      _current_offset = offset;
+      current_offset_ = offset;
       commit(true);
     }
 
@@ -211,12 +214,12 @@ namespace kspp {
     * commits the offset
     */
     void commit(bool flush) override {
-      _last_comitted_offset = _current_offset;
-      if (flush || ((_last_comitted_offset - _last_flushed_offset) > 10000)) {
-        if (_last_flushed_offset != _last_comitted_offset) {
-          std::ofstream os(_offset_storage_path.generic_string(), std::ios::binary);
-          os.write((char *) &_last_comitted_offset, sizeof(int64_t));
-          _last_flushed_offset = _last_comitted_offset;
+      last_comitted_offset_ = current_offset_;
+      if (flush || ((last_comitted_offset_ - last_flushed_offset_) > 10000)) {
+        if (last_flushed_offset_ != last_comitted_offset_) {
+          std::ofstream os(offset_storage_path_.generic_string(), std::ios::binary);
+          os.write((char *) &last_comitted_offset_, sizeof(int64_t));
+          last_flushed_offset_ = last_comitted_offset_;
           os.flush();
         }
       }
@@ -226,12 +229,12 @@ namespace kspp {
     * returns last offset
     */
     int64_t offset() const override {
-      return _current_offset;
+      return current_offset_;
     }
 
     size_t aprox_size() const override {
       std::string num;
-      _db->GetProperty("rocksdb.estimate-num-keys", &num);
+      db_->GetProperty("rocksdb.estimate-num-keys", &num);
       return std::stoll(num);
     }
 
@@ -245,31 +248,32 @@ namespace kspp {
     }
 
     void clear() override {
-      for (auto it = iterator_impl(_db.get(), _codec, iterator_impl::BEGIN), end_ = iterator_impl(_db.get(), _codec, iterator_impl::END);
+      for (auto it = iterator_impl(db_.get(), codec_, iterator_impl::BEGIN), end_ = iterator_impl(db_.get(), codec_,
+                                                                                                  iterator_impl::END);
            it != end_; it.next()) {
-        auto s = _db->Delete(rocksdb::WriteOptions(), it._key_slice());
+        auto s = db_->Delete(rocksdb::WriteOptions(), it._key_slice());
       }
-      _current_offset = kspp::OFFSET_BEGINNING;
+      current_offset_ = kspp::OFFSET_BEGINNING;
     }
 
 
     typename kspp::materialized_source<K, V>::iterator begin(void) const override {
       return typename kspp::materialized_source<K, V>::iterator(
-              std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::BEGIN));
+          std::make_shared<iterator_impl>(db_.get(), codec_, iterator_impl::BEGIN));
     }
 
     typename kspp::materialized_source<K, V>::iterator end() const override {
       return typename kspp::materialized_source<K, V>::iterator(
-              std::make_shared<iterator_impl>(_db.get(), _codec, iterator_impl::END));
+          std::make_shared<iterator_impl>(db_.get(), codec_, iterator_impl::END));
     }
 
   private:
-    std::experimental::filesystem::path _offset_storage_path;
-    std::unique_ptr<rocksdb::DB> _db;        // maybe this should be a shared ptr since we're letting iterators out...
-    std::shared_ptr<CODEC> _codec;
-    int64_t _current_offset;
-    int64_t _last_comitted_offset;
-    int64_t _last_flushed_offset;
+    std::experimental::filesystem::path offset_storage_path_;
+    std::unique_ptr<rocksdb::DB> db_;        // maybe this should be a shared ptr since we're letting iterators out...
+    std::shared_ptr<CODEC> codec_;
+    int64_t current_offset_;
+    int64_t last_comitted_offset_;
+    int64_t last_flushed_offset_;
   };
 }
 

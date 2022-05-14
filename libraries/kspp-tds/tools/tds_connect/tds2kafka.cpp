@@ -11,6 +11,7 @@
 #include <kspp/utils/string_utils.h>
 #include <kspp-tds/tds_generic_avro_source.h>
 #include <kspp-tds/tds_connection.h>
+
 #define SERVICE_NAME "tds2kafka"
 
 using namespace std::chrono_literals;
@@ -29,12 +30,15 @@ int main(int argc, char **argv) {
   boost::program_options::options_description desc("options");
   desc.add_options()
       ("help", "produce help message")
-      ("app_realm", boost::program_options::value<std::string>()->default_value(get_env_and_log("APP_REALM", "DEV")), "app_realm")
+      ("app_realm", boost::program_options::value<std::string>()->default_value(get_env_and_log("APP_REALM", "DEV")),
+       "app_realm")
       ("db_host", boost::program_options::value<std::string>()->default_value(get_env_and_log("DB_HOST")), "db_host")
       ("db_port", boost::program_options::value<int32_t>()->default_value(1433), "db_port")
       ("db_user", boost::program_options::value<std::string>()->default_value(get_env_and_log("DB_USER")), "db_user")
-      ("db_password", boost::program_options::value<std::string>()->default_value(get_env_and_log("DB_PASSWORD")), "db_password")
-      ("db_dbname", boost::program_options::value<std::string>()->default_value(get_env_and_log("DB_DBNAME")), "db_dbname")
+      ("db_password", boost::program_options::value<std::string>()->default_value(get_env_and_log("DB_PASSWORD")),
+       "db_password")
+      ("db_dbname", boost::program_options::value<std::string>()->default_value(get_env_and_log("DB_DBNAME")),
+       "db_dbname")
       ("id_column", boost::program_options::value<std::string>()->default_value(""), "id_column")
       ("timestamp_column", boost::program_options::value<std::string>()->default_value("ts"), "timestamp_column")
       ("timestamp_unit", boost::program_options::value<std::string>(), "timestamp_unit")
@@ -42,15 +46,18 @@ int main(int argc, char **argv) {
       ("query", boost::program_options::value<std::string>(), "query")
       ("poll_intervall", boost::program_options::value<int32_t>()->default_value(60), "poll_intervall")
       ("rescrape", boost::program_options::value<int32_t>()->default_value(10), "rescrape")
-      ("topic_prefix", boost::program_options::value<std::string>()->default_value(get_env_and_log("TOPIC_PREFIX", "DEV_sqlserver_")), "topic_prefix")
+      ("topic_prefix",
+       boost::program_options::value<std::string>()->default_value(get_env_and_log("TOPIC_PREFIX", "DEV_sqlserver_")),
+       "topic_prefix")
       ("topic", boost::program_options::value<std::string>(), "topic")
       ("start_offset", boost::program_options::value<std::string>()->default_value("OFFSET_BEGINNING"), "start_offset")
       ("state_store_root", boost::program_options::value<std::string>(), "state_store_root")
       ("offset_storage", boost::program_options::value<std::string>(), "offset_storage")
       ("filename", boost::program_options::value<std::string>(), "filename")
-      ("metrics_namespace", boost::program_options::value<std::string>()->default_value(get_env_and_log("METRICS_NAMESPACE", "bb")),"metrics_namespace")
-      ("oneshot", "run to eof and exit")
-      ;
+      ("metrics_namespace",
+       boost::program_options::value<std::string>()->default_value(get_env_and_log("METRICS_NAMESPACE", "bb")),
+       "metrics_namespace")
+      ("oneshot", "run to eof and exit");
 
   boost::program_options::variables_map vm;
   boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
@@ -88,7 +95,7 @@ int main(int argc, char **argv) {
     poll_intervall = vm["poll_intervall"].as<int>();
   }
 
-  int rescrape=0;
+  int rescrape = 0;
   if (vm.count("rescrape")) {
     rescrape = vm["rescrape"].as<int>();
   }
@@ -127,12 +134,12 @@ int main(int argc, char **argv) {
     query = vm["query"].as<std::string>();
   }
 
-  if (table.size()==0 && query.size()==0){
+  if (table.size() == 0 && query.size() == 0) {
     std::cerr << "--table or --query must be specified";
     return -1;
   }
 
-  if (query.size()==0){
+  if (query.size() == 0) {
     query = "SELECT * FROM " + table;
   } else {
   }
@@ -171,12 +178,12 @@ int main(int argc, char **argv) {
     offset_storage = config->get_storage_root() + "/import-" + topic + ".offset";
   }
 
-  kspp::start_offset_t start_offset=kspp::OFFSET_BEGINNING;
+  kspp::start_offset_t start_offset = kspp::OFFSET_BEGINNING;
   try {
     if (vm.count("start_offset"))
       start_offset = kspp::to_offset(vm["start_offset"].as<std::string>());
   }
-  catch(std::exception& e) {
+  catch (std::exception &e) {
     std::cerr << "start_offset must be one of OFFSET_BEGINNING / OFFSET_END / OFFSET_STORED";
     return -1;
   }
@@ -186,15 +193,15 @@ int main(int argc, char **argv) {
     metrics_namespace = vm["metrics_namespace"].as<std::string>();
   }
 
-  bool oneshot=false;
+  bool oneshot = false;
   if (vm.count("oneshot"))
-    oneshot=true;
+    oneshot = true;
 
   config->set_producer_buffering_time(1000ms);
   config->set_consumer_buffering_time(500ms);
   config->validate();
   config->log();
-  auto s= config->avro_serdes();
+  auto s = config->avro_serdes();
 
   LOG(INFO) << "app_realm         : " << app_realm;
   LOG(INFO) << "db_host           : " << db_host;
@@ -229,8 +236,8 @@ int main(int argc, char **argv) {
   table_params.rescrape_policy = kspp::connect::LAST_QUERY_TS;
   table_params.rescrape_ticks = rescrape;
   table_params.offset_storage = offset_storage;
-  table_params.ts_utc_offset=0;
-  table_params.ts_multiplier=timetamp_multiplier;
+  table_params.ts_utc_offset = 0;
+  table_params.ts_multiplier = timetamp_multiplier;
 
   if (filename.size()) {
     LOG(INFO) << "using avro file..";
@@ -245,24 +252,28 @@ int main(int argc, char **argv) {
   auto topology = builder.create_topology();
 
   std::string query_name = topic;
-  auto source0 = topology->create_processors<kspp::tds_generic_avro_source>({0}, query_name, connection_params, table_params, query, id_column, timestamp_column, config->get_schema_registry());
+  auto source0 = topology->create_processors<kspp::tds_generic_avro_source>({0}, query_name, connection_params,
+                                                                            table_params, query, id_column,
+                                                                            timestamp_column,
+                                                                            config->get_schema_registry());
 
   if (filename.size()) {
     //topology->create_sink<kspp::avro_file_sink>(source0, "/tmp/" + topic + ".avro");
   } else {
-    topology->create_sink<kspp::kafka_sink<kspp::generic_avro, kspp::generic_avro, kspp::avro_serdes, kspp::avro_serdes>>(source0, topic, config->avro_serdes(), config->avro_serdes());
+    topology->create_sink<kspp::kafka_sink<kspp::generic_avro, kspp::generic_avro, kspp::avro_serdes, kspp::avro_serdes>>(
+        source0, topic, config->avro_serdes(), config->avro_serdes());
   }
 
-  topology->add_labels( {
-                            { "app_name", SERVICE_NAME },
-                            { "app_realm", app_realm },
-                            { "hostname", default_hostname() },
-                            { "db_host", db_host }
-                        });
-  if (query.size()>0)
-    topology->add_labels( { { "source", "query" } }); // TODO check if we can use arbitrary query as value here
+  topology->add_labels({
+                           {"app_name", SERVICE_NAME},
+                           {"app_realm", app_realm},
+                           {"hostname",  default_hostname()},
+                           {"db_host",   db_host}
+                       });
+  if (query.size() > 0)
+    topology->add_labels({{"source", "query"}}); // TODO check if we can use arbitrary query as value here
   else
-    topology->add_labels( { { "source", table } });
+    topology->add_labels({{"source", table}});
 
   topology->start(start_offset);
 
@@ -274,12 +285,14 @@ int main(int argc, char **argv) {
 
   // output metrics and run
   {
-    auto metrics_reporter = std::make_shared<kspp::prometheus_pushgateway_reporter>(metrics_namespace, config->get_pushgateway_uri()) << topology;
+    auto metrics_reporter =
+        std::make_shared<kspp::prometheus_pushgateway_reporter>(metrics_namespace, config->get_pushgateway_uri())
+            << topology;
     while (run) {
       if (topology->process(kspp::milliseconds_since_epoch()) == 0) {
         std::this_thread::sleep_for(10ms);
         topology->commit(false);
-        if (oneshot && topology->eof()){
+        if (oneshot && topology->eof()) {
           LOG(INFO) << "at eof - flushing";
           topology->flush(true);
           LOG(INFO) << "at eof - exiting";

@@ -2,15 +2,15 @@ include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 
 IF (ENABLE_MQTT)
     add_subdirectory(kspp-mqtt)
-ENDIF()
+ENDIF ()
 
 IF (ENABLE_ELASTICSEARCH)
     add_subdirectory(kspp-es)
-ENDIF()
+ENDIF ()
 
 IF (ENABLE_INFLUXDB)
     add_subdirectory(kspp-influx)
-ENDIF()
+ENDIF ()
 
 IF (ENABLE_POSTGRES)
     add_subdirectory(kspp-pg)
@@ -21,11 +21,11 @@ IF (ENABLE_TDS)
 ENDIF ()
 
 IF (ENABLE_ROCKSDB)
-#    add_subdirectory(kafka2rocksdb)
+    #    add_subdirectory(kafka2rocksdb)
 ENDIF ()
 
 if (ENABLE_BITBOUNCER_STREAMING)
-  add_subdirectory(kspp-bitbouncer)
+    add_subdirectory(kspp-bitbouncer)
 ENDIF ()
 
 

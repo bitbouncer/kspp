@@ -21,28 +21,38 @@ using namespace std::chrono_literals;
 using namespace kspp;
 
 static bool run = true;
+
 static void sigterm(int sig) {
   run = false;
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   FLAGS_logtostderr = 1;
   google::InitGoogleLogging(argv[0]);
 
   boost::program_options::options_description desc("options");
   desc.add_options()
       ("help", "produce help message")
-      ("app_realm", boost::program_options::value<std::string>()->default_value(get_env_and_log("APP_REALM", "DEV")), "app_realm")
-      ("src_topic", boost::program_options::value<std::string>()->default_value(get_env_and_log("SRC_TOPIC", DEFAULT_METRICS_TOPIC)), "src_topic")
+      ("app_realm", boost::program_options::value<std::string>()->default_value(get_env_and_log("APP_REALM", "DEV")),
+       "app_realm")
+      ("src_topic",
+       boost::program_options::value<std::string>()->default_value(get_env_and_log("SRC_TOPIC", DEFAULT_METRICS_TOPIC)),
+       "src_topic")
       ("partition_list", boost::program_options::value<std::string>()->default_value("[-1]"), "partition_list")
       ("start_offset", boost::program_options::value<std::string>()->default_value("OFFSET_STORED"), "start_offset")
-      ("dst_uri", boost::program_options::value<std::string>()->default_value(get_env_and_log("DST_URI", DEFAULT_URI)), "dst_uri")
-      ("dst_database", boost::program_options::value<std::string>()->default_value(get_env_and_log("DST_DATABASE", "telegraf")), "dst_database")
+      ("dst_uri", boost::program_options::value<std::string>()->default_value(get_env_and_log("DST_URI", DEFAULT_URI)),
+       "dst_uri")
+      ("dst_database",
+       boost::program_options::value<std::string>()->default_value(get_env_and_log("DST_DATABASE", "telegraf")),
+       "dst_database")
       ("http_batch_size", boost::program_options::value<int32_t>()->default_value(500), "http_batch_size")
       ("http_timeout_ms", boost::program_options::value<int32_t>()->default_value(1000), "http_timeout_ms")
-      ("consumer_group", boost::program_options::value<std::string>()->default_value(get_env_and_log("CONSUMER_GROUP", "")), "consumer_group")
-      ("metrics_namespace", boost::program_options::value<std::string>()->default_value(get_env_and_log("METRICS_NAMESPACE", "bb")),"metrics_namespace")
-      ;
+      ("consumer_group",
+       boost::program_options::value<std::string>()->default_value(get_env_and_log("CONSUMER_GROUP", "")),
+       "consumer_group")
+      ("metrics_namespace",
+       boost::program_options::value<std::string>()->default_value(get_env_and_log("METRICS_NAMESPACE", "bb")),
+       "metrics_namespace");
 
   boost::program_options::variables_map vm;
   boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
@@ -97,12 +107,12 @@ int main(int argc, char** argv) {
     partition_list = kspp::parse_partition_list(s);
   }
 
-  kspp::start_offset_t start_offset=kspp::OFFSET_BEGINNING;
+  kspp::start_offset_t start_offset = kspp::OFFSET_BEGINNING;
   try {
     if (vm.count("start_offset"))
       start_offset = kspp::to_offset(vm["start_offset"].as<std::string>());
   }
-  catch(std::exception& e) {
+  catch (std::exception &e) {
     std::cerr << "start_offset must be one of OFFSET_BEGINNING / OFFSET_END / OFFSET_STORED";
     return -1;
   }
@@ -138,21 +148,22 @@ int main(int argc, char** argv) {
 
   kspp::topology_builder generic_builder(config);
   auto topology = generic_builder.create_topology();
-  auto sources = topology->create_processors<kafka_source<void, std::string, void, text_serdes>>(partition_list, src_topic);
-  auto sink   = topology->create_sink<influx_sink>(sources, connection_params, http_batch_size, http_timeout);
+  auto sources = topology->create_processors<kafka_source<void, std::string, void, text_serdes>>(partition_list,
+                                                                                                 src_topic);
+  auto sink = topology->create_sink<influx_sink>(sources, connection_params, http_batch_size, http_timeout);
 
   std::signal(SIGINT, sigterm);
   std::signal(SIGTERM, sigterm);
   std::signal(SIGPIPE, SIG_IGN);
 
-  topology->add_labels( {
-                            { "app_name", SERVICE_NAME },
-                            { "app_realm", app_realm },
-                            { "hostname", default_hostname() },
-                            { "src_topic", src_topic },
-                            { "dst_uri", dst_uri },
-                            { "dst_database", dst_database }
-                        });
+  topology->add_labels({
+                           {"app_name", SERVICE_NAME},
+                           {"app_realm",    app_realm},
+                           {"hostname",     default_hostname()},
+                           {"src_topic",    src_topic},
+                           {"dst_uri",      dst_uri},
+                           {"dst_database", dst_database}
+                       });
 
   topology->start(start_offset);
 
@@ -160,7 +171,9 @@ int main(int argc, char** argv) {
 
   // output metrics and run...
   {
-    auto metrics_reporter = std::make_shared<kspp::prometheus_pushgateway_reporter>(metrics_namespace, config->get_pushgateway_uri()) << topology;
+    auto metrics_reporter =
+        std::make_shared<kspp::prometheus_pushgateway_reporter>(metrics_namespace, config->get_pushgateway_uri())
+            << topology;
     while (run) {
       if (topology->process(kspp::milliseconds_since_epoch()) == 0) {
         std::this_thread::sleep_for(10ms);

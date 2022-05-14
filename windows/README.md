@@ -3,13 +3,16 @@
 Note: this is unmaintained... pull requests welcome
 
 Install build tools
+
 ```
 - CMake (https://cmake.org/)
 - Visual Studio 14 (https://www.visualstudio.com/downloads/)
 - nasm (https://sourceforge.net/projects/nasm/)
 - perl (http://www.activestate.com/activeperl)
 ```
+
 Build
+
 ```
 wget --no-check-certificate http://downloads.sourceforge.net/project/boost/boost/1.62.0/boost_1_62_0.zip
 unzip boost_1_62_0.zip

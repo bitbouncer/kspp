@@ -1,5 +1,6 @@
 #include <rocksdb/merge_operator.h>
 #include <glog/logging.h>
+
 #pragma once
 
 namespace rocksdb {

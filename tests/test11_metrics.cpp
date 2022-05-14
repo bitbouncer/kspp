@@ -29,25 +29,25 @@ make_left_join_record(KEY key, LEFT a, RIGHT b, int64_t ts) {
   return std::make_shared<kspp::krecord<KEY, std::pair<LEFT, std::optional<RIGHT>>>>(key, pair, ts);
 }
 
-void produce_stream1(kspp::event_consumer<int32_t, std::string>& stream) {
-  stream.push_back(std::make_shared<kspp::krecord < int32_t, std::string>>(42, nullptr, 1));
-  stream.push_back(std::make_shared<kspp::krecord < int32_t, std::string>>(42, "A", 3));
-  stream.push_back(std::make_shared<kspp::krecord < int32_t, std::string>>(42, "B", 5));
-  stream.push_back(std::make_shared<kspp::krecord < int32_t, std::string>>(42, nullptr, 7));
-  stream.push_back(std::make_shared<kspp::krecord < int32_t, std::string>>(42, "C", 9));
-  stream.push_back(std::make_shared<kspp::krecord < int32_t, std::string>>(42, nullptr, 12));
-  stream.push_back(std::make_shared<kspp::krecord < int32_t, std::string>>(42, "D", 15));
+void produce_stream1(kspp::event_consumer<int32_t, std::string> &stream) {
+  stream.push_back(std::make_shared<kspp::krecord<int32_t, std::string>>(42, nullptr, 1));
+  stream.push_back(std::make_shared<kspp::krecord<int32_t, std::string>>(42, "A", 3));
+  stream.push_back(std::make_shared<kspp::krecord<int32_t, std::string>>(42, "B", 5));
+  stream.push_back(std::make_shared<kspp::krecord<int32_t, std::string>>(42, nullptr, 7));
+  stream.push_back(std::make_shared<kspp::krecord<int32_t, std::string>>(42, "C", 9));
+  stream.push_back(std::make_shared<kspp::krecord<int32_t, std::string>>(42, nullptr, 12));
+  stream.push_back(std::make_shared<kspp::krecord<int32_t, std::string>>(42, "D", 15));
 }
 
-void produce_stream2(kspp::event_consumer<int32_t, std::string>& stream) {
-  stream.push_back(std::make_shared<kspp::krecord < int32_t, std::string>>(42, nullptr, 2));
-  stream.push_back(std::make_shared<kspp::krecord < int32_t, std::string>>(42, "a", 4));
-  stream.push_back(std::make_shared<kspp::krecord < int32_t, std::string>>(42, "b", 6));
-  stream.push_back(std::make_shared<kspp::krecord < int32_t, std::string>>(42, nullptr, 8));
-  stream.push_back(std::make_shared<kspp::krecord < int32_t, std::string>>(42, "c", 10));
-  stream.push_back(std::make_shared<kspp::krecord < int32_t, std::string>>(42, nullptr, 11));
-  stream.push_back(std::make_shared<kspp::krecord < int32_t, std::string>>(42, nullptr, 13));
-  stream.push_back(std::make_shared<kspp::krecord < int32_t, std::string>>(42, "d", 14));
+void produce_stream2(kspp::event_consumer<int32_t, std::string> &stream) {
+  stream.push_back(std::make_shared<kspp::krecord<int32_t, std::string>>(42, nullptr, 2));
+  stream.push_back(std::make_shared<kspp::krecord<int32_t, std::string>>(42, "a", 4));
+  stream.push_back(std::make_shared<kspp::krecord<int32_t, std::string>>(42, "b", 6));
+  stream.push_back(std::make_shared<kspp::krecord<int32_t, std::string>>(42, nullptr, 8));
+  stream.push_back(std::make_shared<kspp::krecord<int32_t, std::string>>(42, "c", 10));
+  stream.push_back(std::make_shared<kspp::krecord<int32_t, std::string>>(42, nullptr, 11));
+  stream.push_back(std::make_shared<kspp::krecord<int32_t, std::string>>(42, nullptr, 13));
+  stream.push_back(std::make_shared<kspp::krecord<int32_t, std::string>>(42, "d", 14));
 }
 
 
@@ -69,7 +69,8 @@ int main(int argc, char **argv) {
     auto streamB = topology->create_processor<kspp::mem_stream_source<int32_t, std::string>>(0);
     auto ktableB = topology->create_processor<kspp::ktable<int32_t, std::string, kspp::mem_store>>(streamB);
 
-    auto left_join = topology->create_processor<kspp::kstream_left_join<int32_t, std::string, std::string>>(streamA, ktableB);
+    auto left_join = topology->create_processor<kspp::kstream_left_join<int32_t, std::string, std::string>>(streamA,
+                                                                                                            ktableB);
 
     std::vector<std::shared_ptr<const kspp::krecord<int32_t, std::pair<std::string, std::optional<std::string>>>>> expected;
     std::vector<std::shared_ptr<const kspp::krecord<int32_t, std::pair<std::string, std::optional<std::string>>>>> actual;
@@ -85,11 +86,11 @@ int main(int argc, char **argv) {
     produce_stream1(*streamA);
     produce_stream2(*streamB);
 
-    topology->add_labels( { { "app_name", "test" } });
+    topology->add_labels({{"app_name", "test"}});
 
     topology->start(kspp::OFFSET_BEGINNING);
 
-    for (int64_t ts=0; ts!=20; ++ts)
+    for (int64_t ts = 0; ts != 20; ++ts)
       topology->process(ts);
 
     assert(expected.size() == actual.size());
@@ -97,14 +98,15 @@ int main(int argc, char **argv) {
       assert(*expected[i] == *actual[i]);
 
     auto r = topology->get_prometheus_registry();
-    auto v =  r->Collect();
+    auto v = r->Collect();
 
-    auto metrics_reporter = std::make_shared<kspp::prometheus_pushgateway_reporter>("test11", "localhost:9091") << topology;
+    auto metrics_reporter =
+        std::make_shared<kspp::prometheus_pushgateway_reporter>("test11", "localhost:9091") << topology;
 
     prometheus::TextSerializer serializer;
     serializer.Serialize(std::cout, v);
 
-    while(true)
+    while (true)
       std::this_thread::sleep_for(100ms);
 
   }

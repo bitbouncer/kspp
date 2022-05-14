@@ -4,13 +4,12 @@
 #include <memory>
 #include <fstream>
 #include <glog/logging.h>
-#include <boost/bind.hpp>
 #include <kspp-tds/tds_avro_utils.h>
 
 using namespace std::chrono_literals;
 
 namespace kspp {
-  void tds_consumer::load_avro_by_name(kspp::generic_avro* avro, DBPROCESS *stream, COL *columns){
+  void tds_consumer::load_avro_by_name(kspp::generic_avro *avro, DBPROCESS *stream, COL *columns) {
     // key type is null if there is no key
     if (avro->type() == avro::AVRO_NULL)
       return;
@@ -20,21 +19,21 @@ namespace kspp {
     size_t nFields = record.fieldCount();
 
     // this checks the requested fields - should only be done once
-    for (int i = 0; i < nFields; i++)
-    {
-      if (!record.fieldAt(i).isUnion()) // TODO this should not hold - but we fail to create correct schemas for not null columns
+    for (size_t i = 0; i < nFields; i++) {
+      if (!record.fieldAt(
+          i).isUnion()) // TODO this should not hold - but we fail to create correct schemas for not null columns
       {
         LOG(FATAL) << "unexpected schema - bailing out, type:" << record.fieldAt(i).type();
         break;
       }
     }
 
-    for (int dst_column = 0; dst_column < nFields; dst_column++) {
+    for (size_t dst_column = 0; dst_column < nFields; dst_column++) {
       auto src_column = tds::find_column_by_name(stream, record.schema()->nameAt(dst_column));
       if (src_column < 0)
         LOG(FATAL) << "cannot find column, name: " << record.schema()->nameAt(dst_column);
 
-      avro::GenericDatum& col = record.fieldAt(dst_column); // expected union
+      avro::GenericDatum &col = record.fieldAt(dst_column); // expected union
       //avro::GenericUnion &au(record.fieldAt(dst_column).value<avro::GenericUnion>());
 
       if (dbdata(stream, src_column + 1) == nullptr) {
@@ -59,7 +58,7 @@ namespace kspp {
       // normal parsing and not null
       col.selectBranch(1);
 
-      switch (dbcoltype(stream, src_column + 1)){
+      switch (dbcoltype(stream, src_column + 1)) {
         case tds::SYBINT2: {
           int16_t v;
           assert(sizeof(v) == dbdatlen(stream, src_column + 1));
@@ -131,14 +130,14 @@ namespace kspp {
           break;
 
         case tds::SYBBIT: {
-          bool v=false;
-          int sz = dbdatlen(stream, src_column + 1);
-          BYTE* data = dbdata(stream, src_column + 1);
+          bool v = false;
+          //int sz = dbdatlen(stream, src_column + 1);
+          BYTE *data = dbdata(stream, src_column + 1);
 
-          if (*data==0)
+          if (*data == 0)
             v = false;
           else
-            v=true;
+            v = true;
 
           col.value<bool>() = v;
         }
@@ -168,8 +167,8 @@ namespace kspp {
         }
           break;
 
-        default:{
-          const char* cname = dbcolname(stream, src_column + 1);
+        default: {
+          const char *cname = dbcolname(stream, src_column + 1);
           int ctype = dbcoltype(stream, src_column + 1);
           col.selectBranch(0); // NULL branch - we hope..
           assert(col.type() == avro::AVRO_NULL);
@@ -184,76 +183,67 @@ namespace kspp {
 
   tds_consumer::tds_consumer(int32_t partition,
                              std::string logical_name,
-                             const kspp::connect::connection_params& cp,
+                             const kspp::connect::connection_params &cp,
                              kspp::connect::table_params tp,
                              std::string query,
                              std::string id_column,
                              std::string ts_column,
                              std::shared_ptr<kspp::avro_schema_registry> schema_registry)
-      : _bg([this] { _thread(); })
-        , _connection(std::make_unique<kspp_tds::connection>())
-        , _logical_name(avro_utils::sanitize_schema_name(logical_name))
-        , _query(query)
-        , _partition(partition)
-        , _cp(cp)
-        , _tp(tp)
-        , _read_cursor(tp, id_column, ts_column)
-        , _id_column(id_column)
-        , _schema_registry(schema_registry)
-        , _commit_chain(logical_name, partition)
-        , _key_schema_id(-1)
-        , _val_schema_id(-1)
-        , _msg_cnt(0)
-        , _closed(false)
-        , _eof(false)
-        , _start_running(false)
-        , _exit(false) {
-    _offset_storage = get_offset_provider(tp.offset_storage);
-    std::string top_part(" TOP " + std::to_string(_tp.max_items_in_fetch));
+      : connection_(std::make_unique<kspp_tds::connection>())
+      , cp_(cp)
+      , tp_(tp)
+      , query_(query)
+      , logical_name_(avro_utils::sanitize_schema_name(logical_name))
+      , partition_(partition)
+      , id_column_(id_column)
+      , schema_registry_(schema_registry)
+      , commit_chain_(logical_name, partition)
+      , read_cursor_(tp, id_column, ts_column)
+      , bg_([this] { _thread(); }) {
+    offset_storage_ = get_offset_provider(tp.offset_storage);
+    std::string top_part(" TOP " + std::to_string(tp_.max_items_in_fetch));
     // assumed to start with "SELECT"
-    _query.insert(6,top_part);
-    LOG(INFO) << " REAL QUERY: "  << _query;
+    query_.insert(6, top_part);
+    LOG(INFO) << " REAL QUERY: " << query_;
   }
 
   tds_consumer::~tds_consumer() {
-    _exit = true;
-    if (!_closed)
+    exit_ = true;
+    if (!closed_)
       close();
-    _bg.join();
-    _connection->close();
-    _connection.reset(nullptr);
-    LOG(INFO) << "closing, read cursor at " << _read_cursor.last_tick();
+    bg_.join();
+    connection_->close();
+    connection_.reset(nullptr);
+    LOG(INFO) << "closing, read cursor at " << read_cursor_.last_tick();
   }
 
   void tds_consumer::close() {
-    _exit = true;
-    _start_running = false;
-
+    exit_ = true;
+    start_running_ = false;
     commit(true);
-
-    if (_closed)
+    if (closed_)
       return;
-    _closed = true;
-
-    if (_connection) {
-      _connection->close();
-      LOG(INFO) << "tds_consumer table:" << _logical_name << ":" << _partition << ", closed - consumed " << _msg_cnt << " messages";
+    closed_ = true;
+    if (connection_) {
+      connection_->close();
+      LOG(INFO) << "tds_consumer table:" << logical_name_ << ":" << partition_ << ", closed - consumed " << msg_cnt_
+                << " messages";
     }
   }
 
   bool tds_consumer::initialize() {
-    if (!_connection->connected())
-      _connection->connect(_cp);
+    if (!connection_->connected())
+      connection_->connect(cp_);
     // should we check more thing in database
-    _start_running = true;
+    start_running_ = true;
     return true;
   }
 
   void tds_consumer::start(int64_t offset) {
-    if (_offset_storage) {
-      int64_t tmp = _offset_storage->start(offset);
-      _read_cursor.set_eof(true);
-      _read_cursor.start(tmp);
+    if (offset_storage_) {
+      int64_t tmp = offset_storage_->start(offset);
+      read_cursor_.set_eof(true);
+      read_cursor_.start(tmp);
     } else {
       //_read_cursor will start at beginning if not initialized
     }
@@ -264,35 +254,36 @@ namespace kspp {
     //TODO what name should we segister this under.. source/database/table ? table seems to week
 
     // first time?
-    if (!this->_val_schema) {
+    if (!this->val_schema_) {
 
-      _read_cursor.init(stream);
+      read_cursor_.init(stream);
 
-      auto ncols = dbnumcols(stream);
-      if (!_key_schema) {
-        if (_id_column.size() == 0)
-          _key_schema = std::make_shared<avro::ValidSchema>(avro::NullSchema());
+      //auto ncols = dbnumcols(stream);
+      if (!key_schema_) {
+        if (id_column_.size() == 0)
+          key_schema_ = std::make_shared<avro::ValidSchema>(avro::NullSchema());
         else
-          _key_schema = tds::schema_for_table_key(_logical_name + "_key", {_id_column}, stream);
+          key_schema_ = tds::schema_for_table_key(logical_name_ + "_key", {id_column_}, stream);
 
 
-        if (_schema_registry) {
-          _key_schema_id = _schema_registry->put_schema(_logical_name + "-key", _key_schema);
+        if (schema_registry_) {
+          key_schema_id_ = schema_registry_->put_schema(logical_name_ + "-key", key_schema_);
         }
 
         std::stringstream ss0;
-        _key_schema->toJson(ss0);
+        key_schema_->toJson(ss0);
         LOG(INFO) << "key_schema: \n" << ss0.str();
       }
 
-      this->_val_schema = tds::schema_for_table_row(_logical_name + "_value", stream);
-      if (_schema_registry) {
-        _val_schema_id = _schema_registry->put_schema(_logical_name + "-value", _val_schema); // we should probably prepend the name with a prefix (like _my_db_table_name)
+      this->val_schema_ = tds::schema_for_table_row(logical_name_ + "_value", stream);
+      if (schema_registry_) {
+        val_schema_id_ = schema_registry_->put_schema(logical_name_ + "-value",
+                                                      val_schema_); // we should probably prepend the name with a prefix (like _my_db_table_name)
       }
 
       // print schema first time...
       std::stringstream ss;
-      this->_val_schema->toJson(ss);
+      this->val_schema_->toJson(ss);
       LOG(INFO) << "schema:";
       LOG(INFO) << ss.str();
     }
@@ -302,35 +293,34 @@ namespace kspp {
     // it could be stronger if we generated the select from schema instead of relying on select *
     // for now this should be ok if the schema is not changed between queries...
 
-    auto key = std::make_shared<kspp::generic_avro>(_key_schema, _key_schema_id);
+    auto key = std::make_shared<kspp::generic_avro>(key_schema_, key_schema_id_);
     load_avro_by_name(key.get(), stream, columns);
-    auto val = std::make_shared<kspp::generic_avro>(_val_schema, _val_schema_id);
+    auto val = std::make_shared<kspp::generic_avro>(val_schema_, val_schema_id_);
     load_avro_by_name(val.get(), stream, columns);
 
     // could be done from the shared_ptr key?
-    if (!_last_key)
-      _last_key = std::make_unique<kspp::generic_avro>(_key_schema, _key_schema_id);
-    load_avro_by_name(_last_key.get(), stream, columns);
+    if (!last_key_)
+      last_key_ = std::make_unique<kspp::generic_avro>(key_schema_, key_schema_id_);
+    load_avro_by_name(last_key_.get(), stream, columns);
 
-    _read_cursor.parse(stream);
-    int64_t tick_ms = _read_cursor.last_ts_ms();
-    if (tick_ms==0)
+    read_cursor_.parse(stream);
+    int64_t tick_ms = read_cursor_.last_ts_ms();
+    if (tick_ms == 0)
       tick_ms = kspp::milliseconds_since_epoch();
 
     auto record = std::make_shared<krecord<kspp::generic_avro, kspp::generic_avro>>(*key, val, tick_ms);
     // do we have one...
-    int64_t tick = _read_cursor.last_tick();
-    auto e = std::make_shared<kevent<kspp::generic_avro, kspp::generic_avro>>(record, tick  > 0 ? _commit_chain.create(tick) : nullptr);
-    assert(e.get()!=nullptr);
-
-    ++_msg_cnt;
-
-    while(_incomming_msg.size()>10000 && !_exit) {
+    int64_t tick = read_cursor_.last_tick();
+    auto e = std::make_shared<kevent<kspp::generic_avro, kspp::generic_avro>>(record,
+                                                                              tick > 0 ? commit_chain_.create(tick)
+                                                                                       : nullptr);
+    assert(e.get() != nullptr);
+    ++msg_cnt_;
+    while (incomming_msg_.size() > 10000 && !exit_) {
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
-      DLOG(INFO) << "c_incomming_msg.size() " << _incomming_msg.size();
+      DLOG(INFO) << "c_incomming_msg.size() " << incomming_msg_.size();
     }
-
-    _incomming_msg.push_back(e);
+    incomming_msg_.push_back(e);
     return 0;
   }
 
@@ -429,35 +419,34 @@ namespace kspp {
   }
 
   void tds_consumer::_thread() {
-    while (!_exit) {
-      if (_closed)
+    while (!exit_) {
+      if (closed_)
         break;
 
       // connected
-      if (!_start_running) {
+      if (!start_running_) {
         std::this_thread::sleep_for(1s);
         continue;
       }
 
       // have we lost connection ?
-      if (!_connection->connected()) {
+      if (!connection_->connected()) {
         //_eof = false;
-        if (!_connection->connect(_cp))
-        {
+        if (!connection_->connect(cp_)) {
           std::this_thread::sleep_for(10s);
           continue;
         }
       }
 
-      std::string statement = _query + _read_cursor.get_where_clause();
+      std::string statement = query_ + read_cursor_.get_where_clause();
       DLOG(INFO) << "exec(" + statement + ")";
 
       auto ts0 = kspp::milliseconds_since_epoch();
-      auto last_msg_count = _msg_cnt;
-      auto res = _connection->exec(statement);
+      auto last_msg_count = msg_cnt_;
+      auto res = connection_->exec(statement);
       if (res.first) {
         LOG(ERROR) << "exec failed - disconnecting and retrying";
-        _connection->disconnect();
+        connection_->disconnect();
         std::this_thread::sleep_for(10s);
         continue;
       }
@@ -465,41 +454,41 @@ namespace kspp {
       int parse_result = parse_response(res.second);
       if (parse_result) {
         LOG(ERROR) << "parse failed - disconnecting and retrying";
-        _connection->disconnect();
+        connection_->disconnect();
         std::this_thread::sleep_for(10s);
         continue;
       }
       auto ts1 = kspp::milliseconds_since_epoch();
 
-      size_t messages_in_batch = _msg_cnt - last_msg_count;
+      size_t messages_in_batch = msg_cnt_ - last_msg_count;
 
-      if (messages_in_batch==0) {
-        LOG_EVERY_N(INFO, 100) << "empty poll done, table: " << _logical_name << " total: " << _msg_cnt << ", last ts: "
-                               << _read_cursor.last_ts() << " duration " << ts1 - ts0 << " ms";
-      }
-      else {
-        LOG(INFO) << "poll done, table: " << _logical_name << " retrieved: " << messages_in_batch
-                  << " messages, total: " << _msg_cnt << ", last ts: " << _read_cursor.last_ts() << " duration " << ts1 - ts0
+      if (messages_in_batch == 0) {
+        LOG_EVERY_N(INFO, 100) << "empty poll done, table: " << logical_name_ << " total: " << msg_cnt_ << ", last ts: "
+                               << read_cursor_.last_ts() << " duration " << ts1 - ts0 << " ms";
+      } else {
+        LOG(INFO) << "poll done, table: " << logical_name_ << " retrieved: " << messages_in_batch
+                  << " messages, total: " << msg_cnt_ << ", last ts: " << read_cursor_.last_ts() << " duration "
+                  << ts1 - ts0
                   << " ms";
       }
 
       commit(false);
 
-      if (messages_in_batch<_tp.max_items_in_fetch) {
-        _eof = true;
-        _read_cursor.set_eof(_eof);
-        int count = _tp.poll_intervall.count();
-        if (count>61) {
+      if (messages_in_batch < tp_.max_items_in_fetch) {
+        eof_ = true;
+        read_cursor_.set_eof(eof_);
+        int count = tp_.poll_intervall.count();
+        if (count > 61) {
           LOG(INFO) << "sleeping POLL INTERVALL: " << count;
         }
         for (int i = 0; i != count; ++i) {
           std::this_thread::sleep_for(1s);
-          if (_exit)
+          if (exit_)
             break;
         }
       } else {
-        _eof = false;
-        _read_cursor.set_eof(_eof);
+        eof_ = false;
+        read_cursor_.set_eof(eof_);
       }
     }
     DLOG(INFO) << "exiting thread";

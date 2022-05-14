@@ -7,6 +7,7 @@
 #include <prometheus/summary.h>
 #include <prometheus/histogram.h>
 #include <prometheus/detail/ckms_quantiles.h>
+
 #pragma once
 
 #define KSPP_KEY_TYPE_TAG "key_type"
@@ -18,18 +19,34 @@
 
 namespace kspp {
   struct metric {
-    enum mtype { RATE, COUNT, GAUGE, COUNTER, TIMESTAMP, SUMMARY, HISTOGRAM }; // http://metrics20.org/spec/ and some prometheus
+    enum mtype {
+      RATE, COUNT, GAUGE, COUNTER, TIMESTAMP, SUMMARY, HISTOGRAM
+    }; // http://metrics20.org/spec/ and some prometheus
 
     metric(std::string what, mtype mt, std::string unit)
-        : _name("kspp_" + what) {
+        : name_("kspp_" + what) {
       switch (mt) {
-        case RATE: add_label("mtype", "rate"); break;
-        case COUNT: add_label("mtype", "count"); break;
-        case GAUGE: add_label("mtype", "gauge"); break;
-        case COUNTER: add_label("mtype", "counter"); break;
-        case TIMESTAMP: add_label("mtype", "timestamp"); break;
-        case SUMMARY: add_label("mtype", "summary"); break;
-        case HISTOGRAM: add_label("mtype", "histogram"); break;
+        case RATE:
+          add_label("mtype", "rate");
+          break;
+        case COUNT:
+          add_label("mtype", "count");
+          break;
+        case GAUGE:
+          add_label("mtype", "gauge");
+          break;
+        case COUNTER:
+          add_label("mtype", "counter");
+          break;
+        case TIMESTAMP:
+          add_label("mtype", "timestamp");
+          break;
+        case SUMMARY:
+          add_label("mtype", "summary");
+          break;
+        case HISTOGRAM:
+          add_label("mtype", "histogram");
+          break;
       }
       add_label("unit", unit);
     }
@@ -37,152 +54,148 @@ namespace kspp {
     virtual double value() const = 0;
 
     inline std::string name() const {
-      return _name;
+      return name_;
     }
 
-    virtual void finalize_labels(std::shared_ptr<prometheus::Registry> registry)=0;
+    virtual void finalize_labels(std::shared_ptr<prometheus::Registry> registry) = 0;
 
     void add_label(std::string key, std::string val) {
-      _labels[key]=val;
+      labels_[key] = val;
     }
 
-    std::string _name; // what
-    std::map<std::string, std::string> _labels;
+  protected:
+    std::string name_; // what
+    std::map<std::string, std::string> labels_;
   };
 
   struct metric_counter : public metric {
     metric_counter(std::string what, std::string unit)
-        : metric(what, COUNTER, unit)
-          ,  _counter(nullptr) {
+        : metric(what, COUNTER, unit) {
     }
 
-    metric_counter(std::string what, std::string unit, const std::map<std::string, std::string>& labels, std::shared_ptr<prometheus::Registry> registry)
-        : metric(what, COUNTER, unit)
-          ,  _counter(nullptr) {
-      _labels.insert(labels.begin(), labels.end());
-      auto& family = prometheus::BuildCounter().Name(_name).Register(*registry);
-      _counter = &family.Add(_labels);
+    metric_counter(std::string what, std::string unit, const std::map<std::string, std::string> &labels,
+                   std::shared_ptr<prometheus::Registry> registry)
+        : metric(what, COUNTER, unit) {
+      labels_.insert(labels.begin(), labels.end());
+      auto &family = prometheus::BuildCounter().Name(name_).Register(*registry);
+      counter_ = &family.Add(labels_);
     }
 
     void finalize_labels(std::shared_ptr<prometheus::Registry> registry) override {
-      auto& family = prometheus::BuildCounter().Name(_name).Register(*registry);
-      _counter = &family.Add(_labels);
+      auto &family = prometheus::BuildCounter().Name(name_).Register(*registry);
+      counter_ = &family.Add(labels_);
     }
 
     virtual double value() const {
-      return _counter->Value();
+      return counter_->Value();
     }
 
     inline metric_counter &operator++() {
-      _counter->Increment();
+      counter_->Increment();
       return *this;
     }
 
     inline metric_counter &operator+=(double v) {
-      _counter->Increment(v);
+      counter_->Increment(v);
       return *this;
     }
-
-    prometheus::Counter* _counter;
+  private:
+    prometheus::Counter *counter_ = nullptr;
   };
 
   struct metric_gauge : public metric {
     metric_gauge(std::string what, std::string unit)
-        : metric(what, GAUGE, unit)
-          ,  _gauge(nullptr) {
+        : metric(what, GAUGE, unit) {
     }
 
-    metric_gauge(std::string what, std::string unit, const std::map<std::string, std::string>& labels, std::shared_ptr<prometheus::Registry> registry)
-        : metric(what, GAUGE, unit)
-          ,  _gauge(nullptr) {
-      _labels.insert(labels.begin(), labels.end());
-      auto& family = prometheus::BuildGauge().Name(_name).Register(*registry);
-      _gauge = &family.Add(_labels);
+    metric_gauge(std::string what, std::string unit, const std::map<std::string, std::string> &labels,
+                 std::shared_ptr<prometheus::Registry> registry)
+        : metric(what, GAUGE, unit) {
+      labels_.insert(labels.begin(), labels.end());
+      auto &family = prometheus::BuildGauge().Name(name_).Register(*registry);
+      gauge_ = &family.Add(labels_);
     }
 
     void finalize_labels(std::shared_ptr<prometheus::Registry> registry) override {
-      auto& family = prometheus::BuildGauge().Name(_name).Register(*registry);
-      _gauge = &family.Add(_labels);
+      auto &family = prometheus::BuildGauge().Name(name_).Register(*registry);
+      gauge_ = &family.Add(labels_);
     }
 
     void set(double v) {
-      _gauge->Set(v);
+      gauge_->Set(v);
     }
 
     void incr(double v) {
-      _gauge->Increment(v);
+      gauge_->Increment(v);
     }
 
     void decr(double v) {
-      _gauge->Decrement(v);
+      gauge_->Decrement(v);
     }
 
     virtual double value() const {
-      return _gauge->Value();
+      return gauge_->Value();
     }
 
     void clear() {
-      _gauge->Set(0);
+      gauge_->Set(0);
     }
-
-    prometheus::Gauge* _gauge;
+  private:
+    prometheus::Gauge *gauge_ = nullptr;
   };
 
   struct metric_streaming_lag : public metric {
     metric_streaming_lag()
-        : metric("streaming_lag", GAUGE, "ms")
-          ,  _gauge(nullptr) {
+        : metric("streaming_lag", GAUGE, "ms") {
     }
 
     void finalize_labels(std::shared_ptr<prometheus::Registry> registry) override {
-      auto& family = prometheus::BuildGauge().Name(_name).Register(*registry);
-      _gauge = &family.Add(_labels);
+      auto &family = prometheus::BuildGauge().Name(name_).Register(*registry);
+      gauge_ = &family.Add(labels_);
     }
 
     inline void add_event_time(int64_t tick, int64_t event_time) {
       if (event_time > 0)
-        _gauge->Set(tick - event_time);
+        gauge_->Set(tick - event_time);
       else
-        _gauge->Set(-1.0);
+        gauge_->Set(-1.0);
     }
 
     virtual double value() const {
-      return _gauge->Value();
+      return gauge_->Value();
     }
 
   private:
-    prometheus::Gauge* _gauge;
+    prometheus::Gauge *gauge_ = nullptr;
   };
 
   struct metric_summary : public metric {
-    metric_summary(std::string what, std::string unit, const std::vector<float>& quantiles={0.99})
-        : metric(what, SUMMARY, unit)
-          ,  _quantiles(quantiles)
-          ,  _summary(nullptr) {
+    metric_summary(std::string what, std::string unit, const std::vector<float> &quantiles = {0.99})
+        : metric(what, SUMMARY, unit), quantiles_(quantiles) {
       add_label("window", "60s");
     }
 
-    metric_summary(std::string what, std::string unit, const std::map<std::string, std::string>& labels, std::shared_ptr<prometheus::Registry> registry, const std::vector<float>& quantiles={0.99})
-        : metric(what, SUMMARY, unit)
-          ,  _summary(nullptr) {
-      _labels.insert(labels.begin(), labels.end());
+    metric_summary(std::string what, std::string unit, const std::map<std::string, std::string> &labels,
+                   std::shared_ptr<prometheus::Registry> registry, const std::vector<float> &quantiles = {0.99})
+        : metric(what, SUMMARY, unit) {
+      labels_.insert(labels.begin(), labels.end());
       std::vector<prometheus::detail::CKMSQuantiles::Quantile> q;
-      for (auto i : _quantiles)
+      for (auto i: quantiles_)
         q.emplace_back(i, 0.05);
-      auto& family = prometheus::BuildSummary().Name(_name).Register(*registry);
-      _summary = &family.Add(_labels, q, std::chrono::seconds{600}, 5);
+      auto &family = prometheus::BuildSummary().Name(name_).Register(*registry);
+      summary_ = &family.Add(labels_, q, std::chrono::seconds{600}, 5);
     }
 
     void finalize_labels(std::shared_ptr<prometheus::Registry> registry) override {
       std::vector<prometheus::detail::CKMSQuantiles::Quantile> q;
-      for (auto i : _quantiles)
+      for (auto i: quantiles_)
         q.emplace_back(i, 0.05);
-      auto& family = prometheus::BuildSummary().Name(_name).Register(*registry);
-      _summary = &family.Add(_labels, q, std::chrono::seconds{600}, 5);
+      auto &family = prometheus::BuildSummary().Name(name_).Register(*registry);
+      summary_ = &family.Add(labels_, q, std::chrono::seconds{600}, 5);
     }
 
     inline void observe(double v) {
-      _summary->Observe(v);
+      summary_->Observe(v);
     }
 
     virtual double value() const {
@@ -190,24 +203,22 @@ namespace kspp {
     }
 
   private:
-    const std::vector<float> _quantiles;
-    prometheus::Summary* _summary;
+    const std::vector<float> quantiles_;
+    prometheus::Summary *summary_ = nullptr;
   };
 
   struct metric_histogram : public metric {
-    metric_histogram(std::string what, std::string unit, const std::vector<double>& buckets)
-        : metric(what, HISTOGRAM, unit)
-          ,  _buckets(buckets)
-          ,  _histgram(nullptr) {
+    metric_histogram(std::string what, std::string unit, const std::vector<double> &buckets)
+        : metric(what, HISTOGRAM, unit), buckets_(buckets) {
     }
 
     void finalize_labels(std::shared_ptr<prometheus::Registry> registry) override {
-      auto& family = prometheus::BuildHistogram().Name(_name).Register(*registry);
-      _histgram = &family.Add(_labels, _buckets);
+      auto &family = prometheus::BuildHistogram().Name(name_).Register(*registry);
+      histgram_ = &family.Add(labels_, buckets_);
     }
 
     inline void observe(double v) {
-      _histgram->Observe(v);
+      histgram_->Observe(v);
     }
 
     virtual double value() const {
@@ -215,7 +226,7 @@ namespace kspp {
     }
 
   private:
-    const std::vector<double> _buckets;
-    prometheus::Histogram* _histgram;
+    const std::vector<double> buckets_;
+    prometheus::Histogram *histgram_ = nullptr;
   };
 }

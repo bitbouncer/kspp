@@ -18,10 +18,8 @@ using namespace std::chrono_literals;
 
 namespace kspp {
   kinesis_consumer::kinesis_consumer(int32_t partition, std::string stream_name)
-  : partition_(partition)
-  , stream_name_(stream_name)
-    , commit_chain_(stream_name, partition)
-    , bg_([this] { _thread(); }){
+      : partition_(partition), stream_name_(stream_name), commit_chain_(stream_name, partition),
+        bg_([this] { _thread(); }) {
     kspp::init_aws(); // needs to be done once
     //offset_storage_ = get_offset_provider(tp.offset_storage);
   }
@@ -31,7 +29,8 @@ namespace kspp {
     bg_.join();
     commit(true);
     client_.reset(nullptr);
-    LOG(INFO) << "kinesis_consumer table:" << stream_name_ << ":" << partition_ << ", closed - consumed " << msg_cnt_ << " messages";
+    LOG(INFO) << "kinesis_consumer table:" << stream_name_ << ":" << partition_ << ", closed - consumed " << msg_cnt_
+              << " messages";
   }
 
   void kinesis_consumer::close() {
@@ -91,17 +90,20 @@ namespace kspp {
     LOG(INFO) << "AWS_REGION:              " << aws_region;
     LOG(INFO) << "AWS_CUSTOM_ENDPOINT:     " << aws_custom_endpoint;
 
-    if (aws_access_key_id.size() && aws_secret_access_key.size() && aws_session_token.size()){
+    if (aws_access_key_id.size() && aws_secret_access_key.size() && aws_session_token.size()) {
       // this is probably debugging with copied credentials and the full iam token TODO fix the endpoint
-      Aws::Auth::AWSCredentials credentials(Aws::String(aws_access_key_id.c_str()), Aws::String(aws_secret_access_key.c_str()), Aws::String(aws_session_token.c_str()));
+      Aws::Auth::AWSCredentials credentials(Aws::String(aws_access_key_id.c_str()),
+                                            Aws::String(aws_secret_access_key.c_str()),
+                                            Aws::String(aws_session_token.c_str()));
       Aws::Client::ClientConfiguration clientConfig;
       clientConfig.endpointOverride = aws_custom_endpoint;
       clientConfig.connectTimeoutMs = 5000;
       clientConfig.requestTimeoutMs = 1000;
       clientConfig.region = aws_region;
       client_ = std::make_unique<Aws::Kinesis::KinesisClient>(credentials, clientConfig);
-    } else if (aws_access_key_id.size() && aws_secret_access_key.size()){
-      Aws::Auth::AWSCredentials credentials(Aws::String(aws_access_key_id.c_str()), Aws::String(aws_secret_access_key.c_str()));
+    } else if (aws_access_key_id.size() && aws_secret_access_key.size()) {
+      Aws::Auth::AWSCredentials credentials(Aws::String(aws_access_key_id.c_str()),
+                                            Aws::String(aws_secret_access_key.c_str()));
       Aws::Client::ClientConfiguration clientConfig;
       clientConfig.endpointOverride = aws_custom_endpoint;
       clientConfig.connectTimeoutMs = 5000;
@@ -113,7 +115,8 @@ namespace kspp {
       clientConfig.connectTimeoutMs = 5000;
       clientConfig.requestTimeoutMs = 1000;
       clientConfig.region = aws_region;
-      client_ = std::make_unique<Aws::Kinesis::KinesisClient>(clientConfig); // picks up default iam role from the machined or env
+      client_ = std::make_unique<Aws::Kinesis::KinesisClient>(
+          clientConfig); // picks up default iam role from the machined or env
     }
 
     // Describe shards - do we have to do this???
@@ -121,10 +124,9 @@ namespace kspp {
     describeStreamRequest.SetStreamName(stream_name_.c_str());
     Aws::Vector<Aws::Kinesis::Model::Shard> shards;
     Aws::String exclusiveStartShardId = "";
-    do
-    {
+    do {
       Aws::Kinesis::Model::DescribeStreamOutcome describeStreamResult = client_->DescribeStream(describeStreamRequest);
-      if (!describeStreamResult.IsSuccess()){
+      if (!describeStreamResult.IsSuccess()) {
         LOG(INFO) << "Failed to open stream: " << describeStreamResult.GetError().GetMessage();
         return false;
       }
@@ -132,12 +134,10 @@ namespace kspp {
       Aws::Vector<Aws::Kinesis::Model::Shard> shardsTemp = describeStreamResult.GetResult().GetStreamDescription().GetShards();
       shards.insert(shards.end(), shardsTemp.begin(), shardsTemp.end());
 
-      if (describeStreamResult.GetResult().GetStreamDescription().GetHasMoreShards() && shards.size() > 0)
-      {
+      if (describeStreamResult.GetResult().GetStreamDescription().GetHasMoreShards() && shards.size() > 0) {
         exclusiveStartShardId = shards[shards.size() - 1].GetShardId();
         describeStreamRequest.SetExclusiveStartShardId(exclusiveStartShardId);
-      }
-      else
+      } else
         exclusiveStartShardId = "";
     } while (exclusiveStartShardId.length() != 0);
 
@@ -146,8 +146,10 @@ namespace kspp {
     // use our partition TODO check if this order is constant ???
     getShardIteratorRequest.SetShardId(shards[partition_].GetShardId());
     //getShardIteratorRequest.SetShardIteratorType(Aws::Kinesis::Model::ShardIteratorType::TRIM_HORIZON);  // this is earliest -  fixme
-    getShardIteratorRequest.SetShardIteratorType(Aws::Kinesis::Model::ShardIteratorType::LATEST);  // this is earliest -  fixme
-    Aws::Kinesis::Model::GetShardIteratorOutcome getShardIteratorResult = client_->GetShardIterator(getShardIteratorRequest);
+    getShardIteratorRequest.SetShardIteratorType(
+        Aws::Kinesis::Model::ShardIteratorType::LATEST);  // this is earliest -  fixme
+    Aws::Kinesis::Model::GetShardIteratorOutcome getShardIteratorResult = client_->GetShardIterator(
+        getShardIteratorRequest);
     // todo check result
     shard_iterator_ = getShardIteratorResult.GetResult().GetShardIterator();
     start_running_ = true;
@@ -171,7 +173,7 @@ namespace kspp {
         continue;
       }
 
-      if (_incomming_msg.size()>100000) {
+      if (_incomming_msg.size() > 100000) {
         std::this_thread::sleep_for(100ms);
         continue;
       }
@@ -181,15 +183,18 @@ namespace kspp {
       auto t0 = kspp::milliseconds_since_epoch();
       Aws::Kinesis::Model::GetRecordsOutcome getRecordsResult = client_->GetRecords(getRecordsRequest);
       auto t1 = kspp::milliseconds_since_epoch();
-      auto& v = getRecordsResult.GetResult().GetRecords();
-      LOG_EVERY_N(INFO, 100) << "Kinesis::GetRecords, got: " << v.size() << " records - in " << t1-t0 << " milliseconds";
-      eof_ = (v.size()==0); // is this true in middle of stream??
-      for (auto r : v) {
+      auto &v = getRecordsResult.GetResult().GetRecords();
+      LOG_EVERY_N(INFO, 100) << "Kinesis::GetRecords, got: " << v.size() << " records - in " << t1 - t0
+                             << " milliseconds";
+      eof_ = (v.size() == 0); // is this true in middle of stream??
+      for (auto r: v) {
         int64_t ts = r.GetApproximateArrivalTimestamp().Millis();
-        auto value = std::make_shared<std::string>((char*)r.GetData().GetUnderlyingData(), r.GetData().GetLength());
+        auto value = std::make_shared<std::string>((char *) r.GetData().GetUnderlyingData(), r.GetData().GetLength());
         const std::string key(r.GetPartitionKey());
-        auto record = std::make_shared<krecord<std::string, std::string>>(key, value, ts);
-        auto e = std::make_shared<kevent<std::string, std::string>>(record, nullptr); // no commit chain for now
+        auto record = std::make_shared<krecord < std::string, std::string>>
+        (key, value, ts);
+        auto e = std::make_shared<kevent < std::string, std::string>>
+        (record, nullptr); // no commit chain for now
         _incomming_msg.push_back(e);
         // do we have one...
         //int64_t tick = read_cursor_.last_tick();
@@ -197,8 +202,8 @@ namespace kspp {
         //assert(e.get()!=nullptr);
         msg_cnt_++;
       }
-      int64_t sleep_time = 250 -(t1 - t0);
-      if (sleep_time>0 && sleep_time<250)
+      int64_t sleep_time = 250 - (t1 - t0);
+      if (sleep_time > 0 && sleep_time < 250)
         std::this_thread::sleep_for(std::chrono::milliseconds(sleep_time));
       shard_iterator_ = getRecordsResult.GetResult().GetNextShardIterator();
     }

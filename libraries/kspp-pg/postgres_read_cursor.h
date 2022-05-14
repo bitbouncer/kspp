@@ -4,6 +4,7 @@
 #include <kspp/avro/generic_avro.h>
 #include <kspp/connect/connection_params.h>
 #include <kspp-pg/postgres_connection.h>
+
 #pragma once
 
 namespace kspp {
@@ -23,7 +24,9 @@ namespace kspp {
 
     inline int64_t last_tick() const { return last_ts_ticks_; }
 
-    inline int64_t last_ts_ms () const { return (last_ts_ticks_ >= 0) ? ts_utc_offset_ +( last_ts_ticks_*ts_multiplier_) : 0; }
+    inline int64_t last_ts_ms() const {
+      return (last_ts_ticks_ >= 0) ? ts_utc_offset_ + (last_ts_ticks_ * ts_multiplier_) : 0;
+    }
 
     void set_eof(bool state) { eof_ = state; }
 
@@ -44,7 +47,7 @@ namespace kspp {
     std::string last_ts_;
     std::string last_id_;
 
-    int ts_multiplier_=0;
-    int ts_utc_offset_=0;
+    int ts_multiplier_ = 0;
+    int ts_utc_offset_ = 0;
   };
 }

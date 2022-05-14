@@ -7,14 +7,12 @@
 namespace kspp {
   template<class K, class V>
   class visitor : public partition_sink<K, V> {
-    static constexpr const char* PROCESSOR_NAME = "visitor";
+    static constexpr const char *PROCESSOR_NAME = "visitor";
   public:
-    typedef std::function<void(const krecord <K, V>& record)> extractor;
+    typedef std::function<void(const krecord<K, V> &record)> extractor;
 
-    visitor(std::shared_ptr<cluster_config> config, std::shared_ptr<partition_source<K, V>> source,  extractor f)
-    : partition_sink<K, V>(source->partition())
-    , source_(source)
-    , extractor_(f) {
+    visitor(std::shared_ptr<cluster_config> config, std::shared_ptr<partition_source<K, V>> source, extractor f)
+        : partition_sink<K, V>(source->partition()), source_(source), extractor_(f) {
       source_->add_sink([this](auto r) { this->_queue.push_back(r); });
       this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
       this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(source->partition()));
@@ -38,8 +36,8 @@ namespace kspp {
 
     size_t process(int64_t tick) override {
       source_->process(tick);
-      size_t processed=0;
-      while (this->_queue.next_event_time()<=tick){
+      size_t processed = 0;
+      while (this->_queue.next_event_time() <= tick) {
         auto trans = this->_queue.pop_front_and_get();
         ++processed;
         this->_lag.add_event_time(tick, trans->event_time());
@@ -67,7 +65,7 @@ namespace kspp {
     }
 
   private:
-    std::shared_ptr<partition_source <K, V>> source_;
+    std::shared_ptr<partition_source<K, V>> source_;
     extractor extractor_;
   };
 }

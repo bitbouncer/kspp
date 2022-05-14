@@ -32,39 +32,54 @@ int main(int argc, char **argv) {
     auto partition_list = kspp::get_partition_list(partitions);
 
     auto topology = builder.create_topology();
-    auto sources = topology->create_processors<kspp::kafka_source<void, std::string, void, kspp::text_serdes>>(partition_list, "kspp_test_text");
+    auto sources = topology->create_processors<kspp::kafka_source<void, std::string, void, kspp::text_serdes>>(
+        partition_list, "kspp_test_text");
     std::regex rgx("\\s+");
-    auto word_streams = topology->create_processors<kspp::flat_map<void, std::string, std::string, void>>(sources, [&rgx](const auto record, auto stream) {
-      std::sregex_token_iterator iter(record.value()->begin(), record.value()->end(), rgx, -1);
-      std::sregex_token_iterator end;
-      for (; iter != end; ++iter)
-        insert(stream, (std::string) *iter);
-    });
+    auto word_streams = topology->create_processors<kspp::flat_map<void, std::string, std::string, void>>(sources,
+                                                                                                          [&rgx](
+                                                                                                              const auto record,
+                                                                                                              auto stream) {
+                                                                                                            std::sregex_token_iterator iter(
+                                                                                                                record.value()->begin(),
+                                                                                                                record.value()->end(),
+                                                                                                                rgx,
+                                                                                                                -1);
+                                                                                                            std::sregex_token_iterator end;
+                                                                                                            for (;
+                                                                                                                iter !=
+                                                                                                                end; ++iter)
+                                                                                                              insert(
+                                                                                                                  stream,
+                                                                                                                  (std::string) *iter);
+                                                                                                          });
 
-    auto word_sink = topology->create_sink<kspp::kafka_sink<std::string, void, kspp::text_serdes, void>>("kspp_test_words");
-    for (auto i : word_streams)
+    auto word_sink = topology->create_sink<kspp::kafka_sink<std::string, void, kspp::text_serdes, void>>(
+        "kspp_test_words");
+    for (auto i: word_streams)
       i->add_sink(word_sink);
 
     topology->start(kspp::OFFSET_BEGINNING);
     topology->flush();
   }
 
-  { 
+  {
     auto partitions = kspp::kafka::get_number_partitions(config, "kspp_test_words");
     auto partition_list = kspp::get_partition_list(partitions);
 
     auto topology = builder.create_topology();
-    auto word_sources = topology->create_processors<kspp::kafka_source<std::string, void, kspp::text_serdes, void>>(partition_list, "kspp_test_words");
-    auto word_counts = topology->create_processors<kspp::count_by_key<std::string, size_t, kspp::mem_counter_store>>(word_sources, 10s);
-    
+    auto word_sources = topology->create_processors<kspp::kafka_source<std::string, void, kspp::text_serdes, void>>(
+        partition_list, "kspp_test_words");
+    auto word_counts = topology->create_processors<kspp::count_by_key<std::string, size_t, kspp::mem_counter_store>>(
+        word_sources, 10s);
+
     topology->start(kspp::OFFSET_BEGINNING);
     topology->flush();
 
-    for (auto i : word_counts)
-      for (const auto j : *i)
+    for (auto i: word_counts)
+      for (const auto j: *i)
         std::cerr << j->key() << " : " << *j->value() << std::endl;
 
-    topology->for_each_metrics([](kspp::metric& m) {
+    topology->for_each_metrics([](kspp::metric &m) {
       std::cerr << "metrics: " << m.name() << " : " << m.value() << std::endl;
     });
   }

@@ -20,8 +20,8 @@ namespace kspp {
 
   std::string default_pushgateway_uri();
 
-  std::string get_env_and_log(const char* env, std::string default_value="");
+  std::string get_env_and_log(const char *env, std::string default_value = "");
 
-  std::string get_env_and_log_hidden(const char* env, std::string default_value="");
+  std::string get_env_and_log_hidden(const char *env, std::string default_value = "");
 }
 

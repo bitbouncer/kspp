@@ -90,13 +90,13 @@ BreakBeforeBraces: Attach
 
 BreakBeforeInheritanceComma: false
 
-BreakInheritanceList: BeforeColon
+BreakInheritanceList: AfterColon
 
 BreakBeforeTernaryOperators: true
 
-BreakConstructorInitializersBeforeComma: false
+BreakConstructorInitializersBeforeComma: true
 
-BreakConstructorInitializers: BeforeColon
+BreakConstructorInitializers: AfterColon
 
 BreakAfterJavaFieldAnnotations: false
 
@@ -108,7 +108,7 @@ CommentPragmas: '^ IWYU pragma:'
 
 CompactNamespaces: false
 
-ConstructorInitializerAllOnOneLineOrOnePerLine: false
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
 
 ConstructorInitializerIndentWidth: 4
 

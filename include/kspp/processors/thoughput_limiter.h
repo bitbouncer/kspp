@@ -11,17 +11,16 @@
 namespace kspp {
   template<class K, class V>
   class thoughput_limiter : public event_consumer<K, V>, public partition_source<K, V> {
-    static constexpr const char* PROCESSOR_NAME = "thoughput_limiter";
+    static constexpr const char *PROCESSOR_NAME = "thoughput_limiter";
   public:
-    thoughput_limiter(std::shared_ptr<cluster_config> config, std::shared_ptr<partition_source<K, V>> source, double messages_per_sec)
-    : event_consumer<K, V>()
-    , partition_source<K, V>(source.get(), source->partition())
-    , source_(source)
-    , token_bucket_(std::make_shared<mem_token_bucket_store < int, size_t>>
-    (std::chrono::milliseconds((
-    int) (1000.0 / messages_per_sec)), 1)) {
+    thoughput_limiter(std::shared_ptr<cluster_config> config, std::shared_ptr<partition_source<K, V>> source,
+                      double messages_per_sec)
+        : event_consumer<K, V>(), partition_source<K, V>(source.get(), source->partition()), source_(source),
+          token_bucket_(std::make_shared<mem_token_bucket_store<int, size_t>>
+                            (std::chrono::milliseconds((
+                                                           int) (1000.0 / messages_per_sec)), 1)) {
       source_->add_sink([this](auto r) {
-        this->_queue.push_back(r);
+        this->queue_.push_back(r);
       });
       this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "thoughput_limiter");
       this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(source->partition()));
@@ -49,13 +48,13 @@ namespace kspp {
       source_->process(tick);
 
       size_t processed = 0;
-      while (this->_queue.next_event_time()<=tick) {
-       auto trans = this->_queue.front();
+      while (this->queue_.next_event_time() <= tick) {
+        auto trans = this->queue_.front();
         if (token_bucket_->consume(0, tick)) {
-          this->_lag.add_event_time(tick, trans->event_time());
-          ++(this->_processed_count);
+          this->lag_.add_event_time(tick, trans->event_time());
+          ++(this->processed_count_);
           ++processed;
-          this->_queue.pop_front();
+          this->queue_.pop_front();
           this->send_to_sinks(trans);
         } else {
           break;
@@ -81,7 +80,7 @@ namespace kspp {
     }
 
   private:
-    std::shared_ptr<partition_source < K, V>> source_;
-    std::shared_ptr<mem_token_bucket_store < int, size_t>> token_bucket_;
+    std::shared_ptr<partition_source<K, V>> source_;
+    std::shared_ptr<mem_token_bucket_store<int, size_t>> token_bucket_;
   };
 } // namespace

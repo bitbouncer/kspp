@@ -74,7 +74,7 @@ make_outer_join_record(KEY key, LEFT a, std::nullptr_t, int64_t ts) {
 
 template<class KEY, class LEFT, class RIGHT>
 std::shared_ptr<kspp::krecord<KEY, std::pair<std::optional<LEFT>, std::optional<RIGHT>>>>
-make_outer_join_record(KEY key, std::nullptr_t , RIGHT b, int64_t ts) {
+make_outer_join_record(KEY key, std::nullptr_t, RIGHT b, int64_t ts) {
   auto pair = std::make_shared<std::pair<std::optional<LEFT>, std::optional<RIGHT>>>(std::optional<LEFT>(), b);
   return std::make_shared<kspp::krecord<KEY, std::pair<std::optional<LEFT>, std::optional<RIGHT>>>>(key, pair, ts);
 }
@@ -87,25 +87,25 @@ make_outer_join_record(KEY key, std::nullptr_t, int64_t ts) {
 }
 
 
-void produce_stream1(kspp::event_consumer<int32_t, std::string>& stream) {
-  stream.push_back(std::make_shared<kspp::krecord < int32_t, std::string>>(42, nullptr, 1));
-  stream.push_back(std::make_shared<kspp::krecord < int32_t, std::string>>(42, "A", 3));
-  stream.push_back(std::make_shared<kspp::krecord < int32_t, std::string>>(42, "B", 5));
-  stream.push_back(std::make_shared<kspp::krecord < int32_t, std::string>>(42, nullptr, 7));
-  stream.push_back(std::make_shared<kspp::krecord < int32_t, std::string>>(42, "C", 9));
-  stream.push_back(std::make_shared<kspp::krecord < int32_t, std::string>>(42, nullptr, 12));
-  stream.push_back(std::make_shared<kspp::krecord < int32_t, std::string>>(42, "D", 15));
+void produce_stream1(kspp::event_consumer<int32_t, std::string> &stream) {
+  stream.push_back(std::make_shared<kspp::krecord<int32_t, std::string>>(42, nullptr, 1));
+  stream.push_back(std::make_shared<kspp::krecord<int32_t, std::string>>(42, "A", 3));
+  stream.push_back(std::make_shared<kspp::krecord<int32_t, std::string>>(42, "B", 5));
+  stream.push_back(std::make_shared<kspp::krecord<int32_t, std::string>>(42, nullptr, 7));
+  stream.push_back(std::make_shared<kspp::krecord<int32_t, std::string>>(42, "C", 9));
+  stream.push_back(std::make_shared<kspp::krecord<int32_t, std::string>>(42, nullptr, 12));
+  stream.push_back(std::make_shared<kspp::krecord<int32_t, std::string>>(42, "D", 15));
 }
 
-void produce_stream2(kspp::event_consumer<int32_t, std::string>& stream) {
-  stream.push_back(std::make_shared<kspp::krecord < int32_t, std::string>>(42, nullptr, 2));
-  stream.push_back(std::make_shared<kspp::krecord < int32_t, std::string>>(42, "a", 4));
-  stream.push_back(std::make_shared<kspp::krecord < int32_t, std::string>>(42, "b", 6));
-  stream.push_back(std::make_shared<kspp::krecord < int32_t, std::string>>(42, nullptr, 8));
-  stream.push_back(std::make_shared<kspp::krecord < int32_t, std::string>>(42, "c", 10));
-  stream.push_back(std::make_shared<kspp::krecord < int32_t, std::string>>(42, nullptr, 11));
-  stream.push_back(std::make_shared<kspp::krecord < int32_t, std::string>>(42, nullptr, 13));
-  stream.push_back(std::make_shared<kspp::krecord < int32_t, std::string>>(42, "d", 14));
+void produce_stream2(kspp::event_consumer<int32_t, std::string> &stream) {
+  stream.push_back(std::make_shared<kspp::krecord<int32_t, std::string>>(42, nullptr, 2));
+  stream.push_back(std::make_shared<kspp::krecord<int32_t, std::string>>(42, "a", 4));
+  stream.push_back(std::make_shared<kspp::krecord<int32_t, std::string>>(42, "b", 6));
+  stream.push_back(std::make_shared<kspp::krecord<int32_t, std::string>>(42, nullptr, 8));
+  stream.push_back(std::make_shared<kspp::krecord<int32_t, std::string>>(42, "c", 10));
+  stream.push_back(std::make_shared<kspp::krecord<int32_t, std::string>>(42, nullptr, 11));
+  stream.push_back(std::make_shared<kspp::krecord<int32_t, std::string>>(42, nullptr, 13));
+  stream.push_back(std::make_shared<kspp::krecord<int32_t, std::string>>(42, "d", 14));
 }
 
 
@@ -127,7 +127,8 @@ int main(int argc, char **argv) {
     auto streamB = topology->create_processor<kspp::mem_stream_source<int32_t, std::string>>(0);
     auto ktableB = topology->create_processor<kspp::ktable<int32_t, std::string, kspp::mem_store>>(streamB);
 
-    auto left_join = topology->create_processor<kspp::kstream_left_join<int32_t, std::string, std::string>>(streamA, ktableB);
+    auto left_join = topology->create_processor<kspp::kstream_left_join<int32_t, std::string, std::string>>(streamA,
+                                                                                                            ktableB);
 
     std::vector<std::shared_ptr<const kspp::krecord<int32_t, std::pair<std::string, std::optional<std::string>>>>> expected;
     std::vector<std::shared_ptr<const kspp::krecord<int32_t, std::pair<std::string, std::optional<std::string>>>>> actual;
@@ -145,7 +146,7 @@ int main(int argc, char **argv) {
 
     topology->start(kspp::OFFSET_BEGINNING);
 
-    for (int64_t ts=0; ts!=20; ++ts)
+    for (int64_t ts = 0; ts != 20; ++ts)
       topology->process(ts);
 
     assert(expected.size() == actual.size());
@@ -164,7 +165,8 @@ int main(int argc, char **argv) {
     auto streamB = topology->create_processor<kspp::mem_stream_source<int32_t, std::string>>(0);
     auto ktableB = topology->create_processor<kspp::ktable<int32_t, std::string, kspp::mem_store>>(streamB);
 
-    auto left_join = topology->create_processor<kspp::kstream_inner_join<int32_t, std::string, std::string>>(streamA, ktableB);
+    auto left_join = topology->create_processor<kspp::kstream_inner_join<int32_t, std::string, std::string>>(streamA,
+                                                                                                             ktableB);
 
     std::vector<std::shared_ptr<const kspp::krecord<int32_t, std::pair<std::string, std::string>>>> expected;
     std::vector<std::shared_ptr<const kspp::krecord<int32_t, std::pair<std::string, std::string>>>> actual;
@@ -199,24 +201,30 @@ int main(int argc, char **argv) {
     auto streamB = topology->create_processor<kspp::mem_stream_source<int32_t, std::string>>(0);
     auto ktableB = topology->create_processor<kspp::ktable<int32_t, std::string, kspp::mem_store>>(streamB);
 
-    auto left_join = topology->create_processor<kspp::ktable_left_join<int32_t, std::string, std::string>>(ktableA, ktableB);
+    auto left_join = topology->create_processor<kspp::ktable_left_join<int32_t, std::string, std::string>>(ktableA,
+                                                                                                           ktableB);
 
     std::vector<std::shared_ptr<const kspp::krecord<int32_t, std::pair<std::string, std::optional<std::string>>>>> expected;
     std::vector<std::shared_ptr<const kspp::krecord<int32_t, std::pair<std::string, std::optional<std::string>>>>> actual;
-    expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, nullptr, 1)); // this is not according to spec - but according to impl...
-    expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, nullptr, 2)); // this is not according to spec - but according to impl...
+    expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, nullptr,
+                                                                                1)); // this is not according to spec - but according to impl...
+    expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, nullptr,
+                                                                                2)); // this is not according to spec - but according to impl...
     expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, "A", nullptr, 3));
     expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, "A", "a", 4));
     expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, "B", "a", 5));
     expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, "B", "b", 6));
     expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, nullptr, 7));
-    expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, nullptr, 8));// this is not according to spec - but according to impl...
+    expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, nullptr,
+                                                                                8));// this is not according to spec - but according to impl...
     expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, "C", nullptr, 9));
     expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, "C", "c", 10));
     expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, "C", nullptr, 11));
     expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, nullptr, 12));
-    expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, nullptr, 13));// this is not according to spec - but according to impl...
-    expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, nullptr, 14));// this is not according to spec - but according to impl...
+    expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, nullptr,
+                                                                                13));// this is not according to spec - but according to impl...
+    expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, nullptr,
+                                                                                14));// this is not according to spec - but according to impl...
     expected.push_back(make_left_join_record<int32_t, std::string, std::string>(42, "D", "d", 15));
 
     auto sink = topology->create_sink<kspp::array_topic_sink<int32_t, kspp::left_join<std::string, std::string>::value_type>>(
@@ -247,24 +255,32 @@ int main(int argc, char **argv) {
     auto streamB = topology->create_processor<kspp::mem_stream_source<int32_t, std::string>>(0);
     auto ktableB = topology->create_processor<kspp::ktable<int32_t, std::string, kspp::mem_store>>(streamB);
 
-    auto left_join = topology->create_processor<kspp::ktable_inner_join<int32_t, std::string, std::string>>(ktableA, ktableB);
+    auto left_join = topology->create_processor<kspp::ktable_inner_join<int32_t, std::string, std::string>>(ktableA,
+                                                                                                            ktableB);
 
     std::vector<std::shared_ptr<const kspp::krecord<int32_t, std::pair<std::string, std::string>>>> expected;
     std::vector<std::shared_ptr<const kspp::krecord<int32_t, std::pair<std::string, std::string>>>> actual;
-    expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, nullptr, 1)); // this is not according to spec - but according to impl...
-    expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, nullptr, 2)); // this is not according to spec - but according to impl...
-    expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, nullptr, 3)); // this is not according to spec - but according to impl...
+    expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, nullptr,
+                                                                                 1)); // this is not according to spec - but according to impl...
+    expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, nullptr,
+                                                                                 2)); // this is not according to spec - but according to impl...
+    expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, nullptr,
+                                                                                 3)); // this is not according to spec - but according to impl...
     expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, "A", "a", 4));
     expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, "B", "a", 5));
     expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, "B", "b", 6));
     expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, nullptr, 7));
-    expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, nullptr, 8));// this is not according to spec - but according to impl...
+    expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, nullptr,
+                                                                                 8));// this is not according to spec - but according to impl...
     expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, nullptr, 9));
     expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, "C", "c", 10));
     expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, nullptr, 11));
-    expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, nullptr, 12));// this is not according to spec - but according to impl...
-    expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, nullptr, 13));// this is not according to spec - but according to impl...
-    expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, nullptr, 14));// this is not according to spec - but according to impl...
+    expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, nullptr,
+                                                                                 12));// this is not according to spec - but according to impl...
+    expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, nullptr,
+                                                                                 13));// this is not according to spec - but according to impl...
+    expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, nullptr,
+                                                                                 14));// this is not according to spec - but according to impl...
     expected.push_back(make_inner_join_record<int32_t, std::string, std::string>(42, "D", "d", 15));
 
     auto sink = topology->create_sink<kspp::array_topic_sink<int32_t, kspp::inner_join<std::string, std::string>::value_type>>(
@@ -295,23 +311,28 @@ int main(int argc, char **argv) {
     auto streamB = topology->create_processor<kspp::mem_stream_source<int32_t, std::string>>(0);
     auto ktableB = topology->create_processor<kspp::ktable<int32_t, std::string, kspp::mem_store>>(streamB);
 
-    auto left_join = topology->create_processor<kspp::ktable_outer_join<int32_t, std::string, std::string>>(ktableA, ktableB);
+    auto left_join = topology->create_processor<kspp::ktable_outer_join<int32_t, std::string, std::string>>(ktableA,
+                                                                                                            ktableB);
 
     std::vector<std::shared_ptr<const kspp::krecord<int32_t, std::pair<std::optional<std::string>, std::optional<std::string>>>>> expected;
     std::vector<std::shared_ptr<const kspp::krecord<int32_t, std::pair<std::optional<std::string>, std::optional<std::string>>>>> actual;
-    expected.push_back(make_outer_join_record<int32_t, std::string, std::string>(42, nullptr, 1)); // this is not according to spec - but according to impl...
-    expected.push_back(make_outer_join_record<int32_t, std::string, std::string>(42, nullptr, 2)); // this is not according to spec - but according to impl...
+    expected.push_back(make_outer_join_record<int32_t, std::string, std::string>(42, nullptr,
+                                                                                 1)); // this is not according to spec - but according to impl...
+    expected.push_back(make_outer_join_record<int32_t, std::string, std::string>(42, nullptr,
+                                                                                 2)); // this is not according to spec - but according to impl...
     expected.push_back(make_outer_join_record<int32_t, std::string, std::string>(42, "A", nullptr, 3));
     expected.push_back(make_outer_join_record<int32_t, std::string, std::string>(42, "A", "a", 4));
     expected.push_back(make_outer_join_record<int32_t, std::string, std::string>(42, "B", "a", 5));
     expected.push_back(make_outer_join_record<int32_t, std::string, std::string>(42, "B", "b", 6));
     expected.push_back(make_outer_join_record<int32_t, std::string, std::string>(42, nullptr, "b", 7));
-    expected.push_back(make_outer_join_record<int32_t, std::string, std::string>(42, nullptr, 8));// this is not according to spec - but according to impl...
+    expected.push_back(make_outer_join_record<int32_t, std::string, std::string>(42, nullptr,
+                                                                                 8));// this is not according to spec - but according to impl...
     expected.push_back(make_outer_join_record<int32_t, std::string, std::string>(42, "C", nullptr, 9));
     expected.push_back(make_outer_join_record<int32_t, std::string, std::string>(42, "C", "c", 10));
     expected.push_back(make_outer_join_record<int32_t, std::string, std::string>(42, "C", nullptr, 11));
     expected.push_back(make_outer_join_record<int32_t, std::string, std::string>(42, nullptr, 12));
-    expected.push_back(make_outer_join_record<int32_t, std::string, std::string>(42, nullptr, 13));// this is not according to spec - but according to impl...
+    expected.push_back(make_outer_join_record<int32_t, std::string, std::string>(42, nullptr,
+                                                                                 13));// this is not according to spec - but according to impl...
     expected.push_back(make_outer_join_record<int32_t, std::string, std::string>(42, nullptr, "d", 14));
     expected.push_back(make_outer_join_record<int32_t, std::string, std::string>(42, "D", "d", 15));
 

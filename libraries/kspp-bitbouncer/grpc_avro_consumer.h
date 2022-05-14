@@ -13,11 +13,11 @@
 #include "grpc_avro_serdes.h"
 
 
-
 #pragma once
 
 namespace kspp {
-  static auto s_null_schema = std::make_shared<const avro::ValidSchema>(avro::compileJsonSchemaFromString("{\"type\":\"null\"}"));
+  static auto s_null_schema = std::make_shared<const avro::ValidSchema>(
+      avro::compileJsonSchemaFromString("{\"type\":\"null\"}"));
 
   template<class K, class V>
   class grpc_avro_consumer_base {
@@ -28,7 +28,9 @@ namespace kspp {
                             std::shared_ptr<grpc::Channel> channel,
                             std::string api_key,
                             std::string secret_access_key)
-        : offset_storage_(offset_store), topic_name_(topic_name), partition_(partition), commit_chain_(topic_name, partition), bg_([this]() { _thread(); }), channel_(channel), api_key_(api_key), secret_access_key_(secret_access_key) {
+        : offset_storage_(offset_store), topic_name_(topic_name), partition_(partition),
+          commit_chain_(topic_name, partition), bg_([this]() { _thread(); }), channel_(channel), api_key_(api_key),
+          secret_access_key_(secret_access_key) {
     }
 
     virtual ~grpc_avro_consumer_base() {
@@ -115,7 +117,8 @@ namespace kspp {
         request.set_topic(topic_name_);
         request.set_partition(partition_);
         request.set_offset(next_offset_);
-        std::shared_ptr<grpc::ClientReader<bitbouncer::streaming::SubscriptionBundle>> stream(stub_->Subscribe(&context, request));
+        std::shared_ptr<grpc::ClientReader<bitbouncer::streaming::SubscriptionBundle>> stream(
+            stub_->Subscribe(&context, request));
         bitbouncer::streaming::SubscriptionBundle reply;
 
         while (!exit_) {
@@ -227,18 +230,23 @@ namespace kspp {
 
       size_t consumed0 = this->serdes_->decode(record.key_schema(), record.key().data(), record.key().size(), key);
       if (record.key().size() != consumed0) {
-        LOG_FIRST_N(ERROR, 100) << "avro decode key failed, consumed: " << consumed0 << ", actual: " << record.key().size();
-        LOG_EVERY_N(ERROR, 1000) << "avro decode key failed, consumed: " << consumed0 << ", actual: " << record.key().size();
+        LOG_FIRST_N(ERROR, 100) << "avro decode key failed, consumed: " << consumed0 << ", actual: "
+                                << record.key().size();
+        LOG_EVERY_N(ERROR, 1000) << "avro decode key failed, consumed: " << consumed0 << ", actual: "
+                                 << record.key().size();
         return nullptr;
       }
 
 
       if (record.value().size() > 0) {
         val = std::make_shared<V>();
-        auto consumed1 = this->serdes_->decode(record.value_schema(), record.value().data(), record.value().size(), *val);
+        auto consumed1 = this->serdes_->decode(record.value_schema(), record.value().data(), record.value().size(),
+                                               *val);
         if (record.value().size() != consumed1) {
-          LOG_FIRST_N(ERROR, 100) << "avro decode value failed, consumed: " << consumed1 << ", actual: " << record.value().size();
-          LOG_EVERY_N(ERROR, 1000) << "avro decode value failed, consumed: " << consumed1 << ", actual: " << record.value().size();
+          LOG_FIRST_N(ERROR, 100) << "avro decode value failed, consumed: " << consumed1 << ", actual: "
+                                  << record.value().size();
+          LOG_EVERY_N(ERROR, 1000) << "avro decode value failed, consumed: " << consumed1 << ", actual: "
+                                   << record.value().size();
           return nullptr;
         }
       }
@@ -256,14 +264,16 @@ namespace kspp {
                        std::shared_ptr<grpc::Channel> channel,
                        std::string api_key,
                        std::string secret_access_key)
-        : grpc_avro_consumer_base<kspp::generic_avro, V>(partition, topic_name, offset_store, channel, api_key, secret_access_key) {
+        : grpc_avro_consumer_base<kspp::generic_avro, V>(partition, topic_name, offset_store, channel, api_key,
+                                                         secret_access_key) {
     }
 
     virtual ~grpc_avro_consumer() {
       this->stop_thread();
     }
 
-    std::shared_ptr<kspp::krecord<kspp::generic_avro, V>> decode(const bitbouncer::streaming::SubscriptionData &record) override {
+    std::shared_ptr<kspp::krecord<kspp::generic_avro, V>>
+    decode(const bitbouncer::streaming::SubscriptionData &record) override {
       kspp::generic_avro key;
       std::shared_ptr<V> val;
       if (record.key().size() == 0) {
@@ -272,18 +282,23 @@ namespace kspp {
 
         size_t consumed0 = this->serdes_->decode(record.key_schema(), record.key().data(), record.key().size(), key);
         if (record.key().size() != consumed0) {
-          LOG_FIRST_N(ERROR, 100) << "avro decode key failed, consumed: " << consumed0 << ", actual: " << record.key().size();
-          LOG_EVERY_N(ERROR, 1000) << "avro decode key failed, consumed: " << consumed0 << ", actual: " << record.key().size();
+          LOG_FIRST_N(ERROR, 100) << "avro decode key failed, consumed: " << consumed0 << ", actual: "
+                                  << record.key().size();
+          LOG_EVERY_N(ERROR, 1000) << "avro decode key failed, consumed: " << consumed0 << ", actual: "
+                                   << record.key().size();
           return nullptr;
         }
       }
 
       if (record.value().size() > 0) {
         val = std::make_shared<V>();
-        auto consumed1 = this->serdes_->decode(record.value_schema(), record.value().data(), record.value().size(), *val);
+        auto consumed1 = this->serdes_->decode(record.value_schema(), record.value().data(), record.value().size(),
+                                               *val);
         if (record.value().size() != consumed1) {
-          LOG_FIRST_N(ERROR, 100) << "avro decode value failed, consumed: " << consumed1 << ", actual: " << record.value().size();
-          LOG_EVERY_N(ERROR, 1000) << "avro decode value failed, consumed: " << consumed1 << ", actual: " << record.value().size();
+          LOG_FIRST_N(ERROR, 100) << "avro decode value failed, consumed: " << consumed1 << ", actual: "
+                                  << record.value().size();
+          LOG_EVERY_N(ERROR, 1000) << "avro decode value failed, consumed: " << consumed1 << ", actual: "
+                                   << record.value().size();
           return nullptr;
         }
       }
@@ -308,8 +323,10 @@ namespace kspp {
       K key;
       size_t consumed0 = this->serdes_->decode(record.key_schema(), record.key().data(), record.key().size(), key);
       if (record.key().size() != consumed0) {
-        LOG_FIRST_N(ERROR, 100) << "avro decode key failed, consumed: " << consumed0 << ", actual: " << record.key().size();
-        LOG_EVERY_N(ERROR, 1000) << "avro decode key failed, consumed: " << consumed0 << ", actual: " << record.key().size();
+        LOG_FIRST_N(ERROR, 100) << "avro decode key failed, consumed: " << consumed0 << ", actual: "
+                                << record.key().size();
+        LOG_EVERY_N(ERROR, 1000) << "avro decode key failed, consumed: " << consumed0 << ", actual: "
+                                 << record.key().size();
         return nullptr;
       }
       return std::make_shared<krecord<K, void>>(key, record.timestamp());
@@ -336,10 +353,13 @@ namespace kspp {
       std::shared_ptr<V> val;
       if (record.value().size() > 0) {
         val = std::make_shared<V>();
-        auto consumed1 = this->serdes_->decode(record.value_schema(), record.value().data(), record.value().size(), *val);
+        auto consumed1 = this->serdes_->decode(record.value_schema(), record.value().data(), record.value().size(),
+                                               *val);
         if (record.value().size() != consumed1) {
-          LOG_FIRST_N(ERROR, 100) << "avro decode value failed, consumed: " << consumed1 << ", actual: " << record.value().size();
-          LOG_EVERY_N(ERROR, 1000) << "avro decode value failed, consumed: " << consumed1 << ", actual: " << record.value().size();
+          LOG_FIRST_N(ERROR, 100) << "avro decode value failed, consumed: " << consumed1 << ", actual: "
+                                  << record.value().size();
+          LOG_EVERY_N(ERROR, 1000) << "avro decode value failed, consumed: " << consumed1 << ", actual: "
+                                   << record.value().size();
           return nullptr;
         }
       }

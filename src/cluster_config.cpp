@@ -13,7 +13,7 @@ using namespace std::chrono_literals;
 
 namespace kspp {
 
-  static std::string consumer_group_or_random(std::string s){
+  static std::string consumer_group_or_random(std::string s) {
     if (s.size())
       return s;
     boost::uuids::random_generator gen;
@@ -22,16 +22,16 @@ namespace kspp {
   }
 
   cluster_config::cluster_config(std::string consumer_group, uint64_t flags)
-    : flags_(flags)
-    , consumer_group_(consumer_group_or_random(consumer_group))
-    , min_topology_buffering_(std::chrono::milliseconds(1000))
-    , producer_buffering_(std::chrono::milliseconds(1000))
-    , producer_message_timeout_(std::chrono::milliseconds(0))
-    , consumer_buffering_(std::chrono::milliseconds(1000))
-    , schema_registry_timeout_(std::chrono::milliseconds(10000))
-    , cluster_state_timeout_(std::chrono::seconds(60))
-    , max_pending_sink_messages_(50000)
-    , fail_fast_(true) {
+      : flags_(flags)
+        , consumer_group_(consumer_group_or_random(consumer_group))
+        , min_topology_buffering_(std::chrono::milliseconds(1000))
+        , producer_buffering_(std::chrono::milliseconds(1000))
+        , producer_message_timeout_(std::chrono::milliseconds(0))
+        , consumer_buffering_(std::chrono::milliseconds(1000))
+        , schema_registry_timeout_(std::chrono::milliseconds(10000))
+        , cluster_state_timeout_(std::chrono::seconds(60))
+        , max_pending_sink_messages_(50000)
+        , fail_fast_(true) {
   }
 
   void cluster_config::load_config_from_env() {
@@ -98,7 +98,8 @@ namespace kspp {
     return true;
   }
 
-  bool cluster_config::set_private_key_path(std::string client_cert_path, std::string private_key_path, std::string passprase) {
+  bool cluster_config::set_private_key_path(std::string client_cert_path, std::string private_key_path,
+                                            std::string passprase) {
     bool all_ok = true;
     if (!std::experimental::filesystem::exists(private_key_path)) {
       LOG(WARNING) << "cluster_config, private_key_path not found at:" << private_key_path;
@@ -141,11 +142,11 @@ namespace kspp {
     return schema_registry_uri_;
   }
 
-  void cluster_config::set_pushgateway_uri(std::string s){
+  void cluster_config::set_pushgateway_uri(std::string s) {
     pushgateway_uri_ = s;
   }
 
-  std::string cluster_config::get_pushgateway_uri() const{
+  std::string cluster_config::get_pushgateway_uri() const {
     return pushgateway_uri_;
   }
 
@@ -185,11 +186,11 @@ namespace kspp {
     min_topology_buffering_ = timeout;
   }
 
-  std::chrono::milliseconds cluster_config::get_min_topology_buffering() const{
+  std::chrono::milliseconds cluster_config::get_min_topology_buffering() const {
     return min_topology_buffering_;
   }
 
-  void cluster_config::set_max_pending_sink_messages(size_t sz){
+  void cluster_config::set_max_pending_sink_messages(size_t sz) {
     max_pending_sink_messages_ = sz;
   }
 
@@ -206,23 +207,22 @@ namespace kspp {
   }
 
   std::shared_ptr<cluster_metadata> cluster_config::get_cluster_metadata() const {
-    if (meta_data_==nullptr)
+    if (meta_data_ == nullptr)
       meta_data_ = std::make_shared<cluster_metadata>(this);
     return meta_data_;
   }
 
-  void cluster_config::set_cluster_state_timeout(std::chrono::seconds timeout){
+  void cluster_config::set_cluster_state_timeout(std::chrono::seconds timeout) {
     cluster_state_timeout_ = timeout;
   }
+
   std::chrono::seconds cluster_config::get_cluster_state_timeout() const {
     return cluster_state_timeout_;
   }
 
-  std::shared_ptr<kspp::avro_serdes> cluster_config::avro_serdes(bool relaxed_parsing)
-  {
+  std::shared_ptr<kspp::avro_serdes> cluster_config::avro_serdes(bool relaxed_parsing) {
     //TODO some error handling would be fine...
-    if (!avro_serdes_)
-    {
+    if (!avro_serdes_) {
       avro_serdes_ = std::make_shared<kspp::avro_serdes>(get_schema_registry(), relaxed_parsing);
     }
     return avro_serdes_;
@@ -233,20 +233,19 @@ namespace kspp {
       LOG_IF(FATAL, brokers_.size() == 0) << "cluster_config, no brokers defined";
       {
         auto v = kspp::split_url_list(brokers_, "plaintext");
-        for (auto url : v) {
+        for (auto url: v) {
           if (url.scheme() == "ssl")
             LOG_IF(FATAL, ca_cert_path_.size() == 0) << "cluster_config, brokers using ssl and no ca cert configured";
         }
       }
     }
 
-    if (has_feature(SCHEMA_REGISTRY))
-    {
+    if (has_feature(SCHEMA_REGISTRY)) {
       auto v = kspp::split_url_list(schema_registry_uri_, "http");
-      for (auto url : v) {
+      for (auto url: v) {
         if (url.scheme() == "ssl")
           LOG_IF(FATAL, ca_cert_path_.size() == 0)
-              << "cluster_config, schema registry using https and no ca cert configured";
+                  << "cluster_config, schema registry using https and no ca cert configured";
       }
     }
 
@@ -286,9 +285,9 @@ namespace kspp {
 
     if (has_feature(SCHEMA_REGISTRY)) {
       LOG_IF(INFO, get_schema_registry_uri().size() > 0)
-          << "cluster_config, schema_registry: " << get_schema_registry_uri();
+              << "cluster_config, schema_registry: " << get_schema_registry_uri();
       LOG_IF(INFO, get_schema_registry_uri().size() > 0)
-          << "cluster_config, schema_registry_timeout: " << get_schema_registry_timeout().count() << " ms";
+              << "cluster_config, schema_registry_timeout: " << get_schema_registry_timeout().count() << " ms";
     }
     LOG(INFO) << "kafka cluster_state_timeout: " << get_cluster_state_timeout().count() << " s";
   }

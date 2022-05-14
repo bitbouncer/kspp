@@ -41,23 +41,27 @@ int main(int argc, char **argv) {
 
 
     auto topology = builder.create_topology();
-    auto sources = topology->create_processors<kafka_source<void, std::string, void, text_serdes>>(partition_list, TOPIC_NAME);
+    auto sources = topology->create_processors<kafka_source<void, std::string, void, text_serdes>>(partition_list,
+                                                                                                   TOPIC_NAME);
 
     std::regex rgx("\\s+");
-    auto word_streams = topology->create_processors<flat_map<void, std::string, std::string, void>>(sources, [&rgx](const auto record, auto stream) {
+    auto word_streams = topology->create_processors<flat_map<void, std::string, std::string, void>>(sources, [&rgx](
+        const auto record, auto stream) {
       std::sregex_token_iterator iter(record.value()->begin(), record.value()->end(), rgx, -1);
       std::sregex_token_iterator end;
       for (; iter != end; ++iter)
         insert(stream, (std::string) *iter);
     });
 
-    auto filtered_streams = topology->create_processors<kspp::filter<std::string, void>>(word_streams, [](const auto record)->bool {
-      return (record.key() != "hello");
-    });
+    auto filtered_streams = topology->create_processors<kspp::filter<std::string, void>>(word_streams,
+                                                                                         [](const auto record) -> bool {
+                                                                                           return (record.key() !=
+                                                                                                   "hello");
+                                                                                         });
 
     auto mypipes = topology->create_processors<kspp::mem_stream_source<std::string, void>>(filtered_streams);
     auto sinks = topology->create_processors<stream_sink<std::string, void>>(mypipes, &std::cerr);
-    for (auto i : mypipes)
+    for (auto i: mypipes)
       i->push_back("extra message injected");
     topology->start(kspp::OFFSET_BEGINNING);
     topology->flush();

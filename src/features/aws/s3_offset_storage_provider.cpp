@@ -47,7 +47,8 @@ namespace kspp {
     return std::make_shared<s3_offset_storage>(uri.authority(), bucket, key, access_key, secret_key);
   }
 
-  s3_offset_storage::s3_offset_storage(std::string host, std::string s3_bucket, std::string s3_object_name, std::string access_key, std::string secret_key)
+  s3_offset_storage::s3_offset_storage(std::string host, std::string s3_bucket, std::string s3_object_name,
+                                       std::string access_key, std::string secret_key)
       : s3_bucket_(s3_bucket), s3_object_name_(s3_object_name) {
 
     kspp::init_aws(); // must be done at least once - otherwise the aws functions segfaults
@@ -61,7 +62,6 @@ namespace kspp {
       use_ssl = false;
       LOG(WARNING) << "disabling SSL for " << host;
     }
-
 
 
     Aws::Client::ClientConfiguration config;
@@ -93,8 +93,8 @@ namespace kspp {
     if (get_object_outcome.IsSuccess()) {
       auto &retrieved_data = get_object_outcome.GetResultWithOwnership().GetBody();
       int64_t tmp = kspp::OFFSET_BEGINNING;
-      retrieved_data.read((char*) &tmp, sizeof(int64_t));
-      if (retrieved_data.good()){
+      retrieved_data.read((char *) &tmp, sizeof(int64_t));
+      if (retrieved_data.good()) {
         LOG(INFO) << "start(OFFSET_STORED), starting from offset: " << tmp;
         last_commited_offset_ = tmp;
         last_flushed_offset_ = tmp;
@@ -113,8 +113,10 @@ namespace kspp {
     object_request.SetBucket(Aws::String(s3_bucket_.c_str()));
     object_request.SetKey(Aws::String(s3_object_name_.c_str()));
 
-    auto data = Aws::MakeShared<Aws::StringStream>("PutObjectInputStream", std::stringstream::in | std::stringstream::out | std::stringstream::binary);
-    data->write(reinterpret_cast<char*>(&last_commited_offset_),  sizeof(int64_t));
+    auto data = Aws::MakeShared<Aws::StringStream>("PutObjectInputStream",
+                                                   std::stringstream::in | std::stringstream::out |
+                                                   std::stringstream::binary);
+    data->write(reinterpret_cast<char *>(&last_commited_offset_), sizeof(int64_t));
     object_request.SetBody(data);
 
     // TODO I have no idea why I need a boost::interprocess::bufferstream - copied from internet and dopublecheck if is really needed...

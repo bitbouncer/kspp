@@ -5,6 +5,7 @@
 #include <kspp/kspp.h>
 #include <kspp/topology.h>
 #include "grpc_avro_consumer.h"
+
 #pragma once
 
 namespace kspp {
@@ -13,14 +14,14 @@ namespace kspp {
     static constexpr const char *PROCESSOR_NAME = "bb_grpc_avro_source";
   public:
     grpc_avro_source(std::shared_ptr<cluster_config> config,
-                          int32_t partition,
-                          std::string topic,
-                          std::shared_ptr<offset_storage> offset_store,
-                          std::shared_ptr<grpc::Channel> channel,
-                          std::string api_key,
-                          std::string secret_access_key)
-        : partition_source<K, V>(nullptr, partition)
-        , _impl(partition, topic, offset_store, channel, api_key, secret_access_key) {
+                     int32_t partition,
+                     std::string topic,
+                     std::shared_ptr<offset_storage> offset_store,
+                     std::shared_ptr<grpc::Channel> channel,
+                     std::string api_key,
+                     std::string secret_access_key)
+        : partition_source<K, V>(nullptr, partition),
+          _impl(partition, topic, offset_store, channel, api_key, secret_access_key) {
     }
 
     virtual ~grpc_avro_source() {

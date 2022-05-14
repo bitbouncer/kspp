@@ -20,10 +20,9 @@ message("GRPC_HDRS = ${GRPC_HDRS}")
 SET(BB_GRPC_LIBS_STATIC kspp_grpc_s gRPC::grpc++_reflection gRPC::grpc++ gRPC::grpc protobuf::libprotobuf)
 SET(BB_GRPC_LIBS_SHARED kspp_grpc gRPC::grpc++_reflection gRPC::grpc++ gRPC::grpc protobuf::libprotobuf)
 
-file(GLOB LIB_SRCS *.cpp  grpc/*.cpp)
+file(GLOB LIB_SRCS *.cpp grpc/*.cpp)
 
-file(GLOB LIB_HEADERS *.h  grpc/*.h)
-
+file(GLOB LIB_HEADERS *.h grpc/*.h)
 
 
 if (BUILD_STATIC_LIBS)

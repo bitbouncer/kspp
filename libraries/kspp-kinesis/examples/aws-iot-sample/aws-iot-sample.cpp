@@ -10,12 +10,13 @@ using namespace kspp;
 using json = nlohmann::json;
 
 static bool run = true;
+
 static void sigterm(int sig) {
   run = false;
 }
 
 int main(int argc, char **argv) {
-  if (argc!=2){
+  if (argc != 2) {
     std::cerr << "usage: " << argv[0] << " stream_name";
     return -1;
   }
@@ -32,19 +33,19 @@ int main(int argc, char **argv) {
   std::string ssl_key_store;
   std::string ssl_private_key;
 
-  auto u = getenv ("BB_MQTT_USERNAME");
+  auto u = getenv("BB_MQTT_USERNAME");
   if (u)
     mqtt_username = u;
 
-  auto p = getenv ("BB_MQTT_PASSWORD");
+  auto p = getenv("BB_MQTT_PASSWORD");
   if (p)
     mqtt_password = p;
 
-  auto ks = getenv ("SSL_KEY_STORE");
+  auto ks = getenv("SSL_KEY_STORE");
   if (ks)
     ssl_key_store = ks;
 
-  auto pk = getenv ("SSL_PRIVATE_KEY");
+  auto pk = getenv("SSL_PRIVATE_KEY");
   if (pk)
     ssl_private_key = pk;
 
@@ -54,12 +55,12 @@ int main(int argc, char **argv) {
   LOG(INFO) << "SSL_KEY_STORE    " << ssl_key_store;
   LOG(INFO) << "SSL_PRIVATE_KEY  " << ssl_private_key;
 
-  if (ssl_key_store.size() && !std::experimental::filesystem::exists(ssl_key_store)){
+  if (ssl_key_store.size() && !std::experimental::filesystem::exists(ssl_key_store)) {
     std::cerr << "SSL_KEY_STORE at path: " << ssl_key_store << " not found - exiting";
     return -1;
   }
 
-  if (ssl_private_key.size() && !std::experimental::filesystem::exists(ssl_private_key)){
+  if (ssl_private_key.size() && !std::experimental::filesystem::exists(ssl_private_key)) {
     std::cerr << "SSL_PRIVATE_KEY at path: " << ssl_private_key << " not found - exiting";
     return -1;
   }
@@ -70,7 +71,7 @@ int main(int argc, char **argv) {
 
   mqtt::ssl_options sslopts;
   sslopts.set_trust_store("/etc/ssl/certs/ca-certificates.crt");
-  if (ssl_key_store.size() && ssl_private_key.size()){
+  if (ssl_key_store.size() && ssl_private_key.size()) {
     sslopts.set_key_store(ssl_key_store);
     sslopts.set_private_key(ssl_private_key);
   }
@@ -92,19 +93,30 @@ int main(int argc, char **argv) {
   kspp::topology_builder generic_builder(config);
 
   auto t = generic_builder.create_topology();
-  auto source0 = t->create_processors<kspp::kinesis_string_source>({0},stream_name);
-  auto flatmap = t->create_processors<kspp::flat_map<std::string, std::string, std::string, std::string>>(source0, [](const auto record, auto sink){
-    if (record.value()) {
-      json j = json::parse(*record.value());
-      double t0 = j["ts"];
-      auto now = kspp::milliseconds_since_epoch();
-      int64_t kinesis_lag = now - record.event_time();
-      int64_t total_lag = now -t0;
-      //LOG(INFO) << *record.value() << " kinesis ts: " << record.event_time() << ", kinesis lag: " << kinesis_lag << " total_lag: " << total_lag;
-      //std::string msg = "{\"mob\": {\"lat\": 59.334591, \"lng\": 18.063240}, \"ts\":" + std::to_string(kspp::milliseconds_since_epoch()) + "}";
-      insert(sink, std::string("alarm"), *record.value());
-    }
-    });
+  auto source0 = t->create_processors<kspp::kinesis_string_source>({0}, stream_name);
+  auto flatmap = t->create_processors<kspp::flat_map<std::string, std::string, std::string, std::string>>(source0,
+                                                                                                          [](const auto record,
+                                                                                                             auto sink) {
+                                                                                                            if (record.value()) {
+                                                                                                              json j = json::parse(
+                                                                                                                  *record.value());
+                                                                                                              double t0 = j["ts"];
+                                                                                                              auto now = kspp::milliseconds_since_epoch();
+                                                                                                              int64_t kinesis_lag =
+                                                                                                                  now -
+                                                                                                                  record.event_time();
+                                                                                                              int64_t total_lag =
+                                                                                                                  now -
+                                                                                                                  t0;
+                                                                                                              //LOG(INFO) << *record.value() << " kinesis ts: " << record.event_time() << ", kinesis lag: " << kinesis_lag << " total_lag: " << total_lag;
+                                                                                                              //std::string msg = "{\"mob\": {\"lat\": 59.334591, \"lng\": 18.063240}, \"ts\":" + std::to_string(kspp::milliseconds_since_epoch()) + "}";
+                                                                                                              insert(
+                                                                                                                  sink,
+                                                                                                                  std::string(
+                                                                                                                      "alarm"),
+                                                                                                                  *record.value());
+                                                                                                            }
+                                                                                                          });
   auto sink = t->create_sink<kspp::mqtt_sink>(flatmap, mqtt_endpoint, connOpts);
 
   std::signal(SIGINT, sigterm);

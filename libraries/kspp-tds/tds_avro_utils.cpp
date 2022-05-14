@@ -1,7 +1,8 @@
 #include <kspp-tds/tds_avro_utils.h>
 #include <glog/logging.h>
 #include <avro/Specific.hh>
-namespace kspp{
+
+namespace kspp {
   namespace tds {
 
     std::shared_ptr<avro::Schema> schema_for_oid(TDS_OIDS id) {
@@ -60,17 +61,17 @@ namespace kspp{
     }
 
     std::string simple_column_name(std::string column_name) {
-      std::string simple=column_name;
+      std::string simple = column_name;
       size_t found = simple.find_last_of('.');
-      if (found!=std::string::npos)
-        simple = simple.substr(found+1);
+      if (found != std::string::npos)
+        simple = simple.substr(found + 1);
       return simple;
     }
 
-    int find_column_by_name(DBPROCESS *stream, const std::string& name){
+    int find_column_by_name(DBPROCESS *stream, const std::string &name) {
       auto ncols = dbnumcols(stream);
-      for(int i=0; i!=ncols; ++i){
-        if (name == dbcolname(stream, i+1))
+      for (int i = 0; i != ncols; ++i) {
+        if (name == dbcolname(stream, i + 1))
           return i;
       }
       return -1;
@@ -92,7 +93,8 @@ namespace kspp{
 
     // if we have a freeform select statement we might need to specify id and ts columns as a.id and b.ts if the fields occur in several tables
     // strip this away
-    std::shared_ptr<avro::ValidSchema> schema_for_table_key(std::string schema_name, const std::vector<std::string>& keys, DBPROCESS *context) {
+    std::shared_ptr<avro::ValidSchema>
+    schema_for_table_key(std::string schema_name, const std::vector<std::string> &keys, DBPROCESS *context) {
       avro::RecordSchema record_schema(schema_name);
       int ncols = dbnumcols(context);
       for (std::vector<std::string>::const_iterator key = keys.begin(); key != keys.end(); key++) {

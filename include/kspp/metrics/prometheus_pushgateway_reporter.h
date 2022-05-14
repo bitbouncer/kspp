@@ -4,23 +4,23 @@
 #include <kspp/kspp.h>
 #include <kspp/topology_builder.h>
 #include <prometheus/gateway.h>
+
 #pragma once
 
 namespace kspp {
   class prometheus_pushgateway_reporter {
   public:
-    prometheus_pushgateway_reporter(std::string job_name, std::string uri, bool verbose=false);
+    prometheus_pushgateway_reporter(std::string job_name, std::string uri, bool verbose = false);
 
     ~prometheus_pushgateway_reporter();
 
     void add_metrics(std::shared_ptr<topology> p);
 
   private:
-    bool _run;
-    const std::string _uri;
-    std::shared_ptr<std::thread> _thread;
-    prometheus::Gateway _gateway;
-    bool _verbose;
+    bool run_ = false;
+    prometheus::Gateway gateway_;
+    bool verbose_;
+    std::shared_ptr<std::thread> thread_;
   };
 
   std::shared_ptr<prometheus_pushgateway_reporter>

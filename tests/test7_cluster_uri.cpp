@@ -10,7 +10,7 @@ int main(int argc, char **argv) {
     assert(uri.good());
     assert(uri.scheme() == "zk"); // should be lower case
     assert(uri.authority() == "127.0.0.1:2181,192.168.100.44:2181");
-    assert(uri.path()=="/nisseGul");
+    assert(uri.path() == "/nisseGul");
     assert(uri.str() == "zk://127.0.0.1:2181,192.168.100.44:2181/nisseGul");
   }
 
@@ -19,7 +19,7 @@ int main(int argc, char **argv) {
     assert(uri.good());
     assert(uri.scheme() == "zk"); // should be lower case
     assert(uri.authority() == "127.0.0.1:2181,192.168.100.44:2181");
-    assert(uri.path()=="");
+    assert(uri.path() == "");
     assert(uri.str() == "zk://127.0.0.1:2181,192.168.100.44:2181");
   }
 
@@ -30,7 +30,7 @@ int main(int argc, char **argv) {
     assert(uri.good());
     assert(uri.scheme() == "https");
     assert(uri.authority() == "[2001:db8:85a3:0:0:8a2e:370:7334]:4321,[::1]:5555,[0:0:0:0:0:0:0:1]:1432");
-    assert(uri.path()=="");
+    assert(uri.path() == "");
     assert(uri.str() == "https://[2001:db8:85a3:0:0:8a2e:370:7334]:4321,[::1]:5555,[0:0:0:0:0:0:0:1]:1432");
   }
 
@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
     assert(uri.good());
     assert(uri.scheme() == "https");
     assert(uri.authority() == "[2001:db8:85a3:0:0:8a2e:370:7334]:4321,[::1]:5555,[0:0:0:0:0:0:0:1]:1432");
-    assert(uri.path()=="");
+    assert(uri.path() == "");
     assert(uri.str() == "https://[2001:db8:85a3:0:0:8a2e:370:7334]:4321,[::1]:5555,[0:0:0:0:0:0:0:1]:1432");
   }
 

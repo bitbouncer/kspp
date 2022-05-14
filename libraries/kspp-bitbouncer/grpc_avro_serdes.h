@@ -14,26 +14,27 @@
 #include <glog/logging.h>
 #include <kspp/avro/generic_avro.h>
 #include "grpc_avro_schema_resolver.h"
+
 #pragma once
 
 namespace kspp {
 
-  inline bool is_compatible(const avro::ValidSchema& a, const  avro::ValidSchema& b){
+  inline bool is_compatible(const avro::ValidSchema &a, const avro::ValidSchema &b) {
     std::stringstream as;
     std::stringstream bs;
     a.toJson(as);
     b.toJson(bs);
-    return as.str()==bs.str();
+    return as.str() == bs.str();
   }
 
-  class grpc_avro_serdes
-  {
-    template<typename T> struct fake_dependency : public std::false_type {};
+  class grpc_avro_serdes {
+    template<typename T>
+    struct fake_dependency : public std::false_type {
+    };
 
   public:
-    grpc_avro_serdes(std::shared_ptr<grpc_avro_schema_resolver> resolver, bool relaxed_parsing=false)
-        : _resolver(resolver)
-        , _relaxed_parsing(relaxed_parsing){
+    grpc_avro_serdes(std::shared_ptr<grpc_avro_schema_resolver> resolver, bool relaxed_parsing = false)
+        : _resolver(resolver), _relaxed_parsing(relaxed_parsing) {
     }
 
     static std::string name() { return "kspp::grpc_avro_serdes"; }
@@ -45,7 +46,7 @@ namespace kspp {
     * avro encoded payload
     */
     template<class T>
-    size_t decode(int schema_id, const char* payload, size_t size, T& dst) {
+    size_t decode(int schema_id, const char *payload, size_t size, T &dst) {
       static int32_t expected_schema_id = -1;
       if (expected_schema_id < 0) {
         auto validSchema = _resolver->get_schema(schema_id);
@@ -59,7 +60,7 @@ namespace kspp {
     }
 
     template<class T>
-    size_t decode(std::shared_ptr<const avro::ValidSchema> schema, const char* payload, size_t size, T& dst) {
+    size_t decode(std::shared_ptr<const avro::ValidSchema> schema, const char *payload, size_t size, T &dst) {
       try {
         auto bin_is = avro::memoryInputStream((const uint8_t *) payload, size);
         avro::DecoderPtr bin_decoder = avro::binaryDecoder();
@@ -68,21 +69,23 @@ namespace kspp {
         return bin_is->byteCount();
       }
       catch (const avro::Exception &e) {
-        LOG_FIRST_N(ERROR,100) << "avro deserialization failed: " << e.what();
-        LOG_EVERY_N(ERROR,1000) << "avro deserialization failed: " << e.what();
+        LOG_FIRST_N(ERROR, 100) << "avro deserialization failed: " << e.what();
+        LOG_EVERY_N(ERROR, 1000) << "avro deserialization failed: " << e.what();
         return 0;
       }
     }
 
   private:
     std::shared_ptr<grpc_avro_schema_resolver> _resolver;
-    bool _relaxed_parsing=false;
+    bool _relaxed_parsing = false;
   };
 
-  template<> inline size_t grpc_avro_serdes::decode(int schema_id, const char* payload, size_t size, std::string& dst) {
+  template<>
+  inline size_t grpc_avro_serdes::decode(int schema_id, const char *payload, size_t size, std::string &dst) {
     using namespace std::string_literals;
     static int32_t expected_schema_id = -1;
-    static const std::shared_ptr<const ::avro::ValidSchema> _validSchema(std::make_shared<const ::avro::ValidSchema>(::avro::compileJsonSchemaFromString("{\"type\":\"string\"}")));
+    static const std::shared_ptr<const ::avro::ValidSchema> _validSchema(
+        std::make_shared<const ::avro::ValidSchema>(::avro::compileJsonSchemaFromString("{\"type\":\"string\"}")));
     if (expected_schema_id < 0) {
       auto validSchema = _resolver->get_schema(schema_id);
       if (validSchema && is_compatible(*validSchema, *_validSchema)) {
@@ -94,18 +97,19 @@ namespace kspp {
     return decode(_validSchema, payload, size, dst);
   }
 
-  template<> inline size_t grpc_avro_serdes::decode(int schema_id, const char* payload, size_t size, kspp::generic_avro& dst) {
+  template<>
+  inline size_t grpc_avro_serdes::decode(int schema_id, const char *payload, size_t size, kspp::generic_avro &dst) {
     // if there are empty data we conside that as a null (ie default to for kspp::generic_avro) so just return
-    if (size==0)
+    if (size == 0)
       return 0;
 
     // this should net be in the stream - not possible to decode
-    if (schema_id<=0) {
-      LOG(ERROR) << "schema id invalid: " <<  schema_id;
+    if (schema_id <= 0) {
+      LOG(ERROR) << "schema id invalid: " << schema_id;
       return 0;
     }
 
-    auto validSchema  = _resolver->get_schema(schema_id);
+    auto validSchema = _resolver->get_schema(schema_id);
 
     if (validSchema == nullptr)
       return 0;

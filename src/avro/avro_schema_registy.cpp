@@ -6,39 +6,40 @@
 #include <kspp/cluster_config.h>
 
 namespace kspp {
-  avro_schema_registry::avro_schema_registry(const kspp::cluster_config& config)
-      : _fail_fast(config.get_fail_fast())
-      , _work(new boost::asio::io_service::work(_ios))
-      , _thread([this] { _ios.run(); })
-      , _proxy(std::make_shared<confluent_http_proxy>(_ios, config)) {
+  avro_schema_registry::avro_schema_registry(const kspp::cluster_config &config)
+      : work_(new boost::asio::io_service::work(ios_))
+        , fail_fast_(config.get_fail_fast())
+        , proxy_(std::make_shared<confluent_http_proxy>(ios_, config))
+        , thread_([this] { ios_.run(); }) {
   }
 
   avro_schema_registry::~avro_schema_registry() {
-    _proxy.reset();
-    _work.reset();
-    _thread.join();
+    proxy_.reset();
+    work_.reset();
+    thread_.join();
   }
 
   bool avro_schema_registry::validate() {
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-    auto future = _proxy->get_config();
+    auto future = proxy_->get_config();
     future.wait();
     auto rpc_result = future.get();
     if (rpc_result.ec) {
       LOG(WARNING) << "avro_schema_registry validate failed: ec" << rpc_result.ec;
       return false;
     }
-    std::chrono::steady_clock::time_point end= std::chrono::steady_clock::now();
-    LOG(INFO) << "avro_schema_registry validate OK " << std::chrono::duration_cast<std::chrono::milliseconds> (end - begin).count() << " ms";
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    LOG(INFO) << "avro_schema_registry validate OK "
+              << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << " ms";
     return true;
   }
 
   int32_t avro_schema_registry::put_schema(std::string name, std::shared_ptr<const avro::ValidSchema> schema) {
-    auto future = _proxy->put_schema(name, schema);
+    auto future = proxy_->put_schema(name, schema);
     future.wait();
     auto rpc_result = future.get();
     if (rpc_result.ec) {
-      LOG_IF(FATAL, _fail_fast) << "avro_schema_registry put failed: ec" << rpc_result.ec;
+      LOG_IF(FATAL, fail_fast_) << "avro_schema_registry put failed: ec" << rpc_result.ec;
       LOG(ERROR) << "avro_schema_registry put failed: ec" << rpc_result.ec;
       return -1;
     }
@@ -48,17 +49,17 @@ namespace kspp {
 
   std::shared_ptr<const avro::ValidSchema> avro_schema_registry::get_schema(int32_t schema_id) {
     {
-      kspp::spinlock::scoped_lock xxx(_spinlock);
+      kspp::spinlock::scoped_lock xxx(spinlock_);
       {
-        std::map<int32_t, std::shared_ptr<const avro::ValidSchema>>::iterator item = _cache.find(schema_id);
-        if (item != _cache.end()) {
+        std::map<int32_t, std::shared_ptr<const avro::ValidSchema>>::iterator item = cache_.find(schema_id);
+        if (item != cache_.end()) {
           //DLOG_EVERY_N(INFO, 1000) << "avro_schema_registry, cache lookup on " << schema_id;
           return item->second;
         }
       }
     }
 
-    auto future = _proxy->get_schema(schema_id);
+    auto future = proxy_->get_schema(schema_id);
     future.wait();
     auto rpc_result = future.get();
     if (rpc_result.ec) {
@@ -84,9 +85,9 @@ namespace kspp {
     d.Accept(writer);
     LOG(INFO) << "avro_schema_registry get " << schema_id << "-> " << buffer.GetString();
 
-    kspp::spinlock::scoped_lock xxx(_spinlock);
+    kspp::spinlock::scoped_lock xxx(spinlock_);
     {
-      _cache[schema_id] = rpc_result.schema;
+      cache_[schema_id] = rpc_result.schema;
     }
     return rpc_result.schema;
   }

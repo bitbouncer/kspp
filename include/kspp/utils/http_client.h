@@ -22,13 +22,14 @@
 #include <boost/algorithm/string.hpp>
 #include <kspp/utils/spinlock.h>
 #include <glog/logging.h>
+
 #pragma once
 
 namespace kspp {
   namespace http {
     enum trace_log_level {
       TRACE_LOG_NONE = 0,
-      TRACE_LOG_VERBOSE  =1
+      TRACE_LOG_VERBOSE = 1
     };
 
     enum status_type {
@@ -76,11 +77,11 @@ namespace kspp {
       POST = 3,
       PUT = 4,
       /* pathological */
-          CONNECT = 5,
+      CONNECT = 5,
       OPTIONS = 6,
       TRACE = 7,
       /* webdav */
-          COPY = 8,
+      COPY = 8,
       LOCK = 9,
       MKCOL = 10,
       MOVE = 11,
@@ -89,21 +90,21 @@ namespace kspp {
       SEARCH = 14,
       UNLOCK = 15,
       /* subversion */
-          REPORT = 16,
+      REPORT = 16,
       MKACTIVITY = 17,
       CHECKOUT = 18,
       MERGE = 19,
       /* upnp */
-          MSEARCH = 20,
+      MSEARCH = 20,
       NOTIFY = 21,
       SUBSCRIBE = 22,
       UNSUBSCRIBE = 23,
       /* RFC-5789 */
-          PATCH = 24,
+      PATCH = 24,
       PURGE = 25
     };
 
-    const std::string& to_string(kspp::http::method_t e);
+    const std::string &to_string(kspp::http::method_t e);
 
     struct header_t {
       header_t() {}
@@ -149,7 +150,7 @@ namespace kspp {
       request(kspp::http::method_t method,
               const std::string &uri,
               const std::vector<std::string> &headers,
-              std::chrono::milliseconds timeout=std::chrono::seconds(2));
+              std::chrono::milliseconds timeout = std::chrono::seconds(2));
 
       ~request();
 
@@ -164,7 +165,8 @@ namespace kspp {
        * client_key_path path to pem encoded file
        * client_key_passphrase
        */
-      void set_client_credentials(std::string client_cert_path, std::string client_key_path, std::string client_key_passphrase);
+      void set_client_credentials(std::string client_cert_path, std::string client_key_path,
+                                  std::string client_key_passphrase);
 
       /*
        *  ssl verify peer true/false
@@ -179,7 +181,8 @@ namespace kspp {
       /*
        * enable basic auth
        */
-      void set_basic_auth(const std::string& user, const std::string& password);
+      void set_basic_auth(const std::string &user, const std::string &password);
+
       /*
        * turns on detailed logging
        */
@@ -203,7 +206,7 @@ namespace kspp {
         _tx_buffer.append(s);
       }
 
-      inline const std::string& tx_content() const {
+      inline const std::string &tx_content() const {
         return _tx_buffer;
       }
 
@@ -245,7 +248,7 @@ namespace kspp {
 
       inline kspp::http::method_t method() const { return _method; }
 
-     private:
+    private:
 
       void curl_start(std::shared_ptr<request> self);
 
@@ -266,7 +269,7 @@ namespace kspp {
       std::string _client_cert;
       std::string _client_key;
       std::string _client_key_passphrase;
-      bool _verify_host = { true };
+      bool _verify_host = {true};
 
       // logging stuff
       std::string _request_id;
@@ -290,14 +293,18 @@ namespace kspp {
 
     class client {
     public:
-      client(boost::asio::io_service &io_service, size_t max_connection_cache=10);
+      client(boost::asio::io_service &io_service, size_t max_connection_cache = 10);
+
       ~client();
 
       void set_user_agent(std::string s);
 
       void close();
+
       bool done();
+
       void perform_async(std::shared_ptr<kspp::http::request> request, kspp::http::request::callback cb);
+
       std::shared_ptr<kspp::http::request> perform(std::shared_ptr<kspp::http::request> request);
 
     protected:
@@ -308,8 +315,11 @@ namespace kspp {
 
       // CURL CALLBACKS
       static curl_socket_t _opensocket_cb(void *clientp, curlsocktype purpose, struct curl_sockaddr *address);
+
       static int _sock_cb(CURL *e, curl_socket_t s, int what, void *user_data, void *per_socket_user_data);
+
       static int _multi_timer_cb(CURLM *multi, long timeout_ms, void *userp);
+
       static int _closesocket_cb(void *user_data, curl_socket_t item);
 
       curl_socket_t opensocket_cb(curlsocktype purpose, struct curl_sockaddr *address);
@@ -333,14 +343,14 @@ namespace kspp {
 
       void check_completed();
 
-      boost::asio::io_service &_io_service;
-      mutable spinlock _spinlock;
-      boost::asio::steady_timer _timer;
-      std::map<curl_socket_t, boost::asio::ip::tcp::socket *> _socket_map;
-      CURLM *_multi;
-      int _curl_handles_still_running;
-      std::string _user_agent_header;
-      bool _closing;
+      boost::asio::io_service &io_service_;
+      mutable spinlock spinlock_;
+      boost::asio::steady_timer timer_;
+      std::map<curl_socket_t, boost::asio::ip::tcp::socket *> socket_map_;
+      CURLM *multi_ = nullptr;
+      int curl_handles_still_running_=0;
+      std::string user_agent_header_;
+      bool closing_;
     };
   } // namespace
 } // namespace

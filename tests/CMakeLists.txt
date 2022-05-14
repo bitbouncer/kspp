@@ -72,9 +72,9 @@ target_link_libraries(test11_metrics ${ALL_LIBS})
 add_test(NAME test11_metrics COMMAND $<TARGET_FILE:test11_metrics>)
 
 if (ENABLE_S3)
-add_executable(test12_s3 test12_s3.cpp)
-target_link_libraries(test12_s3 ${ALL_LIBS})
-add_test(NAME test12_s3 COMMAND $<TARGET_FILE:test12_s3>)
+    add_executable(test12_s3 test12_s3.cpp)
+    target_link_libraries(test12_s3 ${ALL_LIBS})
+    add_test(NAME test12_s3 COMMAND $<TARGET_FILE:test12_s3>)
 endif ()
 
 add_executable(test13_mem test13_mem.cpp)

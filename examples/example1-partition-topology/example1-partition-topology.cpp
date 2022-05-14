@@ -228,7 +228,8 @@ int main(int argc, char **argv) {
 
     auto table = topology->create_processor<kspp::ktable<int64_t, user_profile_data, kspp::mem_store>>(table_source);
 
-    auto join = topology->create_processor<kspp::kstream_left_join<int64_t, page_view_data, user_profile_data>>(stream, table);
+    auto join = topology->create_processor<kspp::kstream_left_join<int64_t, page_view_data, user_profile_data>>(stream,
+                                                                                                                table);
 
     auto decorated_data = topology->create_processor<kspp::flat_map<
         int64_t, kspp::left_join<page_view_data, user_profile_data>::value_type,
@@ -262,7 +263,8 @@ int main(int argc, char **argv) {
         PARTITION,
         "kspp_UserProfile");
     auto table1 = topology->create_processor<kspp::ktable<int64_t, user_profile_data, kspp::mem_store>>(table_source);
-    auto table2 = topology->create_processor<kspp::ktable<int64_t, user_profile_data, kspp::mem_windowed_store>>(  table_source, 1000ms, 10); // 500ms slots and 10 of them...
+    auto table2 = topology->create_processor<kspp::ktable<int64_t, user_profile_data, kspp::mem_windowed_store>>(
+        table_source, 1000ms, 10); // 500ms slots and 10 of them...
     topology->start(kspp::OFFSET_STORED);
     topology->flush();
 
@@ -271,7 +273,7 @@ int main(int argc, char **argv) {
       std::cerr << "item : " << ksource_to_string(**it) << std::endl;
 
     std::cerr << "using range iterators " << std::endl;
-    for (auto i : *table2)
+    for (auto i: *table2)
       std::cerr << "item : " << ksource_to_string(*i) << std::endl;
 
     //wait a little an see what in there now...
@@ -279,11 +281,11 @@ int main(int argc, char **argv) {
     topology->flush();
 
     std::cerr << "using range iterators " << std::endl;
-    for (auto i : *table1)
+    for (auto i: *table1)
       std::cerr << "item : " << ksource_to_string(*i) << std::endl;
 
     std::cerr << "using range iterators " << std::endl;
-    for (auto i : *table2)
+    for (auto i: *table2)
       std::cerr << "item : " << ksource_to_string(*i) << std::endl;
   }
   return 0;

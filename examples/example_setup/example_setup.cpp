@@ -28,8 +28,10 @@ int main(int argc, char **argv) {
 
   kspp::topology_builder builder(config);
   auto topology = builder.create_topology();
-  auto table_stream = topology->create_sink<kspp::kafka_sink<boost::uuids::uuid, int64_t, kspp::binary_serdes, kspp::binary_serdes>>("kspp_test0_table");
-  auto event_stream = topology->create_sink<kspp::kafka_sink<boost::uuids::uuid, int64_t, kspp::binary_serdes, kspp::binary_serdes>>("kspp_test0_eventstream");
+  auto table_stream = topology->create_sink<kspp::kafka_sink<boost::uuids::uuid, int64_t, kspp::binary_serdes, kspp::binary_serdes>>(
+      "kspp_test0_table");
+  auto event_stream = topology->create_sink<kspp::kafka_sink<boost::uuids::uuid, int64_t, kspp::binary_serdes, kspp::binary_serdes>>(
+      "kspp_test0_eventstream");
 
   std::vector<boost::uuids::uuid> ids;
   for (int i = 0; i != 10000; ++i)
@@ -37,14 +39,14 @@ int main(int argc, char **argv) {
 
   std::cerr << "creating " << table_stream->log_name() << std::endl;
   for (int64_t update_nr = 0; update_nr != 100; ++update_nr) {
-    for (auto &i : ids) {
+    for (auto &i: ids) {
       table_stream->push_back(i, update_nr);
     }
   }
 
   std::cerr << "creating " << event_stream->log_name() << std::endl;
   for (int64_t event_nr = 0; event_nr != 100; ++event_nr) {
-    for (auto &i : ids) {
+    for (auto &i: ids) {
       event_stream->push_back(i, event_nr);
     }
   }

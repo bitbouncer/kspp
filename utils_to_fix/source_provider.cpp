@@ -14,7 +14,7 @@ namespace kspp {
       const size_t topic_start = 8;
       //parts.host = uri.substr(host_start, uri.find("/", host_start) - host_start);
       parts.topic = uri.substr(topic_start, uri.find(":", topic_start) - topic_start);
-      parts.partition =0; // fixme
+      parts.partition = 0; // fixme
     }
 
     if (uri.size() > 7 && boost::iequals(uri.substr(0, 7), ("avro://"))) {
@@ -36,7 +36,7 @@ namespace kspp {
       const size_t topic_start = host_start + parts.host.size() + 1;
       parts.topic = uri.substr(topic_start, uri.find(":", topic_start) - topic_start);
 
-      parts.partition =0; // fixme
+      parts.partition = 0; // fixme
 
       if (parts.topic.empty()) {
         LOG(ERROR) << "bad topic";

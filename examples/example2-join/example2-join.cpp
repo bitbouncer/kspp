@@ -38,10 +38,14 @@ int main(int argc, char **argv) {
 
   {
     auto topology = builder.create_topology();
-    auto streams = topology->create_processors<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_serdes, kspp::binary_serdes>>(partition_list, "kspp_test0_eventstream");
-    auto table_sources = topology->create_processors<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_serdes, kspp::binary_serdes>>(partition_list, "kspp_test0_table");
-    auto tables = topology->create_processors<kspp::ktable<boost::uuids::uuid, int64_t, kspp::mem_store>>(table_sources);
-    auto joins = topology->create_processors<kspp::kstream_left_join<boost::uuids::uuid, int64_t, int64_t>>(streams, tables);
+    auto streams = topology->create_processors<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_serdes, kspp::binary_serdes>>(
+        partition_list, "kspp_test0_eventstream");
+    auto table_sources = topology->create_processors<kspp::kafka_source<boost::uuids::uuid, int64_t, kspp::binary_serdes, kspp::binary_serdes>>(
+        partition_list, "kspp_test0_table");
+    auto tables = topology->create_processors<kspp::ktable<boost::uuids::uuid, int64_t, kspp::mem_store>>(
+        table_sources);
+    auto joins = topology->create_processors<kspp::kstream_left_join<boost::uuids::uuid, int64_t, int64_t>>(streams,
+                                                                                                            tables);
     auto sinks = topology->create_sink<kspp::null_sink<boost::uuids::uuid, kspp::left_join<int64_t, int64_t>::value_type>>(
         joins,
         [&join_count](auto r) {
@@ -53,7 +57,7 @@ int main(int argc, char **argv) {
     // first sync table
     std::cout << "before sync" << std::endl;
     auto t0 = std::chrono::high_resolution_clock::now();
-    for (auto &&i : tables) {
+    for (auto &&i: tables) {
       i->flush();
       i->commit(true);
     }
@@ -63,12 +67,12 @@ int main(int argc, char **argv) {
     std::cout << "after sync" << " t: " << d0.count() << "ms\n" << std::endl;
 
     size_t items_in_tables = 0;
-    for (auto &&i : tables)
-      for (const auto &&j : *i)
+    for (auto &&i: tables)
+      for (const auto &&j: *i)
         ++items_in_tables;
 
     size_t table_updates = 0;
-    for (auto &&i : tables) {
+    for (auto &&i: tables) {
       table_updates += i->get_metric("in_count");
     }
 

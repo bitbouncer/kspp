@@ -10,91 +10,85 @@
 #include <kspp/connect/generic_producer.h>
 #include <kspp/connect/connection_params.h>
 #include <kspp/metrics/metrics.h>
-#include <boost/bind.hpp> // TODO replace with std::bind
+//#include <boost/bind.hpp> // TODO replace with std::bind
 #pragma once
 
 namespace kspp {
   template<class K, class V>
-  class elasticsearch_producer : public generic_producer<K, V>
-  {
+  class elasticsearch_producer : public generic_producer<K, V> {
   public:
-    typedef std::function<std::string(const K&)> key2string_f;
-    typedef std::function<std::string(const V&)> value2json_f;
+    typedef std::function<std::string(const K &)> key2string_f;
+    typedef std::function<std::string(const V &)> value2json_f;
 
   public:
-    enum work_result_t { SUCCESS = 0, TIMEOUT = -1, HTTP_ERROR = -2, HTTP_BAD_REQUEST_ERROR = -4};
+    enum work_result_t {
+      SUCCESS = 0, TIMEOUT = -1, HTTP_ERROR = -2, HTTP_BAD_REQUEST_ERROR = -4
+    };
 
     typedef typename kspp::async::work<elasticsearch_producer::work_result_t>::async_function work_f;
 
 
-    elasticsearch_producer(std::string remote_write_url, std::string username, std::string password, key2string_f key_conv, value2json_f value_conv, size_t http_batch_size)
-    : _work(new boost::asio::io_service::work(_ios))
-        , _fg([this] { _process_work(); })
-        , _bg(boost::bind(&boost::asio::io_service::run, &_ios))
-        , _key_conv(key_conv)
-        , _value_conv(value_conv)
-        , _http_handler(_ios, http_batch_size)
-        , _remote_write_url(remote_write_url)
-        , _username(username)
-        , _password(password)
-        , _batch_size(http_batch_size)
-        , _http_timeout(std::chrono::seconds(2))
-        , _good(true)
-        , _closed(false)
-        , _connected(false)
-        , _table_checked(false)
-        , _table_exists(false)
-        , _table_create_pending(false)
-        , _insert_in_progress(false)
-        //, _skip_delete_of_non_active(cp.assume_beginning_of_stream)
-        , _request_time("http_request_time", "ms", { 0.9, 0.99 })
-        , _timeout("http_timeout", "msg")
-        , _http_2xx("http_request", "msg")
-        , _http_3xx("http_request", "msg")
-        , _http_4xx("http_request", "msg")
-        , _http_404("http_request", "msg")
-        , _http_5xx("http_request", "msg")
-        , _msg_bytes("bytes_sent", "bytes"){
-      _request_time.add_label(KSPP_DESTINATION_HOST, remote_write_url);
-      _http_2xx.add_label("code", "2xx");
-      _http_3xx.add_label("code", "3xx");
-      _http_404.add_label("code", "404_NO_ERROR");
-      _http_4xx.add_label("code", "4xx");
-      _http_5xx.add_label("code", "5xx");
+    elasticsearch_producer(std::string remote_write_url, std::string username, std::string password,
+                           key2string_f key_conv, value2json_f value_conv, size_t http_batch_size)
+        : work_(std::make_shared<boost::asio::io_service::work>(ios_))
+          , key_conv_(key_conv)
+          , value_conv_(value_conv)
+          , http_handler_(ios_, http_batch_size)
+          , batch_size_(http_batch_size)
+          , http_timeout_(std::chrono::seconds(2))
+          , remote_write_url_(remote_write_url)
+          , username_(username)
+          , password_(password)
+          , request_time_("http_request_time", "ms", {0.9, 0.99})
+          , timeout_("http_timeout", "msg")
+          , http_2xx_("http_request", "msg")
+          , http_3xx_("http_request", "msg")
+          , http_404_("http_request", "msg")
+          , http_4xx_("http_request", "msg")
+          , http_5xx_("http_request", "msg")
+          , msg_bytes_("bytes_sent", "bytes")
+          , bg_([this] { ios_.run(); }), fg_([this] { _process_work(); }) {
+      request_time_.add_label(KSPP_DESTINATION_HOST, remote_write_url);
+      http_2xx_.add_label("code", "2xx");
+      http_3xx_.add_label("code", "3xx");
+      http_404_.add_label("code", "404_NO_ERROR");
+      http_4xx_.add_label("code", "4xx");
+      http_5xx_.add_label("code", "5xx");
       curl_global_init(CURL_GLOBAL_NOTHING); /* minimal */
-      _http_handler.set_user_agent("Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36");
+      http_handler_.set_user_agent(
+          "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36");
       connect_async();
     }
 
-    ~elasticsearch_producer(){
-      _http_handler.close();
+    ~elasticsearch_producer() {
+      http_handler_.close();
       close();
-      _work.reset();
-      _fg.join();
-      _bg.join();
+      work_.reset();
+      fg_.join();
+      bg_.join();
     }
 
-    bool good() const {
-      return _good;
+    inline bool good() const {
+      return good_;
     }
 
-    void register_metrics(kspp::processor* parent) override{
-      parent->add_metric(&_timeout);
-      parent->add_metric(&_request_time);
-      parent->add_metric(&_http_2xx);
-      parent->add_metric(&_http_3xx);
-      parent->add_metric(&_http_404);
-      parent->add_metric(&_http_4xx);
-      parent->add_metric(&_http_5xx);
-      parent->add_metric(&_msg_bytes);
+    void register_metrics(kspp::processor *parent) override {
+      parent->add_metric(&timeout_);
+      parent->add_metric(&request_time_);
+      parent->add_metric(&http_2xx_);
+      parent->add_metric(&http_3xx_);
+      parent->add_metric(&http_404_);
+      parent->add_metric(&http_4xx_);
+      parent->add_metric(&http_5xx_);
+      parent->add_metric(&msg_bytes_);
     }
 
-    void close() override{
-      _closed=true;
+    void close() override {
+      closed_ = true;
     }
 
     bool eof() const override {
-      return (_incomming_msg.empty() && _done.empty());
+      return (incomming_msg_.empty() && done_.empty());
     }
 
     std::string topic() const override {
@@ -102,21 +96,21 @@ namespace kspp {
     }
 
     bool is_connected() const {
-      return _connected;
+      return connected_;
     }
 
-    void insert(std::shared_ptr<kevent<K, V>> p) override{
-      _incomming_msg.push_back(p);
+    void insert(std::shared_ptr<kevent<K, V>> p) override {
+      incomming_msg_.push_back(p);
     }
 
-    void poll(){
-      while (!_done.empty()) {
-        _done.pop_front();
+    void poll() {
+      while (!done_.empty()) {
+        done_.pop_front();
       }
     }
 
     size_t queue_size() const override {
-      return _incomming_msg.size() + _done.size();
+      return incomming_msg_.size() + done_.size();
     }
 
     void set_http_log_interval(int v) {
@@ -128,16 +122,17 @@ namespace kspp {
     }
 
   private:
-    void connect_async(){
-      _connected = true; // TODO login and get an auth token
+    void connect_async() {
+      connected_ = true; // TODO login and get an auth token
     }
 
-    void check_table_exists_async(){
-      _table_exists = true;
-      _table_create_pending = false;
+    /*void check_table_exists_async() {
+      table_exists_ = true;
+      table_create_pending_ = false;
     }
+    */
 
-    static void run_work(std::deque<work_f>& work, size_t batch_size) {
+    static void run_work(std::deque<work_f> &work, size_t batch_size) {
       while (work.size()) {
         kspp::async::work<elasticsearch_producer::work_result_t> batch(kspp::async::PARALLEL, kspp::async::ALL);
         size_t nr_of_items_in_batch = std::min<size_t>(work.size(), batch_size);
@@ -166,66 +161,70 @@ namespace kspp {
       }
     }
 
-    work_f create_one_http_work(const K& key, const V* value){
-      auto key_string = _key_conv(key);
-      std::string url = _remote_write_url + "/" + key_string;
+    work_f create_one_http_work(const K &key, const V *value) {
+      auto key_string = key_conv_(key);
+      std::string url = remote_write_url_ + "/" + key_string;
       kspp::http::method_t request_type = (value) ? kspp::http::PUT : kspp::http::DELETE_;
       std::string body;
       if (value) {
-        body = _value_conv(*value);
+        body = value_conv_(*value);
         //_active_ids.insert(key_string);
       } else {
-          /*if (_active_ids.find(key_string)!=_active_ids.end()) {
-          _active_ids.erase(key_string);
+        /*if (_active_ids.find(key_string)!=_active_ids.end()) {
+        _active_ids.erase(key_string);
 
-        } else {
-        }
-        */
+      } else {
       }
-        work_f f = [this, request_type, body, url](std::function<void(work_result_t)> cb) {
-        std::vector<std::string> headers({ "Content-Type: application/json" });
-        auto request = std::make_shared<kspp::http::request>(request_type, url, headers, _http_timeout);
+      */
+      }
+      work_f f = [this, request_type, body, url](std::function<void(work_result_t)> cb) {
+        std::vector<std::string> headers({"Content-Type: application/json"});
+        auto request = std::make_shared<kspp::http::request>(request_type, url, headers, http_timeout_);
 
-        if (_username.size() && _password.size())
-          request->set_basic_auth(_username, _password);
+        if (username_.size() && password_.size())
+          request->set_basic_auth(username_, password_);
 
         request->append(body);
         //request->set_trace_level(http::TRACE_LOG_NONE);
-        _http_handler.perform_async(
+        http_handler_.perform_async(
             request,
             [this, cb](std::shared_ptr<kspp::http::request> h) {
 
               // only observes sucessful roundtrips
               if (h->transport_result())
-                _request_time.observe(h->milliseconds());
+                request_time_.observe(h->milliseconds());
 
               //++_http_requests;
               if (!h->ok()) {
                 if (!h->transport_result()) {
-                  ++_timeout;
+                  ++timeout_;
                   DLOG(INFO) << "http transport failed - retrying";
                   cb(TIMEOUT);
                   return;
                 } else {
                   // if we are deleteing and the document does not exist we do not consider this as a failure
-                  if (h->method()==kspp::http::DELETE_ && h->http_result()==kspp::http::not_found){
-                    ++_http_404;
+                  if (h->method() == kspp::http::DELETE_ && h->http_result() == kspp::http::not_found) {
+                    ++http_404_;
                     cb(SUCCESS);
                     return;
                   }
 
                   auto ec = h->http_result();
-                  if (ec>=300 && ec <400)
-                    ++_http_3xx;
-                  else if (ec>=400 && ec <500)
-                    ++_http_4xx;
-                  else if (ec>=500 && ec <600)
-                    ++_http_5xx;
+                  if (ec >= 300 && ec < 400)
+                    ++http_3xx_;
+                  else if (ec >= 400 && ec < 500)
+                    ++http_4xx_;
+                  else if (ec >= 500 && ec < 600)
+                    ++http_5xx_;
 
-                  LOG_FIRST_N(ERROR, 100)  << "http " << kspp::http::to_string(h->method()) << ", "  << h->uri() << " HTTPRES = " << h->http_result() << " - retrying, reponse:" << h->rx_content();
-                  LOG_EVERY_N(ERROR, 1000) << "http " << kspp::http::to_string(h->method()) << ", "  << h->uri() << " HTTPRES = " << h->http_result() << " - retrying, reponse:" << h->rx_content();
+                  LOG_FIRST_N(ERROR, 100) << "http " << kspp::http::to_string(h->method()) << ", " << h->uri()
+                                          << " HTTPRES = " << h->http_result() << " - retrying, reponse:"
+                                          << h->rx_content();
+                  LOG_EVERY_N(ERROR, 1000) << "http " << kspp::http::to_string(h->method()) << ", " << h->uri()
+                                           << " HTTPRES = " << h->http_result() << " - retrying, reponse:"
+                                           << h->rx_content();
 
-                  if (ec==400) {
+                  if (ec == 400) {
                     LOG(ERROR) << "http(400) content: " << h->tx_content();
                     cb(HTTP_BAD_REQUEST_ERROR);
                     return;
@@ -235,40 +234,43 @@ namespace kspp {
                   return;
                 }
               }
-              LOG_EVERY_N(INFO, http_log_interval_) << "http PUT: " << h->uri() << " got " << h->rx_content_length() << " bytes, time=" << h->milliseconds() << " ms (" << h->rx_kb_per_sec() << " KB/s), #" << google::COUNTER;
-              ++_http_2xx;
-              _msg_bytes += h->tx_content_length();
+              LOG_EVERY_N(INFO, http_log_interval_) << "http PUT: " << h->uri() << " got " << h->rx_content_length()
+                                                    << " bytes, time=" << h->milliseconds() << " ms ("
+                                                    << h->rx_kb_per_sec() << " KB/s), #" << google::COUNTER;
+              ++http_2xx_;
+              msg_bytes_ += h->tx_content_length();
               cb(SUCCESS);
             }); // perform_async
       }; // work
       return f;
     }
 
-    void _process_work(){
+    void _process_work() {
       using namespace std::chrono_literals;
 
-      while (!_closed) {
-        size_t msg_in_batch = 0 ;
+      while (!closed_) {
+        size_t msg_in_batch = 0;
         event_queue<K, V> in_batch;
         std::deque<work_f> work;
-        while(!_incomming_msg.empty() && msg_in_batch<1000) {
-          auto msg = _incomming_msg.front();
+        while (!incomming_msg_.empty() && msg_in_batch < 1000) {
+          auto msg = incomming_msg_.front();
           ++msg_in_batch;
           if (auto p = create_one_http_work(msg->record()->key(), msg->record()->value()))
             work.push_back(p);
           in_batch.push_back(msg);
-          _incomming_msg.pop_front();
+          incomming_msg_.pop_front();
         }
 
         if (work.size()) {
           auto start = kspp::milliseconds_since_epoch();
           auto ws = work.size();
-          run_work(work, _batch_size);
+          run_work(work, batch_size_);
           auto end = kspp::milliseconds_since_epoch();
-          LOG_EVERY_N(INFO, batch_log_interval_) << _remote_write_url << ", worksize: " << ws << ", batch_size: " << _batch_size << ", duration: " << end - start << " ms, #"  << google::COUNTER;
+          LOG_EVERY_N(INFO, batch_log_interval_) << remote_write_url_ << ", worksize: " << ws << ", batch_size: "
+                                                 << batch_size_ << ", duration: " << end - start << " ms, #"
+                                                 << google::COUNTER;
           while (!in_batch.empty())
-            _done.push_back(in_batch.pop_front_and_get());
-
+            done_.push_back(in_batch.pop_front_and_get());
         } else {
           std::this_thread::sleep_for(2s);
         }
@@ -277,47 +279,48 @@ namespace kspp {
     }
 
 
-    key2string_f _key_conv;
-    value2json_f _value_conv;
+    boost::asio::io_service ios_;
+    std::shared_ptr<boost::asio::io_service::work> work_;
 
-    boost::asio::io_service _ios;
-    std::shared_ptr<boost::asio::io_service::work> _work;
+    key2string_f key_conv_;
+    value2json_f value_conv_;
 
-    std::thread _bg;
-    kspp::http::client _http_handler;
-    size_t _batch_size;
-    std::chrono::milliseconds _http_timeout;
+    kspp::http::client http_handler_;
+    size_t batch_size_;
+    std::chrono::milliseconds http_timeout_;
+    const std::string remote_write_url_;
+    const std::string username_;
+    const std::string password_;
 
-    const std::string _remote_write_url;
-    const std::string _username;
-    const std::string _password;
+    event_queue<K, V> incomming_msg_;
+    event_queue<K, V> done_;
 
-    event_queue<K, V> _incomming_msg;
-    event_queue<K, V> _done;
-
-    bool _good;
-    bool _connected;
-    bool _closed;
-    bool _table_checked;
-    bool _table_exists;
-    bool _table_create_pending;
-    bool _insert_in_progress;
-
-    std::thread _fg;
-    metric_counter _timeout;
-    metric_counter _http_2xx;
-    metric_counter _http_3xx;
-    metric_counter _http_404;
-    metric_counter _http_4xx;
-    metric_counter _http_5xx;
-    metric_counter _msg_bytes;
-    metric_summary _request_time;
+    bool good_ = true;
+    bool connected_ = false;
+    bool closed_ = false;
+/*
+    bool table_checked_ = false;
+    bool table_exists_ = false;
+    bool table_create_pending_ = false;
+    bool insert_in_progress_ = false;
+*/
+    metric_summary request_time_;
+    metric_counter timeout_;
+    metric_counter http_2xx_;
+    metric_counter http_3xx_;
+    metric_counter http_404_;
+    metric_counter http_4xx_;
+    metric_counter http_5xx_;
+    metric_counter msg_bytes_;
 
     //bool _skip_delete_of_non_active;
-    std::set<std::string> _active_ids;
+    std::set<std::string> active_ids_;
 
-    int http_log_interval_  = 1000;
+    int http_log_interval_ = 1000;
     int batch_log_interval_ = 100;
+
+    std::thread bg_;
+    std::thread fg_;
   };
 }
 

@@ -15,26 +15,36 @@ using namespace std::chrono_literals;
 using namespace kspp;
 
 static bool run = true;
+
 static void sigterm(int sig) {
   run = false;
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   FLAGS_logtostderr = 1;
   google::InitGoogleLogging(argv[0]);
 
   boost::program_options::options_description desc("options");
   desc.add_options()
       ("help", "produce help message")
-      ("monitor_uri", boost::program_options::value<std::string>()->default_value(get_env_and_log("MONITOR_URI", DEFAULT_SRC_URI)), "monitor_uri")
-      ("monitor_api_key", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("MONITOR_API_KEY", "")), "monitor_api_key")
-      ("monitor_secret_access_key", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("MONITOR_SECRET_ACCESS_KEY", "")), "monitor_secret_access_key")
+      ("monitor_uri",
+       boost::program_options::value<std::string>()->default_value(get_env_and_log("MONITOR_URI", DEFAULT_SRC_URI)),
+       "monitor_uri")
+      ("monitor_api_key",
+       boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("MONITOR_API_KEY", "")),
+       "monitor_api_key")
+      ("monitor_secret_access_key", boost::program_options::value<std::string>()->default_value(
+          get_env_and_log_hidden("MONITOR_SECRET_ACCESS_KEY", "")), "monitor_secret_access_key")
       ("topic", boost::program_options::value<std::string>()->default_value("logs"), "topic")
-      ("offset_storage", boost::program_options::value<std::string>()->default_value(get_env_and_log("OFFSET_STORAGE", "")), "offset_storage")
-      ("dst_dir", boost::program_options::value<std::string>()->default_value(get_env_and_log("DST_DIR", "/tmp")), "dst_dir")
-      ("window_size_s", boost::program_options::value<std::string>()->default_value(get_env_and_log("WINDOW_SIZE_S", "3600")), "window_size_s")
-      ("oneshot", "run to eof and exit")
-      ;
+      ("offset_storage",
+       boost::program_options::value<std::string>()->default_value(get_env_and_log("OFFSET_STORAGE", "")),
+       "offset_storage")
+      ("dst_dir", boost::program_options::value<std::string>()->default_value(get_env_and_log("DST_DIR", "/tmp")),
+       "dst_dir")
+      ("window_size_s",
+       boost::program_options::value<std::string>()->default_value(get_env_and_log("WINDOW_SIZE_S", "3600")),
+       "window_size_s")
+      ("oneshot", "run to eof and exit");
 
   boost::program_options::variables_map vm;
   boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
@@ -62,7 +72,7 @@ int main(int argc, char** argv) {
     monitor_api_key = vm["monitor_api_key"].as<std::string>();
   }
 
-  if (monitor_api_key.size()==0){
+  if (monitor_api_key.size() == 0) {
     std::cerr << "--monitor_api_key must be defined" << std::endl;
     return -1;
   }
@@ -94,15 +104,15 @@ int main(int argc, char** argv) {
     window_size_s = atoi(s.c_str());
   }
 
-  if (window_size_s<=0) {
+  if (window_size_s <= 0) {
     std::cerr << "window_size_s muist be >0";
     return -1;
   }
 
 
-  bool oneshot=false;
+  bool oneshot = false;
   if (vm.count("oneshot"))
-    oneshot=true;
+    oneshot = true;
 
   LOG(INFO) << "monitor_uri                 : " << monitor_uri;
   LOG(INFO) << "monitor_api_key             : " << monitor_api_key;
@@ -129,14 +139,16 @@ int main(int argc, char** argv) {
   kspp::topology_builder generic_builder(config);
   auto t = generic_builder.create_topology();
   auto offset_provider = get_offset_provider(offset_storage);
-  auto source = t->create_processor<kspp::grpc_avro_source<void, kspp::generic_avro>>(0, topic, offset_provider, channel, monitor_api_key, monitor_secret_access_key);
+  auto source = t->create_processor<kspp::grpc_avro_source<void, kspp::generic_avro>>(0, topic, offset_provider,
+                                                                                      channel, monitor_api_key,
+                                                                                      monitor_secret_access_key);
   auto sink = t->create_sink<kspp::avro_file_sink<kspp::generic_avro>>(source, dst_dir, topic, 1h);
 
 
-  t->add_labels( {
-                     { "app_name", SERVICE_NAME },
-                     { "hostname", default_hostname() }
-                 });
+  t->add_labels({
+                    {"app_name", SERVICE_NAME},
+                    {"hostname", default_hostname()}
+                });
 
   t->start(kspp::OFFSET_STORED);
 
@@ -149,12 +161,12 @@ int main(int argc, char** argv) {
   while (run && source->good()) {
     auto sz = t->process(kspp::milliseconds_since_epoch());
 
-    if (kspp::milliseconds_since_epoch()>next_commit){
+    if (kspp::milliseconds_since_epoch() > next_commit) {
       t->commit(false);
       next_commit = kspp::milliseconds_since_epoch() + 10000;
     }
 
-    if (oneshot && t->eof()){
+    if (oneshot && t->eof()) {
       LOG(INFO) << "at eof - flushing";
       t->flush(true);
       LOG(INFO) << "at eof - exiting";

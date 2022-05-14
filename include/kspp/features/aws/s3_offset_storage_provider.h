@@ -7,7 +7,8 @@ namespace kspp {
   public:
     static std::shared_ptr<s3_offset_storage> create(kspp::url);
 
-    s3_offset_storage(std::string host, std::string s3_bucket, std::string key, std::string access_key, std::string secret_key);
+    s3_offset_storage(std::string host, std::string s3_bucket, std::string key, std::string access_key,
+                      std::string secret_key);
 
     ~s3_offset_storage() override;
 

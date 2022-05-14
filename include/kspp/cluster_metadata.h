@@ -5,6 +5,7 @@
 #include <set>
 #include <map>
 #include <librdkafka/rdkafkacpp.h>
+
 #pragma once
 
 namespace kspp {
@@ -29,19 +30,19 @@ namespace kspp {
     bool wait_for_topic_leaders(std::string, std::chrono::seconds timeout) const;
 
   private:
-    struct topic_data
-    {
+    struct topic_data {
       inline bool available() const {
         return nr_of_partitions == available_parititions.size();
       }
+
       uint32_t nr_of_partitions;
       std::vector<int32_t> available_parititions;
     };
 
-    mutable std::mutex _mutex;
-    std::unique_ptr<RdKafka::Producer> _rk_handle;
-    mutable std::set<std::string> _available_consumer_groups;
-    mutable std::set<std::string> _missing_consumer_groups;
-    mutable std::map<std::string, topic_data> _topic_data;
+    mutable std::mutex mutex_;
+    std::unique_ptr<RdKafka::Producer> rk_handle_;
+    mutable std::set<std::string> available_consumer_groups_;
+    mutable std::set<std::string> missing_consumer_groups_;
+    mutable std::map<std::string, topic_data> topic_data_;
   };
 }

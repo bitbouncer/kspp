@@ -50,13 +50,14 @@ int main(int argc, char **argv) {
 
     // now create new data
     //auto pipe = topology->create_processor<kspp::pipe<std::string, std::string>>(-1);
-    auto kafka_sink0 = topology->create_sink<kafka_sink<std::string, std::string, binary_serdes, binary_serdes>>("kspp_test5");
+    auto kafka_sink0 = topology->create_sink<kafka_sink<std::string, std::string, binary_serdes, binary_serdes>>(
+        "kspp_test5");
     //pipe->add_sink(table_stream);
 
     // we need to consume the source to be able to commit - a null sink is perfect
     auto kafka_sources = topology->create_processors<kafka_source<std::string, std::string, binary_serdes, binary_serdes>>(
         partition_list, "kspp_test5");
-    auto dummy_sink = topology->create_sink<null_sink<std::string, std::string>>(kafka_sources, [](auto r){
+    auto dummy_sink = topology->create_sink<null_sink<std::string, std::string>>(kafka_sources, [](auto r) {
       /* noop */ });
 
     topology->start(kspp::OFFSET_END);
@@ -68,7 +69,7 @@ int main(int argc, char **argv) {
     }
 
     // insert testdata in pipe
-    for (auto &i : test_data) {
+    for (auto &i: test_data) {
       kafka_sink0->push_back(i.key, i.value, t0);
     }
     kafka_sink0->flush();
@@ -89,9 +90,9 @@ int main(int argc, char **argv) {
     LOG(INFO) << "produced sz:" << written_sz;
 
     int64_t consumed_sz = 0;
-    for (auto &&i : kafka_sources)
+    for (auto &&i: kafka_sources)
       consumed_sz += i->get_metric("kspp.processed");
-    LOG(INFO) << "consumed_sz: " << consumed_sz << " expected : " <<  TEST_SIZE;
+    LOG(INFO) << "consumed_sz: " << consumed_sz << " expected : " << TEST_SIZE;
     assert(consumed_sz == TEST_SIZE);
   }
 
@@ -101,12 +102,13 @@ int main(int argc, char **argv) {
     auto streams = topology->create_processors<kspp::kafka_source<std::string, std::string, kspp::binary_serdes, kspp::binary_serdes>>(
         partition_list, "kspp_test5");
     auto pipe = topology->create_processor<kspp::mem_stream_source<std::string, std::string>>(-1);
-    auto table_stream = topology->create_sink<kspp::kafka_sink<std::string, std::string, kspp::binary_serdes, kspp::binary_serdes>>("kspp_test5");
+    auto table_stream = topology->create_sink<kspp::kafka_sink<std::string, std::string, kspp::binary_serdes, kspp::binary_serdes>>(
+        "kspp_test5");
     pipe->add_sink(table_stream);
     topology->start(kspp::OFFSET_STORED);
 
     // insert testdata in pipe
-    for (auto &i : test_data) {
+    for (auto &i: test_data) {
       pipe->push_back(i.key, i.value);
     }
 
@@ -121,12 +123,12 @@ int main(int argc, char **argv) {
     }
 
     int64_t sz = 0;
-    for (auto &&i : streams) {
+    for (auto &&i: streams) {
       auto s = i->get_metric("kspp.processed");
-      LOG(INFO) << i->log_name() <<  ", count:" << s;
+      LOG(INFO) << i->log_name() << ", count:" << s;
       sz += i->get_metric("kspp.processed");
     }
-    LOG(INFO) << "sz: " << sz << " expected : " <<  TEST_SIZE;
+    LOG(INFO) << "sz: " << sz << " expected : " << TEST_SIZE;
 
     assert(sz == TEST_SIZE);
   }
@@ -138,12 +140,13 @@ int main(int argc, char **argv) {
     auto streams = topology->create_processors<kspp::kafka_source<std::string, std::string, kspp::binary_serdes, kspp::binary_serdes>>(
         partition_list, "kspp_test5", std::chrono::system_clock::now());
     auto pipe = topology->create_processor<kspp::mem_stream_source<std::string, std::string>>(-1);
-    auto table_stream = topology->create_sink<kspp::kafka_sink<std::string, std::string, kspp::binary_serdes, kspp::binary_serdes>>("kspp_test5");
+    auto table_stream = topology->create_sink<kspp::kafka_sink<std::string, std::string, kspp::binary_serdes, kspp::binary_serdes>>(
+        "kspp_test5");
     pipe->add_sink(table_stream);
     topology->start(kspp::OFFSET_BEGINNING);
 
     // insert testdata in pipe
-    for (auto &i : test_data) {
+    for (auto &i: test_data) {
       pipe->push_back(i.key, i.value);
     }
 
@@ -158,16 +161,15 @@ int main(int argc, char **argv) {
     }
 
     int64_t sz = 0;
-    for (auto &&i : streams) {
+    for (auto &&i: streams) {
       auto s = i->get_metric("kspp.processed");
-      LOG(INFO) << i->log_name() <<  ", count:" << s;
+      LOG(INFO) << i->log_name() << ", count:" << s;
       sz += i->get_metric("kspp.processed");
     }
-    LOG(INFO) << "sz: " << sz << " expected : " <<  TEST_SIZE;
+    LOG(INFO) << "sz: " << sz << " expected : " << TEST_SIZE;
 
     assert(sz == TEST_SIZE);
   }
-
 
 
   return 0;

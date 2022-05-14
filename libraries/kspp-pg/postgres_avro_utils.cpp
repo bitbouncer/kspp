@@ -210,7 +210,7 @@ namespace kspp {
 
 
     // does only support build in types - we have to add a db connection object witrh the extensions to do this right
-    std::shared_ptr<avro::ValidSchema> schema_for_table_row(std::string schema_name,  const PGresult *res) {
+    std::shared_ptr<avro::ValidSchema> schema_for_table_row(std::string schema_name, const PGresult *res) {
       avro::RecordSchema record_schema(schema_name);
       int nFields = PQnfields(res);
       for (int i = 0; i < nFields; i++) {
@@ -357,9 +357,9 @@ namespace kspp {
     }
     */
 
-    static std::string keys2string(std::vector<std::string> keys){
+    static std::string keys2string(std::vector<std::string> keys) {
       std::string s;
-      for (auto j : keys)
+      for (auto j: keys)
         s += j + ","; // (to snanatize_pg_string...)
       if (s.size())
         s.pop_back();
@@ -367,7 +367,8 @@ namespace kspp {
     }
 
     std::string
-    avro2sql_create_table_statement(const std::string &tablename, std::vector<std::string> keys, const avro::ValidSchema &schema) {
+    avro2sql_create_table_statement(const std::string &tablename, std::vector<std::string> keys,
+                                    const avro::ValidSchema &schema) {
       auto root = schema.root();
       assert(root->type() == avro::AVRO_RECORD);
       std::string s = "CREATE TABLE " + tablename + " (\n";
@@ -410,7 +411,8 @@ namespace kspp {
       return s;
     }
 
-    std::string avro2sql_build_upsert_2(const std::string &tablename, const std::vector<std::string> &keys, const avro::ValidSchema &schema) {
+    std::string avro2sql_build_upsert_2(const std::string &tablename, const std::vector<std::string> &keys,
+                                        const avro::ValidSchema &schema) {
       auto r = schema.root();
       assert(r->type() == avro::AVRO_RECORD);
       std::string s = "ON CONFLICT (" + keys2string(keys) + ") DO UPDATE SET (\n";
@@ -479,49 +481,52 @@ namespace kspp {
           break;
         case avro::AVRO_ARRAY: {
           const avro::GenericArray &v = column.value<avro::GenericArray>();
-          const std::vector<avro::GenericDatum>&r = v.value();
-          if (r.size()==0)
+          const std::vector<avro::GenericDatum> &r = v.value();
+          if (r.size() == 0)
             return "'[]'";
 
           std::vector<avro::GenericDatum>::const_iterator second_last = r.end();
           --second_last;
 
           std::string s = "[";
-          for (std::vector<avro::GenericDatum>::const_iterator i = r.begin(); i!=r.end(); ++i){
+          for (std::vector<avro::GenericDatum>::const_iterator i = r.begin(); i != r.end(); ++i) {
             s += avro_2_sql_simple_column_value(*i);
             if (i != second_last)
               s += ", ";
           }
           s += "]";
 
-          return escapeSQLstring(s); // TODO - should we really eascape here - does that not mean that we kill strings in strings since they have ' chars???
+          return escapeSQLstring(
+              s); // TODO - should we really eascape here - does that not mean that we kill strings in strings since they have ' chars???
         }
           break;
 
-        case avro::AVRO_MAP:{
+        case avro::AVRO_MAP: {
           const avro::GenericMap &map = column.value<avro::GenericMap>();
           //const std::map<std::string, avro::GenericDatum>&r = map.value();
-          auto const &  v = map.value();
-          if (v.size()==0)
+          auto const &v = map.value();
+          if (v.size() == 0)
             return "''";
 
           avro::GenericMap::Value::const_iterator second_last = v.end();
           --second_last;
 
           std::string s = "";
-          for (avro::GenericMap::Value::const_iterator i = v.begin(); i!=v.end(); ++i){
+          for (avro::GenericMap::Value::const_iterator i = v.begin(); i != v.end(); ++i) {
             // should be '_HOSTIPMI_IP=>10.1.40.23'  ie no inner ''
             //s += i->first + "=>" + avro_2_sql_simple_column_value(i->second);
             // this is a bit inefficient
             std::string value_string = avro_2_sql_simple_column_value(i->second);
-            value_string.erase(std::remove_if(value_string.begin(), value_string.end(), IsChars("'")), value_string.end());
+            value_string.erase(std::remove_if(value_string.begin(), value_string.end(), IsChars("'")),
+                               value_string.end());
             s += i->first + "=>" + value_string;
             if (i != second_last)
               s += ", ";
           }
           s += "";
           return escapeSQLstring(s);
-        } break;
+        }
+          break;
 
 
         case avro::AVRO_RECORD:
@@ -551,16 +556,17 @@ namespace kspp {
 
     // TODO multiple keys
     std::string
-    avro2sql_key_values(const avro::ValidSchema &schema, const std::vector<std::string> &keys, const avro::GenericDatum &datum) {
+    avro2sql_key_values(const avro::ValidSchema &schema, const std::vector<std::string> &keys,
+                        const avro::GenericDatum &datum) {
       assert(datum.type() == avro::AVRO_RECORD);
       const avro::GenericRecord &record(datum.value<avro::GenericRecord>());
       std::string result;
       size_t sz = keys.size();
-      size_t last =sz-1;
-      for (size_t i=0; i!=sz; ++i) {
+      size_t last = sz - 1;
+      for (size_t i = 0; i != sz; ++i) {
         auto x = record.field(keys[i]);
         result += avro_2_sql_simple_column_value(x);
-        if (i!=last)
+        if (i != last)
           result += ", ";
       }
       return result;
@@ -584,7 +590,7 @@ namespace kspp {
         }
         return result;
       } else {
-        if (keys.size()!=1){
+        if (keys.size() != 1) {
           LOG(FATAL) << "keys size!=1 and signal value key";
         }
         return keys[0] + "=" + avro_2_sql_simple_column_value(datum);
@@ -596,19 +602,18 @@ namespace kspp {
     }
      */
 
-    void load_avro_by_name(kspp::generic_avro* avro, PGresult* pgres, size_t row)
-    {
+    void load_avro_by_name(kspp::generic_avro *avro, PGresult *pgres, size_t row) {
       // key tupe is null if there is no key
       if (avro->type() == avro::AVRO_NULL)
         return;
 
       assert(avro->type() == avro::AVRO_RECORD);
-      avro::GenericRecord& record(avro->generic_datum()->value<avro::GenericRecord>());
+      avro::GenericRecord &record(avro->generic_datum()->value<avro::GenericRecord>());
       size_t nFields = record.fieldCount();
-      for (size_t j = 0; j < nFields; j++)
-      {
-        avro::GenericDatum& col = record.fieldAt(j); // expected union
-        if (!record.fieldAt(j).isUnion()) // this should not hold - but we fail to create correct schemas for not null columns
+      for (size_t j = 0; j < nFields; j++) {
+        avro::GenericDatum &col = record.fieldAt(j); // expected union
+        if (!record.fieldAt(
+            j).isUnion()) // this should not hold - but we fail to create correct schemas for not null columns
         {
           LOG(INFO) << avro->valid_schema()->toJson();
           LOG(FATAL) << "unexpected schema - bailing out, type:" << record.fieldAt(j).type();
@@ -617,27 +622,23 @@ namespace kspp {
 
         //avro::GenericUnion& au(record.fieldAt(j).value<avro::GenericUnion>());
 
-        const std::string& column_name = record.schema()->nameAt(j);
+        const std::string &column_name = record.schema()->nameAt(j);
 
         //which pg column has this value?
         int column_index = PQfnumber(pgres, column_name.c_str());
-        if (column_index < 0)
-        {
+        if (column_index < 0) {
           LOG(FATAL) << "unknown column - bailing out: " << column_name;
           break;
         }
 
-        if (PQgetisnull(pgres, row, column_index) == 1)
-        {
+        if (PQgetisnull(pgres, row, column_index) == 1) {
           col.selectBranch(0); // NULL branch - we hope..
           assert(col.type() == avro::AVRO_NULL);
-        }
-        else
-        {
+        } else {
           col.selectBranch(1);
           //au.selectBranch(1);
           //avro::GenericDatum& avro_item(au.datum());
-          const char* val = PQgetvalue(pgres, row, j);
+          const char *val = PQgetvalue(pgres, row, j);
 
           switch (col.type()) {
             case avro::AVRO_STRING:
@@ -665,22 +666,22 @@ namespace kspp {
               std::vector<std::string> kvs;
               boost::split(kvs, val, boost::is_any_of(",")); // TODO we cannot handle "dsd,hggg" => "jhgf"
 
-              avro::GenericMap& v = col.value<avro::GenericMap>();
-              avro::GenericMap::Value& r = v.value();
+              avro::GenericMap &v = col.value<avro::GenericMap>();
+              avro::GenericMap::Value &r = v.value();
 
               // this is an empty string "" that will be mapped as 1 item of empty size
-              if (kvs.size()==1 && kvs[0].size() ==0)
+              if (kvs.size() == 1 && kvs[0].size() == 0)
                 break;
 
               r.resize(kvs.size());
 
-              int cursor=0;
-              for(auto& i : kvs){
+              int cursor = 0;
+              for (auto &i: kvs) {
                 std::size_t found = i.find("=>");
-                if (found==std::string::npos)
+                if (found == std::string::npos)
                   LOG(FATAL) << "expected => in hstore";
                 std::string key = i.substr(0, found);
-                std::string val = i.substr(found +2);
+                std::string val = i.substr(found + 2);
                 pq_trim(key, "\" ");
                 pq_trim(val, "\" ");
                 r[cursor].first = key;
@@ -690,22 +691,22 @@ namespace kspp {
             }
               break;
 
-            case avro::AVRO_ARRAY:{
+            case avro::AVRO_ARRAY: {
               std::vector<std::string> kvs;
               std::string trimmed_val = val;
               pq_trim(trimmed_val, "{ }");
               boost::split(kvs, trimmed_val, boost::is_any_of(",")); // TODO we cannot handle [ "dsd,hg", ljdshf ]
-              avro::GenericArray& v = col.value<avro::GenericArray>();
-              avro::GenericArray::Value& r = v.value();
+              avro::GenericArray &v = col.value<avro::GenericArray>();
+              avro::GenericArray::Value &r = v.value();
 
               // this is an empty string "" that will be mapped as 1 item of empty size
-              if (kvs.size()==1 && kvs[0].size() ==0)
+              if (kvs.size() == 1 && kvs[0].size() == 0)
                 break;
 
               r.resize(kvs.size());
 
-              int cursor=0;
-              for(auto& i : kvs) {
+              int cursor = 0;
+              for (auto &i: kvs) {
                 r[cursor] = avro::GenericDatum(i);
                 ++cursor;
               }

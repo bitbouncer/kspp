@@ -34,14 +34,12 @@ specific language governing permissions and limitations under the License.
 #include <glog/logging.h>
 
 
-
 inline int64_t milliseconds_since_epoch() {
   return std::chrono::duration_cast<std::chrono::milliseconds>
       (std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
-int main(int argc, char** argv)
-{
+int main(int argc, char **argv) {
   const std::string USAGE = "\n" \
         "Usage:\n"
                             "    put_get_records <streamname>\n\n"
@@ -66,7 +64,7 @@ int main(int argc, char** argv)
     const char *s = std::getenv("AWS_ACCESS_KEY_ID");
     if (s) {
       aws_access_key_id = s;
-      LOG(INFO) << " read "  << s;
+      LOG(INFO) << " read " << s;
     }
   }
 
@@ -74,7 +72,7 @@ int main(int argc, char** argv)
     const char *s = std::getenv("AWS_SECRET_ACCESS_KEY");
     if (s) {
       aws_secret_access_key = s;
-      LOG(INFO) << " read "  << s;
+      LOG(INFO) << " read " << s;
     }
   }
 
@@ -82,7 +80,7 @@ int main(int argc, char** argv)
     const char *s = std::getenv("AWS_SESSION_TOKEN");
     if (s) {
       aws_session_token = s;
-      LOG(INFO) << " read "  << s;
+      LOG(INFO) << " read " << s;
     }
   }
 
@@ -108,7 +106,9 @@ int main(int argc, char** argv)
     LOG(INFO) << "AWS_SECRET_ACCESS_KEY:   " << aws_secret_access_key;
     LOG(INFO) << "AWS_SESSION_TOKEN:       " << aws_session_token;
 
-    Aws::Auth::AWSCredentials credentials(Aws::String(aws_access_key_id.c_str()), Aws::String(aws_secret_access_key.c_str()), Aws::String(aws_session_token.c_str()));
+    Aws::Auth::AWSCredentials credentials(Aws::String(aws_access_key_id.c_str()),
+                                          Aws::String(aws_secret_access_key.c_str()),
+                                          Aws::String(aws_session_token.c_str()));
 
     Aws::Kinesis::KinesisClient kinesisClient(credentials, clientConfig);
 
@@ -118,26 +118,22 @@ int main(int argc, char** argv)
     describeStreamRequest.SetStreamName(streamName);
     Aws::Vector<Aws::Kinesis::Model::Shard> shards;
     Aws::String exclusiveStartShardId = "";
-    do
-    {
-      Aws::Kinesis::Model::DescribeStreamOutcome describeStreamResult = kinesisClient.DescribeStream(describeStreamRequest);
+    do {
+      Aws::Kinesis::Model::DescribeStreamOutcome describeStreamResult = kinesisClient.DescribeStream(
+          describeStreamRequest);
       Aws::Vector<Aws::Kinesis::Model::Shard> shardsTemp = describeStreamResult.GetResult().GetStreamDescription().GetShards();
       shards.insert(shards.end(), shardsTemp.begin(), shardsTemp.end());
       std::cout << describeStreamResult.GetError().GetMessage();
-      if (describeStreamResult.GetResult().GetStreamDescription().GetHasMoreShards() && shards.size() > 0)
-      {
+      if (describeStreamResult.GetResult().GetStreamDescription().GetHasMoreShards() && shards.size() > 0) {
         exclusiveStartShardId = shards[shards.size() - 1].GetShardId();
         describeStreamRequest.SetExclusiveStartShardId(exclusiveStartShardId);
-      }
-      else
+      } else
         exclusiveStartShardId = "";
     } while (exclusiveStartShardId.length() != 0);
 
-    if (shards.size() > 0)
-    {
+    if (shards.size() > 0) {
       std::cout << "Shards found:" << std::endl;
-      for (auto shard : shards)
-      {
+      for (auto shard: shards) {
         std::cout << shard.GetShardId() << std::endl;
       }
 
@@ -147,7 +143,8 @@ int main(int argc, char** argv)
       getShardIteratorRequest.SetShardId(shards[0].GetShardId());
       getShardIteratorRequest.SetShardIteratorType(Aws::Kinesis::Model::ShardIteratorType::TRIM_HORIZON);
 
-      Aws::Kinesis::Model::GetShardIteratorOutcome getShardIteratorResult = kinesisClient.GetShardIterator(getShardIteratorRequest);
+      Aws::Kinesis::Model::GetShardIteratorOutcome getShardIteratorResult = kinesisClient.GetShardIterator(
+          getShardIteratorRequest);
       Aws::String shardIterator = getShardIteratorResult.GetResult().GetShardIterator();
 
       //getRecordsRequest.SetLimit(25);
@@ -155,16 +152,15 @@ int main(int argc, char** argv)
 
       // pull down 100 records
       //std::cout << "Retrieving 100 records" << std::endl;
-      size_t sz=0;
-      while(true)
-      {
+      size_t sz = 0;
+      while (true) {
         Aws::Kinesis::Model::GetRecordsRequest getRecordsRequest;
         getRecordsRequest.SetShardIterator(shardIterator);
         Aws::Kinesis::Model::GetRecordsOutcome getRecordsResult = kinesisClient.GetRecords(getRecordsRequest);
-        for (auto r : getRecordsResult.GetResult().GetRecords())
-        {
-          Aws::String s((char*)r.GetData().GetUnderlyingData());
-          std::cout << s.substr(0, r.GetData().GetLength()) << " aprox toa: " << r.GetApproximateArrivalTimestamp().CalculateGmtTimeWithMsPrecision() << std::endl;
+        for (auto r: getRecordsResult.GetResult().GetRecords()) {
+          Aws::String s((char *) r.GetData().GetUnderlyingData());
+          std::cout << s.substr(0, r.GetData().GetLength()) << " aprox toa: "
+                    << r.GetApproximateArrivalTimestamp().CalculateGmtTimeWithMsPrecision() << std::endl;
           sz++;
         }
         LOG(INFO) << "got " << sz << ", at " << milliseconds_since_epoch();

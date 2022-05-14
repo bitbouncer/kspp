@@ -1,5 +1,6 @@
 #include <chrono>
 #include <memory>
+
 #pragma once
 
 namespace kspp {
@@ -23,11 +24,11 @@ namespace kspp {
         : key_(k), value_(nullptr), event_time_(ts) {
     }
 
-    krecord(const krecord& a)
+    krecord(const krecord &a)
         : key_(a.key_), value_(a.value_), event_time_(a.event_time_) {
     }
 
-    inline bool operator==(const krecord<K,V>& other) const {
+    inline bool operator==(const krecord<K, V> &other) const {
       if (event_time_ != other.event_time_)
         return false;
 
@@ -74,12 +75,11 @@ namespace kspp {
         : value_(v), event_time_(ts) {
     }
 
-    krecord(const krecord& a)
+    krecord(const krecord &a)
         : value_(a.value_), event_time_(a.event_time_) {
     }
 
-    inline bool operator==(const krecord<void, V>& other) const
-    {
+    inline bool operator==(const krecord<void, V> &other) const {
       if (event_time_ != other.event_time_)
         return false;
 
@@ -118,12 +118,11 @@ namespace kspp {
         : key_(k), event_time_(ts) {
     }
 
-    krecord(const krecord& a)
+    krecord(const krecord &a)
         : key_(a.key_), event_time_(a.event_time_) {
     }
 
-    inline bool operator==(const krecord<K,void>& other) const
-    {
+    inline bool operator==(const krecord<K, void> &other) const {
       if (event_time_ != other.event_time_)
         return false;
 

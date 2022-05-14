@@ -11,30 +11,22 @@ using namespace std::chrono_literals;
 namespace kspp {
   postgres_consumer::postgres_consumer(int32_t partition,
                                        std::string logical_name,
-                                       const kspp::connect::connection_params& cp,
+                                       const kspp::connect::connection_params &cp,
                                        kspp::connect::table_params tp,
                                        std::string query,
                                        std::string id_column,
                                        std::string ts_column,
                                        std::shared_ptr<kspp::avro_schema_registry> schema_registry)
-    : exit_(false)
-    , start_running_(false)
-    , closed_(false)
-    , eof_(false)
-    , bg_([this] { _thread(); })
-    , connection_(std::make_unique<kspp_postgres::connection>())
-    , logical_name_(avro_utils::sanitize_schema_name(logical_name))
-    , query_(query)
-    , read_cursor_(tp, id_column, ts_column)
-    , commit_chain_(logical_name, partition)
-    , partition_(partition)
-    , cp_(cp)
-    , tp_(tp)
-    , id_column_(id_column)
-    , schema_registry_(schema_registry)
-    , key_schema_id_(-1)
-    , value_schema_id_(-1)
-    , msg_cnt_(0) {
+      : connection_(std::make_unique<kspp_postgres::connection>())
+        , logical_name_(avro_utils::sanitize_schema_name(logical_name)), query_(query)
+        , read_cursor_(tp, id_column, ts_column)
+        , commit_chain_(logical_name, partition)
+        , partition_(partition)
+        , cp_(cp)
+        , tp_(tp)
+        , id_column_(id_column)
+        , schema_registry_(schema_registry)
+        , bg_([this] { _thread(); }) {
     offset_storage_ = get_offset_provider(tp.offset_storage);
   }
 
@@ -58,17 +50,18 @@ namespace kspp {
 
     if (connection_) {
       connection_->close();
-      LOG(INFO) << "postgres_consumer table:" << logical_name_ << ":" << partition_ << ", closed - consumed " << msg_cnt_ << " messages";
+      LOG(INFO) << "postgres_consumer table:" << logical_name_ << ":" << partition_ << ", closed - consumed "
+                << msg_cnt_ << " messages";
     }
   }
 
   bool postgres_consumer::initialize() {
-    if (connection_->connect(cp_)){
+    if (connection_->connect(cp_)) {
       LOG(ERROR) << "could not connect to " << cp_.host;
       return false;
     }
 
-    if (connection_->set_client_encoding("UTF8")){
+    if (connection_->set_client_encoding("UTF8")) {
       LOG(ERROR) << "could not set client encoding UTF8 ";
       return false;
     }
@@ -86,8 +79,8 @@ namespace kspp {
       return false;
 
     int nRows = PQntuples(res.second.get());
-    if (nRows==1){
-      const char* val = PQgetvalue(res.second.get(), 0, 0);
+    if (nRows == 1) {
+      const char *val = PQgetvalue(res.second.get(), 0, 0);
       LOG(INFO) << val;
       int oid = atoi(val);
 
@@ -110,12 +103,13 @@ namespace kspp {
   void postgres_consumer::start(int64_t offset) {
     int64_t tmp = offset_storage_->start(offset);
     read_cursor_.start(tmp);
-    if (tmp>0)
+    if (tmp > 0)
       read_cursor_.set_eof(true); // use rescrape for the first item ie enabled
     initialize();
   }
 
-  std::shared_ptr<avro::ValidSchema> postgres_consumer::schema_for_table_row(std::string schema_name,  const PGresult *res) const {
+  std::shared_ptr<avro::ValidSchema>
+  postgres_consumer::schema_for_table_row(std::string schema_name, const PGresult *res) const {
     avro::RecordSchema record_schema(schema_name);
     int nFields = PQnfields(res);
     for (int i = 0; i < nFields; i++) {
@@ -138,7 +132,7 @@ namespace kspp {
   }
 
 
-  int postgres_consumer::parse_response(std::shared_ptr<PGresult> result){
+  int postgres_consumer::parse_response(std::shared_ptr<PGresult> result) {
     if (!result)
       return -1;
 
@@ -180,7 +174,7 @@ namespace kspp {
       auto val = std::make_shared<kspp::generic_avro>(value_schema_, value_schema_id_);
       pq::load_avro_by_name(val.get(), result.get(), i);
 
-      if (i == (nRows-1)) {
+      if (i == (nRows - 1)) {
 
         if (!last_key_)
           last_key_ = std::make_unique<kspp::generic_avro>(key_schema_, key_schema_id_);
@@ -190,21 +184,23 @@ namespace kspp {
       read_cursor_.parse(result);
 
       int64_t tick_ms = read_cursor_.last_ts_ms();
-      if (tick_ms==0)
+      if (tick_ms == 0)
         tick_ms = kspp::milliseconds_since_epoch();
 
       auto record = std::make_shared<krecord<kspp::generic_avro, kspp::generic_avro>>(*key, val, tick_ms);
       // do we have one...
       int64_t tick = read_cursor_.last_tick();
-      auto e = std::make_shared<kevent<kspp::generic_avro, kspp::generic_avro>>(record, tick  > 0 ? commit_chain_.create(tick) : nullptr);
-      assert(e.get()!=nullptr);
+      auto e = std::make_shared<kevent<kspp::generic_avro, kspp::generic_avro>>(record,
+                                                                                tick > 0 ? commit_chain_.create(tick)
+                                                                                         : nullptr);
+      assert(e.get() != nullptr);
 
       //auto record = std::make_shared<krecord<kspp::generic_avro, kspp::generic_avro>>(*key, val, kspp::milliseconds_since_epoch());
       //auto e = std::make_shared<kevent<kspp::generic_avro, kspp::generic_avro>>(record);
       //assert(e.get()!=nullptr);
 
       //should we wait a bit if we fill incomming queue to much??
-      while(incomming_msg_.size()>10000 && !exit_) {
+      while (incomming_msg_.size() > 10000 && !exit_) {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         DLOG(INFO) << "c_incomming_msg.size() " << incomming_msg_.size();
       }
@@ -228,14 +224,13 @@ namespace kspp {
 
       // have we lost connection ?
       if (!connection_->connected()) {
-        if (!connection_->connect(cp_))
-        {
+        if (!connection_->connect(cp_)) {
           std::this_thread::sleep_for(10s);
           continue;
         }
 
         //UTF8?
-        if (!connection_->set_client_encoding("UTF8")){
+        if (!connection_->set_client_encoding("UTF8")) {
           std::this_thread::sleep_for(10s);
           continue;
         }
@@ -243,7 +238,8 @@ namespace kspp {
 
       eof_ = false;
 
-      std::string statement = query_ + read_cursor_.get_where_clause() + " LIMIT " + std::to_string(tp_.max_items_in_fetch);
+      std::string statement =
+          query_ + read_cursor_.get_where_clause() + " LIMIT " + std::to_string(tp_.max_items_in_fetch);
 
       DLOG(INFO) << "exec(" + statement + ")";
       auto ts0 = kspp::milliseconds_since_epoch();
@@ -278,11 +274,12 @@ namespace kspp {
 
       size_t messages_in_batch = msg_cnt_ - last_msg_count;
 
-      if (messages_in_batch==0) {
+      if (messages_in_batch == 0) {
         LOG_EVERY_N(INFO, 100) << "empty poll done, table: " << logical_name_ << " total: " << msg_cnt_ << ", last ts: "
                                << read_cursor_.last_ts() << " duration " << ts1 - ts0 << " ms";
-      }  else {
-        LOG(INFO) << "poll done, table: " << logical_name_ << " retrieved: " << messages_in_batch << " messages, total: "
+      } else {
+        LOG(INFO) << "poll done, table: " << logical_name_ << " retrieved: " << messages_in_batch
+                  << " messages, total: "
                   << msg_cnt_ << ", last ts: " << read_cursor_.last_ts() << " duration " << ts1 - ts0 << " ms";
       }
 

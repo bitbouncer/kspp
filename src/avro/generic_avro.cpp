@@ -9,7 +9,7 @@ namespace kspp {
   }
 }
 
-std::string to_json(const kspp::generic_avro& src) {
+std::string to_json(const kspp::generic_avro &src) {
   /* JSON encoder */
   avro::EncoderPtr json_encoder = avro::jsonEncoder(*src.valid_schema());
   std::stringstream ss;

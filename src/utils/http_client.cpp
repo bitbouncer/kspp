@@ -12,13 +12,13 @@ namespace kspp {
    }
 */
 
-inline void CURLEASY_THROW_NOT_OK(CURLcode res){
-  if (res!=CURLE_OK)
-    throw std::invalid_argument(curl_easy_strerror(res));
-}
+    inline void CURLEASY_THROW_NOT_OK(CURLcode res) {
+      if (res != CURLE_OK)
+        throw std::invalid_argument(curl_easy_strerror(res));
+    }
 
-inline void CURLMULTI_THROW_NOT_OK(CURLMcode res){
-      if (res!=CURLM_OK)
+    inline void CURLMULTI_THROW_NOT_OK(CURLMcode res) {
+      if (res != CURLM_OK)
         throw std::invalid_argument(curl_multi_strerror(res));
     }
 
@@ -31,39 +31,39 @@ inline void CURLMULTI_THROW_NOT_OK(CURLMcode res){
 
     const std::string &to_string(kspp::http::method_t e) {
       static const std::string table[kspp::http::PURGE + 1]
-        {
-          "DELETE",
-          "GET",
-          "HEAD",
-          "POST",
-          "PUT",
-          /* pathological */
-          "CONNECT",
-          "OPTIONS",
-          "TRACE",
-          /* webdav */
-          "COPY",
-          "LOCK",
-          "MKCOL",
-          "MOVE",
-          "PROPFIND",
-          "PROPPATCH",
-          "SEARCH",
-          "UNLOCK",
-          /* subversion */
-          "REPORT",
-          "MKACTIVITY",
-          "CHECKOUT",
-          "MERGE",
-          /* upnp */
-          "MSEARCH",
-          "NOTIFY",
-          "SUBSCRIBE",
-          "UNSUBSCRIBE",
-          /* RFC-5789 */
-          "PATCH",
-          "PURGE"
-        };
+          {
+              "DELETE",
+              "GET",
+              "HEAD",
+              "POST",
+              "PUT",
+              /* pathological */
+              "CONNECT",
+              "OPTIONS",
+              "TRACE",
+              /* webdav */
+              "COPY",
+              "LOCK",
+              "MKCOL",
+              "MOVE",
+              "PROPFIND",
+              "PROPPATCH",
+              "SEARCH",
+              "UNLOCK",
+              /* subversion */
+              "REPORT",
+              "MKACTIVITY",
+              "CHECKOUT",
+              "MERGE",
+              /* upnp */
+              "MSEARCH",
+              "NOTIFY",
+              "SUBSCRIBE",
+              "UNSUBSCRIBE",
+              /* RFC-5789 */
+              "PATCH",
+              "PURGE"
+          };
       return table[e];
     }
 
@@ -110,17 +110,16 @@ inline void CURLMULTI_THROW_NOT_OK(CURLMcode res){
       return sz;
     }
 
-    static int my_trace(CURL*,
+    static int my_trace(CURL *,
                         curl_infotype type,
-                        char* data,
+                        char *data,
                         size_t sz,
-                        void *userp)
-    {
-      std::string* request_id = (std::string*) userp; //
+                        void *userp) {
+      std::string *request_id = (std::string *) userp; //
       //const char *text;
       //(void)handle; /* prevent compiler warning */
 
-      switch(type) {
+      switch (type) {
         case CURLINFO_TEXT: {
           std::string s(data);
           if (request_id->size())
@@ -164,22 +163,20 @@ inline void CURLMULTI_THROW_NOT_OK(CURLMcode res){
     }
 
 
-
     request::request(kspp::http::method_t method,
                      const std::string &uri,
                      const std::vector<std::string> &headers,
                      std::chrono::milliseconds timeout
     )
-      : _method(method)
-      , _uri(uri)
-      , _tx_headers(headers)
-      , _timeout(timeout)
-      , _http_result(kspp::http::undefined)
-//        , _tx_stream(std::ios_base::ate | std::ios_base::in | std::ios_base::out)
-      , _transport_ok(true)
-      , _curl_easy(NULL)
-      , _curl_headerlist(NULL)
-      , _curl_done(false) {
+        : _method(method)
+        , _uri(uri)
+        , _tx_headers(headers)
+        , _timeout(timeout)
+        , _http_result(kspp::http::undefined)
+        , _transport_ok(true)
+        , _curl_easy(NULL)
+        , _curl_headerlist(NULL)
+        , _curl_done(false) {
       _curl_easy = curl_easy_init();
     }
 
@@ -191,47 +188,42 @@ inline void CURLMULTI_THROW_NOT_OK(CURLMcode res){
         curl_slist_free_all(_curl_headerlist);
     }
 
-    void request::set_request_id(std::string user_defined)
-    {
+    void request::set_request_id(std::string user_defined) {
       _request_id = user_defined;
     }
 
-    void request::set_basic_auth(const std::string& user, const std::string& password){
-      CURLEASY_THROW_NOT_OK(curl_easy_setopt(_curl_easy, CURLOPT_HTTPAUTH, (long)CURLAUTH_BASIC));
+    void request::set_basic_auth(const std::string &user, const std::string &password) {
+      CURLEASY_THROW_NOT_OK(curl_easy_setopt(_curl_easy, CURLOPT_HTTPAUTH, (long) CURLAUTH_BASIC));
       CURLEASY_THROW_NOT_OK(curl_easy_setopt(_curl_easy, CURLOPT_USERNAME, user.c_str()));
       CURLEASY_THROW_NOT_OK(curl_easy_setopt(_curl_easy, CURLOPT_PASSWORD, password.c_str()));
     }
 
-    void request::set_ca_cert_path(std::string path)
-    {
+    void request::set_ca_cert_path(std::string path) {
       _ca_cert = path;
     }
 
-    void request::set_client_credentials(std::string client_cert_path, std::string client_key_path, std::string client_key_passphrase)
-    {
+    void request::set_client_credentials(std::string client_cert_path, std::string client_key_path,
+                                         std::string client_key_passphrase) {
       _client_cert = client_cert_path;
       _client_key = client_key_path;
       _client_key_passphrase = client_key_passphrase;
     }
 
-    void request::set_verify_host(bool state)
-    {
+    void request::set_verify_host(bool state) {
       _verify_host = state;
     }
 
 
-    void request::set_tx_headers(const std::vector<std::string> &headers)
-    {
+    void request::set_tx_headers(const std::vector<std::string> &headers) {
       _tx_headers = headers;
     }
 
-    void  request::set_timeout(const std::chrono::milliseconds &timeout)
-    {
+    void request::set_timeout(const std::chrono::milliseconds &timeout) {
       _timeout = timeout;
     }
 
     void request::set_trace_level(trace_log_level level) {
-       _log_level = level;
+      _log_level = level;
     }
 
     void request::curl_start(std::shared_ptr<request> self) {
@@ -274,49 +266,49 @@ inline void CURLMULTI_THROW_NOT_OK(CURLMcode res){
     }
 
     client::client(boost::asio::io_service &io_service, size_t max_connection_cache)
-      : _io_service(io_service)
-      , _timer(_io_service)
-      , _user_agent_header("User-Agent:csi-http/0.1")
-      , _closing(false){
-      _multi = curl_multi_init();
-      curl_multi_setopt(_multi, CURLMOPT_SOCKETFUNCTION, _sock_cb);
-      curl_multi_setopt(_multi, CURLMOPT_SOCKETDATA, this);
-      curl_multi_setopt(_multi, CURLMOPT_TIMERFUNCTION, _multi_timer_cb);
-      curl_multi_setopt(_multi, CURLMOPT_TIMERDATA, this);
-      curl_multi_setopt(_multi, CURLMOPT_MAXCONNECTS, (long) max_connection_cache);
+        : io_service_(io_service)
+        , timer_(io_service_)
+        , user_agent_header_("User-Agent:csi-http/0.1")
+        , closing_(false) {
+      multi_ = curl_multi_init();
+      curl_multi_setopt(multi_, CURLMOPT_SOCKETFUNCTION, _sock_cb);
+      curl_multi_setopt(multi_, CURLMOPT_SOCKETDATA, this);
+      curl_multi_setopt(multi_, CURLMOPT_TIMERFUNCTION, _multi_timer_cb);
+      curl_multi_setopt(multi_, CURLMOPT_TIMERDATA, this);
+      curl_multi_setopt(multi_, CURLMOPT_MAXCONNECTS, (long) max_connection_cache);
     }
 
     client::~client() {
       close();
       // wait for the close to be done
-      while (_multi)
+      while (multi_)
         std::this_thread::sleep_for(std::chrono::milliseconds(100)); // patch for not waiting for http to die... FIXME
     }
 
     void client::set_user_agent(std::string s) {
-      _user_agent_header = std::string("User-Agent:") + s;
+      user_agent_header_ = std::string("User-Agent:") + s;
     }
 
     void client::close() {
-      if (_closing)
+      if (closing_)
         return;
-      _closing = true;
-      if (_multi) {
-        _io_service.post([this]() {
-          curl_multi_cleanup(_multi);
-          _multi = NULL;
+      closing_ = true;
+      if (multi_) {
+        io_service_.post([this]() {
+          curl_multi_cleanup(multi_);
+          multi_ = NULL;
         });
       }
-      _timer.cancel();
+      timer_.cancel();
     }
 
     bool client::done() {
-      return (_curl_handles_still_running == 0);
+      return (curl_handles_still_running_ == 0);
     }
 
     void client::perform_async(std::shared_ptr<kspp::http::request> request, kspp::http::request::callback cb) {
       request->_callback = cb;
-      _io_service.post([this, request]() {
+      io_service_.post([this, request]() {
         _perform(request);
       });
     }
@@ -338,10 +330,10 @@ inline void CURLMULTI_THROW_NOT_OK(CURLMcode res){
                                                my_trace)); // not active if not using CURLOPT_VERBOSE==1
         CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_DEBUGDATA, &request->_request_id));
         CURLEASY_THROW_NOT_OK(
-          curl_easy_setopt(request->_curl_easy, CURLOPT_OPENSOCKETFUNCTION, &client::_opensocket_cb));
+            curl_easy_setopt(request->_curl_easy, CURLOPT_OPENSOCKETFUNCTION, &client::_opensocket_cb));
         CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_OPENSOCKETDATA, this));
         CURLEASY_THROW_NOT_OK(
-          curl_easy_setopt(request->_curl_easy, CURLOPT_CLOSESOCKETFUNCTION, &client::_closesocket_cb));
+            curl_easy_setopt(request->_curl_easy, CURLOPT_CLOSESOCKETFUNCTION, &client::_closesocket_cb));
         CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_CLOSESOCKETDATA, this));
         CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_NOSIGNAL,
                                                1L)); // try to avoid signals to timeout address resolution calls
@@ -370,7 +362,7 @@ inline void CURLMULTI_THROW_NOT_OK(CURLMcode res){
           CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_SSLCERT, request->_client_cert.c_str()));
           CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_SSLKEY, request->_client_key.c_str()));
           CURLEASY_THROW_NOT_OK(
-            curl_easy_setopt(request->_curl_easy, CURLOPT_SSLKEYPASSWD, request->_client_key_passphrase.c_str()));
+              curl_easy_setopt(request->_curl_easy, CURLOPT_SSLKEYPASSWD, request->_client_key_passphrase.c_str()));
           CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_SSLKEYTYPE, "PEM"));
         }
 
@@ -394,9 +386,9 @@ inline void CURLMULTI_THROW_NOT_OK(CURLMcode res){
             // this seems to be the right way with PUT and strings
             CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_CUSTOMREQUEST, "PUT")); /* !!! */
             CURLEASY_THROW_NOT_OK(
-              curl_easy_setopt(request->_curl_easy, CURLOPT_POSTFIELDS, request->tx_content().data()));
+                curl_easy_setopt(request->_curl_easy, CURLOPT_POSTFIELDS, request->tx_content().data()));
             CURLEASY_THROW_NOT_OK(
-              curl_easy_setopt(request->_curl_easy, CURLOPT_POSTFIELDSIZE, (long) request->tx_content_length()));
+                curl_easy_setopt(request->_curl_easy, CURLOPT_POSTFIELDSIZE, (long) request->tx_content_length()));
             break;
 
           case kspp::http::POST: {
@@ -406,7 +398,7 @@ inline void CURLMULTI_THROW_NOT_OK(CURLMcode res){
             // must be different in post and put???
             //res = curl_easy_setopt(request->_curl_easy, CURLOPT_POSTFIELDS, NULL);
             CURLEASY_THROW_NOT_OK(
-              curl_easy_setopt(request->_curl_easy, CURLOPT_POSTFIELDS, request->tx_content().data()));
+                curl_easy_setopt(request->_curl_easy, CURLOPT_POSTFIELDS, request->tx_content().data()));
             size_t sz = request->tx_content_length();
             //LOG(INFO) << "sending - content lenght " << sz;
             CURLEASY_THROW_NOT_OK(curl_easy_setopt(request->_curl_easy, CURLOPT_POSTFIELDSIZE, (long) sz));
@@ -442,7 +434,7 @@ inline void CURLMULTI_THROW_NOT_OK(CURLMcode res){
         static const char buf[] = "Expect:";
         /* initalize custom header list (stating that Expect: 100-continue is not wanted */
         request->_curl_headerlist = curl_slist_append(request->_curl_headerlist, buf);
-        request->_curl_headerlist = curl_slist_append(request->_curl_headerlist, _user_agent_header.c_str());
+        request->_curl_headerlist = curl_slist_append(request->_curl_headerlist, user_agent_header_.c_str());
         for (std::vector<std::string>::const_iterator i = request->_tx_headers.begin();
              i != request->_tx_headers.end(); ++i)
           request->_curl_headerlist = curl_slist_append(request->_curl_headerlist, i->c_str());
@@ -471,8 +463,8 @@ inline void CURLMULTI_THROW_NOT_OK(CURLMcode res){
       }
 */
 
-        CURLMULTI_THROW_NOT_OK(curl_multi_add_handle(_multi, request->_curl_easy));
-      } catch(std::exception& e){
+        CURLMULTI_THROW_NOT_OK(curl_multi_add_handle(multi_, request->_curl_easy));
+      } catch (std::exception &e) {
         LOG(ERROR) << "http request failed: " << e.what();
       }
     }
@@ -480,7 +472,7 @@ inline void CURLMULTI_THROW_NOT_OK(CURLMcode res){
     // must not be called within curl callbacks - post a asio message instead
     void client::_poll_remove(std::shared_ptr<request> p) {
       //BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << ", handle: " << p->_curl_easy;
-      curl_multi_remove_handle(_multi, p->_curl_easy);
+      curl_multi_remove_handle(multi_, p->_curl_easy);
     }
 
     // CURL CALLBACKS
@@ -492,7 +484,7 @@ inline void CURLMULTI_THROW_NOT_OK(CURLMcode res){
       /* IPV4 */
       if (purpose == CURLSOCKTYPE_IPCXN && address->family == AF_INET) {
         /* create a tcp socket object */
-        boost::asio::ip::tcp::socket *tcp_socket = new boost::asio::ip::tcp::socket(_io_service);
+        boost::asio::ip::tcp::socket *tcp_socket = new boost::asio::ip::tcp::socket(io_service_);
 
         /* open it and get the native handle*/
         boost::system::error_code ec;
@@ -507,8 +499,8 @@ inline void CURLMULTI_THROW_NOT_OK(CURLMcode res){
         curl_socket_t sockfd = tcp_socket->native_handle();
         /* save it for monitoring */
         {
-          spinlock::scoped_lock xxx(_spinlock);
-          _socket_map.insert(std::pair<curl_socket_t, boost::asio::ip::tcp::socket *>(sockfd, tcp_socket));
+          spinlock::scoped_lock xxx(spinlock_);
+          socket_map_.insert(std::pair<curl_socket_t, boost::asio::ip::tcp::socket *>(sockfd, tcp_socket));
         }
         //BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << " open ok, socket: " << sockfd;
         return sockfd;
@@ -516,7 +508,7 @@ inline void CURLMULTI_THROW_NOT_OK(CURLMcode res){
       // IPV6
       if (purpose == CURLSOCKTYPE_IPCXN && address->family == AF_INET6) {
         /* create a tcp socket object */
-        boost::asio::ip::tcp::socket *tcp_socket = new boost::asio::ip::tcp::socket(_io_service);
+        boost::asio::ip::tcp::socket *tcp_socket = new boost::asio::ip::tcp::socket(io_service_);
 
         /* open it and get the native handle*/
         boost::system::error_code ec;
@@ -529,9 +521,9 @@ inline void CURLMULTI_THROW_NOT_OK(CURLMcode res){
 
         curl_socket_t sockfd = tcp_socket->native_handle();
         /* save it for monitoring */
-        spinlock::scoped_lock xxx(_spinlock);
+        spinlock::scoped_lock xxx(spinlock_);
         {
-          _socket_map.insert(std::pair<curl_socket_t, boost::asio::ip::tcp::socket *>(sockfd, tcp_socket));
+          socket_map_.insert(std::pair<curl_socket_t, boost::asio::ip::tcp::socket *>(sockfd, tcp_socket));
         }
         //LOG(INFO) << ",  open ok, socket: " << sockfd;
         return sockfd;
@@ -555,12 +547,12 @@ inline void CURLMULTI_THROW_NOT_OK(CURLMcode res){
       if (!tcp_socket) {
         //we try to find the data in our own mapping
         //if we find it - register this to curl so we dont have to do this every time.
-        spinlock::scoped_lock xxx(_spinlock);
+        spinlock::scoped_lock xxx(spinlock_);
         {
-          std::map<curl_socket_t, boost::asio::ip::tcp::socket *>::iterator it = _socket_map.find(s);
-          if (it != _socket_map.end()) {
+          std::map<curl_socket_t, boost::asio::ip::tcp::socket *>::iterator it = socket_map_.find(s);
+          if (it != socket_map_.end()) {
             tcp_socket = it->second;
-            curl_multi_assign(_multi, s, tcp_socket);
+            curl_multi_assign(multi_, s, tcp_socket);
           }
         }
 
@@ -614,9 +606,9 @@ inline void CURLMULTI_THROW_NOT_OK(CURLMcode res){
                               std::shared_ptr<request> context) {
       if (!ec && !context->_curl_done) {
         try {
-          CURLMULTI_THROW_NOT_OK(curl_multi_socket_action(_multi, tcp_socket->native_handle(), CURL_CSELECT_IN,
-                                                          &_curl_handles_still_running));
-        } catch (std::exception& e){
+          CURLMULTI_THROW_NOT_OK(curl_multi_socket_action(multi_, tcp_socket->native_handle(), CURL_CSELECT_IN,
+                                                          &curl_handles_still_running_));
+        } catch (std::exception &e) {
           LOG(ERROR) << "socket_rx_cb failed: " << e.what();
         }
         if (!context->_curl_done)
@@ -633,14 +625,15 @@ inline void CURLMULTI_THROW_NOT_OK(CURLMcode res){
                               std::shared_ptr<request> context) {
       if (!ec) {
         try {
-          CURLMULTI_THROW_NOT_OK(curl_multi_socket_action(_multi, tcp_socket->native_handle(), CURL_CSELECT_OUT,
-                                                          &_curl_handles_still_running));
-       } catch (std::exception& e){
-        LOG(ERROR) << "socket_tx_cb failed: " << e.what();
+          CURLMULTI_THROW_NOT_OK(curl_multi_socket_action(multi_, tcp_socket->native_handle(), CURL_CSELECT_OUT,
+                                                          &curl_handles_still_running_));
+        } catch (std::exception &e) {
+          LOG(ERROR) << "socket_tx_cb failed: " << e.what();
         }
         if (!context->_curl_done)
           tcp_socket->async_write_some(boost::asio::null_buffers(),
-                                       [this, tcp_socket, context](const boost::system::error_code &ec, std::size_t bytes_transferred) {
+                                       [this, tcp_socket, context](const boost::system::error_code &ec,
+                                                                   std::size_t bytes_transferred) {
                                          socket_tx_cb(ec, tcp_socket, context);
                                        });
         check_completed();
@@ -652,8 +645,8 @@ inline void CURLMULTI_THROW_NOT_OK(CURLMcode res){
         // CURL_SOCKET_TIMEOUT, 0 is corrent on timeouts http://curl.haxx.se/libcurl/c/curl_multi_socket_action.html
         try {
           CURLMULTI_THROW_NOT_OK(
-            curl_multi_socket_action(_multi, CURL_SOCKET_TIMEOUT, 0, &_curl_handles_still_running));
-        }catch (std::exception& e){
+              curl_multi_socket_action(multi_, CURL_SOCKET_TIMEOUT, 0, &curl_handles_still_running_));
+        } catch (std::exception &e) {
           LOG(ERROR) << "timer_cb failed: " << e.what();
         }
         check_completed();
@@ -671,12 +664,12 @@ inline void CURLMULTI_THROW_NOT_OK(CURLMcode res){
 
     int client::multi_timer_cb(CURLM *multi, long timeout_ms) {
       /* cancel running timer */
-      _timer.cancel();
+      timer_.cancel();
 
       if (timeout_ms > 0) {
-        if (!_closing) {
-          _timer.expires_from_now(std::chrono::milliseconds(timeout_ms));
-          _timer.async_wait([this](const boost::system::error_code &ec) {
+        if (!closing_) {
+          timer_.expires_from_now(std::chrono::milliseconds(timeout_ms));
+          timer_.async_wait([this](const boost::system::error_code &ec) {
             timer_cb(ec);
           });
         }
@@ -696,18 +689,18 @@ inline void CURLMULTI_THROW_NOT_OK(CURLMcode res){
     }
 
     int client::closesocket_cb(curl_socket_t item) {
-      spinlock::scoped_lock xxx(_spinlock);
+      spinlock::scoped_lock xxx(spinlock_);
       {
-        std::map<curl_socket_t, boost::asio::ip::tcp::socket *>::iterator it = _socket_map.find(item);
-        if (it != _socket_map.end()) {
+        std::map<curl_socket_t, boost::asio::ip::tcp::socket *>::iterator it = socket_map_.find(item);
+        if (it != socket_map_.end()) {
           boost::system::error_code ec;
           it->second->cancel(ec);
           it->second->close(ec);
           boost::asio::ip::tcp::socket *s = it->second;
 
           //curl_multi_assign(_multi, it->first, NULL); // we need to remove this at once since curl likes to reuse sockets
-          _socket_map.erase(it);
-          _io_service.post([this, s]() {
+          socket_map_.erase(it);
+          io_service_.post([this, s]() {
             delete s; // must be deleted after operations on socket completed. therefore the _io_service.post
           });
         }
@@ -722,7 +715,7 @@ inline void CURLMULTI_THROW_NOT_OK(CURLMcode res){
       CURLMsg *m = NULL;
       do {
         int msgq = 0;
-        m = curl_multi_info_read(_multi, &msgq);
+        m = curl_multi_info_read(multi_, &msgq);
         if (m && (m->msg == CURLMSG_DONE)) {
           CURL *e = m->easy_handle;
 
@@ -778,7 +771,7 @@ inline void CURLMULTI_THROW_NOT_OK(CURLMcode res){
             context->_callback(context);
           }
 
-          curl_multi_remove_handle(_multi, context->_curl_easy);
+          curl_multi_remove_handle(multi_, context->_curl_easy);
           context->curl_stop(); // must be the last one...
         }
       } while (m);

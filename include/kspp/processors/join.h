@@ -3,6 +3,7 @@
 #include <functional>
 #include <optional>
 #include <kspp/kspp.h>
+
 #pragma once
 
 namespace kspp {
@@ -28,21 +29,19 @@ namespace kspp {
   class kstream_left_join :
       public event_consumer<KEY, LEFT>,
       public partition_source<KEY, typename left_join<LEFT, RIGHT>::value_type> {
-    static constexpr const char* PROCESSOR_NAME = "kstream_left_join";
+    static constexpr const char *PROCESSOR_NAME = "kstream_left_join";
   public:
     typedef typename left_join<LEFT, RIGHT>::value_type value_type;
 
     kstream_left_join(
         std::shared_ptr<cluster_config> config,
-        std::shared_ptr<partition_source < KEY, LEFT>> left,
-    std::shared_ptr<materialized_source < KEY, RIGHT>> right)
-    : event_consumer<KEY, LEFT>()
-    , partition_source<KEY, value_type>(left.get(), left->partition())
-    , left_stream_ (left)
-    , right_table_(right) {
+        std::shared_ptr<partition_source<KEY, LEFT>> left,
+        std::shared_ptr<materialized_source<KEY, RIGHT>> right)
+        : event_consumer<KEY, LEFT>(), partition_source<KEY, value_type>(left.get(), left->partition()),
+          left_stream_(left), right_table_(right) {
       this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "kstream_left_join");
       this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(left->partition()));
-      left_stream_->add_sink([this](auto r) { this->_queue.push_back(r); });
+      left_stream_->add_sink([this](auto r) { this->queue_.push_back(r); });
     }
 
     ~kstream_left_join() {
@@ -64,7 +63,7 @@ namespace kspp {
     }
 
     size_t queue_size() const override {
-      return event_consumer<KEY, LEFT> ::queue_size();
+      return event_consumer<KEY, LEFT>::queue_size();
     }
 
     int64_t next_event_time() const override {
@@ -81,10 +80,10 @@ namespace kspp {
 
       size_t processed = 0;
       // reuse event time & commit it from event stream
-      while (this->_queue.next_event_time() <= tick) {
-        auto left = this->_queue.pop_front_and_get();
-        this->_lag.add_event_time(tick, left->event_time());
-        ++(this->_processed_count);
+      while (this->queue_.next_event_time() <= tick) {
+        auto left = this->queue_.pop_front_and_get();
+        this->lag_.add_event_time(tick, left->event_time());
+        ++(this->processed_count_);
         ++processed;
         // null values from left should be ignored
         if (left->record() && left->record()->value()) {
@@ -114,28 +113,27 @@ namespace kspp {
     }
 
   private:
-    std::shared_ptr<partition_source < KEY, LEFT>>   left_stream_;
-    std::shared_ptr<materialized_source < KEY, RIGHT>> right_table_;
+    std::shared_ptr<partition_source<KEY, LEFT>> left_stream_;
+    std::shared_ptr<materialized_source<KEY, RIGHT>> right_table_;
   };
 
   template<class KEY, class LEFT, class RIGHT>
   class kstream_inner_join :
       public event_consumer<KEY, LEFT>,
       public partition_source<KEY, typename inner_join<LEFT, RIGHT>::value_type> {
-    static constexpr const char* PROCESSOR_NAME = "kstream_inner_join";
+    static constexpr const char *PROCESSOR_NAME = "kstream_inner_join";
   public:
     typedef typename inner_join<LEFT, RIGHT>::value_type value_type;
 
     kstream_inner_join(
         std::shared_ptr<cluster_config> config,
-        std::shared_ptr<partition_source < KEY, LEFT>> left,
-    std::shared_ptr<materialized_source < KEY, RIGHT>> right)
-    : event_consumer<KEY, LEFT>(), partition_source<KEY, value_type>(left.get(), left->partition())
-    , left_stream_ (left)
-    , right_table_(right) {
+        std::shared_ptr<partition_source<KEY, LEFT>> left,
+        std::shared_ptr<materialized_source<KEY, RIGHT>> right)
+        : event_consumer<KEY, LEFT>(), partition_source<KEY, value_type>(left.get(), left->partition()),
+          left_stream_(left), right_table_(right) {
       this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "kstream_inner_join");
       this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(left->partition()));
-      left_stream_->add_sink([this](auto r) { this->_queue.push_back(r); });
+      left_stream_->add_sink([this](auto r) { this->queue_.push_back(r); });
     }
 
     ~kstream_inner_join() {
@@ -157,7 +155,7 @@ namespace kspp {
     }
 
     size_t queue_size() const override {
-      return event_consumer<KEY, LEFT> ::queue_size();
+      return event_consumer<KEY, LEFT>::queue_size();
     }
 
     int64_t next_event_time() const override {
@@ -174,10 +172,10 @@ namespace kspp {
 
       size_t processed = 0;
       // reuse event time & commit it from event stream
-      while (this->_queue.next_event_time() <= tick) {
-        auto left = this->_queue.pop_front_and_get();
-        this->_lag.add_event_time(tick, left->event_time());
-        ++(this->_processed_count);
+      while (this->queue_.next_event_time() <= tick) {
+        auto left = this->queue_.pop_front_and_get();
+        this->lag_.add_event_time(tick, left->event_time());
+        ++(this->processed_count_);
         ++processed;
         // null values from left should be ignored
         if (left->record() && left->record()->value()) {
@@ -206,8 +204,8 @@ namespace kspp {
     }
 
   private:
-    std::shared_ptr<partition_source < KEY, LEFT>>   left_stream_;
-    std::shared_ptr<materialized_source < KEY, RIGHT>> right_table_;
+    std::shared_ptr<partition_source<KEY, LEFT>> left_stream_;
+    std::shared_ptr<materialized_source<KEY, RIGHT>> right_table_;
   };
 
 
@@ -215,22 +213,20 @@ namespace kspp {
   class ktable_left_join
       : public event_consumer<KEY, LEFT>,
         public partition_source<KEY, typename left_join<LEFT, RIGHT>::value_type> {
-    static constexpr const char* PROCESSOR_NAME = "ktable_left_join";
+    static constexpr const char *PROCESSOR_NAME = "ktable_left_join";
   public:
     typedef typename left_join<LEFT, RIGHT>::value_type value_type;
 
     ktable_left_join(
         std::shared_ptr<cluster_config> config,
-        std::shared_ptr<materialized_source < KEY, LEFT>> left,
-        std::shared_ptr<materialized_source < KEY, RIGHT>> right)
-    : event_consumer<KEY, LEFT>()
-    , partition_source<KEY, value_type>(left.get(), left->partition())
-    , left_table_ (left)
-    , right_table_(right) {
+        std::shared_ptr<materialized_source<KEY, LEFT>> left,
+        std::shared_ptr<materialized_source<KEY, RIGHT>> right)
+        : event_consumer<KEY, LEFT>(), partition_source<KEY, value_type>(left.get(), left->partition()),
+          left_table_(left), right_table_(right) {
       this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "ktable_left_join");
       this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(left->partition()));
-      left_table_->add_sink([this](auto r) { this->_queue.push_back(r); });
-      right_table_->add_sink([this](auto r) { this->_queue.push_back(r); });
+      left_table_->add_sink([this](auto r) { this->queue_.push_back(r); });
+      right_table_->add_sink([this](auto r) { this->queue_.push_back(r); });
     }
 
     ~ktable_left_join() {
@@ -254,11 +250,11 @@ namespace kspp {
     }
 
     size_t queue_size() const override {
-      return event_consumer < KEY, LEFT > ::queue_size();
+      return event_consumer<KEY, LEFT>::queue_size();
     }
 
     int64_t next_event_time() const override {
-      auto q = event_consumer < KEY, LEFT>::next_event_time();
+      auto q = event_consumer<KEY, LEFT>::next_event_time();
       auto ls = right_table_->next_event_time();
       auto rs = left_table_->next_event_time();
       return std::min(q, std::min(ls, rs));
@@ -271,10 +267,10 @@ namespace kspp {
       size_t processed = 0;
       // reuse event time & commit it from event stream
       //
-      while (this->_queue.next_event_time() <= tick) {
-        auto ev = this->_queue.pop_front_and_get();
-        this->_lag.add_event_time(tick, ev->event_time());
-        ++(this->_processed_count);
+      while (this->queue_.next_event_time() <= tick) {
+        auto ev = this->queue_.pop_front_and_get();
+        this->lag_.add_event_time(tick, ev->event_time());
+        ++(this->processed_count_);
         ++processed;
         // null values from left should be ignored
 
@@ -310,30 +306,28 @@ namespace kspp {
     }
 
   private:
-    std::shared_ptr<materialized_source < KEY, LEFT>>  left_table_;
-    std::shared_ptr<materialized_source < KEY, RIGHT>> right_table_;
+    std::shared_ptr<materialized_source<KEY, LEFT>> left_table_;
+    std::shared_ptr<materialized_source<KEY, RIGHT>> right_table_;
   };
 
 
   template<class KEY, class LEFT, class RIGHT>
   class ktable_inner_join
       : public event_consumer<KEY, LEFT>, public partition_source<KEY, typename inner_join<LEFT, RIGHT>::value_type> {
-    static constexpr const char* PROCESSOR_NAME = "ktable_inner_join";
+    static constexpr const char *PROCESSOR_NAME = "ktable_inner_join";
   public:
     typedef typename inner_join<LEFT, RIGHT>::value_type value_type;
 
     ktable_inner_join(
         std::shared_ptr<cluster_config> config,
-        std::shared_ptr<materialized_source < KEY, LEFT>> left,
-    std::shared_ptr<materialized_source < KEY, RIGHT>> right)
-    : event_consumer<KEY, LEFT>()
-    , partition_source<KEY, value_type>(left.get(), left->partition())
-    , left_table_ (left)
-    , right_table_(right) {
+        std::shared_ptr<materialized_source<KEY, LEFT>> left,
+        std::shared_ptr<materialized_source<KEY, RIGHT>> right)
+        : event_consumer<KEY, LEFT>(), partition_source<KEY, value_type>(left.get(), left->partition()),
+          left_table_(left), right_table_(right) {
       this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "ktable_inner_join");
       this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(left->partition()));
-      left_table_->add_sink([this](auto r) { this->_queue.push_back(r); });
-      right_table_->add_sink([this](auto r) { this->_queue.push_back(r); });
+      left_table_->add_sink([this](auto r) { this->queue_.push_back(r); });
+      right_table_->add_sink([this](auto r) { this->queue_.push_back(r); });
     }
 
     ~ktable_inner_join() {
@@ -357,11 +351,11 @@ namespace kspp {
     }
 
     size_t queue_size() const override {
-      return event_consumer < KEY, LEFT > ::queue_size();
+      return event_consumer<KEY, LEFT>::queue_size();
     }
 
     int64_t next_event_time() const override {
-      auto q = event_consumer < KEY, LEFT>::next_event_time();
+      auto q = event_consumer<KEY, LEFT>::next_event_time();
       auto ls = right_table_->next_event_time();
       auto rs = left_table_->next_event_time();
       return std::min(q, std::min(ls, rs));
@@ -374,10 +368,10 @@ namespace kspp {
       size_t processed = 0;
       // reuse event time & commit it from event stream
       //
-      while (this->_queue.next_event_time() <= tick) {
-        auto ev = this->_queue.pop_front_and_get();
-        this->_lag.add_event_time(tick, ev->event_time());
-        ++(this->_processed_count);
+      while (this->queue_.next_event_time() <= tick) {
+        auto ev = this->queue_.pop_front_and_get();
+        this->lag_.add_event_time(tick, ev->event_time());
+        ++(this->processed_count_);
         ++processed;
         // null values from left should be ignored
 
@@ -407,28 +401,26 @@ namespace kspp {
     }
 
   private:
-    std::shared_ptr<materialized_source < KEY, LEFT>>  left_table_;
-    std::shared_ptr<materialized_source < KEY, RIGHT>> right_table_;
+    std::shared_ptr<materialized_source<KEY, LEFT>> left_table_;
+    std::shared_ptr<materialized_source<KEY, RIGHT>> right_table_;
   };
 
   template<class KEY, class LEFT, class RIGHT>
   class ktable_outer_join
       : public event_consumer<KEY, LEFT>, public partition_source<KEY, typename outer_join<LEFT, RIGHT>::value_type> {
-    static constexpr const char* PROCESSOR_NAME = "ktable_outer_join";
+    static constexpr const char *PROCESSOR_NAME = "ktable_outer_join";
   public:
     typedef typename outer_join<LEFT, RIGHT>::value_type value_type;
 
     ktable_outer_join(std::shared_ptr<cluster_config> config,
                       std::shared_ptr<materialized_source<KEY, LEFT>> left,
-                      std::shared_ptr<materialized_source < KEY, RIGHT>> right)
-    : event_consumer<KEY, LEFT>()
-    , partition_source<KEY, value_type>(left.get(), left->partition())
-    , left_table_ (left)
-    , right_table_(right) {
+                      std::shared_ptr<materialized_source<KEY, RIGHT>> right)
+        : event_consumer<KEY, LEFT>(), partition_source<KEY, value_type>(left.get(), left->partition()),
+          left_table_(left), right_table_(right) {
       this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "ktable_outer_join");
       this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(left->partition()));
-      left_table_->add_sink([this](auto r) { this->_queue.push_back(r); });
-      right_table_->add_sink([this](auto r) { this->_queue.push_back(r); });
+      left_table_->add_sink([this](auto r) { this->queue_.push_back(r); });
+      right_table_->add_sink([this](auto r) { this->queue_.push_back(r); });
     }
 
     ~ktable_outer_join() {
@@ -452,11 +444,11 @@ namespace kspp {
     }
 
     size_t queue_size() const override {
-      return event_consumer < KEY, LEFT > ::queue_size();
+      return event_consumer<KEY, LEFT>::queue_size();
     }
 
     int64_t next_event_time() const override {
-      auto q = event_consumer < KEY, LEFT>::next_event_time();
+      auto q = event_consumer<KEY, LEFT>::next_event_time();
       auto ls = right_table_->next_event_time();
       auto rs = left_table_->next_event_time();
       return std::min(q, std::min(ls, rs));
@@ -469,10 +461,10 @@ namespace kspp {
       size_t processed = 0;
       // reuse event time & commit it from event stream
       //
-      while (this->_queue.next_event_time() <= tick) {
-        auto ev = this->_queue.pop_front_and_get();
-        this->_lag.add_event_time(tick, ev->event_time());
-        ++(this->_processed_count);
+      while (this->queue_.next_event_time() <= tick) {
+        auto ev = this->queue_.pop_front_and_get();
+        this->lag_.add_event_time(tick, ev->event_time());
+        ++(this->processed_count_);
         ++processed;
         // null values from left should be ignored
 
@@ -511,7 +503,7 @@ namespace kspp {
     }
 
   private:
-    std::shared_ptr<materialized_source < KEY, LEFT>>  left_table_;
-    std::shared_ptr<materialized_source < KEY, RIGHT>> right_table_;
+    std::shared_ptr<materialized_source<KEY, LEFT>> left_table_;
+    std::shared_ptr<materialized_source<KEY, RIGHT>> right_table_;
   };
 }

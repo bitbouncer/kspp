@@ -1,40 +1,37 @@
 #include <chrono>
 #include <memory>
-#include <boost/bind.hpp>
+#include <curl/curl.h>
+#include <boost/asio.hpp>
 #include <kspp/utils/async.h>
 #include <kspp/utils/http_client.h>
 
-  class my_client {
-  public:
-    my_client(const std::string& url)
-        : _work(new boost::asio::io_service::work(_ios))
-        , _bg(boost::bind(&boost::asio::io_service::run, &_ios))
-        , _http_handler(_ios, 10) {
-      curl_global_init(CURL_GLOBAL_NOTHING); /* minimal */
-    }
+class my_client {
+public:
+  my_client(const std::string &url)
+      : work_(new boost::asio::io_service::work(ios_)), bg_([this]() { ios_.run(); }), http_handler_(ios_, 10) {
+    curl_global_init(CURL_GLOBAL_NOTHING); /* minimal */
+  }
 
-    ~my_client(){
-      _http_handler.close();
-      _work.reset();
-      _bg.join();
-    }
+  ~my_client() {
+    http_handler_.close();
+    work_.reset();
+    bg_.join();
+  }
 
-    std::string call(std::string url){
+  std::string call(std::string url) {
     return "";
-    }
+  }
 
-  private:
-    boost::asio::io_service _ios;
-    std::unique_ptr<boost::asio::io_service::work> _work;
-    
-    std::thread _bg;
-    kspp::http::client _http_handler;
-  };
+private:
+  boost::asio::io_service ios_;
+  std::unique_ptr<boost::asio::io_service::work> work_;
 
-
+  std::thread bg_;
+  kspp::http::client http_handler_;
+};
 
 
-int main(int argc, char** argv){
+int main(int argc, char **argv) {
   LOG(INFO) << "starting test";
   {
     my_client client("10.10.20.42:8888/models/images/classification/classify_one.json");

@@ -11,9 +11,8 @@
 
 using namespace std::chrono_literals;
 namespace kspp {
-  void kafka_consumer::MyEventCb::event_cb (RdKafka::Event &event) {
-    switch (event.type())
-    {
+  void kafka_consumer::MyEventCb::event_cb(RdKafka::Event &event) {
+    switch (event.type()) {
       case RdKafka::Event::EVENT_ERROR:
         LOG(ERROR) << RdKafka::err2str(event.err()) << " " << event.str();
         //if (event.err() == RdKafka::ERR__ALL_BROKERS_DOWN) TODO
@@ -34,28 +33,21 @@ namespace kspp {
     }
   }
 
-  kafka_consumer::kafka_consumer(std::shared_ptr<cluster_config> config, std::string topic, int32_t partition, std::string consumer_group, bool check_cluster)
-    : _config(config)
-    , _topic(topic)
-    , _partition(partition)
-    , _consumer_group(consumer_group)
-    , _can_be_committed(-1)
-    , _last_committed(-1)
-    , _max_pending_commits(5000)
-    , _msg_cnt(0)
-    , _msg_bytes(0)
-    , _eof(false)
-    , _closed(false) {
+  kafka_consumer::kafka_consumer(std::shared_ptr<cluster_config> config, std::string topic, int32_t partition,
+                                 std::string consumer_group, bool check_cluster)
+      : config_(config), topic_(topic), partition_(partition), consumer_group_(consumer_group) {
     // really try to make sure the partition & group exist before we continue
 
     if (check_cluster) {
-      LOG_IF(FATAL, config->get_cluster_metadata()->wait_for_topic_partition(topic, _partition, config->get_cluster_state_timeout()) == false)
-          << "failed to wait for topic leaders, topic:" << topic << ":" << _partition;
+      LOG_IF(FATAL, config->get_cluster_metadata()->wait_for_topic_partition(topic, partition_,
+                                                                             config->get_cluster_state_timeout()) ==
+                    false)
+              << "failed to wait for topic leaders, topic:" << topic << ":" << partition_;
       //wait_for_partition(_consumer.get(), _topic, _partition);
       //kspp::kafka::wait_for_group(brokers, consumer_group); something seems to wrong in rdkafka master.... TODO
     }
 
-    _topic_partition.push_back(RdKafka::TopicPartition::create(_topic, _partition));
+    topic_partition_.push_back(RdKafka::TopicPartition::create(topic_, partition_));
 
     /*
      * Create configuration objects
@@ -65,21 +57,21 @@ namespace kspp {
     * Set configuration properties
     */
     try {
-      set_broker_config(conf.get(), _config.get());
+      set_broker_config(conf.get(), config_.get());
 
       //set_config(conf.get(), "api.version.request", "true");
       set_config(conf.get(), "socket.nagle.disable", "true");
-      set_config(conf.get(), "fetch.wait.max.ms", std::to_string(_config->get_consumer_buffering_time().count()));
+      set_config(conf.get(), "fetch.wait.max.ms", std::to_string(config_->get_consumer_buffering_time().count()));
       //set_config(conf.get(), "queue.buffering.max.ms", "100");
       //set_config(conf.get(), "socket.blocking.max.ms", "100");
       set_config(conf.get(), "enable.auto.commit", "false");
       set_config(conf.get(), "auto.commit.interval.ms", "5000"); // probably not needed
       set_config(conf.get(), "enable.auto.offset.store", "false");
-      set_config(conf.get(), "group.id", _consumer_group);
+      set_config(conf.get(), "group.id", consumer_group_);
       set_config(conf.get(), "enable.partition.eof", "true");
       set_config(conf.get(), "log.connection.close", "false");
       set_config(conf.get(), "max.poll.interval.ms", "86400000"); // max poll interval before leaving consumer group
-      set_config(conf.get(), "event_cb", &_event_cb);
+      set_config(conf.get(), "event_cb", &event_cb_);
 
       //set_config(conf.get(), "socket.max.fails", "1000000");
       //set_config(conf.get(), "message.send.max.retries", "1000000");// probably not needed
@@ -90,38 +82,40 @@ namespace kspp {
 
       set_config(conf.get(), "default_topic_conf", tconf.get());
     }
-    catch (std::invalid_argument& e) {
-      LOG(FATAL) << "kafka_consumer topic:" << _topic << ":" << _partition << ", bad config " << e.what();
+    catch (std::invalid_argument &e) {
+      LOG(FATAL) << "kafka_consumer topic:" << topic_ << ":" << partition_ << ", bad config " << e.what();
     }
 
     /*
     * Create consumer using accumulated global configuration.
     */
     std::string errstr;
-    _consumer = std::unique_ptr<RdKafka::KafkaConsumer>(RdKafka::KafkaConsumer::create(conf.get(), errstr));
-    if (!_consumer) {
-      LOG(FATAL) << "kafka_consumer topic:" << _topic << ":" << _partition << ", failed to create consumer, reason: " << errstr;
+    consumer_ = std::unique_ptr<RdKafka::KafkaConsumer>(RdKafka::KafkaConsumer::create(conf.get(), errstr));
+    if (!consumer_) {
+      LOG(FATAL) << "kafka_consumer topic:" << topic_ << ":" << partition_ << ", failed to create consumer, reason: "
+                 << errstr;
     }
-    LOG(INFO) << "kafka_consumer topic:" << _topic << ":" << _partition << ", created";
+    LOG(INFO) << "kafka_consumer topic:" << topic_ << ":" << partition_ << ", created";
   }
 
   kafka_consumer::~kafka_consumer() {
-    if (!_closed)
+    if (!closed_)
       close();
-    for (auto i : _topic_partition) // should be exactly 1
+    for (auto i: topic_partition_) // should be exactly 1
       delete i;
     LOG(INFO) << "consumer deleted";
   }
 
   void kafka_consumer::close() {
-    if (_closed)
+    if (closed_)
       return;
-    _closed = true;
-    if (_consumer) {
-      _consumer->close();
-      LOG(INFO) << "kafka_consumer topic:" << _topic << ":" << _partition << ", closed - consumed " << _msg_cnt << " messages (" << _msg_bytes << " bytes)";
+    closed_ = true;
+    if (consumer_) {
+      consumer_->close();
+      LOG(INFO) << "kafka_consumer topic:" << topic_ << ":" << partition_ << ", closed - consumed " << msg_cnt_
+                << " messages (" << msg_bytes_ << " bytes)";
     }
-    _consumer.reset(nullptr);
+    consumer_.reset(nullptr);
   }
 
   void kafka_consumer::start(int64_t offset) {
@@ -129,104 +123,113 @@ namespace kspp {
       //just make shure we're not in for any surprises since this is a runtime variable in rdkafka...
       assert(kspp::OFFSET_STORED == RdKafka::Topic::OFFSET_STORED);
 
-      if (consumer_group_exists(_consumer_group, 5s)){
-        DLOG(INFO) << "kafka_consumer::start topic:" << _topic << ":" << _partition  << " consumer group: " << _consumer_group << " starting from OFFSET_STORED";
+      if (consumer_group_exists(consumer_group_, 5s)) {
+        DLOG(INFO) << "kafka_consumer::start topic:" << topic_ << ":" << partition_ << " consumer group: "
+                   << consumer_group_ << " starting from OFFSET_STORED";
       } else {
         //non existing consumer group means start from beginning
-        LOG(INFO) << "kafka_consumer::start topic:" << _topic << ":" << _partition  << " consumer group: " << _consumer_group << " missing -> starting from OFFSET_BEGINNING";
+        LOG(INFO) << "kafka_consumer::start topic:" << topic_ << ":" << partition_ << " consumer group: "
+                  << consumer_group_ << " missing -> starting from OFFSET_BEGINNING";
         offset = kspp::OFFSET_BEGINNING;
       }
     } else if (offset == kspp::OFFSET_BEGINNING) {
-      DLOG(INFO) << "kafka_consumer::start topic:" << _topic << ":" << _partition  << " consumer group: " << _consumer_group << " starting from OFFSET_BEGINNING";
+      DLOG(INFO) << "kafka_consumer::start topic:" << topic_ << ":" << partition_ << " consumer group: "
+                 << consumer_group_ << " starting from OFFSET_BEGINNING";
     } else if (offset == kspp::OFFSET_END) {
-      DLOG(INFO) << "kafka_consumer::start topic:" << _topic << ":" << _partition  << " consumer group: " << _consumer_group << " starting from OFFSET_END";
+      DLOG(INFO) << "kafka_consumer::start topic:" << topic_ << ":" << partition_ << " consumer group: "
+                 << consumer_group_ << " starting from OFFSET_END";
     } else {
-      DLOG(INFO) << "kafka_consumer::start topic:" << _topic << ":" << _partition  << " consumer group: " << _consumer_group << " starting from fixed offset: " << offset;
+      DLOG(INFO) << "kafka_consumer::start topic:" << topic_ << ":" << partition_ << " consumer group: "
+                 << consumer_group_ << " starting from fixed offset: " << offset;
     }
 
     /*
     * Subscribe to topics
     */
-    _topic_partition[0]->set_offset(offset);
-    RdKafka::ErrorCode err0 = _consumer->assign(_topic_partition);
+    topic_partition_[0]->set_offset(offset);
+    RdKafka::ErrorCode err0 = consumer_->assign(topic_partition_);
     if (err0) {
-      LOG(FATAL) << "kafka_consumer topic:" << _topic << ":" << _partition << ", failed to subscribe, reason:" << RdKafka::err2str(err0);
+      LOG(FATAL) << "kafka_consumer topic:" << topic_ << ":" << partition_ << ", failed to subscribe, reason:"
+                 << RdKafka::err2str(err0);
     }
 
     update_eof();
   }
 
   void kafka_consumer::stop() {
-    if (_consumer) {
-      RdKafka::ErrorCode err = _consumer->unassign();
+    if (consumer_) {
+      RdKafka::ErrorCode err = consumer_->unassign();
       if (err) {
         LOG(FATAL) << "kafka_consumer::stop topic:"
-                   << _topic
+                   << topic_
                    << ":"
-                   << _partition
+                   << partition_
                    << ", failed to stop, reason:"
                    << RdKafka::err2str(err);
       }
     }
   }
 
-  int kafka_consumer::update_eof(){
+  int kafka_consumer::update_eof() {
     int64_t low = 0;
     int64_t high = 0;
-    RdKafka::ErrorCode ec = _consumer->query_watermark_offsets(_topic, _partition, &low, &high, 1000);
+    RdKafka::ErrorCode ec = consumer_->query_watermark_offsets(topic_, partition_, &low, &high, 1000);
     if (ec) {
-      LOG(ERROR) << "kafka_consumer topic:" << _topic << ":" << _partition << ", consumer.query_watermark_offsets failed, reason:" << RdKafka::err2str(ec);
+      LOG(ERROR) << "kafka_consumer topic:" << topic_ << ":" << partition_
+                 << ", consumer.query_watermark_offsets failed, reason:" << RdKafka::err2str(ec);
       return ec;
     }
 
     if (low == high) {
-      _eof = true;
-      LOG(INFO) << "kafka_consumer topic:" << _topic << ":" << _partition << " [empty], eof at:" << high;
+      eof_ = true;
+      LOG(INFO) << "kafka_consumer topic:" << topic_ << ":" << partition_ << " [empty], eof at:" << high;
     } else {
-      auto ec = _consumer->position(_topic_partition);
+      auto ec = consumer_->position(topic_partition_);
       if (ec) {
-        LOG(ERROR) << "kafka_consumer topic:" << _topic << ":" << _partition << ", consumer.position failed, reason:" << RdKafka::err2str(ec);
+        LOG(ERROR) << "kafka_consumer topic:" << topic_ << ":" << partition_ << ", consumer.position failed, reason:"
+                   << RdKafka::err2str(ec);
         return ec;
       }
-      auto cursor = _topic_partition[0]->offset();
-      _eof = (cursor + 1 == high);
-      LOG(INFO) << "kafka_consumer topic:" << _topic << ":" << _partition << " cursor: " << cursor << ", eof at:" << high;
+      auto cursor = topic_partition_[0]->offset();
+      eof_ = (cursor + 1 == high);
+      LOG(INFO) << "kafka_consumer topic:" << topic_ << ":" << partition_ << " cursor: " << cursor << ", eof at:"
+                << high;
     }
     return 0;
   }
 
   std::unique_ptr<RdKafka::Message> kafka_consumer::consume(int librdkafka_timeout) {
-    if (_closed || _consumer == nullptr) {
-      LOG(ERROR) << "topic:" << _topic << ":" << _partition << ", consume failed: closed()";
+    if (closed_ || consumer_ == nullptr) {
+      LOG(ERROR) << "topic:" << topic_ << ":" << partition_ << ", consume failed: closed()";
       return nullptr; // already closed
     }
 
-    std::unique_ptr<RdKafka::Message> msg(_consumer->consume(librdkafka_timeout));
+    std::unique_ptr<RdKafka::Message> msg(consumer_->consume(librdkafka_timeout));
 
     switch (msg->err()) {
       case RdKafka::ERR_NO_ERROR:
-        _eof = false;
-        _msg_cnt++;
-        _msg_bytes += msg->len() + msg->key_len();
+        eof_ = false;
+        msg_cnt_++;
+        msg_bytes_ += msg->len() + msg->key_len();
         return msg;
 
       case RdKafka::ERR__TIMED_OUT:
         break;
 
       case RdKafka::ERR__PARTITION_EOF:
-        _eof = true;
+        eof_ = true;
         break;
 
       case RdKafka::ERR__UNKNOWN_TOPIC:
       case RdKafka::ERR__UNKNOWN_PARTITION:
-        _eof = true;
-        LOG(ERROR) << "kafka_consumer topic:" << _topic << ":" << _partition << ", consume failed: " << msg->errstr();
+        eof_ = true;
+        LOG(ERROR) << "kafka_consumer topic:" << topic_ << ":" << partition_ << ", consume failed: " << msg->errstr();
         break;
 
       default:
         /* Errors */
-        _eof = true;
-        LOG(ERROR) << "kafka_consumer topic:" << _topic << ":" << _partition << ", consume failed: " << msg->errstr();
+        eof_ = true;
+        LOG(ERROR) << "kafka_consumer topic:" << topic_ << ":" << partition_ << ", consume failed: " << msg->errstr();
     }
     return nullptr;
   }
@@ -239,35 +242,40 @@ namespace kspp {
     // you should actually write offset + 1, since a new consumer will start at offset.
     offset = offset + 1;
 
-    if (offset <= _last_committed) // already done
+    if (offset <= last_committed_) // already done
     {
       return 0;
     }
 
-    if (_closed || _consumer == nullptr) {
-      LOG(ERROR) << "kafka_consumer topic:" << _topic << ":" << _partition << ", consumer group: " << _consumer_group << ", commit on closed consumer, lost " << offset - _last_committed << " messsages";
+    if (closed_ || consumer_ == nullptr) {
+      LOG(ERROR) << "kafka_consumer topic:" << topic_ << ":" << partition_ << ", consumer group: " << consumer_group_
+                 << ", commit on closed consumer, lost " << offset - last_committed_ << " messsages";
       return -1; // already closed
     }
 
-    _can_be_committed = offset;
+    can_be_committed_ = offset;
     RdKafka::ErrorCode ec = RdKafka::ERR_NO_ERROR;
     if (flush) {
-      LOG(INFO) << "kafka_consumer topic:" << _topic << ":" << _partition << ", consumer group: " << _consumer_group << ", commiting(flush) offset:" << _can_be_committed;
-      _topic_partition[0]->set_offset(_can_be_committed);
-      ec = _consumer->commitSync(_topic_partition);
+      LOG(INFO) << "kafka_consumer topic:" << topic_ << ":" << partition_ << ", consumer group: " << consumer_group_
+                << ", commiting(flush) offset:" << can_be_committed_;
+      topic_partition_[0]->set_offset(can_be_committed_);
+      ec = consumer_->commitSync(topic_partition_);
       if (ec == RdKafka::ERR_NO_ERROR) {
-        _last_committed = _can_be_committed;
+        last_committed_ = can_be_committed_;
       } else {
-        LOG(ERROR) << "kafka_consumer topic:" << _topic << ":" << _partition << ", consumer group: " << _consumer_group <<  ", failed to commit, reason:" << RdKafka::err2str(ec);
+        LOG(ERROR) << "kafka_consumer topic:" << topic_ << ":" << partition_ << ", consumer group: " << consumer_group_
+                   << ", failed to commit, reason:" << RdKafka::err2str(ec);
       }
-    } else if ((int64_t) (_last_committed + _max_pending_commits) < _can_be_committed) {
-      DLOG(INFO) << "kafka_consumer topic:" << _topic << ":" << _partition << ", consumer group: " << _consumer_group << ", lazy commit: offset:" << _can_be_committed;
-      _topic_partition[0]->set_offset(_can_be_committed);
-      ec = _consumer->commitAsync(_topic_partition);
+    } else if ((int64_t) (last_committed_ + max_pending_commits_) < can_be_committed_) {
+      DLOG(INFO) << "kafka_consumer topic:" << topic_ << ":" << partition_ << ", consumer group: " << consumer_group_
+                 << ", lazy commit: offset:" << can_be_committed_;
+      topic_partition_[0]->set_offset(can_be_committed_);
+      ec = consumer_->commitAsync(topic_partition_);
       if (ec == RdKafka::ERR_NO_ERROR) {
-        _last_committed = _can_be_committed; // not done yet but promised to be written on close...
+        last_committed_ = can_be_committed_; // not done yet but promised to be written on close...
       } else {
-        LOG(ERROR) << "kafka_consumer topic:" << _topic << ":" << _partition << ", consumer group: " << _consumer_group << ", failed to commit, reason:" << RdKafka::err2str(ec);
+        LOG(ERROR) << "kafka_consumer topic:" << topic_ << ":" << partition_ << ", consumer group: " << consumer_group_
+                   << ", failed to commit, reason:" << RdKafka::err2str(ec);
       }
     }
     return ec;
@@ -298,12 +306,14 @@ namespace kspp {
         std::this_thread::sleep_for(1s);
       }
 
-      err = rd_kafka_list_groups(_consumer->c_ptr(), consumer_group.c_str(), &grplist, 1000);
+      err = rd_kafka_list_groups(consumer_->c_ptr(), consumer_group.c_str(), &grplist, 1000);
 
-      DLOG_IF(INFO, err!=0) << "rd_kafka_list_groups: " << consumer_group.c_str() << ", res: " << err;
-      DLOG_IF(INFO, err==0) << "rd_kafka_list_groups: " << consumer_group.c_str() << ", res: OK" << " grplist->group_cnt: "
-                            << grplist->group_cnt;
-    } while (err == RD_KAFKA_RESP_ERR__TRANSPORT || err == RD_KAFKA_RESP_ERR_GROUP_LOAD_IN_PROGRESS || err == RD_KAFKA_RESP_ERR__PARTIAL);
+      DLOG_IF(INFO, err != 0) << "rd_kafka_list_groups: " << consumer_group.c_str() << ", res: " << err;
+      DLOG_IF(INFO, err == 0)
+              << "rd_kafka_list_groups: " << consumer_group.c_str() << ", res: OK" << " grplist->group_cnt: "
+              << grplist->group_cnt;
+    } while (err == RD_KAFKA_RESP_ERR__TRANSPORT || err == RD_KAFKA_RESP_ERR_GROUP_LOAD_IN_PROGRESS ||
+             err == RD_KAFKA_RESP_ERR__PARTIAL);
 
     if (err) {
       LOG(ERROR) << "failed to retrieve groups, ec: " << rd_kafka_err2str(err);

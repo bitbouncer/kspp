@@ -76,7 +76,7 @@ namespace kspp {
 
   std::string to_string(std::set<std::string> v) {
     std::string s = "[";
-    size_t count=0;
+    size_t count = 0;
     for (auto i = v.begin(); i != v.end(); ++i, ++count)
       s += *i + ((count != v.size() - 1) ? ", " : "]");
     return s;

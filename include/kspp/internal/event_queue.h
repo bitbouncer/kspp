@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <kspp/utils/spinlock.h>
 #include <kspp/kevent.h>
+
 #pragma once
 
 namespace kspp {
@@ -82,7 +83,7 @@ namespace kspp {
     inline void pop_back() {
       spinlock::scoped_lock xxx(_spinlock);
       {
-        _queue[_queue.size()-1].reset();
+        _queue[_queue.size() - 1].reset();
         _queue.pop_back();
         if (_queue.size() == 0)
           _next_event_time = INT64_MAX;

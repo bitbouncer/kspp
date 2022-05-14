@@ -12,12 +12,12 @@ struct record {
 };
 
 static std::vector<record> test_data =
-        {
-                {"k0", "v0"},
-                {"k1", "v1"},
-                {"k2", "v2"},
-                {"k3", "v3"}
-        };
+    {
+        {"k0", "v0"},
+        {"k1", "v1"},
+        {"k2", "v2"},
+        {"k3", "v3"}
+    };
 
 int main(int argc, char **argv) {
   FLAGS_logtostderr = 1;
@@ -57,7 +57,7 @@ int main(int argc, char **argv) {
 
     // produce some
     {
-      for (auto i : test_data) {
+      for (auto i: test_data) {
         int ec = producer.produce(0, kspp::kafka_producer::COPY, (void *) i.key.data(), i.key.size(),
                                   (void *) i.value.data(), i.value.size(), timestamp0, nullptr);
         LOG_IF(FATAL, ec) << ", failed to produce, reason:" << RdKafka::err2str((RdKafka::ErrorCode) ec);
@@ -111,9 +111,9 @@ int main(int argc, char **argv) {
 
       {
         // produce some
-        for (auto i : test_data) {
+        for (auto i: test_data) {
           producer.produce(0, kspp::kafka_producer::COPY, (void *) i.key.data(), i.key.size(),
-                                    (void *) i.value.data(), i.value.size(), timestamp2, nullptr);
+                           (void *) i.value.data(), i.value.size(), timestamp2, nullptr);
         }
         assert(producer.flush(1000) == 0);
       }
@@ -203,9 +203,9 @@ int main(int argc, char **argv) {
 
     // produce some
     {
-      for (auto i : test_data) {
+      for (auto i: test_data) {
         producer.produce(0, kspp::kafka_producer::COPY, (void *) i.key.data(), i.key.size(),
-                                  (void *) i.value.data(), i.value.size(), timestamp3, nullptr);
+                         (void *) i.value.data(), i.value.size(), timestamp3, nullptr);
       }
       assert(producer.flush(1000) == 0);
     }

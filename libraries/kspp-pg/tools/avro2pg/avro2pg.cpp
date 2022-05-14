@@ -10,6 +10,7 @@
 #include <kspp/utils/string_utils.h>
 #include <nlohmann/json.hpp>
 #include <kspp-pg/postgres_generic_avro_sink.h>
+
 #define SERVICE_NAME "avro2pg"
 
 using namespace std::chrono_literals;
@@ -24,8 +25,8 @@ static void sigterm(int sig) {
   run = false;
 }
 
-void assign_record_members(const kspp::generic_avro::generic_record& src, kspp::generic_avro::generic_record& dst){
-  for (auto i : dst.members()){
+void assign_record_members(const kspp::generic_avro::generic_record &src, kspp::generic_avro::generic_record &dst) {
+  for (auto i: dst.members()) {
     //virtual size_t schema().names() const = 0;
     //virtual const std::string &nameAt(int index) const = 0;
     dst.set<std::string>(i, src.get<std::string>(i));
@@ -38,18 +39,26 @@ int main(int argc, char **argv) {
 
   boost::program_options::options_description desc("options");
   desc.add_options()
-    ("help", "produce help message")
-    ("src", boost::program_options::value<std::string>(), "src")
-    ("postgres_host", boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_HOST")), "postgres_host")
-    ("postgres_port", boost::program_options::value<int32_t>()->default_value(5432), "postgres_port")
-    ("postgres_user", boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_USER")),"postgres_user")
-    ("postgres_password", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("POSTGRES_PASSWORD")),"postgres_password")
-    ("postgres_dbname", boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_DBNAME")),"postgres_dbname")
-    ("postgres_table_name", boost::program_options::value<std::string>(), "postgres_table_name")
-    ("postgres_max_items_in_insert", boost::program_options::value<int32_t>()->default_value(5000), "postgres_max_items_in_insert")
-    ("postgres_warning_timeout", boost::program_options::value<int32_t>()->default_value(1000),"postgres_warning_timeout")
-    ("keys", boost::program_options::value<std::string>(), "keys")
-    ("character_encoding", boost::program_options::value<std::string>()->default_value("UTF8"), "character_encoding");
+      ("help", "produce help message")
+      ("src", boost::program_options::value<std::string>(), "src")
+      ("postgres_host", boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_HOST")),
+       "postgres_host")
+      ("postgres_port", boost::program_options::value<int32_t>()->default_value(5432), "postgres_port")
+      ("postgres_user", boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_USER")),
+       "postgres_user")
+      ("postgres_password",
+       boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("POSTGRES_PASSWORD")),
+       "postgres_password")
+      ("postgres_dbname",
+       boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_DBNAME")),
+       "postgres_dbname")
+      ("postgres_table_name", boost::program_options::value<std::string>(), "postgres_table_name")
+      ("postgres_max_items_in_insert", boost::program_options::value<int32_t>()->default_value(5000),
+       "postgres_max_items_in_insert")
+      ("postgres_warning_timeout", boost::program_options::value<int32_t>()->default_value(1000),
+       "postgres_warning_timeout")
+      ("keys", boost::program_options::value<std::string>(), "keys")
+      ("character_encoding", boost::program_options::value<std::string>()->default_value("UTF8"), "character_encoding");
 
   boost::program_options::variables_map vm;
   boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
@@ -166,7 +175,6 @@ int main(int argc, char **argv) {
   connection_params.database_name = postgres_dbname;
 
 
-
   auto key_schema = std::make_shared<avro::ValidSchema>();
   {
     json j;
@@ -174,7 +182,7 @@ int main(int argc, char **argv) {
     j["name"] = "pg_keys";
     j["fields"] = json::array();
 
-    for (auto i : keys) {
+    for (auto i: keys) {
       json column;
       column["name"] = i;
       column["type"] = "string";
@@ -202,13 +210,15 @@ int main(int argc, char **argv) {
   auto topology = builder.create_topology();
   auto source0 = topology->create_processors<kspp::generic_avro_file_source>({0}, src);
   auto transform = topology->create_processors<kspp::flat_map<void, kspp::generic_avro, kspp::generic_avro, kspp::generic_avro>>(
-    source0, [&key_datum](const kspp::krecord<void, kspp::generic_avro>& in, auto self) {
-      auto key = key_datum.mutable_record();
-      assign_record_members(in.value()->record(), key);
-      insert(self, key_datum, *in.value());
-    });
+      source0, [&key_datum](const kspp::krecord<void, kspp::generic_avro> &in, auto self) {
+        auto key = key_datum.mutable_record();
+        assign_record_members(in.value()->record(), key);
+        insert(self, key_datum, *in.value());
+      });
 
-  topology->create_sink<kspp::postgres_generic_avro_sink>(transform, postgres_table_name, connection_params, keys, character_encoding, postgres_max_items_in_insert, postgres_disable_delete);
+  topology->create_sink<kspp::postgres_generic_avro_sink>(transform, postgres_table_name, connection_params, keys,
+                                                          character_encoding, postgres_max_items_in_insert,
+                                                          postgres_disable_delete);
   topology->start(start_offset);
 
   std::signal(SIGINT, sigterm);

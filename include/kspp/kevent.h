@@ -3,6 +3,7 @@
 #include <memory>
 #include <functional>
 #include <kspp/krecord.h>
+
 #pragma once
 
 namespace kspp {
@@ -10,47 +11,43 @@ namespace kspp {
   public:
     // init when you know the offset right away
     event_done_marker(int64_t offset, std::function<void(int64_t offset, int32_t ec)> callback)
-        : _offset(offset)
-        , _ec(0)
-        , _cb(callback) {
+        : offset_(offset), cb_(callback) {
     }
 
     // two step init - used in commit chain
     //
     event_done_marker(std::function<void(int64_t offset, int32_t ec)> callback)
-        : _offset(-1)
-        , _ec(0)
-        , _cb(callback) {
+        : offset_(-1), cb_(callback) {
     }
 
     void init(int64_t offset) {
-      _offset = offset;
+      offset_ = offset;
     }
 
 
-    virtual ~event_done_marker(){
-      if (_cb) // allow nullptr callback
-        _cb(_offset, _ec);
+    virtual ~event_done_marker() {
+      if (cb_) // allow nullptr callback
+        cb_(offset_, ec_);
     }
 
     inline int64_t offset() const {
-      return _offset;
+      return offset_;
     }
 
     inline int32_t ec() const {
-      return _ec;
+      return ec_;
     }
 
     inline void fail(int32_t ec) {
       if (ec)
-        _ec = ec;
+        ec_ = ec;
     }
 
 
   protected:
-    int64_t _offset;
-    int32_t _ec;
-    std::function<void(int64_t offset, int32_t ec)> _cb;
+    int64_t offset_;
+    int32_t ec_=0;
+    std::function<void(int64_t offset, int32_t ec)> cb_;
   };
 
 
@@ -58,15 +55,11 @@ namespace kspp {
   class kevent {
   public:
     kevent(std::shared_ptr<const krecord<K, V>> r, std::shared_ptr<event_done_marker> marker = nullptr)
-        : record_(r)
-        , event_done_marker_(marker)
-        , partition_hash_(-1) {
+        : record_(r), event_done_marker_(marker), partition_hash_(-1) {
     }
 
     kevent(std::shared_ptr<const krecord<K, V>> r, std::shared_ptr<event_done_marker> marker, uint32_t partition_hash)
-        : record_(r)
-        , event_done_marker_(marker)
-        , partition_hash_(partition_hash) {
+        : record_(r), event_done_marker_(marker), partition_hash_(partition_hash) {
     }
 
     inline int64_t event_time() const {

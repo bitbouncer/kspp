@@ -32,10 +32,10 @@
 #  AVRO_LIBRARIES          The Avro C++ libraries
 #  AVRO_INCLUDE_DIRS       The location of Avro C++ headers
 
-message ("\nLooking for Avro C++ headers and libraries")
+message("\nLooking for Avro C++ headers and libraries")
 
 if (AVRO_ROOT_DIR)
-    message (STATUS "Root dir: ${AVRO_ROOT_DIR}")
+    message(STATUS "Root dir: ${AVRO_ROOT_DIR}")
 endif ()
 
 find_package(PkgConfig)
@@ -54,9 +54,9 @@ find_path(AVRO_INCLUDE_DIR
         )
 
 if (AVRO_LINK_STATIC)
-    set (AVRO_LOOK_FOR_LIB_NAMES avrocpp_s avrocpp)
+    set(AVRO_LOOK_FOR_LIB_NAMES avrocpp_s avrocpp)
 else ()
-    set (AVRO_LOOK_FOR_LIB_NAMES avrocpp)
+    set(AVRO_LOOK_FOR_LIB_NAMES avrocpp)
 endif ()
 
 find_library(AVRO_LIBRARY
@@ -89,6 +89,6 @@ if (AVRO_FOUND)
 
     mark_as_advanced(AVRO_LIBRARY_DIR AVRO_LIBRARY_NAME)
 
-    message (STATUS "Include directories: ${AVRO_INCLUDE_DIRS}")
-    message (STATUS "Libraries: ${AVRO_LIBRARIES}")
+    message(STATUS "Include directories: ${AVRO_INCLUDE_DIRS}")
+    message(STATUS "Libraries: ${AVRO_LIBRARIES}")
 endif ()

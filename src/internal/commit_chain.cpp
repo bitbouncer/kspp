@@ -10,10 +10,10 @@ namespace kspp {
     //_cb(_offset, _ec);
     //now we could delete everting that is waiting for us - but if this is 100k objects the callstack is kind of large and we will segfault
     //so we check if we're the last holder of next - if so let someone else delete next object
-    if (_next.use_count()==1){
-      if (_next)
-        s_pending_delete.push_back(_next);
-      _next.reset();
+    if (next_.use_count() == 1) {
+      if (next_)
+        s_pending_delete.push_back(next_);
+      next_.reset();
     }
   }
 
@@ -23,24 +23,24 @@ namespace kspp {
   }
 
   commit_chain::commit_chain(std::string topic, int32_t partition)
-          : _topic(topic), _partition(partition), _size(0), _last_good_offset(-1), _first_ec(0),
-            _next(std::make_shared<autocommit_marker>([this](int64_t offset, int32_t ec) {
-              handle_result(offset, ec);
-            })) {
+      : topic_(topic), partition_(partition), size_(0), last_good_offset_(-1), first_ec_(0),
+        next_(std::make_shared<autocommit_marker>([this](int64_t offset, int32_t ec) {
+          handle_result(offset, ec);
+        })) {
   }
 
   std::shared_ptr<commit_chain::autocommit_marker> commit_chain::create(int64_t offset) {
-    spinlock::scoped_lock xxx(_spinlock);
+    spinlock::scoped_lock xxx(spinlock_);
     {
-      ++_size;
+      ++size_;
     }
     auto next = std::make_shared<autocommit_marker>([this](int64_t offset, int32_t ec) {
       handle_result(offset, ec);
     });
 
-    _next->init(offset, next);
-    auto res = _next;
-    _next = next;
+    next_->init(offset, next);
+    auto res = next_;
+    next_ = next;
     return res;
   }
 
@@ -48,17 +48,17 @@ namespace kspp {
 // fatal as below or just a warning and skip?
   void commit_chain::handle_result(int64_t offset, int32_t ec) {
     if (offset >= 0) { // the "next" object with -1 is invalid
-      if (_first_ec) // we never continue after first failure
+      if (first_ec_) // we never continue after first failure
         return;
       if (!ec) {
-        spinlock::scoped_lock xxx(_spinlock);
+        spinlock::scoped_lock xxx(spinlock_);
         {
-          --_size;
+          --size_;
         }
-        _last_good_offset = offset;
+        last_good_offset_ = offset;
       } else {
-        _first_ec = ec;
-        LOG(FATAL) << "commit_chain failed, topic " << _topic << ":" << _partition
+        first_ec_ = ec;
+        LOG(FATAL) << "commit_chain failed, topic " << topic_ << ":" << partition_
                    << ", failure at offset:" << offset << ", ec:" << ec;
       }
     }

@@ -3,7 +3,6 @@
 #include <chrono>
 #include <memory>
 #include <glog/logging.h>
-#include <boost/bind.hpp>
 #include <kspp-pg/postgres_avro_utils.h>
 
 using namespace std::chrono_literals;
@@ -19,14 +18,15 @@ namespace kspp {
     return "";
   }
 
-postgres_read_cursor::postgres_read_cursor(kspp::connect::table_params tp, std::string id_column, std::string ts_column)
+  postgres_read_cursor::postgres_read_cursor(kspp::connect::table_params tp, std::string id_column,
+                                             std::string ts_column)
       : tp_(tp)
       , id_column_(id_column)
       , ts_column_(ts_column)
       , order_by_(__order_by(ts_column_, id_column_))
       , ts_multiplier_(tp.ts_multiplier)
-      , ts_utc_offset_(tp.ts_utc_offset){
-    assert(ts_multiplier_>=1);
+      , ts_utc_offset_(tp.ts_utc_offset) {
+    assert(ts_multiplier_ >= 1);
   }
 
   void postgres_read_cursor::init(std::shared_ptr<PGresult> result) {
@@ -90,7 +90,7 @@ postgres_read_cursor::postgres_read_cursor(kspp::connect::table_params tp, std::
         return "" + order_by_;
     } else {
       return " WHERE (" + ts_column_ + " = '" + last_ts_ + "' AND " + id_column_ + " > '" + last_id_ + "') OR (" +
-          ts_column_ + " > '" + last_ts_ + "') " + order_by_;
+             ts_column_ + " > '" + last_ts_ + "') " + order_by_;
     }
   }
 }

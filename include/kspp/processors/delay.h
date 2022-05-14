@@ -1,17 +1,17 @@
 #include <kspp/kspp.h>
+
 #pragma once
 namespace kspp {
   template<class K, class V>
   class delay : public event_consumer<K, V>, public partition_source<K, V> {
-    static constexpr const char* PROCESSOR_NAME = "delay";
+    static constexpr const char *PROCESSOR_NAME = "delay";
   public:
-    typedef std::function<bool(std::shared_ptr < kevent < K, V >> record)> predicate; // return true to keep
+    typedef std::function<bool(std::shared_ptr<kevent<K, V >> record)> predicate; // return true to keep
 
-    delay(std::shared_ptr<cluster_config> config, std::shared_ptr <partition_source<K, V>> source, std::chrono::milliseconds delaytime)
-        : event_consumer<K, V>()
-        , partition_source<K, V>(source.get(), source->partition())
-        , source_(source)
-        , delay_(delaytime.count()) {
+    delay(std::shared_ptr<cluster_config> config, std::shared_ptr<partition_source<K, V>> source,
+          std::chrono::milliseconds delaytime)
+        : event_consumer<K, V>(), partition_source<K, V>(source.get(), source->partition()), source_(source),
+          delay_(delaytime.count()) {
       source_->add_sink([this](auto r) { this->_queue.push_back(r); });
       this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "delay");
       this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(source->partition()));
@@ -36,8 +36,8 @@ namespace kspp {
     size_t process(int64_t tick) override {
       source_->process(tick);
 
-      size_t processed=0;
-      while (this->_queue.next_event_time()<=tick) {
+      size_t processed = 0;
+      while (this->_queue.next_event_time() <= tick) {
         auto r = this->_queue.front();
         if (r->event_time() + delay_ <= tick) {
           this->_lag.add_event_time(tick, r->event_time());
@@ -64,12 +64,12 @@ namespace kspp {
       return event_consumer<K, V>::next_event_time();
     }
 
-    bool eof() const override  {
+    bool eof() const override {
       return ((queue_size() == 0) && source_->eof());
     }
 
   private:
-    std::shared_ptr <partition_source<K, V>> source_;
+    std::shared_ptr<partition_source<K, V>> source_;
     int delay_;
   };
 } // namespace

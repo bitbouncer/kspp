@@ -32,12 +32,16 @@ int main(int argc, char **argv) {
   boost::program_options::options_description desc("options");
   desc.add_options()
       ("help", "produce help message")
-      ("app_realm", boost::program_options::value<std::string>()->default_value(get_env_and_log("APP_REALM", "DEV")), "app_realm")
+      ("app_realm", boost::program_options::value<std::string>()->default_value(get_env_and_log("APP_REALM", "DEV")),
+       "app_realm")
       ("db_host", boost::program_options::value<std::string>()->default_value(get_env_and_log("DB_HOST")), "db_host")
       ("db_port", boost::program_options::value<int32_t>()->default_value(5432), "db_port")
       ("db_user", boost::program_options::value<std::string>()->default_value(get_env_and_log("DB_USER")), "db_user")
-      ("db_password", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("DB_PASSWORD")), "db_password")
-      ("db_dbname", boost::program_options::value<std::string>()->default_value(get_env_and_log("DB_DBNAME")), "db_dbname")
+      ("db_password",
+       boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("DB_PASSWORD")),
+       "db_password")
+      ("db_dbname", boost::program_options::value<std::string>()->default_value(get_env_and_log("DB_DBNAME")),
+       "db_dbname")
       ("id_column", boost::program_options::value<std::string>()->default_value(""), "id_column")
       ("timestamp_column", boost::program_options::value<std::string>()->default_value(""), "timestamp_column")
       ("timestamp_unit", boost::program_options::value<std::string>(), "timestamp_unit")
@@ -53,10 +57,13 @@ int main(int argc, char **argv) {
       ("start_offset", boost::program_options::value<std::string>()->default_value("OFFSET_BEGINNING"), "start_offset")
       ("offset_storage", boost::program_options::value<std::string>()->default_value(""), "offset_storage")
       ("filename", boost::program_options::value<std::string>(), "filename")
-      ("metrics_namespace", boost::program_options::value<std::string>()->default_value(get_env_and_log("METRICS_NAMESPACE", "bb")),"metrics_namespace")
-      ("purge_topic", boost::program_options::value<std::string>()->default_value(get_env_and_log("PURGE_TOPIC", "false")),"purge_topic")
-      ("oneshot", "run to eof and exit")
-      ;
+      ("metrics_namespace",
+       boost::program_options::value<std::string>()->default_value(get_env_and_log("METRICS_NAMESPACE", "bb")),
+       "metrics_namespace")
+      ("purge_topic",
+       boost::program_options::value<std::string>()->default_value(get_env_and_log("PURGE_TOPIC", "false")),
+       "purge_topic")
+      ("oneshot", "run to eof and exit");
 
   boost::program_options::variables_map vm;
   boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
@@ -152,10 +159,10 @@ int main(int argc, char **argv) {
   if (vm.count("codec")) {
     codec = vm["codec"].as<std::string>();
 
-    if (codec == "avro" || codec == "text"){
+    if (codec == "avro" || codec == "text") {
       //OK
     } else {
-      std::cerr << "codec must be text or avro"  << std::endl;
+      std::cerr << "codec must be text or avro" << std::endl;
       return -1;
     }
   }
@@ -164,23 +171,23 @@ int main(int argc, char **argv) {
   if (vm.count("val_column")) {
     val_column = vm["val_column"].as<std::string>();
 
-    if (val_column.size()>0 && codec!="text") {
+    if (val_column.size() > 0 && codec != "text") {
       std::cerr << "--val_column only valid for --codec=text" << std::endl;
       return -1;
     }
 
-    if (val_column.size()==0 && codec=="text") {
+    if (val_column.size() == 0 && codec == "text") {
       std::cerr << "--val_column required for codec=text" << std::endl;
       return -1;
     }
   }
 
-  if (table.size()==0 && query.size()==0){
+  if (table.size() == 0 && query.size() == 0) {
     std::cerr << "--table or --query must be specified";
     return -1;
   }
 
-  if (query.size()==0){
+  if (query.size() == 0) {
     query = "SELECT * FROM " + table;
   } else {
   }
@@ -209,12 +216,12 @@ int main(int argc, char **argv) {
     offset_storage = config->get_storage_root() + "/import-" + topic + ".offset";
   }
 
-  kspp::start_offset_t start_offset=kspp::OFFSET_BEGINNING;
+  kspp::start_offset_t start_offset = kspp::OFFSET_BEGINNING;
   try {
     if (vm.count("start_offset"))
       start_offset = kspp::to_offset(vm["start_offset"].as<std::string>());
   }
-  catch(std::exception& e) {
+  catch (std::exception &e) {
     std::cerr << "start_offset must be one of OFFSET_BEGINNING / OFFSET_END / OFFSET_STORED";
     return -1;
   }
@@ -231,15 +238,15 @@ int main(int argc, char **argv) {
       purge_topic = true;
   }
 
-  bool oneshot=false;
+  bool oneshot = false;
   if (vm.count("oneshot"))
-    oneshot=true;
+    oneshot = true;
 
   config->set_producer_buffering_time(1000ms);
   config->set_consumer_buffering_time(500ms);
   config->validate();
   config->log();
-  auto s= config->avro_serdes();
+  auto s = config->avro_serdes();
 
   LOG(INFO) << "app_realm          : " << app_realm;
   LOG(INFO) << "db_host            : " << db_host;
@@ -281,21 +288,22 @@ int main(int argc, char **argv) {
   table_params.poll_intervall = std::chrono::seconds(poll_intervall);
   table_params.max_items_in_fetch = max_items_in_fetch;
   table_params.offset_storage = offset_storage;
-  table_params.ts_multiplier=timetamp_multiplier;
+  table_params.ts_multiplier = timetamp_multiplier;
 
   if (filename.size()) {
-     LOG(INFO) << "using avro file..";
+    LOG(INFO) << "using avro file..";
     LOG(INFO) << "filename                   : " << filename;
   }
 
   LOG(INFO) << "discovering facts...";
 
-  if (purge_topic){
+  if (purge_topic) {
     auto nr_of_partitions = kspp::kafka::get_number_partitions(config, topic);
     auto partition_list = kspp::get_partition_list(nr_of_partitions);
     kspp::topology_builder builder(config);
     auto topology1 = builder.create_topology();
-    auto source1 = topology1->create_processors<kspp::kafka_source<kspp::generic_avro, void, kspp::avro_serdes, void>>(partition_list, topic, config->avro_serdes());
+    auto source1 = topology1->create_processors<kspp::kafka_source<kspp::generic_avro, void, kspp::avro_serdes, void>>(
+        partition_list, topic, config->avro_serdes());
     std::vector<std::shared_ptr<const kspp::krecord<kspp::generic_avro, void>>> buffer;
     auto sink1 = topology1->create_sink<kspp::array_topic_sink<kspp::generic_avro, void>>(source1, &buffer);
     topology1->start(kspp::OFFSET_BEGINNING);
@@ -303,9 +311,10 @@ int main(int argc, char **argv) {
     LOG(INFO) << "at EOF, buffer.size() " << buffer.size();
     auto topology2 = builder.create_topology();
     auto source2 = topology2->create_processor<kspp::mem_stream_source<kspp::generic_avro, void>>(0);
-    topology2->create_sink<kspp::kafka_sink<kspp::generic_avro, void, kspp::avro_serdes, void>>(source2, topic, config->avro_serdes());
+    topology2->create_sink<kspp::kafka_sink<kspp::generic_avro, void, kspp::avro_serdes, void>>(source2, topic,
+                                                                                                config->avro_serdes());
 
-    for(auto i : buffer)
+    for (auto i: buffer)
       source2->push_back(i);
     buffer.clear();
     topology2->start(kspp::OFFSET_BEGINNING);
@@ -316,40 +325,45 @@ int main(int argc, char **argv) {
   kspp::topology_builder builder(config);
   auto topology = builder.create_topology();
   std::string query_name = topic;
-  auto source0 = topology->create_processors<kspp::postgres_generic_avro_source>({0}, query_name, connection_params, table_params, query, id_column, timestamp_column, config->get_schema_registry());
+  auto source0 = topology->create_processors<kspp::postgres_generic_avro_source>({0}, query_name, connection_params,
+                                                                                 table_params, query, id_column,
+                                                                                 timestamp_column,
+                                                                                 config->get_schema_registry());
 
   if (filename.size()) {
     //topology->create_sink<kspp::avro_file_sink>(source0, "/tmp/" + topic + ".avro");
   } else {
-    if (codec == "avro"){
-    topology->create_sink<kspp::kafka_sink<kspp::generic_avro, kspp::generic_avro, kspp::avro_serdes, kspp::avro_serdes>>(source0, topic, config->avro_serdes(), config->avro_serdes());
-  } else if (codec == "text" ){
-      auto extracted= topology->create_processors<kspp::flat_map<kspp::generic_avro, kspp::generic_avro, std::string, std::string>>(
+    if (codec == "avro") {
+      topology->create_sink<kspp::kafka_sink<kspp::generic_avro, kspp::generic_avro, kspp::avro_serdes, kspp::avro_serdes>>(
+          source0, topic, config->avro_serdes(), config->avro_serdes());
+    } else if (codec == "text") {
+      auto extracted = topology->create_processors<kspp::flat_map<kspp::generic_avro, kspp::generic_avro, std::string, std::string>>(
           source0,
           [id_column, val_column](const auto record, auto stream) {
-          std::string key = *record.key().record().get_optional_as_string(id_column);
-            if (record.value()==nullptr){
+            std::string key = *record.key().record().get_optional_as_string(id_column);
+            if (record.value() == nullptr) {
               erase(stream, key);
-          //TODO
-        } else {
-          auto val = record.value()->record().get_optional_as_string(val_column);
-          if (val)
-            insert(stream, key, *val);
-          else
-            erase(stream, key);
-        }
-      });
-      topology->create_sink<kspp::kafka_sink<std::string, std::string, kspp::text_serdes, kspp::text_serdes>>(extracted, topic);
+              //TODO
+            } else {
+              auto val = record.value()->record().get_optional_as_string(val_column);
+              if (val)
+                insert(stream, key, *val);
+              else
+                erase(stream, key);
+            }
+          });
+      topology->create_sink<kspp::kafka_sink<std::string, std::string, kspp::text_serdes, kspp::text_serdes>>(extracted,
+                                                                                                              topic);
     }
   }
 
-  topology->add_labels( {
-                            { "app_name", SERVICE_NAME },
-                            { "app_realm", app_realm },
-                            { "hostname", default_hostname() },
-                            { "db_host", db_host },
-                            { "dst_topic", topic }
-                        });
+  topology->add_labels({
+                           {"app_name", SERVICE_NAME},
+                           {"app_realm", app_realm},
+                           {"hostname",  default_hostname()},
+                           {"db_host",   db_host},
+                           {"dst_topic", topic}
+                       });
 
   topology->start(start_offset);
 
@@ -359,12 +373,14 @@ int main(int argc, char **argv) {
 
   LOG(INFO) << "status is up";
   {
-    auto metrics_reporter = std::make_shared<kspp::prometheus_pushgateway_reporter>(metrics_namespace, config->get_pushgateway_uri()) << topology;
+    auto metrics_reporter =
+        std::make_shared<kspp::prometheus_pushgateway_reporter>(metrics_namespace, config->get_pushgateway_uri())
+            << topology;
     while (run) {
       if (topology->process(kspp::milliseconds_since_epoch()) == 0) {
         std::this_thread::sleep_for(10ms);
         topology->commit(false);
-        if (oneshot && topology->eof()){
+        if (oneshot && topology->eof()) {
           LOG(INFO) << "at eof - flushing";
           topology->flush(true);
           LOG(INFO) << "at eof - exiting";

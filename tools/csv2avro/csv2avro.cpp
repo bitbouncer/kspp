@@ -17,20 +17,17 @@
 
 const std::string WHITESPACE = " \n\r\t\f\v";
 
-std::string ltrim(const std::string& s)
-{
+std::string ltrim(const std::string &s) {
   size_t start = s.find_first_not_of(WHITESPACE);
   return (start == std::string::npos) ? "" : s.substr(start);
 }
 
-std::string rtrim(const std::string& s)
-{
+std::string rtrim(const std::string &s) {
   size_t end = s.find_last_not_of(WHITESPACE);
   return (end == std::string::npos) ? "" : s.substr(0, end + 1);
 }
 
-std::string trim(const std::string& s)
-{
+std::string trim(const std::string &s) {
   return rtrim(ltrim(s));
 }
 
@@ -65,7 +62,7 @@ static std::string replace_space(std::string s) {
 }
 
 static std::map<std::string, std::string> s_translation = {
-  { "table", "_table_" }
+    {"table", "_table_"}
 };
 
 static std::string translate_forbidden_keywords(std::string s) {
@@ -75,7 +72,7 @@ static std::string translate_forbidden_keywords(std::string s) {
   return s;
 }
 
-static std::string sanitize_column_name(std::string s){
+static std::string sanitize_column_name(std::string s) {
   s = trim(s);
   s = to_lower(s);
   s = replace_space(s);
@@ -92,31 +89,39 @@ enum class CSVState {
 
 static std::vector<std::string> parseCSVRow(const std::string &row) {
   CSVState state = CSVState::UnquotedField;
-  std::vector<std::string> fields {""};
+  std::vector<std::string> fields{""};
   size_t i = 0; // index of the current field
-  for (char c : row) {
+  for (char c: row) {
     switch (state) {
       case CSVState::UnquotedField:
         switch (c) {
           case ',': // end of field
-            fields.push_back(""); i++;
+            fields.push_back("");
+            i++;
             break;
-          case '"': state = CSVState::QuotedField;
+          case '"':
+            state = CSVState::QuotedField;
             break;
-          default:  fields[i].push_back(c);
-            break; }
+          default:
+            fields[i].push_back(c);
+            break;
+        }
         break;
       case CSVState::QuotedField:
         switch (c) {
-          case '"': state = CSVState::QuotedQuote;
+          case '"':
+            state = CSVState::QuotedQuote;
             break;
-          default:  fields[i].push_back(c);
-            break; }
+          default:
+            fields[i].push_back(c);
+            break;
+        }
         break;
       case CSVState::QuotedQuote:
         switch (c) {
           case ',': // , after closing quote
-            fields.push_back(""); i++;
+            fields.push_back("");
+            i++;
             state = CSVState::UnquotedField;
             break;
           case '"': // "" -> "
@@ -125,27 +130,29 @@ static std::vector<std::string> parseCSVRow(const std::string &row) {
             break;
           default:  // end of quote
             state = CSVState::UnquotedField;
-            break; }
+            break;
+        }
         break;
     }
   }
   //cleanup leading or trailing whitespaces
-  if (fields.size()){
+  if (fields.size()) {
     fields[0] = trim(fields[0]);
-    fields[fields.size()-1] = trim(fields[fields.size()-1]);
+    fields[fields.size() - 1] = trim(fields[fields.size() - 1]);
   }
 
   return fields;
 }
 
-void set_member(avro::GenericRecord& record, std::string member, std::string value){
+void set_member(avro::GenericRecord &record, std::string member, std::string value) {
   /*if (!record.hasField(member))
     // trow
   */
   avro::GenericDatum &column = record.field(member);
-  if (column.isUnion()){
+  if (column.isUnion()) {
     column.selectBranch(1);
-    assert(column.type() == avro::AVRO_STRING); // here we can make a switch on column type and probably assign right from beginning
+    assert(column.type() ==
+           avro::AVRO_STRING); // here we can make a switch on column type and probably assign right from beginning
     column.value<std::string>() = value;
   } else {
     column.value<std::string>() = value;
@@ -153,17 +160,17 @@ void set_member(avro::GenericRecord& record, std::string member, std::string val
   //throw std::invalid_argument(name() + "." + member + ": wrong type, expected:" + avro_utils::to_string( avro_utils::cpp_to_avro_type<T>()) +  ", actual: " +  avro_utils::to_string(datum.type()));
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   FLAGS_logtostderr = 1;
   google::InitGoogleLogging(argv[0]);
   boost::program_options::options_description desc("options");
   desc.add_options()
-    ("help", "produce help message")
-    ("src", boost::program_options::value<std::string>(), "src")
-    ("dst", boost::program_options::value<std::string>(), "dst")
-    ("column_names", boost::program_options::value<std::string>(), "column_names")
-    ("static_column", boost::program_options::value<std::string>(), "static_column")
-    ("keys", boost::program_options::value<std::string>(), "keys");
+      ("help", "produce help message")
+      ("src", boost::program_options::value<std::string>(), "src")
+      ("dst", boost::program_options::value<std::string>(), "dst")
+      ("column_names", boost::program_options::value<std::string>(), "column_names")
+      ("static_column", boost::program_options::value<std::string>(), "static_column")
+      ("keys", boost::program_options::value<std::string>(), "keys");
 
   boost::program_options::variables_map vm;
   boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
@@ -194,7 +201,7 @@ int main(int argc, char** argv) {
   if (vm.count("keys")) {
     std::string s = vm["keys"].as<std::string>();
     auto v = kspp::parse_string_array(s);
-    for (auto i : v)
+    for (auto i: v)
       keys.insert(sanitize_column_name(i));
   }
 
@@ -202,7 +209,7 @@ int main(int argc, char** argv) {
   if (vm.count("column_names")) {
     std::string s = vm["column_names"].as<std::string>();
     column_names_in_csv = kspp::parse_string_array(s);
-    for (auto &i : column_names_in_csv)
+    for (auto &i: column_names_in_csv)
       i = sanitize_column_name(i);
   }
 
@@ -211,9 +218,9 @@ int main(int argc, char** argv) {
   if (vm.count("static_column")) {
     auto s = vm["static_column"].as<std::string>();
     size_t delim = s.find("=");
-    if (delim!=std::string::npos){
+    if (delim != std::string::npos) {
       static_column = sanitize_column_name(s.substr(0, delim));
-      static_column_value = s.substr(delim+1);
+      static_column_value = s.substr(delim + 1);
     }
   }
 
@@ -237,18 +244,18 @@ int main(int argc, char** argv) {
 
   // read first line and make an avro schema
   //if we were given column names then skip reading of them in file
-  if (column_names_in_csv.size() == 0){
+  if (column_names_in_csv.size() == 0) {
     LOG(INFO) << "scanning column names from file";
     std::getline(in, row);
     column_names_in_csv = parseCSVRow(row);
-    for (auto &i :column_names_in_csv)
+    for (auto &i: column_names_in_csv)
       i = sanitize_column_name(i);
     LOG(INFO) << "column_names:  " << kspp::to_string(column_names_in_csv);
   }
 
   std::vector<std::string> column_names_in_schema = column_names_in_csv;
 
-  if (static_column.size()){
+  if (static_column.size()) {
     column_names_in_schema.push_back(static_column);
   }
 
@@ -261,7 +268,7 @@ int main(int argc, char** argv) {
   j["name"] = "csv_import";
   j["fields"] = json::array();
 
-  for (auto i : column_names_in_schema) {
+  for (auto i: column_names_in_schema) {
     std::cout << i << ", ";
     json column;
     column["name"] = i;
@@ -287,7 +294,8 @@ int main(int argc, char** argv) {
     return -1;
   }
 
-  auto file_writer = std::make_shared<avro::DataFileWriter<avro::GenericDatum>>(dst.c_str(), valid_schema_, 10 * 1024 * 1024, avro::SNAPPY_CODEC);
+  auto file_writer = std::make_shared<avro::DataFileWriter<avro::GenericDatum>>(dst.c_str(), valid_schema_,
+                                                                                10 * 1024 * 1024, avro::SNAPPY_CODEC);
 
   size_t messages_in_file = 0;
   LOG(INFO) << "starting...";
@@ -315,7 +323,7 @@ int main(int argc, char** argv) {
       set_member(record, column_names_in_csv[i], fields[i]);
     }
 
-    if (static_column.size()){
+    if (static_column.size()) {
       if (static_column_value.size())
         set_member(record, static_column, static_column_value);
     }

@@ -28,17 +28,27 @@ int main(int argc, char **argv) {
   boost::program_options::options_description desc("options");
   desc.add_options()
       ("help", "produce help message")
-      ("app_realm", boost::program_options::value<std::string>()->default_value(get_env_and_log("APP_REALM", "DEV")), "app_realm")
+      ("app_realm", boost::program_options::value<std::string>()->default_value(get_env_and_log("APP_REALM", "DEV")),
+       "app_realm")
       ("partition_list", boost::program_options::value<std::string>()->default_value("[-1]"), "partition_list")
       ("start_offset", boost::program_options::value<std::string>()->default_value("OFFSET_BEGINNING"), "start_offset")
       ("topic", boost::program_options::value<std::string>(), "topic")
-      ("remote_write_uri", boost::program_options::value<std::string>()->default_value(get_env_and_log("REMOTE_WRITE_URI", "")), "remote_write_uri")
-      ("remote_write_user", boost::program_options::value<std::string>()->default_value(get_env_and_log("REMOTE_WRITE_USER", "")), "remote_write_uri")
-      ("remote_write_password", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("REMOTE_WRITE_PASSWORD", "")), "remote_write_password")
+      ("remote_write_uri",
+       boost::program_options::value<std::string>()->default_value(get_env_and_log("REMOTE_WRITE_URI", "")),
+       "remote_write_uri")
+      ("remote_write_user",
+       boost::program_options::value<std::string>()->default_value(get_env_and_log("REMOTE_WRITE_USER", "")),
+       "remote_write_uri")
+      ("remote_write_password",
+       boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("REMOTE_WRITE_PASSWORD", "")),
+       "remote_write_password")
       //("es_http_header", boost::program_options::value<std::string>()->default_value(get_env_and_log("ES_HTTP_HEADER")),"es_http_header")
-      ("consumer_group", boost::program_options::value<std::string>()->default_value(get_env_and_log("CONSUMER_GROUP", "")), "consumer_group")
-      ("metrics_namespace", boost::program_options::value<std::string>()->default_value(get_env_and_log("METRICS_NAMESPACE", "bb")),"metrics_namespace")
-      ;
+      ("consumer_group",
+       boost::program_options::value<std::string>()->default_value(get_env_and_log("CONSUMER_GROUP", "")),
+       "consumer_group")
+      ("metrics_namespace",
+       boost::program_options::value<std::string>()->default_value(get_env_and_log("METRICS_NAMESPACE", "bb")),
+       "metrics_namespace");
 
   boost::program_options::variables_map vm;
   boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
@@ -76,12 +86,12 @@ int main(int argc, char **argv) {
     partition_list = kspp::parse_partition_list(s);
   }
 
-  kspp::start_offset_t start_offset=kspp::OFFSET_BEGINNING;
+  kspp::start_offset_t start_offset = kspp::OFFSET_BEGINNING;
   try {
     if (vm.count("start_offset"))
       start_offset = kspp::to_offset(vm["start_offset"].as<std::string>());
   }
-  catch(std::exception& e) {
+  catch (std::exception &e) {
     std::cerr << "start_offset must be one of OFFSET_BEGINNING / OFFSET_END / OFFSET_STORED";
     return -1;
   }
@@ -91,7 +101,7 @@ int main(int argc, char **argv) {
     remote_write_uri = vm["remote_write_uri"].as<std::string>();
   }
 
-  if (remote_write_uri.size()==0) {
+  if (remote_write_uri.size() == 0) {
     std::cerr << "--remote_write_uri must specified" << std::endl;
     return -1;
   }
@@ -115,7 +125,7 @@ int main(int argc, char **argv) {
   config->set_consumer_buffering_time(500ms);
   config->validate();
   config->log();
-  auto s= config->avro_serdes();
+  auto s = config->avro_serdes();
 
   LOG(INFO) << "app_realm            : " << app_realm;
   LOG(INFO) << "topic                : " << topic;
@@ -141,16 +151,18 @@ int main(int argc, char **argv) {
   kspp::topology_builder builder(config);
   auto topology = builder.create_topology();
 
-  auto source0 = topology->create_processors<kspp::kafka_source<kspp::generic_avro, kspp::generic_avro, kspp::avro_serdes, kspp::avro_serdes>>(partition_list, topic, config->avro_serdes(), config->avro_serdes());
+  auto source0 = topology->create_processors<kspp::kafka_source<kspp::generic_avro, kspp::generic_avro, kspp::avro_serdes, kspp::avro_serdes>>(
+      partition_list, topic, config->avro_serdes(), config->avro_serdes());
 
-  topology->create_sink<kspp::elasticsearch_generic_avro_sink>(source0, remote_write_uri, remote_write_user, remote_write_password);
+  topology->create_sink<kspp::elasticsearch_generic_avro_sink>(source0, remote_write_uri, remote_write_user,
+                                                               remote_write_password);
 
-  topology->add_labels( {
-                            { "app_name", SERVICE_NAME },
-                            { "app_realm", app_realm },
-                            { "hostname", default_hostname() },
-                            { "remote_write_uri", remote_write_uri },
-                        });
+  topology->add_labels({
+                           {"app_name", SERVICE_NAME},
+                           {"app_realm",        app_realm},
+                           {"hostname",         default_hostname()},
+                           {"remote_write_uri", remote_write_uri},
+                       });
 
   topology->start(start_offset);
 
@@ -161,7 +173,9 @@ int main(int argc, char **argv) {
   LOG(INFO) << "status is up";
 
   {
-    auto metrics_reporter = std::make_shared<kspp::prometheus_pushgateway_reporter>(metrics_namespace, config->get_pushgateway_uri()) << topology;
+    auto metrics_reporter =
+        std::make_shared<kspp::prometheus_pushgateway_reporter>(metrics_namespace, config->get_pushgateway_uri())
+            << topology;
     while (run) {
       if (topology->process(kspp::milliseconds_since_epoch()) == 0) {
         std::this_thread::sleep_for(10ms);

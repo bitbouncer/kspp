@@ -58,15 +58,15 @@ namespace kspp {
         break;
       case avro::AVRO_ARRAY: {
         const avro::GenericArray &v = column.value<avro::GenericArray>();
-        const std::vector<avro::GenericDatum>&r = v.value();
-        if (r.size()==0)
+        const std::vector<avro::GenericDatum> &r = v.value();
+        if (r.size() == 0)
           return "[]";
 
-         std::vector<avro::GenericDatum>::const_iterator second_last = r.end();
+        std::vector<avro::GenericDatum>::const_iterator second_last = r.end();
         --second_last;
 
         std::string s = "[";
-        for (std::vector<avro::GenericDatum>::const_iterator i = r.begin(); i!=r.end(); ++i){
+        for (std::vector<avro::GenericDatum>::const_iterator i = r.begin(); i != r.end(); ++i) {
           s += avro_2_json_simple_column_value(*i);
           if (i != second_last)
             s += ", ";
@@ -93,7 +93,7 @@ namespace kspp {
         s += "}";
         return s;
       }
-      break;
+        break;
 
       case avro::AVRO_ENUM:
       case avro::AVRO_MAP:
@@ -176,7 +176,8 @@ namespace kspp {
   }
 
 // TODO mutiple keys
-  std::string avro2elastic_key_values(const avro::ValidSchema &schema, const std::string &key, const avro::GenericDatum &datum) {
+  std::string
+  avro2elastic_key_values(const avro::ValidSchema &schema, const std::string &key, const avro::GenericDatum &datum) {
     assert(datum.type() == avro::AVRO_RECORD);
     const avro::GenericRecord &record(datum.value<avro::GenericRecord>());
     std::string result;

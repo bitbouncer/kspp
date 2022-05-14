@@ -4,6 +4,7 @@
 #include <string>
 #include <cstdint>
 #include <memory>
+
 #pragma once
 
 // this should inherit from a state-store base class...
@@ -11,7 +12,7 @@ namespace kspp {
   template<class K, class V>
   class state_store {
   public:
-    using sink_function = typename std::function<void(std::shared_ptr<kevent < K, V>>)>;
+    using sink_function = typename std::function<void(std::shared_ptr<kevent<K, V>>)>;
 
     virtual ~state_store() {}
 
@@ -33,7 +34,7 @@ namespace kspp {
     /**
     * Put or delete a record
     */
-    inline void insert(std::shared_ptr<const krecord <K, V>> record, int64_t offset) {
+    inline void insert(std::shared_ptr<const krecord<K, V>> record, int64_t offset) {
       _insert(record, offset);
     }
 
@@ -57,21 +58,21 @@ namespace kspp {
     virtual void clear() = 0;
 
     void set_sink(sink_function f) {
-      _sink = f;
+      sink_ = f;
     }
 
     /**
     * Returns a key-value pair with the given key
     */
-    virtual std::shared_ptr<const krecord <K, V>> get(const K &key) const = 0;
+    virtual std::shared_ptr<const krecord<K, V>> get(const K &key) const = 0;
 
     virtual typename kspp::materialized_source<K, V>::iterator begin() const = 0;
 
     virtual typename kspp::materialized_source<K, V>::iterator end() const = 0;
 
   protected:
-    virtual void _insert(std::shared_ptr<const krecord <K, V>> record, int64_t offset) = 0;
+    virtual void _insert(std::shared_ptr<const krecord<K, V>> record, int64_t offset) = 0;
 
-    sink_function _sink;
+    sink_function sink_;
   };
 }

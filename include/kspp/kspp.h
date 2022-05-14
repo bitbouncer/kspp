@@ -32,9 +32,9 @@ namespace kspp {
   class processor {
   protected:
     processor() :
-        _processed_count("processed", "msg") {
-      add_metric(&_processed_count);
-      add_metric(&_lag);
+        processed_count_("processed", "msg") {
+      add_metric(&processed_count_);
+      add_metric(&lag_);
     }
 
   public:
@@ -57,7 +57,7 @@ namespace kspp {
     virtual void close() = 0;
 
     const std::vector<metric *> &get_metrics() const {
-      return _metrics;
+      return metrics_;
     }
 
 
@@ -68,8 +68,8 @@ namespace kspp {
      * note: not fast but useful for debugging
      */
     int64_t get_metric(std::string name) {
-      for (auto &&i: _metrics) {
-        if (i->_name == name)
+      for (auto &&i: metrics_) {
+        if (i->name() == name)
           return i->value();
       }
       return -1;
@@ -155,19 +155,19 @@ namespace kspp {
     }
 
     void add_metrics_label(std::string key, std::string value) {
-      for (auto i: _metrics)
+      for (auto i: metrics_)
         i->add_label(key, value);
     }
 
     // must be valid for processor lifetime  (cannot be removed)
     void add_metric(metric *p) {
-      _metrics.push_back(p);
+      metrics_.push_back(p);
     }
 
   protected:
-    std::vector<metric *> _metrics;
-    metric_counter _processed_count;
-    metric_streaming_lag _lag;
+    std::vector<metric *> metrics_;
+    metric_counter processed_count_;
+    metric_streaming_lag lag_;
   };
 
 
@@ -199,7 +199,7 @@ namespace kspp {
     }
 
     inline int32_t partition() const {
-      return _partition;
+      return partition_;
     }
 
     virtual void flush() {
@@ -238,7 +238,7 @@ namespace kspp {
 
   protected:
     partition_processor(partition_processor *upstream, int32_t partition)
-        : _partition(partition) {
+        : partition_(partition) {
       if (upstream)
         upstream_.push_back(upstream);
     }
@@ -248,7 +248,7 @@ namespace kspp {
     }
 
     std::vector<partition_processor *> upstream_;
-    const int32_t _partition;
+    const int32_t partition_;
   };
 
   template<class K, class V>
@@ -376,7 +376,7 @@ namespace kspp {
     }
 
     void add_sink(sink_function sink) {
-      _sinks.push_back(sink);
+      sinks_.push_back(sink);
     }
 
   protected:
@@ -384,11 +384,11 @@ namespace kspp {
     virtual void send_to_sinks(std::shared_ptr<kevent<K, V>> p) {
       if (!p)
         return;
-      for (auto f: _sinks)
+      for (auto f: sinks_)
         f(p);
     }
 
-    std::vector<sink_function> _sinks;
+    std::vector<sink_function> sinks_;
   };
 
   template<class K, class V>
@@ -417,12 +417,12 @@ namespace kspp {
         std::shared_ptr<const krecord<K, V>> *,// pointer
         std::shared_ptr<const krecord<K, V>>  // reference
     > {
-      std::shared_ptr<kmaterialized_source_iterator_impl<K, V>> _impl;
+      std::shared_ptr<kmaterialized_source_iterator_impl<K, V>> impl_;
     public:
-      explicit iterator(std::shared_ptr<kmaterialized_source_iterator_impl<K, V>> impl) : _impl(impl) {}
+      explicit iterator(std::shared_ptr<kmaterialized_source_iterator_impl<K, V>> impl) : impl_(impl) {}
 
       iterator &operator++() {
-        _impl->next();
+        impl_->next();
         return *this;
       }
 
@@ -432,11 +432,11 @@ namespace kspp {
         return retval;
       }
 
-      bool operator==(const iterator &other) const { return *_impl == *other._impl; }
+      bool operator==(const iterator &other) const { return *impl_ == *other.impl_; }
 
       bool operator!=(const iterator &other) const { return !(*this == other); }
 
-      std::shared_ptr<const krecord<K, V>> operator*() const { return _impl->item(); }
+      std::shared_ptr<const krecord<K, V>> operator*() const { return impl_->item(); }
     };
 
     virtual iterator begin() const = 0;

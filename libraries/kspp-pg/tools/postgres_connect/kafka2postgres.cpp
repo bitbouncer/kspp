@@ -9,6 +9,7 @@
 #include <kspp/metrics/prometheus_pushgateway_reporter.h>
 #include <kspp/utils/string_utils.h>
 #include <kspp-pg/postgres_generic_avro_sink.h>
+
 #define SERVICE_NAME "kafka2postgres"
 
 using namespace std::chrono_literals;
@@ -27,25 +28,37 @@ int main(int argc, char **argv) {
   boost::program_options::options_description desc("options");
   desc.add_options()
       ("help", "produce help message")
-      ("app_realm", boost::program_options::value<std::string>()->default_value(get_env_and_log("APP_REALM", "DEV")), "app_realm")
+      ("app_realm", boost::program_options::value<std::string>()->default_value(get_env_and_log("APP_REALM", "DEV")),
+       "app_realm")
       ("topic", boost::program_options::value<std::string>(), "topic")
       ("partition_list", boost::program_options::value<std::string>()->default_value("[-1]"), "partition_list")
       ("start_offset", boost::program_options::value<std::string>()->default_value("OFFSET_BEGINNING"), "start_offset")
-      ("postgres_host", boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_HOST")), "postgres_host")
+      ("postgres_host", boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_HOST")),
+       "postgres_host")
       ("postgres_port", boost::program_options::value<int32_t>()->default_value(5432), "postgres_port")
-      ("postgres_user", boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_USER")), "postgres_user")
-      ("postgres_password", boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("POSTGRES_PASSWORD")), "postgres_password")
-      ("postgres_dbname", boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_DBNAME")), "postgres_dbname")
-      ("postgres_max_items_in_insert", boost::program_options::value<int32_t>()->default_value(1000), "postgres_max_items_in_insert")
-      ("postgres_warning_timeout", boost::program_options::value<int32_t>()->default_value(1000), "postgres_warning_timeout")
+      ("postgres_user", boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_USER")),
+       "postgres_user")
+      ("postgres_password",
+       boost::program_options::value<std::string>()->default_value(get_env_and_log_hidden("POSTGRES_PASSWORD")),
+       "postgres_password")
+      ("postgres_dbname",
+       boost::program_options::value<std::string>()->default_value(get_env_and_log("POSTGRES_DBNAME")),
+       "postgres_dbname")
+      ("postgres_max_items_in_insert", boost::program_options::value<int32_t>()->default_value(1000),
+       "postgres_max_items_in_insert")
+      ("postgres_warning_timeout", boost::program_options::value<int32_t>()->default_value(1000),
+       "postgres_warning_timeout")
       ("postgres_disable_delete", boost::program_options::value<int32_t>(), "postgres_disable_delete")
       ("id_column", boost::program_options::value<std::string>()->default_value("id"), "id_column")
       ("table_prefix", boost::program_options::value<std::string>()->default_value("kafka_"), "table_prefix")
       ("character_encoding", boost::program_options::value<std::string>()->default_value("UTF8"), "character_encoding")
       ("table_name_override", boost::program_options::value<std::string>(), "table_name_override")
-      ("consumer_group", boost::program_options::value<std::string>()->default_value(get_env_and_log("CONSUMER_GROUP", "")), "consumer_group")
-      ("metrics_namespace", boost::program_options::value<std::string>()->default_value(get_env_and_log("METRICS_NAMESPACE", "bb")),"metrics_namespace")
-      ;
+      ("consumer_group",
+       boost::program_options::value<std::string>()->default_value(get_env_and_log("CONSUMER_GROUP", "")),
+       "consumer_group")
+      ("metrics_namespace",
+       boost::program_options::value<std::string>()->default_value(get_env_and_log("METRICS_NAMESPACE", "bb")),
+       "metrics_namespace");
 
   boost::program_options::variables_map vm;
   boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
@@ -83,12 +96,12 @@ int main(int argc, char **argv) {
     partition_list = kspp::parse_partition_list(s);
   }
 
-  kspp::start_offset_t start_offset=kspp::OFFSET_BEGINNING;
+  kspp::start_offset_t start_offset = kspp::OFFSET_BEGINNING;
   try {
     if (vm.count("start_offset"))
       start_offset = kspp::to_offset(vm["start_offset"].as<std::string>());
   }
-  catch(std::exception& e) {
+  catch (std::exception &e) {
     std::cerr << "start_offset must be one of OFFSET_BEGINNING / OFFSET_END / OFFSET_STORED";
     return -1;
   }
@@ -151,7 +164,7 @@ int main(int argc, char **argv) {
     return 0;
   }
 
-  bool postgres_disable_delete=false;
+  bool postgres_disable_delete = false;
   if (vm.count("postgres_disable_delete")) {
     postgres_disable_delete = (vm["postgres_disable_delete"].as<int>() > 0);
   }
@@ -165,12 +178,12 @@ int main(int argc, char **argv) {
   config->set_consumer_buffering_time(500ms);
   config->validate();
   config->log();
-  auto s= config->avro_serdes();
+  auto s = config->avro_serdes();
 
   std::string table_name = table_prefix + topic;
 
   if (table_name_override.size())
-    table_name=table_name_override;
+    table_name = table_name_override;
 
   LOG(INFO) << "app_realm                    : " << app_realm;
   LOG(INFO) << "topic                        : " << topic;
@@ -207,26 +220,29 @@ int main(int argc, char **argv) {
   kspp::topology_builder builder(config);
   auto topology = builder.create_topology();
 
-  auto source0 = topology->create_processors<kspp::kafka_source<kspp::generic_avro, kspp::generic_avro, kspp::avro_serdes, kspp::avro_serdes>>(partition_list, topic, config->avro_serdes(), config->avro_serdes());
+  auto source0 = topology->create_processors<kspp::kafka_source<kspp::generic_avro, kspp::generic_avro, kspp::avro_serdes, kspp::avro_serdes>>(
+      partition_list, topic, config->avro_serdes(), config->avro_serdes());
   /*https://www.postgresql.org/docs/9.3/static/multibyte.html*/
   /*auto transform = topology->create_processors<kspp::flat_map<kspp::generic_avro, kspp::generic_avro, kspp::generic_avro, kspp::generic_avro>>(
       source0, [](const kspp::krecord<kspp::generic_avro, kspp::generic_avro>& in, auto self) {
         insert(self, in);
       });
   */
-  std::vector<std::string> keys = { id_column };
+  std::vector<std::string> keys = {id_column};
 
-  topology->create_sink<kspp::postgres_generic_avro_sink>(source0, table_name, connection_params, keys, character_encoding, postgres_max_items_in_insert, postgres_disable_delete);
+  topology->create_sink<kspp::postgres_generic_avro_sink>(source0, table_name, connection_params, keys,
+                                                          character_encoding, postgres_max_items_in_insert,
+                                                          postgres_disable_delete);
 
   std::string hostname = default_hostname();
 
-  topology->add_labels( {
-                            { "app_name", SERVICE_NAME },
-                            { "app_realm", app_realm },
-                            { "hostname", hostname },
-                            { "db_host", postgres_host },
-                            { "dst_table", table_name }
-                        });
+  topology->add_labels({
+                           {"app_name", SERVICE_NAME},
+                           {"app_realm", app_realm},
+                           {"hostname",  hostname},
+                           {"db_host",   postgres_host},
+                           {"dst_table", table_name}
+                       });
 
   topology->start(start_offset);
 
@@ -237,7 +253,9 @@ int main(int argc, char **argv) {
   LOG(INFO) << "status is up";
 
   {
-    auto metrics_reporter = std::make_shared<kspp::prometheus_pushgateway_reporter>(metrics_namespace, config->get_pushgateway_uri()) << topology;
+    auto metrics_reporter =
+        std::make_shared<kspp::prometheus_pushgateway_reporter>(metrics_namespace, config->get_pushgateway_uri())
+            << topology;
     int64_t next_exit_check = kspp::milliseconds_since_epoch() + 10000;
     while (run) {
       if (topology->process(kspp::milliseconds_since_epoch()) == 0) {
@@ -245,10 +263,10 @@ int main(int argc, char **argv) {
         topology->commit(false);
       }
 
-      if (kspp::milliseconds_since_epoch()>next_exit_check){
-        if (!topology->good()){
+      if (kspp::milliseconds_since_epoch() > next_exit_check) {
+        if (!topology->good()) {
           LOG(ERROR) << "NODES IN ERROR STATE - EXITING";
-          run=false;
+          run = false;
         }
         next_exit_check = kspp::milliseconds_since_epoch() + 10000;
       }

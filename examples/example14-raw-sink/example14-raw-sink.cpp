@@ -35,7 +35,7 @@ int main(int argc, char **argv) {
 
   std::cerr << "creating " << avro_stream->log_name() << std::endl;
   for (int64_t update_nr = 0; update_nr != 10; ++update_nr) {
-    for (auto &i : ids)
+    for (auto &i: ids)
       insert(*avro_stream, i, update_nr);
   }
 

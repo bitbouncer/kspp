@@ -1,4 +1,5 @@
 #ifdef KSPP_S3
+
 #include <memory>
 #include <iostream>
 #include <fstream>
@@ -15,17 +16,17 @@
 #include <aws/s3/model/ListObjectsRequest.h>
 #include <aws/s3/model/PutObjectRequest.h>
 #include <kspp/features/aws/aws.h>
+
 #pragma once
 
 namespace kspp {
   template<class V>
   class avro_s3_sink : public topic_sink<void, V> {
-    static constexpr const char* PROCESSOR_NAME = "avro_s3_sink";
+    static constexpr const char *PROCESSOR_NAME = "avro_s3_sink";
   public:
-    avro_s3_sink(std::shared_ptr<cluster_config> config, kspp::url uri, std::string key_base, std::chrono::seconds window_size)
-        : topic_sink<void, V>()
-        , key_base_(key_base)
-        , window_size_(window_size) {
+    avro_s3_sink(std::shared_ptr<cluster_config> config, kspp::url uri, std::string key_base,
+                 std::chrono::seconds window_size)
+        : topic_sink<void, V>(), key_base_(key_base), window_size_(window_size) {
       assert(uri.scheme() == "s3");
       //todo assumes that path starts with / - add checks
       std::string path_without_slash = uri.path().substr(1);
@@ -96,7 +97,7 @@ namespace kspp {
 
     void close() override {
       close_file();
-      LOG(INFO) << PROCESSOR_NAME << " processor closed - consumed " << this->_processed_count.value() << " messages";
+      LOG(INFO) << PROCESSOR_NAME << " processor closed - consumed " << this->processed_count_.value() << " messages";
     }
 
     void close_file() {
@@ -104,11 +105,12 @@ namespace kspp {
         file_writer_->flush();
         file_writer_->close();
         file_writer_.reset();
-        LOG(INFO) << PROCESSOR_NAME << ", file: "  << current_file_name_ << " closed - written " << messages_in_file_ << " messages";
-        LOG(INFO) << PROCESSOR_NAME << ", file: "  << current_file_name_ << " uploading to S3 " << current_s3_file_name_;
+        LOG(INFO) << PROCESSOR_NAME << ", file: " << current_file_name_ << " closed - written " << messages_in_file_
+                  << " messages";
+        LOG(INFO) << PROCESSOR_NAME << ", file: " << current_file_name_ << " uploading to S3 " << current_s3_file_name_;
         upload(current_file_name_, current_s3_file_name_);
         std::experimental::filesystem::remove(current_file_name_);
-        LOG(INFO) << PROCESSOR_NAME << ", file: "  << current_file_name_ << " deleted";
+        LOG(INFO) << PROCESSOR_NAME << ", file: " << current_file_name_ << " deleted";
       }
     }
 
@@ -121,39 +123,39 @@ namespace kspp {
     }
 
     void flush() override {
-      while (process(kspp::milliseconds_since_epoch())>0)
-      {
-        ; // noop
+      while (process(kspp::milliseconds_since_epoch()) > 0) { ; // noop
       }
     }
 
     bool eof() const override {
-      return this->_queue.size();
+      return this->queue_.size();
     }
 
     size_t process(int64_t tick) override {
-      size_t processed =0;
+      size_t processed = 0;
 
       //forward up this timestamp
-      while (this->_queue.next_event_time()<=tick){
-        auto r = this->_queue.pop_front_and_get();
-        this->_lag.add_event_time(tick, r->event_time());
+      while (this->queue_.next_event_time() <= tick) {
+        auto r = this->queue_.pop_front_and_get();
+        this->lag_.add_event_time(tick, r->event_time());
 
         // check if it's time to rotate
-        if (file_writer_ && r->event_time()>= end_of_window_ts_){
+        if (file_writer_ && r->event_time() >= end_of_window_ts_) {
           close_file();
         }
 
         // time to create a new file?
-        if (!file_writer_){
+        if (!file_writer_) {
           auto schema = avro_utils::avro_utils<V>::valid_schema(*r->record()->value());
           current_file_name_ = std::tmpnam(nullptr);
           current_file_name_ += ".avro";
           current_s3_file_name_ = key_prefix_ + "/" + key_base_ + "-" + std::to_string(r->event_time()) + ".avro";
-          end_of_window_ts_ =  r->event_time() + (window_size_.count() * 1000); // should we make another kind of window that plays nice with 24h?
+          end_of_window_ts_ = r->event_time() + (window_size_.count() *
+                                                 1000); // should we make another kind of window that plays nice with 24h?
           messages_in_file_ = 0;
 #ifdef SNAPPY_CODEC_AVAILABLE
-          file_writer_ = std::make_shared<avro::DataFileWriter<V>>(current_file_name_.c_str(), *schema, 16 * 1024, avro::SNAPPY_CODEC);
+          file_writer_ = std::make_shared<avro::DataFileWriter<V>>(current_file_name_.c_str(), *schema, 16 * 1024,
+                                                                   avro::SNAPPY_CODEC);
 #else
           _file_writer = std::make_shared<avro::DataFileWriter<V>>(_current_file_name.c_str(), *schema, 16 * 1024, avro::DEFLATE_CODEC);
 #endif
@@ -164,35 +166,35 @@ namespace kspp {
           ++messages_in_file_;
           file_writer_->write(*r->record()->value());
         }
-        ++(this->_processed_count);
+        ++(this->processed_count_);
         ++processed;
       }
       return processed;
     }
 
   protected:
-    bool upload(std::string src,  std::string destination){
-        Aws::S3::Model::PutObjectRequest object_request;
-        Aws::String aws_bucket_name(bucket_.c_str()); // GCC?
-        Aws::String aws_key_name(destination.c_str()); // GCC?
-        object_request.WithBucket(aws_bucket_name).WithKey(aws_key_name);
+    bool upload(std::string src, std::string destination) {
+      Aws::S3::Model::PutObjectRequest object_request;
+      Aws::String aws_bucket_name(bucket_.c_str()); // GCC?
+      Aws::String aws_key_name(destination.c_str()); // GCC?
+      object_request.WithBucket(aws_bucket_name).WithKey(aws_key_name);
 
-        // Binary files must also have the std::ios_base::bin flag or'ed in
-        const std::shared_ptr<Aws::IOStream> input_data = Aws::MakeShared<Aws::FStream>("PutObjectInputStream", src.c_str(), std::ios_base::in | std::ios_base::binary);
-        object_request.SetBody(input_data);
+      // Binary files must also have the std::ios_base::bin flag or'ed in
+      const std::shared_ptr<Aws::IOStream> input_data = Aws::MakeShared<Aws::FStream>("PutObjectInputStream",
+                                                                                      src.c_str(), std::ios_base::in |
+                                                                                                   std::ios_base::binary);
+      object_request.SetBody(input_data);
 
-        LOG(INFO) << "S3 PUT BEGIN";
-        auto put_object_outcome = s3_client_->PutObject(object_request);
-        if (put_object_outcome.IsSuccess())
-        {
-          LOG(INFO) << "S3 " << destination << " done";
-          return true;
-        }
-        else
-        {
-          LOG(ERROR) << "S3 PutObject error: " << put_object_outcome.GetError().GetExceptionName() << " " << put_object_outcome.GetError().GetMessage() << ", key_name: " << destination << ", fname: " << src;
-          return false;
-        }
+      LOG(INFO) << "S3 PUT BEGIN";
+      auto put_object_outcome = s3_client_->PutObject(object_request);
+      if (put_object_outcome.IsSuccess()) {
+        LOG(INFO) << "S3 " << destination << " done";
+        return true;
+      } else {
+        LOG(ERROR) << "S3 PutObject error: " << put_object_outcome.GetError().GetExceptionName() << " "
+                   << put_object_outcome.GetError().GetMessage() << ", key_name: " << destination << ", fname: " << src;
+        return false;
+      }
     }
 
     std::shared_ptr<avro::DataFileWriter<V>> file_writer_;
@@ -203,8 +205,8 @@ namespace kspp {
     std::string key_prefix_;
     const std::string key_base_;
     const std::chrono::seconds window_size_;
-    int64_t end_of_window_ts_=0;
-    int64_t messages_in_file_=0;
+    int64_t end_of_window_ts_ = 0;
+    int64_t messages_in_file_ = 0;
   };
 }
 #endif

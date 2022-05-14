@@ -42,7 +42,8 @@ namespace kspp {
   }
 
   std::string default_statestore_root() {
-    return get_env_and_log("KSPP_STATE_STORE_ROOT", std::experimental::filesystem::temp_directory_path().generic_string() + "/kspp");
+    return get_env_and_log("KSPP_STATE_STORE_ROOT",
+                           std::experimental::filesystem::temp_directory_path().generic_string() + "/kspp");
   }
 
 #ifdef _WIN32

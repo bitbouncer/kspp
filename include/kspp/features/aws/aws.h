@@ -1,5 +1,5 @@
 #pragma once
 
 namespace kspp {
-    void init_aws();
+  void init_aws();
 }

@@ -6,20 +6,21 @@
 #include <kspp/topology.h>
 #include <kspp/connect/generic_avro_sink.h>
 #include <kspp-pg/postgres_producer.h>
-#pragma once
 
+#pragma once
 namespace kspp {
   class postgres_generic_avro_sink : public generic_avro_sink {
-    static constexpr const char* PROCESSOR_NAME = "postgres_avro_sink";
+    static constexpr const char *PROCESSOR_NAME = "postgres_avro_sink";
   public:
     postgres_generic_avro_sink(std::shared_ptr<cluster_config> config,
                                std::string table,
-                               const kspp::connect::connection_params& cp,
+                               const kspp::connect::connection_params &cp,
                                std::vector<std::string> keys,
-                               std::string client_encoding="UTF8",
-                               size_t max_items_in_insert=1000,
+                               std::string client_encoding = "UTF8",
+                               size_t max_items_in_insert = 1000,
                                bool skip_delete = false)
-        : generic_avro_sink(config, std::make_shared<kspp::postgres_producer>(table, cp, keys, client_encoding, max_items_in_insert, skip_delete)){
+        : generic_avro_sink(config, std::make_shared<kspp::postgres_producer>(table, cp, keys, client_encoding,
+                                                                              max_items_in_insert, skip_delete)) {
       this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
       this->add_metrics_label(KSPP_TOPIC_TAG, table);
 
@@ -32,8 +33,8 @@ namespace kspp {
     }
 
   protected:
-    std::shared_ptr<avro::ValidSchema> _schema;
-    int32_t _schema_id;
+//    std::shared_ptr<avro::ValidSchema> schema_;
+//    int32_t schema_id_;
   };
 }
 
