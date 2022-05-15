@@ -20,6 +20,7 @@ namespace kspp {
     bool validate();
 
     int32_t put_schema(std::string name, std::shared_ptr<const avro::ValidSchema> schema);
+    int32_t put_schema(std::string name, const nlohmann::json& schema);
 
     std::shared_ptr<const avro::ValidSchema> get_avro_schema(int32_t schema_id);
     std::shared_ptr<const nlohmann::json> get_json_schema(int32_t schema_id);

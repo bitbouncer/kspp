@@ -64,11 +64,21 @@ namespace kspp {
     }
 
     //void close(); // remove
-    void put_schema(std::string name, std::shared_ptr<const avro::ValidSchema>, put_callback);
+    void put_schema_async(std::string name, std::shared_ptr<const avro::ValidSchema>, put_callback);
 
     std::future<rpc_put_schema_result> put_schema(std::string name, std::shared_ptr<const avro::ValidSchema> schema) {
       auto p = std::make_shared<std::promise<rpc_put_schema_result>>();
-      put_schema(name, schema, [p](rpc_put_schema_result result) {
+      put_schema_async(name, schema, [p](rpc_put_schema_result result) {
+        p->set_value(result);
+      });
+      return p->get_future();
+    }
+
+    void put_schema_async(std::string name, const nlohmann::json& json_schema, put_callback);
+
+    std::future<rpc_put_schema_result> put_schema(std::string name, const nlohmann::json& json_schema) {
+      auto p = std::make_shared<std::promise<rpc_put_schema_result>>();
+      put_schema_async(name, json_schema, [p](rpc_put_schema_result result) {
         p->set_value(result);
       });
       return p->get_future();

@@ -48,6 +48,19 @@ namespace kspp {
     return rpc_result.schema_id;
   }
 
+  int32_t avro_schema_registry::put_schema(std::string name, const nlohmann::json& schema) {
+    auto future = proxy_->put_schema(name, schema);
+    future.wait();
+    auto rpc_result = future.get();
+    if (rpc_result.ec) {
+      LOG_IF(FATAL, fail_fast_) << "avro_schema_registry put failed: ec" << rpc_result.ec;
+      LOG(ERROR) << "avro_schema_registry put failed: ec" << rpc_result.ec;
+      return -1;
+    }
+    LOG(INFO) << "avro_schema_registry put \"" << name << "\" -> " << rpc_result.schema_id;
+    return rpc_result.schema_id;
+  }
+
   std::shared_ptr<const avro::ValidSchema> avro_schema_registry::get_avro_schema(int32_t schema_id) {
     {
       kspp::spinlock::scoped_lock xxx(spinlock_);
