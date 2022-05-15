@@ -20,7 +20,7 @@ namespace kspp {
     mem_stream_source(std::shared_ptr<cluster_config> config, std::shared_ptr<kspp::partition_source<K, V>> upstream)
         : event_consumer<K, V>(), partition_source<K, V>(upstream.get(), upstream->partition()) {
       upstream->add_sink([this](auto e) {
-        this->_queue.push_back(e);
+        this->queue_.push_back(e);
       });
       this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
       this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(upstream->partition()));
@@ -32,7 +32,7 @@ namespace kspp {
       for (auto i: upstream) {
         this->add_upstream(i.get());
         i->add_sink([this](auto e) {
-          this->_queue.push_back(e);
+          this->queue_.push_back(e);
         });
       }
       this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
@@ -97,7 +97,7 @@ namespace kspp {
         : event_consumer<void, V>(), partition_source<void, V>(upstream.get(), upstream->partition()) {
       if (upstream)
         upstream->add_sink([this](auto e) {
-          this->_queue.push_back(e);
+          this->queue_.push_back(e);
         });
       this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
       this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(upstream->partition()));
@@ -109,7 +109,7 @@ namespace kspp {
       for (auto i: upstream) {
         this->add_upstream(i.get());
         i->add_sink([this](auto e) {
-          this->_queue.push_back(e);
+          this->queue_.push_back(e);
         });
       }
       this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "generic_stream");
@@ -127,10 +127,10 @@ namespace kspp {
       size_t processed = 0;
 
       //forward up this timestamp
-      while (this->_queue.next_event_time() <= tick) {
-        auto p = this->_queue.pop_front_and_get();
+      while (this->queue_.next_event_time() <= tick) {
+        auto p = this->queue_.pop_front_and_get();
         this->send_to_sinks(p);
-        ++(this->_processed_count);
+        ++(this->processed_count_);
         this->lag_.add_event_time(kspp::milliseconds_since_epoch(), p->event_time()); // move outside loop
         ++processed;
       }

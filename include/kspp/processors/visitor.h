@@ -13,7 +13,7 @@ namespace kspp {
 
     visitor(std::shared_ptr<cluster_config> config, std::shared_ptr<partition_source<K, V>> source, extractor f)
         : partition_sink<K, V>(source->partition()), source_(source), extractor_(f) {
-      source_->add_sink([this](auto r) { this->_queue.push_back(r); });
+      source_->add_sink([this](auto r) { this->queue_.push_back(r); });
       this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);
       this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(source->partition()));
     }
@@ -37,11 +37,11 @@ namespace kspp {
     size_t process(int64_t tick) override {
       source_->process(tick);
       size_t processed = 0;
-      while (this->_queue.next_event_time() <= tick) {
-        auto trans = this->_queue.pop_front_and_get();
+      while (this->queue_.next_event_time() <= tick) {
+        auto trans = this->queue_.pop_front_and_get();
         ++processed;
         this->_lag.add_event_time(tick, trans->event_time());
-        ++(this->_processed_count);
+        ++(this->processed_count_);
         if (trans->record())
           extractor_(*trans->record());
       }

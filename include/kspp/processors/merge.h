@@ -79,7 +79,7 @@ namespace kspp {
 
     void add(partition_source<void, V> &upstream) {
       upstream.add_sink([this](auto e) {
-        this->_queue.push_back(e);
+        this->queue_.push_back(e);
       });
     }
 
@@ -88,11 +88,11 @@ namespace kspp {
       for (auto i: this->upstream_)
         i->process(tick);
 
-      while (this->_queue.next_event_time() <= tick) {
-        auto trans = this->_queue.pop_front_and_get();
+      while (this->queue_.next_event_time() <= tick) {
+        auto trans = this->queue_.pop_front_and_get();
         this->send_to_sinks(trans);
         this->_lag.add_event_time(tick, trans->event_time());
-        ++(this->_processed_count);
+        ++(this->processed_count_);
         ++processed;
       }
       return processed;
@@ -140,7 +140,7 @@ namespace kspp {
 
     void add(partition_source<K, void> &upstream) {
       upstream.add_sink([this](auto e) {
-        this->_queue.push_back(e);
+        this->queue_.push_back(e);
       });
     }
 
@@ -149,11 +149,11 @@ namespace kspp {
       for (auto i: this->upstream_)
         i->process(tick);
 
-      while (this->_queue.next_event_time() <= tick) {
-        auto trans = this->_queue.pop_front_and_get();
+      while (this->queue_.next_event_time() <= tick) {
+        auto trans = this->queue_.pop_front_and_get();
         this->send_to_sinks(trans);
         this->_lag.add_event_time(tick, trans->event_time());
-        ++(this->_processed_count);
+        ++(this->processed_count_);
         ++processed;
       }
       return processed;

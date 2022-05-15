@@ -422,7 +422,7 @@ namespace kspp {
       return 0;
     }
 
-    auto validSchema = _registry->get_schema(schema_id);
+    auto validSchema = _registry->get_avro_schema(schema_id);
 
 
     if (validSchema == nullptr)

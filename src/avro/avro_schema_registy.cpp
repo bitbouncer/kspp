@@ -4,6 +4,7 @@
 #include <rapidjson/writer.h>
 #include <rapidjson/stringbuffer.h>
 #include <kspp/cluster_config.h>
+#include <sstream>
 
 namespace kspp {
   avro_schema_registry::avro_schema_registry(const kspp::cluster_config &config)
@@ -47,7 +48,7 @@ namespace kspp {
     return rpc_result.schema_id;
   }
 
-  std::shared_ptr<const avro::ValidSchema> avro_schema_registry::get_schema(int32_t schema_id) {
+  std::shared_ptr<const avro::ValidSchema> avro_schema_registry::get_avro_schema(int32_t schema_id) {
     {
       kspp::spinlock::scoped_lock xxx(spinlock_);
       {
@@ -59,7 +60,7 @@ namespace kspp {
       }
     }
 
-    auto future = proxy_->get_schema(schema_id);
+    auto future = proxy_->get_avro_schema(schema_id);
     future.wait();
     auto rpc_result = future.get();
     if (rpc_result.ec) {
@@ -90,5 +91,55 @@ namespace kspp {
       cache_[schema_id] = rpc_result.schema;
     }
     return rpc_result.schema;
+  }
+
+
+  std::shared_ptr<const nlohmann::json> avro_schema_registry::get_json_schema(int32_t schema_id) {
+    /*{
+      kspp::spinlock::scoped_lock xxx(spinlock_);
+      {
+        std::map<int32_t, std::shared_ptr<const avro::ValidSchema>>::iterator item = cache_.find(schema_id);
+        if (item != cache_.end()) {
+          //DLOG_EVERY_N(INFO, 1000) << "avro_schema_registry, cache lookup on " << schema_id;
+          return item->second;
+        }
+      }
+    }
+    */
+
+    auto future = proxy_->get_json_schema(schema_id);
+    future.wait();
+    auto rpc_result = future.get();
+    if (rpc_result.ec) {
+      //LOG_IF(FATAL, _fail_fast) << "avro_schema_registry get failed: ec" << rpc_result.ec;
+      LOG(ERROR) << "avro_schema_registry get failed: ec" << rpc_result.ec;
+      return nullptr;
+    }
+
+    // multiline schema - bad for elastic search
+    //std::stringstream ss;
+    //rpc_result.schema->toJson(ss);
+    //LOG(INFO) << "avro_schema_registry get " << schema_id << "-> " << ss.str();
+
+    //replaced with
+    // this is very ugly... todo find out another way
+    /*std::stringstream ss;
+    rpc_result.schema->toJson(ss);
+    rapidjson::Document d;
+    d.Parse(ss.str().c_str());
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+    d.Accept(writer);
+    LOG(INFO) << "avro_schema_registry get " << schema_id << "-> " << buffer.GetString();
+    */
+    std::stringstream ss;
+    ss << rpc_result.schema;
+    LOG(INFO) << ss.str();
+
+    kspp::spinlock::scoped_lock xxx(spinlock_);
+    {
+      //cache_[schema_id] = rpc_result.schema;
+    }
+    return std::make_shared<nlohmann::json>(rpc_result.schema);
   }
 }

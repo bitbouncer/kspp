@@ -269,7 +269,7 @@ namespace kspp {
       std::string _client_cert;
       std::string _client_key;
       std::string _client_key_passphrase;
-      bool _verify_host = {true};
+      bool _verify_host = true;
 
       // logging stuff
       std::string _request_id;
@@ -282,12 +282,12 @@ namespace kspp {
       buffer _rx_buffer;
 
       kspp::http::status_type _http_result;
-      bool _transport_ok;
+      bool _transport_ok = true;
 
       //curl stuff
-      CURL *_curl_easy;
-      curl_slist *_curl_headerlist;
-      bool _curl_done;
+      CURL *_curl_easy = nullptr;
+      curl_slist *_curl_headerlist = nullptr;
+      bool _curl_done = false;
       std::shared_ptr<request> _this; // used to keep object alive when only curl knows about the context
     };
 
@@ -343,14 +343,14 @@ namespace kspp {
 
       void check_completed();
 
-      boost::asio::io_service &io_service_;
       mutable spinlock spinlock_;
+      boost::asio::io_service &io_service_;
       boost::asio::steady_timer timer_;
       std::map<curl_socket_t, boost::asio::ip::tcp::socket *> socket_map_;
       CURLM *multi_ = nullptr;
       int curl_handles_still_running_=0;
       std::string user_agent_header_;
-      bool closing_;
+      bool closing_=false;
     };
   } // namespace
 } // namespace

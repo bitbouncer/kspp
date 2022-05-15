@@ -17,30 +17,30 @@ namespace kspp {
   class event_queue {
   public:
     event_queue()
-        : _next_event_time(INT64_MAX) {
+        : next_event_time_(INT64_MAX) {
     }
 
     inline size_t size() const {
-      spinlock::scoped_lock xxx(_spinlock);
-      { return _queue.size(); }
+      spinlock::scoped_lock xxx(spinlock_);
+      { return queue_.size(); }
     }
 
     inline int64_t next_event_time() const {
-      return _next_event_time;
+      return next_event_time_;
     }
 
     inline bool empty() const {
-      return _next_event_time == INT64_MAX; // this is faster than locking..
+      return next_event_time_ == INT64_MAX; // this is faster than locking..
     }
 
     //normal usage
     inline void push_back(std::shared_ptr<kevent<K, V>> p) {
       if (p) {
-        spinlock::scoped_lock xxx(_spinlock);
+        spinlock::scoped_lock xxx(spinlock_);
         {
-          if (_queue.size() == 0)
-            _next_event_time = p->event_time();
-          _queue.push_back(p);
+          if (queue_.size() == 0)
+            next_event_time_ = p->event_time();
+          queue_.push_back(p);
         }
       }
     }
@@ -48,45 +48,45 @@ namespace kspp {
     // used for error handling
     inline void push_front(std::shared_ptr<kevent<K, V>> p) {
       if (p) {
-        spinlock::scoped_lock xxx(_spinlock);
+        spinlock::scoped_lock xxx(spinlock_);
         {
-          _next_event_time = p->event_time();
-          _queue.push_front(p);
+          next_event_time_ = p->event_time();
+          queue_.push_front(p);
         }
       }
     }
 
 
     inline std::shared_ptr<kevent<K, V>> front() {
-      spinlock::scoped_lock xxx(_spinlock);
-      return _queue.front();
+      spinlock::scoped_lock xxx(spinlock_);
+      return queue_.front();
     }
 
     inline std::shared_ptr<kevent<K, V>> back() {
-      spinlock::scoped_lock xxx(_spinlock);
-      return _queue.back();
+      spinlock::scoped_lock xxx(spinlock_);
+      return queue_.back();
     }
 
     inline void pop_front() {
-      spinlock::scoped_lock xxx(_spinlock);
+      spinlock::scoped_lock xxx(spinlock_);
       {
-        _queue[0].reset();
-        _queue.pop_front();
-        if (_queue.size() == 0)
-          _next_event_time = INT64_MAX;
+        queue_[0].reset();
+        queue_.pop_front();
+        if (queue_.size() == 0)
+          next_event_time_ = INT64_MAX;
         else
-          _next_event_time = _queue[0]->event_time();
+          next_event_time_ = queue_[0]->event_time();
       }
     }
 
     // used for erro handling
     inline void pop_back() {
-      spinlock::scoped_lock xxx(_spinlock);
+      spinlock::scoped_lock xxx(spinlock_);
       {
-        _queue[_queue.size() - 1].reset();
-        _queue.pop_back();
-        if (_queue.size() == 0)
-          _next_event_time = INT64_MAX;
+        queue_[queue_.size() - 1].reset();
+        queue_.pop_back();
+        if (queue_.size() == 0)
+          next_event_time_ = INT64_MAX;
       }
     }
 
@@ -95,24 +95,24 @@ namespace kspp {
       if (empty())
         return nullptr;
 
-      spinlock::scoped_lock xxx(_spinlock);
+      spinlock::scoped_lock xxx(spinlock_);
       {
-        auto p = _queue.front();
-        _queue[0].reset();
-        _queue.pop_front();
+        auto p = queue_.front();
+        queue_[0].reset();
+        queue_.pop_front();
 
-        if (_queue.size() == 0)
-          _next_event_time = INT64_MAX;
+        if (queue_.size() == 0)
+          next_event_time_ = INT64_MAX;
         else
-          _next_event_time = _queue[0]->event_time();
+          next_event_time_ = queue_[0]->event_time();
         return p;
       }
     }
 
   private:
-    std::deque<std::shared_ptr<kevent<K, V>>> _queue;
-    int64_t _next_event_time;
-    mutable spinlock _spinlock;
+    std::deque<std::shared_ptr<kevent<K, V>>> queue_;
+    int64_t next_event_time_;
+    mutable spinlock spinlock_;
   };
 
 }

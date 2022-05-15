@@ -69,7 +69,7 @@ class kinesis_string_source : public partition_source<std::string, std::string> 
           return processed;
         _impl.queue().pop_front();
         this->send_to_sinks(p);
-        ++(this->_processed_count);
+        ++(this->processed_count_);
         ++processed;
         this->_lag.add_event_time(tick, p->event_time());
       }

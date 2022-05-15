@@ -296,7 +296,7 @@ namespace kspp {
       if (multi_) {
         io_service_.post([this]() {
           curl_multi_cleanup(multi_);
-          multi_ = NULL;
+          multi_ = nullptr;
         });
       }
       timer_.cancel();
@@ -502,7 +502,7 @@ namespace kspp {
           spinlock::scoped_lock xxx(spinlock_);
           socket_map_.insert(std::pair<curl_socket_t, boost::asio::ip::tcp::socket *>(sockfd, tcp_socket));
         }
-        //BOOST_LOG_TRIVIAL(trace) << this << ", " << BOOST_CURRENT_FUNCTION << " open ok, socket: " << sockfd;
+        LOG(INFO) << this << ", " << BOOST_CURRENT_FUNCTION << " open ok, socket: " << sockfd;
         return sockfd;
       }
       // IPV6
@@ -525,6 +525,7 @@ namespace kspp {
         {
           socket_map_.insert(std::pair<curl_socket_t, boost::asio::ip::tcp::socket *>(sockfd, tcp_socket));
         }
+        LOG(INFO) << this << ", " << BOOST_CURRENT_FUNCTION << " open ok, socket: " << sockfd;
         //LOG(INFO) << ",  open ok, socket: " << sockfd;
         return sockfd;
       }
@@ -663,9 +664,7 @@ namespace kspp {
     }
 
     int client::multi_timer_cb(CURLM *multi, long timeout_ms) {
-      /* cancel running timer */
       timer_.cancel();
-
       if (timeout_ms > 0) {
         if (!closing_) {
           timer_.expires_from_now(std::chrono::milliseconds(timeout_ms));
@@ -675,10 +674,16 @@ namespace kspp {
         }
       } else {
         /* call timeout function immediately */
-        boost::system::error_code error; /*success*/
-        timer_cb(error);
+        //boost::system::error_code ec_success; // default value -> success
+        //timer_cb(ec_success);
+        /* try with delayed call */
+        /* something seems to happend to curl so we crashes if we call directly - used to work ??? */
+        io_service_.post([this]() {
+          boost::system::error_code ec_success; // default value -> success
+          timer_cb(ec_success);
+          });
       }
-      check_completed(); // ska den vara här ???
+      //check_completed(); // ska den vara här ??? removed 20220515 as test
       return 0;
     }
 

@@ -18,7 +18,7 @@ namespace kspp {
           counter_store_(this->get_storage_path(config->get_storage_root()), args...), punctuate_intervall_(
             punctuate_intervall.count()) // tbd we should use intervalls since epoch similar to windowed
         , next_punctuate_(0), dirty_(false) {
-      source->add_sink([this](auto e) { this->_queue.push_back(e); });
+      source->add_sink([this](auto e) { this->queue_.push_back(e); });
       this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "count_by_value");
       this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(source->partition()));
     }
@@ -45,8 +45,8 @@ namespace kspp {
       stream_->process(tick);
       size_t processed = 0;
       //forward up this timestamp
-      while (this->_queue.next_event_time() <= tick) {
-        auto trans = this->_queue.pop_front_and_get();
+      while (this->queue_.next_event_time() <= tick) {
+        auto trans = this->queue_.pop_front_and_get();
         // should this be on processing time our message time???
         // what happens at end of stream if on messaage time...
         if (next_punctuate_ < trans->event_time()) {
@@ -56,7 +56,7 @@ namespace kspp {
           dirty_ = false;
         }
 
-        ++(this->_processed_count);
+        ++(this->processed_count_);
         ++processed;
         this->_lag.add_event_time(tick, trans->event_time());
         dirty_ = true; // aggregated but not committed

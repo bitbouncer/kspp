@@ -9,64 +9,64 @@ namespace kspp {
   template<class ITEM>
   class queue {
   public:
-    queue() : _empty(true) {
+    queue() : empty_(true) {
     }
 
     inline size_t size() const {
-      spinlock::scoped_lock xxx(_spinlock);
-      return _queue.size();
+      spinlock::scoped_lock xxx(spinlock_);
+      return queue_.size();
     }
 
     inline bool empty() const {
-      return _empty;
+      return empty_;
     }
 
     inline void push_back(ITEM i) {
-      spinlock::scoped_lock xxx(_spinlock);
+      spinlock::scoped_lock xxx(spinlock_);
       {
-        _empty = false;
-        _queue.push_back(i);
+        empty_ = false;
+        queue_.push_back(i);
       }
     }
 
     inline void push_front(ITEM i) {
-      spinlock::scoped_lock xxx(_spinlock);
+      spinlock::scoped_lock xxx(spinlock_);
       {
-        _empty = false;
-        _queue.push_front(i);
+        empty_ = false;
+        queue_.push_front(i);
       }
     }
 
     inline ITEM front() {
-      spinlock::scoped_lock xxx(_spinlock);
-      return _queue.front();
+      spinlock::scoped_lock xxx(spinlock_);
+      return queue_.front();
     }
 
     inline void pop_front() {
-      spinlock::scoped_lock xxx(_spinlock);
+      spinlock::scoped_lock xxx(spinlock_);
       {
-        _queue.pop_front();
-        if (_queue.size() == 0)
-          _empty = true;
+        queue_.pop_front();
+        if (queue_.size() == 0)
+          empty_ = true;
       }
     }
 
     inline ITEM pop_and_get() {
-      spinlock::scoped_lock xxx(_spinlock);
+      spinlock::scoped_lock xxx(spinlock_);
       {
-        auto p = _queue.front();
-        _queue.pop_front();
+        auto p = queue_.front();
+        queue_.pop_front();
 
-        if (_queue.size() == 0)
-          _empty = true;
+        if (queue_.size() == 0)
+          empty_ = true;
         return p;
       }
     }
 
   private:
-    std::deque<ITEM> _queue;
-    bool _empty;
-    mutable spinlock _spinlock;
+    std::deque<ITEM> queue_;
+    bool empty_;
+    mutable spinlock spinlock_;
   };
 
 }

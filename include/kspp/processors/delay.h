@@ -12,7 +12,7 @@ namespace kspp {
           std::chrono::milliseconds delaytime)
         : event_consumer<K, V>(), partition_source<K, V>(source.get(), source->partition()), source_(source),
           delay_(delaytime.count()) {
-      source_->add_sink([this](auto r) { this->_queue.push_back(r); });
+      source_->add_sink([this](auto r) { this->queue_.push_back(r); });
       this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "delay");
       this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(source->partition()));
     }
@@ -37,12 +37,12 @@ namespace kspp {
       source_->process(tick);
 
       size_t processed = 0;
-      while (this->_queue.next_event_time() <= tick) {
-        auto r = this->_queue.front();
+      while (this->queue_.next_event_time() <= tick) {
+        auto r = this->queue_.front();
         if (r->event_time() + delay_ <= tick) {
           this->_lag.add_event_time(tick, r->event_time());
-          ++(this->_processed_count);
-          this->_queue.pop_front();
+          ++(this->processed_count_);
+          this->queue_.pop_front();
           this->send_to_sinks(r);
           ++processed;
         } else {
@@ -57,7 +57,7 @@ namespace kspp {
     }
 
     size_t queue_size() const override {
-      return this->_queue.size();
+      return this->queue_.size();
     }
 
     int64_t next_event_time() const override {

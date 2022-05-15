@@ -5,7 +5,7 @@
 #include <kspp/utils/http_client.h>
 #include <kspp/utils/url.h>
 #include <kspp/utils/async.h>
-
+#include <nlohmann/json.hpp>
 #pragma once
 
 namespace kspp {
@@ -22,12 +22,19 @@ namespace kspp {
       int32_t schema_id;
     };
 
-    struct rpc_get_result {
-      rpc_get_result() : ec(-1) {
+    struct rpc_get_avro_schema_result {
+      rpc_get_avro_schema_result() : ec(-1) {
       }
 
       int ec;
       std::shared_ptr<avro::ValidSchema> schema;
+    };
+
+    struct rpc_get_json_schema_result {
+      rpc_get_json_schema_result() : ec(-1) {
+      }
+      int ec;
+      nlohmann::json schema;
     };
 
     struct rpc_get_config_result {
@@ -40,7 +47,8 @@ namespace kspp {
 
   public:
     typedef std::function<void(rpc_put_schema_result)> put_callback;
-    typedef std::function<void(rpc_get_result)> get_callback;
+    typedef std::function<void(rpc_get_avro_schema_result)> get_avro_schema_callback;
+    typedef std::function<void(rpc_get_json_schema_result)> get_json_schema_callback;
     typedef std::function<void(rpc_get_config_result)> get_top_level_config_callback;
 
     confluent_http_proxy(boost::asio::io_service &ios, const kspp::cluster_config &config);
@@ -66,11 +74,22 @@ namespace kspp {
       return p->get_future();
     }
 
-    void get_schema(int32_t id, get_callback);
+    void get_avro_schema_async(int32_t id, get_avro_schema_callback);
 
-    std::future<rpc_get_result> get_schema(int32_t schema_id) {
-      auto p = std::make_shared<std::promise<rpc_get_result>>();
-      get_schema(schema_id, [p](rpc_get_result result) {
+    std::future<rpc_get_avro_schema_result> get_avro_schema(int32_t schema_id) {
+      auto p = std::make_shared<std::promise<rpc_get_avro_schema_result>>();
+      get_avro_schema_async(schema_id, [p](rpc_get_avro_schema_result result) {
+        p->set_value(result);
+      });
+      return p->get_future();
+    }
+
+
+    void get_json_schema_async(int32_t id, get_json_schema_callback);
+
+    std::future<rpc_get_json_schema_result> get_json_schema(int32_t schema_id) {
+      auto p = std::make_shared<std::promise<rpc_get_json_schema_result>>();
+      get_json_schema_async(schema_id, [p](rpc_get_json_schema_result result) {
         p->set_value(result);
       });
       return p->get_future();
