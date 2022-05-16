@@ -96,10 +96,19 @@ namespace kspp {
 
 
     void get_json_schema_async(int32_t id, get_json_schema_callback);
+    void get_json_schema_async(std::string schema_name, get_json_schema_callback);
 
     std::future<rpc_get_json_schema_result> get_json_schema(int32_t schema_id) {
       auto p = std::make_shared<std::promise<rpc_get_json_schema_result>>();
       get_json_schema_async(schema_id, [p](rpc_get_json_schema_result result) {
+        p->set_value(result);
+      });
+      return p->get_future();
+    }
+
+    std::future<rpc_get_json_schema_result> get_json_schema(std::string schema_name) {
+      auto p = std::make_shared<std::promise<rpc_get_json_schema_result>>();
+      get_json_schema_async(schema_name, [p](rpc_get_json_schema_result result) {
         p->set_value(result);
       });
       return p->get_future();

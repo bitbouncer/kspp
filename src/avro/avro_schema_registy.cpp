@@ -155,4 +155,38 @@ namespace kspp {
     }
     return std::make_shared<nlohmann::json>(rpc_result.schema);
   }
+
+
+  std::shared_ptr<const nlohmann::json> avro_schema_registry::get_json_schema(std::string schema_name){
+    /*{
+  kspp::spinlock::scoped_lock xxx(spinlock_);
+  {
+    std::map<int32_t, std::shared_ptr<const avro::ValidSchema>>::iterator item = cache_.find(schema_id);
+    if (item != cache_.end()) {
+      //DLOG_EVERY_N(INFO, 1000) << "avro_schema_registry, cache lookup on " << schema_id;
+      return item->second;
+    }
+  }
+}
+*/
+
+    auto future = proxy_->get_json_schema(schema_name);
+    future.wait();
+    auto rpc_result = future.get();
+    if (rpc_result.ec) {
+      //LOG_IF(FATAL, _fail_fast) << "avro_schema_registry get failed: ec" << rpc_result.ec;
+      LOG(ERROR) << "avro_schema_registry get failed: ec" << rpc_result.ec;
+      return nullptr;
+    }
+    std::stringstream ss;
+    ss << rpc_result.schema;
+    LOG(INFO) << ss.str();
+
+    kspp::spinlock::scoped_lock xxx(spinlock_);
+    {
+      //cache_[schema_id] = rpc_result.schema;
+    }
+    return std::make_shared<nlohmann::json>(rpc_result.schema);
+  }
+
 }
