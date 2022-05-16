@@ -24,6 +24,7 @@ namespace kspp {
 
     std::shared_ptr<const avro::ValidSchema> get_avro_schema(int32_t schema_id);
     std::shared_ptr<const nlohmann::json> get_json_schema(int32_t schema_id);
+    std::shared_ptr<const nlohmann::json> get_json_schema(std::string name);
 
   private:
     kspp::spinlock spinlock_;

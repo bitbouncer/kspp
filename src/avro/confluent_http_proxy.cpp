@@ -331,4 +331,44 @@ namespace kspp {
     });
   }
 
+  void confluent_http_proxy::get_json_schema_async(std::string schema_name, get_json_schema_callback get_cb) {
+    auto shared_result = std::make_shared<rpc_get_json_schema_result>();
+    auto work = std::make_shared<kspp::async::work<int>>(read_policy_,
+                                                         kspp::async::FIRST_SUCCESS); // should we do random order??  can we send rpc result to work...
+    for (auto &&i: base_urls_) {
+      std::string uri = i.str() + "/subjects/" + schema_name + "/versions/latest";
+      work->push_back([this, uri, shared_result](kspp::async::work<int>::callback cb) {
+        std::vector<std::string> headers = {"Accept: application/vnd.schemaregistry.v1+json"};
+        auto request = std::make_shared<kspp::http::request>(
+            kspp::http::GET,
+            uri,
+            headers,
+            http_timeout_);
+        request->set_ca_cert_path(ca_cert_path_);
+        request->set_verify_host(verify_host_);
+        request->set_client_credentials(client_cert_path_,
+                                        private_key_path_,
+                                        private_key_passphrase_);
+
+        http_.perform_async(request, [cb, shared_result](std::shared_ptr<kspp::http::request> request) {
+          if (request->http_result() >= 200 && request->http_result() < 300) {
+            std::string copy_of_bytes(request->rx_content());
+            shared_result->schema = json::parse(copy_of_bytes);
+            cb(0);
+            return;
+          }
+          if (request->transport_result())
+            cb(request->http_result());
+          else
+            cb(-1);
+        });
+      });
+    }
+
+    work->async_call([work, shared_result, get_cb](int64_t duration, int ec) {
+      shared_result->ec = ec;
+      get_cb(*shared_result);
+    });
+  }
+
 } // kspp
