@@ -13,6 +13,15 @@
 using namespace std::chrono_literals;
 using nlohmann::json;
 
+static std::string replace_all(std::string str, const std::string& from, const std::string& to) {
+  size_t start_pos = 0;
+  while((start_pos = str.find(from, start_pos)) != std::string::npos) {
+    str.replace(start_pos, from.length(), to);
+    start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
+  }
+  return str;
+}
+
 namespace kspp {
   static inline void add_member(std::shared_ptr<rapidjson::Document> document, std::string key, std::string value) {
     rapidjson::Document::AllocatorType &allocator = document->GetAllocator();
@@ -184,7 +193,10 @@ namespace kspp {
     });
   }
 
-  void confluent_http_proxy::put_schema_async(std::string schema_name, const nlohmann::json& json_schema, put_callback put_cb){
+  void confluent_http_proxy::put_schema_async(std::string subject, const nlohmann::json& json_schema, put_callback put_cb){
+    // we need to handle subjects like google/protobuf/timestamp.proto that should be translated to
+    // google%2fprotobuf%2ftimestamp.proto
+    std::string normalized_subject = replace_all(subject, "/", "%2f");
     auto shared_result = std::make_shared<rpc_put_schema_result>();
     auto work = std::make_shared<kspp::async::work<int>>(kspp::async::SEQUENTIAL,
                                                          kspp::async::FIRST_SUCCESS); // should we do random order??  can we send rpc result to work...
@@ -192,8 +204,8 @@ namespace kspp {
     //std::cerr << encoded_string << std::endl;
 
     for (auto &&i: base_urls_) {
-      std::string uri = i.str() + "/subjects/" + schema_name + "/versions";
-      work->push_back([this, uri, encoded_string, shared_result, schema_name](kspp::async::work<int>::callback cb) {
+      std::string uri = i.str() + "/subjects/" + normalized_subject + "/versions";
+      work->push_back([this, uri, encoded_string, shared_result, subject](kspp::async::work<int>::callback cb) {
         std::vector<std::string> headers = {"Content-Type: application/vnd.schemaregistry.v1+json"};
         auto request = std::make_shared<kspp::http::request>(
             kspp::http::POST,
@@ -206,7 +218,7 @@ namespace kspp {
                                         private_key_path_,
                                         private_key_passphrase_);
         request->append(encoded_string);
-        http_.perform_async(request, [cb, schema_name, shared_result](std::shared_ptr<kspp::http::request> request) {
+        http_.perform_async(request, [cb, subject, shared_result](std::shared_ptr<kspp::http::request> request) {
           if (request->http_result() >= 200 && request->http_result() < 300) {
 #ifdef KSPP_DEBUG
             // the json parser overwrites the internal buffer so copy the response
@@ -225,8 +237,8 @@ namespace kspp {
             LOG(ERROR) << "confluent_http_proxy cannot parse response";
 #endif
           }
-          LOG(ERROR) << "confluent_http_proxy http_response_code: " << request->http_result() << ", schema_name: "
-                     << schema_name << ", response: "
+          LOG(ERROR) << "confluent_http_proxy http_response_code: " << request->http_result() << ", subject: "
+                     << subject << ", response: "
                      << std::string(request->rx_content(), request->rx_content_length());
           cb(-1);
         });
@@ -331,12 +343,15 @@ namespace kspp {
     });
   }
 
-  void confluent_http_proxy::get_json_schema_async(std::string schema_name, get_json_schema_callback get_cb) {
+  void confluent_http_proxy::get_json_schema_async(std::string subject, get_json_schema_callback get_cb) {
+    // we need to handle subjects like google/protobuf/timestamp.proto that should be translated to
+    // google%2fprotobuf%2ftimestamp.proto
+    std::string normalized_subject = replace_all(subject, "/", "%2f");
     auto shared_result = std::make_shared<rpc_get_json_schema_result>();
     auto work = std::make_shared<kspp::async::work<int>>(read_policy_,
                                                          kspp::async::FIRST_SUCCESS); // should we do random order??  can we send rpc result to work...
     for (auto &&i: base_urls_) {
-      std::string uri = i.str() + "/subjects/" + schema_name + "/versions/latest";
+      std::string uri = i.str() + "/subjects/" + normalized_subject + "/versions/latest";
       work->push_back([this, uri, shared_result](kspp::async::work<int>::callback cb) {
         std::vector<std::string> headers = {"Accept: application/vnd.schemaregistry.v1+json"};
         auto request = std::make_shared<kspp::http::request>(

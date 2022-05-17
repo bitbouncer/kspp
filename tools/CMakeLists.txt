@@ -6,5 +6,4 @@ IF (ENABLE_ROCKSDB)
     add_subdirectory(kafka2rocksdb)
 ENDIF ()
 
-
-
+add_subdirectory(kspp_protobuf_register_schema)

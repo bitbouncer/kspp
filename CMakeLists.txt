@@ -67,6 +67,10 @@ else (SNAPPY_FOUND)
     message("Disabled snappy codec. libsnappy not found.")
 endif (SNAPPY_FOUND)
 
+find_package(Protobuf REQUIRED)
+message(STATUS "Using protobuf ${protobuf_VERSION}")
+
+
 SET(CSI_INCLUDE_PATH
         ${CSI_INCLUDE_PATH}
         ${RAPIDJSON_INCLUDEDIR}
@@ -147,6 +151,8 @@ IF (ENABLE_ROCKSDB)
             src/internal/rocksdb/*.cpp)
 ENDIF ()
 
+
+
 if (BUILD_STATIC_LIBS)
     ADD_LIBRARY(kspp_s STATIC ${LIB_SRCS} ${KSPP_INCLUDE_FILES} ${S3_LIB_SRCS} ${MQTT_LIB_SRCS} ${ROCKDB_LIB_SRCS} ${POSTGRES_LIB_SRCS} ${TDS_LIB_SRCS} ${ELASTICSEARCH_LIB_SRCS} ${INFLUXDB_LIB_SRCS} ${KINESIS_LIB_SRCS})
     INSTALL(TARGETS kspp_s
@@ -169,7 +175,7 @@ endif ()
 
 SET(ABSEIL_LIBS absl::time absl::status absl::synchronization absl::strings absl::str_format absl::memory absl::base)
 
-SET(EXT_LIBS ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${PROMETHEUS_CPP_LIBS} ${BOOST_LIBS} ${PostgreSQL_LIBRARIES} ${AWS_S3_LIBS} ${MQTT_LIBS} ${AWS_KINESIS_LIBS} ${TDS_LIBS} ${BB_GRPC_LIBS} ${ABSEIL_LIBS} gflags glog stdc++fs curl z zstd pthread)
+SET(EXT_LIBS ${AVRO_LIBS} ${ROCKSDB_LIBS} ${LIBRDKAFKA_LIBS} ${LIBZK_LIBS} ${PROMETHEUS_CPP_LIBS} ${BOOST_LIBS} ${PostgreSQL_LIBRARIES} ${AWS_S3_LIBS} ${MQTT_LIBS} ${AWS_KINESIS_LIBS} ${TDS_LIBS} ${BB_GRPC_LIBS} ${ABSEIL_LIBS} protobuf gflags glog stdc++fs curl z zstd pthread)
 #crypto ssl
 
 

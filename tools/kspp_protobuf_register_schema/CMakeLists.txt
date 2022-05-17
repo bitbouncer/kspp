@@ -1,0 +1,5 @@
+add_executable(kspp_protobuf_register_schema kspp_protobuf_register_schema.cpp)
+
+target_link_libraries(kspp_protobuf_register_schema ${ALL_LIBS})
+
+INSTALL(TARGETS kspp_protobuf_register_schema RUNTIME DESTINATION bin)
