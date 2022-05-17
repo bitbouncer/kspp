@@ -36,6 +36,7 @@ int main(int argc, char** argv) {
   Importer importer(&source_tree, &ec);
   auto file_descriptor = importer.Import(proto_source);
   LOG(INFO) << file_descriptor->DebugString();
+  //auto config = std::make_shared<kspp::cluster_config>("", kspp::cluster_config::NONE);
   auto config = std::make_shared<kspp::cluster_config>("");
   config->load_config_from_env();
   nlohmann::json json = kspp::protobuf_register_schema(config->get_schema_registry(), subject, file_descriptor);

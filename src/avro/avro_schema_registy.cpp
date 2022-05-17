@@ -53,8 +53,8 @@ namespace kspp {
     future.wait();
     auto rpc_result = future.get();
     if (rpc_result.ec) {
-      LOG_IF(FATAL, fail_fast_) << "avro_schema_registry put failed: ec" << rpc_result.ec;
       LOG(ERROR) << "avro_schema_registry put failed: ec" << rpc_result.ec;
+      LOG_IF(FATAL, fail_fast_) << "avro_schema_registry put failed: ec" << rpc_result.ec;
       return -1;
     }
     LOG(INFO) << "avro_schema_registry put \"" << subject << "\" -> " << rpc_result.schema_id;
