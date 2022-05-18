@@ -21,7 +21,7 @@ namespace kspp {
                       std::string query,
                       std::string id_column,
                       std::string ts_column,
-                      std::shared_ptr<kspp::avro_schema_registry>);
+                      std::shared_ptr<kspp::schema_registry_client>);
 
     ~postgres_consumer();
 
@@ -85,7 +85,7 @@ namespace kspp {
     const kspp::connect::connection_params cp_;
     const kspp::connect::table_params tp_;
     const std::string id_column_;
-    std::shared_ptr<kspp::avro_schema_registry> schema_registry_;
+    std::shared_ptr<kspp::schema_registry_client> schema_registry_;
     std::shared_ptr<avro::ValidSchema> key_schema_;
     std::unique_ptr<kspp::generic_avro> last_key_;
     std::shared_ptr<avro::ValidSchema> value_schema_;

@@ -1,4 +1,4 @@
-#include <kspp/avro/avro_schema_registry.h>
+#include <kspp/schema_registry/confluent_http_proxy.h>
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/prettywriter.h>
@@ -164,26 +164,29 @@ namespace kspp {
         http_.perform_async(request, [cb, schema_name, shared_result](std::shared_ptr<kspp::http::request> request) {
           if (request->http_result() >= 200 && request->http_result() < 300) {
 #ifdef KSPP_DEBUG
-            // the json parser overwrites the internal buffer so copy the response
-            std::string copy_of_bytes(request->rx_content());
+                // the json parser overwrites the internal buffer so copy the response
+                std::string copy_of_bytes(request->rx_content());
 #endif
-            if (decode_put_schema_request_response(
-                (char *) request->rx_content(),
-                request->rx_content_length(),
-                &shared_result->schema_id)) {
-              cb(0);
-              return;
-            }
+                if (decode_put_schema_request_response(
+                        (char *)request->rx_content(),
+                        request->rx_content_length(),
+                        &shared_result->schema_id)) {
+                  cb(0);
+                  return;
+                }
 #ifdef KSPP_DEBUG
-              LOG(ERROR) << "confluent_http_proxy put_schema return value unexpected bytes:" << copy_of_bytes;
+                LOG(ERROR) << "confluent_http_proxy put_schema return value unexpected bytes:"
+                           << copy_of_bytes;
 #else
             LOG(ERROR) << "confluent_http_proxy cannot parse response";
 #endif
-          }
-          LOG(ERROR) << "confluent_http_proxy http_response_code: " << request->http_result() << ", schema_name: "
-                     << schema_name << ", response: "
-                     << std::string(request->rx_content(), request->rx_content_length());
-          cb(-1);
+              }
+              //throw std::runtime_error(std::string(request->rx_content(), request->rx_content_length()));
+                     //LOG(ERROR) << "confluent_http_proxy http_response_code: " << request->http_result() << ", schema_name: "
+           //          << schema_name << ", response: "
+           //          << std::string(request->rx_content(), request->rx_content_length());
+              shared_result->exception_what =  std::string(request->rx_content(), request->rx_content_length());
+              cb(-1);
         });
       });
     }
@@ -237,10 +240,14 @@ namespace kspp {
             LOG(ERROR) << "confluent_http_proxy cannot parse response";
 #endif
           }
-          LOG(ERROR) << "confluent_http_proxy http_response_code: " << request->http_result() << ", subject: "
-                     << subject << ", response: "
-                     << std::string(request->rx_content(), request->rx_content_length());
+          //throw std::runtime_error(std::string(request->rx_content(), request->rx_content_length()));
+
+          //LOG(ERROR) << "confluent_http_proxy http_response_code: " << request->http_result() << ", subject: "
+          //           << subject << ", response: "
+          //           //<< std::string(request->rx_content(), request->rx_content_length());
+          shared_result->exception_what =  std::string(request->rx_content(), request->rx_content_length());
           cb(-1);
+          //*/
         });
       });
     }

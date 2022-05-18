@@ -1,4 +1,4 @@
-#include <kspp/avro/avro_schema_registry.h>
+#include <kspp/schema_registry/schema_registry_client.h>
 #include <future>
 #include <rapidjson/document.h>
 #include <rapidjson/writer.h>
@@ -7,67 +7,67 @@
 #include <sstream>
 
 namespace kspp {
-  avro_schema_registry::avro_schema_registry(const kspp::cluster_config &config)
+schema_registry_client::schema_registry_client(const kspp::cluster_config &config)
       : work_(new boost::asio::io_service::work(ios_))
         , fail_fast_(config.get_fail_fast())
         , proxy_(std::make_shared<confluent_http_proxy>(ios_, config))
         , thread_([this] { ios_.run(); }) {
   }
 
-  avro_schema_registry::~avro_schema_registry() {
+  schema_registry_client::~schema_registry_client() {
     proxy_.reset();
     work_.reset();
     thread_.join();
   }
 
-  bool avro_schema_registry::validate() {
+  bool schema_registry_client::validate() {
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
     auto future = proxy_->get_config();
     future.wait();
     auto rpc_result = future.get();
     if (rpc_result.ec) {
-      LOG(WARNING) << "avro_schema_registry validate failed: ec" << rpc_result.ec;
+      LOG(WARNING) << "schema_registry_client validate failed: ec" << rpc_result.ec;
       return false;
     }
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-    LOG(INFO) << "avro_schema_registry validate OK "
+    LOG(INFO) << "schema_registry_client validate OK "
               << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << " ms";
     return true;
   }
 
-  int32_t avro_schema_registry::put_schema(std::string name, std::shared_ptr<const avro::ValidSchema> schema) {
+  int32_t schema_registry_client::put_schema(std::string name, std::shared_ptr<const avro::ValidSchema> schema) {
     auto future = proxy_->put_schema(name, schema);
     future.wait();
     auto rpc_result = future.get();
     if (rpc_result.ec) {
-      LOG_IF(FATAL, fail_fast_) << "avro_schema_registry put failed: ec" << rpc_result.ec;
-      LOG(ERROR) << "avro_schema_registry put failed: ec" << rpc_result.ec;
+      LOG_IF(FATAL, fail_fast_) << "schema_registry_client put failed: ec" << rpc_result.ec;
+      LOG(ERROR) << "schema_registry_client put failed: ec" << rpc_result.ec;
       return -1;
     }
-    LOG(INFO) << "avro_schema_registry put \"" << name << "\" -> " << rpc_result.schema_id;
+    LOG(INFO) << "schema_registry_client put \"" << name << "\" -> " << rpc_result.schema_id;
     return rpc_result.schema_id;
   }
 
-  int32_t avro_schema_registry::put_schema(std::string subject, const nlohmann::json& schema) {
+  int32_t schema_registry_client::put_schema(std::string subject, const nlohmann::json& schema) {
     auto future = proxy_->put_schema(subject, schema);
     future.wait();
     auto rpc_result = future.get();
     if (rpc_result.ec) {
-      LOG(ERROR) << "avro_schema_registry put failed: ec" << rpc_result.ec;
-      LOG_IF(FATAL, fail_fast_) << "avro_schema_registry put failed: ec" << rpc_result.ec;
+      LOG(ERROR) << "schema_registry_client put failed: ec" << rpc_result.ec;
+      LOG_IF(FATAL, fail_fast_) << "schema_registry_client put failed: ec" << rpc_result.ec;
       return -1;
     }
-    LOG(INFO) << "avro_schema_registry put \"" << subject << "\" -> " << rpc_result.schema_id;
+    LOG(INFO) << "schema_registry_client put \"" << subject << "\" -> " << rpc_result.schema_id;
     return rpc_result.schema_id;
   }
 
-  std::shared_ptr<const avro::ValidSchema> avro_schema_registry::get_avro_schema(int32_t schema_id) {
+  std::shared_ptr<const avro::ValidSchema> schema_registry_client::get_avro_schema(int32_t schema_id) {
     {
       kspp::spinlock::scoped_lock xxx(spinlock_);
       {
-        std::map<int32_t, std::shared_ptr<const avro::ValidSchema>>::iterator item = cache_.find(schema_id);
-        if (item != cache_.end()) {
-          //DLOG_EVERY_N(INFO, 1000) << "avro_schema_registry, cache lookup on " << schema_id;
+        std::map<int32_t, std::shared_ptr<const avro::ValidSchema>>::iterator item = avro_cache_.find(schema_id);
+        if (item != avro_cache_.end()) {
+          //DLOG_EVERY_N(INFO, 1000) << "schema_registry_client, cache lookup on " << schema_id;
           return item->second;
         }
       }
@@ -78,7 +78,7 @@ namespace kspp {
     auto rpc_result = future.get();
     if (rpc_result.ec) {
       //LOG_IF(FATAL, _fail_fast) << "avro_schema_registry get failed: ec" << rpc_result.ec;
-      LOG(ERROR) << "avro_schema_registry get failed: ec" << rpc_result.ec;
+      LOG(ERROR) << "schema_registry_client get failed: ec" << rpc_result.ec;
       return nullptr;
     }
 
@@ -97,17 +97,17 @@ namespace kspp {
     rapidjson::StringBuffer buffer;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
     d.Accept(writer);
-    LOG(INFO) << "avro_schema_registry get " << schema_id << "-> " << buffer.GetString();
+    LOG(INFO) << "schema_registry_client get " << schema_id << "-> " << buffer.GetString();
 
     kspp::spinlock::scoped_lock xxx(spinlock_);
     {
-      cache_[schema_id] = rpc_result.schema;
+      avro_cache_[schema_id] = rpc_result.schema;
     }
     return rpc_result.schema;
   }
 
 
-  std::shared_ptr<const nlohmann::json> avro_schema_registry::get_json_schema(int32_t schema_id) {
+  std::shared_ptr<const nlohmann::json> schema_registry_client::get_json_schema(int32_t schema_id) {
     /*{
       kspp::spinlock::scoped_lock xxx(spinlock_);
       {
@@ -125,7 +125,7 @@ namespace kspp {
     auto rpc_result = future.get();
     if (rpc_result.ec) {
       //LOG_IF(FATAL, _fail_fast) << "avro_schema_registry get failed: ec" << rpc_result.ec;
-      LOG(ERROR) << "avro_schema_registry get failed: ec" << rpc_result.ec;
+      LOG(ERROR) << "schema_registry_client get failed: ec" << rpc_result.ec;
       return nullptr;
     }
 
@@ -157,13 +157,13 @@ namespace kspp {
   }
 
 
-  std::shared_ptr<const nlohmann::json> avro_schema_registry::get_json_schema(std::string subject){
+  std::shared_ptr<const nlohmann::json> schema_registry_client::get_json_schema(std::string subject){
     /*{
   kspp::spinlock::scoped_lock xxx(spinlock_);
   {
     std::map<int32_t, std::shared_ptr<const avro::ValidSchema>>::iterator item = cache_.find(schema_id);
     if (item != cache_.end()) {
-      //DLOG_EVERY_N(INFO, 1000) << "avro_schema_registry, cache lookup on " << schema_id;
+      //DLOG_EVERY_N(INFO, 1000) << "schema_registry_client, cache lookup on " << schema_id;
       return item->second;
     }
   }
@@ -175,14 +175,23 @@ namespace kspp {
     auto future = proxy_->get_json_schema(subject);
     future.wait();
     auto rpc_result = future.get();
-    if (rpc_result.ec) {
-      //LOG_IF(FATAL, _fail_fast) << "avro_schema_registry get failed: ec" << rpc_result.ec;
-      LOG(ERROR) << "avro_schema_registry get_json_schema(" << subject << "), failed: ec" << rpc_result.ec;
+    if (rpc_result.ec == 404) {
+      LOG(ERROR) << "schema_registry_client get_json_schema, subject: " << subject
+                 << " not found";
       return nullptr;
     }
+
+    if (rpc_result.ec){
+      LOG(ERROR) << "schema_registry_client get_json_schema, subject: " << subject
+                 << " failed, ec: " << rpc_result.ec;
+      return nullptr;
+    }
+
     std::stringstream ss;
     ss << rpc_result.schema;
-    LOG(INFO) << ss.str();
+    //DLOG(INFO) << ss.str();
+    //we hope that this is a json
+    auto result = std::make_shared<nlohmann::json>(rpc_result.schema);
 
     kspp::spinlock::scoped_lock xxx(spinlock_);
     {
@@ -192,6 +201,23 @@ namespace kspp {
   }
 
 
+  nlohmann::json schema_registry_client::verify_schema(std::string subject, const nlohmann::json& schema){
+    DLOG(INFO) << "verifying schema: "  << subject;
+    //DLOG(INFO) << "pushing "  << schema.dump();
+    // should throw exeption on error
+    //int32_t id = put_schema(subject, schema);
+    put_schema(subject, schema);
+    // if we ask by id we get back a schema that does not contain
+    // "schemaType":"PROTOBUF","subject":"other.proto"
+    // if we ask by id we get back a complete schema
+    auto returned_schema = get_json_schema(subject);
+    if (!returned_schema)
+      throw std::runtime_error("schema_registry_client::verify_schema failed to get" + subject);
+    DLOG(INFO) << "verify schema: "  << subject << " OK";
+    return *returned_schema;
+  }
+
+/*
   nlohmann::json protobuf_register_schema(std::shared_ptr<kspp::avro_schema_registry> registry, std::string subject, const google::protobuf::FileDescriptor* file_descriptor){
     nlohmann::json j;
     j["subject"] = subject;
@@ -241,4 +267,28 @@ namespace kspp {
     return j;
   }
 }
+*/
 
+nlohmann::json protobuf_register_schema(std::shared_ptr<kspp::schema_registry_client> registry, std::string subject, const google::protobuf::FileDescriptor* file_descriptor){
+  nlohmann::json j;
+  j["subject"] = subject;
+  j["schemaType"] = "PROTOBUF";
+  j["schema"] = file_descriptor->DebugString();;
+
+  int dep_sz = file_descriptor->dependency_count();
+  if (dep_sz>0)
+    j["references"] = nlohmann::json::array();
+  for (int i=0; i!= dep_sz; ++i){
+    std::string dep_name = file_descriptor->dependency(i)->name();
+    const google::protobuf::FileDescriptor* dep_fd  = file_descriptor->dependency(i);
+    auto dep_schema = protobuf_register_schema(registry, dep_name, dep_fd);
+    nlohmann::json dependency;
+    dependency["name"]=dep_name;
+    dependency["subject"]=dep_name;
+    dependency["version"]= dep_schema["version"];
+    j["references"].push_back(dependency);
+  }
+
+  return registry->verify_schema(subject, j); // change to return json
+}
+}

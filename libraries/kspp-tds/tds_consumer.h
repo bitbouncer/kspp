@@ -20,7 +20,7 @@ namespace kspp {
                  std::string query,
                  std::string id_column,
                  std::string ts_column,
-                 std::shared_ptr<kspp::avro_schema_registry>);
+                 std::shared_ptr<kspp::schema_registry_client>);
 
     ~tds_consumer();
 
@@ -92,7 +92,7 @@ namespace kspp {
     const std::string logical_name_;
     const int32_t partition_;
     const std::string id_column_;
-    std::shared_ptr<kspp::avro_schema_registry> schema_registry_;
+    std::shared_ptr<kspp::schema_registry_client> schema_registry_;
 
     bool exit_ = false;
     bool start_running_ = false;

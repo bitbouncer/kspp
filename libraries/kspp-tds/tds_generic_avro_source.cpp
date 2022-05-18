@@ -12,7 +12,7 @@ namespace kspp {
                                                    std::string query,
                                                    std::string id_column,
                                                    std::string ts_column,
-                                                   std::shared_ptr<kspp::avro_schema_registry> registry)
+                                                   std::shared_ptr<kspp::schema_registry_client> registry)
       : partition_source<kspp::generic_avro, kspp::generic_avro>(nullptr, partition),
         impl_(partition, logical_name, cp, tp, query, id_column, ts_column, registry) {
     this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, PROCESSOR_NAME);

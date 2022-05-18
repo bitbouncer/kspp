@@ -16,7 +16,7 @@ namespace kspp {
                                        std::string query,
                                        std::string id_column,
                                        std::string ts_column,
-                                       std::shared_ptr<kspp::avro_schema_registry> schema_registry)
+                                       std::shared_ptr<kspp::schema_registry_client> schema_registry)
       : connection_(std::make_unique<kspp_postgres::connection>())
         , logical_name_(avro_utils::sanitize_schema_name(logical_name)), query_(query)
         , read_cursor_(tp, id_column, ts_column)

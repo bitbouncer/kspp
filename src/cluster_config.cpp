@@ -37,7 +37,9 @@ namespace kspp {
   void cluster_config::load_config_from_env() {
     if (has_feature(cluster_config::KAFKA))
       set_brokers(default_kafka_broker_uri());
-    set_storage_root(default_statestore_root());
+    if (has_feature(cluster_config::STATE_STORE))
+      set_storage_root(default_statestore_root());
+
     //set_consumer_buffering_time()
     //set_producer_buffering_time
 

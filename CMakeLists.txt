@@ -105,6 +105,7 @@ file(GLOB LIB_SRCS
         src/internal/serdes/*.cpp
         src/internal/utils/*.cpp
         src/utils/*.cpp
+        src/schema_registry/*.cpp
         src/beta/*.cpp
 
         IF (ENABLE_ROCKSDB)
@@ -123,6 +124,7 @@ file(GLOB KSPP_INCLUDE_FILES
         include/kspp/codecs/*.h
         include/kspp/processors/*.h
         include/kspp/state_stores/*.h
+        include/kspp/schema_registry/*.h
         include/kspp/internal/*.h
         include/kspp/internal/sources/*.h
         include/kspp/internal/sinks/*.h

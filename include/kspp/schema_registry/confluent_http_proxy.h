@@ -20,6 +20,7 @@ namespace kspp {
 
       int ec;
       int32_t schema_id;
+      std::string exception_what;
     };
 
     struct rpc_get_avro_schema_result {
@@ -69,7 +70,10 @@ namespace kspp {
     std::future<rpc_put_schema_result> put_schema(std::string name, std::shared_ptr<const avro::ValidSchema> schema) {
       auto p = std::make_shared<std::promise<rpc_put_schema_result>>();
       put_schema_async(name, schema, [p](rpc_put_schema_result result) {
+        if (result.ec)
+          throw std::runtime_error(result.exception_what);
         p->set_value(result);
+
       });
       return p->get_future();
     }
@@ -79,6 +83,15 @@ namespace kspp {
     std::future<rpc_put_schema_result> put_schema(std::string name, const nlohmann::json& json_schema) {
       auto p = std::make_shared<std::promise<rpc_put_schema_result>>();
       put_schema_async(name, json_schema, [p](rpc_put_schema_result result) {
+        if (result.ec) {
+          try {
+            throw std::runtime_error(result.exception_what);
+          }
+          catch(...) {
+            p->set_exception(std::current_exception());
+            return;
+          }
+        }
         p->set_value(result);
       });
       return p->get_future();

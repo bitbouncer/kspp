@@ -20,7 +20,7 @@ namespace kspp {
                             std::string query,
                             std::string id_column,
                             std::string ts_column,
-                            std::shared_ptr<kspp::avro_schema_registry>);
+                            std::shared_ptr<kspp::schema_registry_client>);
 
     virtual ~tds_generic_avro_source() {
       close();

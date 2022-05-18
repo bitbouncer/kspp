@@ -123,9 +123,9 @@ namespace kspp {
         case CURLINFO_TEXT: {
           std::string s(data);
           if (request_id->size())
-            LOG(INFO) << *request_id << ", " << s;
+            DLOG(INFO) << *request_id << ", " << s;
           else
-            LOG(INFO) << s;
+            DLOG(INFO) << s;
 
           return 0;
         }

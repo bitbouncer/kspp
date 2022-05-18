@@ -8,13 +8,12 @@
 
 namespace kspp {
   class cluster_metadata;
-
-  class avro_schema_registry;
+  class schema_registry_client;
 
   class cluster_config {
   public:
     enum flags_t {
-      NONE = 0x0, KAFKA = 0x01, SCHEMA_REGISTRY = 0x02, PUSHGATEWAY = 0x04, BB_STREAMING = 0x08
+      NONE = 0x0, KAFKA = 0x01, SCHEMA_REGISTRY = 0x02, PUSHGATEWAY = 0x04, BB_STREAMING = 0x08, STATE_STORE = 0x10
     };
 
     cluster_config(std::string consumer_group = "", uint64_t flags = KAFKA | SCHEMA_REGISTRY | PUSHGATEWAY);
@@ -89,10 +88,10 @@ namespace kspp {
 
     std::shared_ptr<kspp::avro_serdes> avro_serdes(bool relaxed_parsing = false);
 
-    std::shared_ptr<kspp::avro_schema_registry> get_schema_registry() {
-      if (!avro_schema_registry_)
-        avro_schema_registry_ = std::make_shared<kspp::avro_schema_registry>(*this);
-      return avro_schema_registry_;
+    std::shared_ptr<kspp::schema_registry_client> get_schema_registry() {
+      if (!schema_registry_)
+        schema_registry_ = std::make_shared<kspp::schema_registry_client>(*this);
+      return schema_registry_;
     }
 
     void validate();
@@ -120,7 +119,7 @@ namespace kspp {
 
     bool fail_fast_;
     mutable std::shared_ptr<cluster_metadata> meta_data_;
-    mutable std::shared_ptr<kspp::avro_schema_registry> avro_schema_registry_;
+    mutable std::shared_ptr<kspp::schema_registry_client> schema_registry_;
     mutable std::shared_ptr<kspp::avro_serdes> avro_serdes_;
   };
 }

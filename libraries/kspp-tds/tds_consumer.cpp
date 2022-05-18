@@ -188,7 +188,7 @@ namespace kspp {
                              std::string query,
                              std::string id_column,
                              std::string ts_column,
-                             std::shared_ptr<kspp::avro_schema_registry> schema_registry)
+                             std::shared_ptr<kspp::schema_registry_client> schema_registry)
       : connection_(std::make_unique<kspp_tds::connection>())
       , cp_(cp)
       , tp_(tp)

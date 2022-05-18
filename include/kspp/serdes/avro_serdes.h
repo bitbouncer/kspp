@@ -12,8 +12,8 @@
 #include <avro/Generic.hh>
 #include <avro/Specific.hh>
 #include <glog/logging.h>
+#include <kspp/schema_registry/schema_registry_client.h>
 #include <kspp/avro/generic_avro.h>
-#include <kspp/avro/avro_schema_registry.h>
 #include <kspp/avro/avro_utils.h>
 
 #pragma once
@@ -25,7 +25,7 @@ namespace kspp {
     };
 
   public:
-    avro_serdes(std::shared_ptr<avro_schema_registry> registry, bool relaxed_parsing)
+    avro_serdes(std::shared_ptr<schema_registry_client> registry, bool relaxed_parsing)
         : _registry(registry), _relaxed_parsing(relaxed_parsing) {
     }
 
@@ -170,7 +170,7 @@ namespace kspp {
       return std::make_tuple(schema_id, valid_schema);
     }
 
-    std::shared_ptr<avro_schema_registry> _registry;
+    std::shared_ptr<schema_registry_client> _registry;
     bool _relaxed_parsing = false;
   };
 

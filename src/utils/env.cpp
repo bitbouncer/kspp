@@ -46,24 +46,6 @@ namespace kspp {
                            std::experimental::filesystem::temp_directory_path().generic_string() + "/kspp");
   }
 
-#ifdef _WIN32
-  std::string default_ca_cert_path() {
-    return get_env_and_log("KSPP_CA_CERT", "");
-  }
-
-  std::string default_client_cert_path() {
-    return get_env_and_log("KSPP_CLIENT_CERT", "");
-  }
-
-  std::string default_client_key_path() {
-    return get_env_and_log("KSPP_CLIENT_KEY", "");
-  }
-
-  std::string default_client_key_passphrase() {
-    return get_env_and_log_hidden("KSPP_CLIENT_KEY_PASSPHRASE", "");
-  }
-#else
-
   std::string default_pushgateway_uri() {
     return get_env_and_log("KSPP_PUSHGATEWAY_URL", "http://localhost:9091");
   }
@@ -84,24 +66,6 @@ namespace kspp {
     return get_env_and_log_hidden("KSPP_CLIENT_KEY_PASSPHRASE", "");
   }
 
-#endif
-
-  /*
-   * std::string default_hostname() {
-#ifdef _WIN32
-    if (const char* env_p = std::getenv("COMPUTERNAME"))
-      return std::string(env_p);
-    else
-      return "unknown";
-#else
-    char buf[256];
-    sprintf(buf, "unknown");
-    gethostname(buf, 256);
-    std::string hostname = buf;
-    return hostname;
-#endif
-  }
-  */
   std::string default_hostname() {
     auto host_name = boost::asio::ip::host_name();
     return host_name;
