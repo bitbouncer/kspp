@@ -230,6 +230,12 @@ namespace kspp {
     return avro_serdes_;
   }
 
+
+  std::shared_ptr<kspp::proto_serdes> cluster_config::proto_serdes(){
+    return std::make_shared<kspp::proto_serdes>(get_schema_registry());
+  }
+
+
   void cluster_config::validate() {
     if (has_feature(KAFKA)) {
       LOG_IF(FATAL, brokers_.size() == 0) << "cluster_config, no brokers defined";

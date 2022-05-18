@@ -214,7 +214,8 @@ inline std::string kspp::avro_utils::avro_utils<kspp::generic_avro>::schema_name
 }
 
 template<>
-inline std::string kspp::avro_utils::avro_utils<kspp::generic_avro>::schema_as_string(const kspp::generic_avro &dummy) {
+inline std::string kspp::avro_utils::avro_utils<kspp::generic_avro>::schema_as_string() {
+  kspp::generic_avro dummy;
   return normalize(*dummy.valid_schema());
 }
 

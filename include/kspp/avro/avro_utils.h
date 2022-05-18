@@ -85,7 +85,11 @@ namespace kspp {
       }
 
       // default implementation uses  kspp_avrogen gebnerated stuff - we could generated this function instead in avrogen cpp???
-      static std::string schema_as_string(const T &dummy) {
+      //static std::string schema_as_string(const T &dummy) {
+      //  return T::schema_as_string();
+      //}
+
+      static std::string schema_as_string() {
         return T::schema_as_string();
       }
 
@@ -100,56 +104,81 @@ namespace kspp {
     template<>
     inline std::string avro_utils<std::string>::schema_name(const std::string &dummy) { return "string"; }
 
+//    template<>
+//    inline std::string
+//    avro_utils<std::string>::schema_as_string(const std::string &dummy) { return "{\"type\":\"string\"}"; }
+
     template<>
     inline std::string
-    avro_utils<std::string>::schema_as_string(const std::string &dummy) { return "{\"type\":\"string\"}"; }
+    avro_utils<std::string>::schema_as_string() { return "{\"type\":\"string\"}"; }
 
 
     template<>
     inline std::string avro_utils<int64_t>::schema_name(const int64_t &dummy) { return "long"; }
 
-    template<>
-    inline std::string avro_utils<int64_t>::schema_as_string(const int64_t &dummy) { return "{\"type\":\"long\"}"; }
+//    template<>
+//    inline std::string avro_utils<int64_t>::schema_as_string(const int64_t &dummy) { return "{\"type\":\"long\"}"; }
 
+    template<>
+    inline std::string avro_utils<int64_t>::schema_as_string() { return "{\"type\":\"long\"}"; }
 
     template<>
     inline std::string avro_utils<int32_t>::schema_name(const int32_t &dummy) { return "int"; }
 
-    template<>
-    inline std::string avro_utils<int32_t>::schema_as_string(const int32_t &dummy) { return "{\"type\":\"int\"}"; }
+//    template<>
+//    inline std::string avro_utils<int32_t>::schema_as_string(const int32_t &dummy) { return "{\"type\":\"int\"}"; }
 
+    template<>
+    inline std::string avro_utils<int32_t>::schema_as_string() { return "{\"type\":\"int\"}"; }
 
     template<>
     inline std::string avro_utils<bool>::schema_name(const bool &dummy) { return "boolean"; }
 
+//    template<>
+//    inline std::string avro_utils<bool>::schema_as_string(const bool &dummy) { return "{\"type\":\"boolean\"}"; }
+
     template<>
-    inline std::string avro_utils<bool>::schema_as_string(const bool &dummy) { return "{\"type\":\"boolean\"}"; }
+    inline std::string avro_utils<bool>::schema_as_string() { return "{\"type\":\"boolean\"}"; }
 
     template<>
     inline std::string avro_utils<float>::schema_name(const float &dummy) { return "float"; }
 
+//    template<>
+//    inline std::string avro_utils<float>::schema_as_string(const float &dummy) { return "{\"type\":\"float\"}"; }
+
     template<>
-    inline std::string avro_utils<float>::schema_as_string(const float &dummy) { return "{\"type\":\"float\"}"; }
+    inline std::string avro_utils<float>::schema_as_string() { return "{\"type\":\"float\"}"; }
 
     template<>
     inline std::string avro_utils<double>::schema_name(const double &dummy) { return "double"; }
 
+//    template<>
+//    inline std::string avro_utils<double>::schema_as_string(const double &dummy) { return "{\"type\":\"double\"}"; }
+
     template<>
-    inline std::string avro_utils<double>::schema_as_string(const double &dummy) { return "{\"type\":\"double\"}"; }
+    inline std::string avro_utils<double>::schema_as_string() { return "{\"type\":\"double\"}"; }
 
     template<>
     inline std::string
     avro_utils<std::vector<uint8_t>>::schema_name(const std::vector<uint8_t> &dummy) { return "bytes"; }
 
+//    template<>
+//    inline std::string avro_utils<std::vector<uint8_t>>::schema_as_string(
+//        const std::vector<uint8_t> &dummy) { return "{\"type\":\"bytes\"}"; }
+
     template<>
-    inline std::string avro_utils<std::vector<uint8_t>>::schema_as_string(
-        const std::vector<uint8_t> &dummy) { return "{\"type\":\"bytes\"}"; }
+    inline std::string avro_utils<std::vector<uint8_t>>::schema_as_string() { return "{\"type\":\"bytes\"}"; }
 
     template<>
     inline std::string avro_utils<boost::uuids::uuid>::schema_name(const boost::uuids::uuid &dummy) { return "uuid"; }
 
-    template<>
-    inline std::string avro_utils<boost::uuids::uuid>::schema_as_string(
-        const boost::uuids::uuid &dummy) { return "{\"type\":\"string\"}"; }
-  }
+//    template<>
+//    inline std::string avro_utils<boost::uuids::uuid>::schema_as_string(
+//        const boost::uuids::uuid &dummy) { return "{\"type\":\"string\"}"; }
+//  }
+
+  template<>
+  inline std::string avro_utils<boost::uuids::uuid>::schema_as_string() { return "{\"type\":\"string\"}"; }
+}
+
 } // namespace

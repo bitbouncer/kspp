@@ -162,12 +162,13 @@ namespace kspp {
       // first time??
       // register schemas under the topic-key, topic-value name to comply with kafka-connect behavior
       if (this->key_schema_id_ < 0) {
-        this->key_schema_id_ = this->key_codec_->register_schema(this->topic() + "-key", ev->record()->key());
+        //this->key_schema_id_ = this->key_codec_->register_schema(this->topic() + "-key", ev->record()->key());
+        this->key_schema_id_ = this->key_codec_->template register_schema<K>(this->topic() + "-key");
         LOG_IF(FATAL, this->key_schema_id_ < 0) << "Failed to register schema - aborting";
       }
 
       if (this->val_schema_id_ < 0 && ev->record()->value()) {
-        this->val_schema_id_ = this->val_codec_->register_schema(this->topic() + "-value", *ev->record()->value());
+        this->val_schema_id_ = this->val_codec_->template register_schema<V>(this->topic() + "-value");
         LOG_IF(FATAL, this->val_schema_id_ < 0) << "Failed to register schema - aborting";
       }
 
@@ -222,7 +223,8 @@ namespace kspp {
       // first time??
       // register schemas under the topic-key, topic-value name to comply with kafka-connect behavior
       if (this->val_schema_id_ < 0 && ev->record()->value()) {
-        this->val_schema_id_ = this->val_codec_->register_schema(this->topic() + "-value", *ev->record()->value());
+        //this->val_schema_id_ = this->val_codec_->register_schema<V>(this->topic() + "-value", *ev->record()->value());
+        this->val_schema_id_ = this->val_codec_->template register_schema<V>(this->topic() + "-value");
         LOG_IF(FATAL, this->val_schema_id_ < 0) << "Failed to register schema - aborting";
       }
 
@@ -275,7 +277,8 @@ namespace kspp {
       // first time??
       // register schemas under the topic-key, topic-value name to comply with kafka-connect behavior
       if (this->key_schema_id_ < 0) {
-        this->key_schema_id_ = this->key_codec_->register_schema(this->topic() + "-key", ev->record()->key());
+        //this->key_schema_id_ = this->key_codec_->register_schema(this->topic() + "-key", ev->record()->key());
+        this->key_schema_id_ = this->key_codec_->template register_schema<K>(this->topic() + "-key");
         LOG_IF(FATAL, this->key_schema_id_ < 0) << "Failed to register schema - aborting";
       }
 

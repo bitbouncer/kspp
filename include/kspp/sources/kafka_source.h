@@ -188,6 +188,8 @@ namespace kspp {
         std::chrono::system_clock::from_time_t(0),
         key_codec,
         val_codec) {
+      this->key_codec_->template register_schema<K>(this->topic() + "-key");
+      this->val_codec_->template register_schema<V>(this->topic() + "-value");
     }
 
     kafka_source(std::shared_ptr<cluster_config> config,
@@ -203,6 +205,8 @@ namespace kspp {
         start_point,
         key_codec,
         val_codec) {
+      this->key_codec_->template register_schema<K>(this->topic() + "-key");
+      this->val_codec_->template register_schema<V>(this->topic() + "-value");
     }
 
   protected:
@@ -276,6 +280,7 @@ namespace kspp {
         std::chrono::system_clock::from_time_t(0),
         nullptr,
         val_codec) {
+      this->val_codec_->template register_schema<V>(this->topic() + "-value");
     }
 
     kafka_source(std::shared_ptr<cluster_config> config,
@@ -290,6 +295,7 @@ namespace kspp {
         start_point,
         nullptr,
         val_codec) {
+      this->val_codec_->template register_schema<V>(this->topic() + "-value");
     }
 
   protected:
@@ -335,6 +341,7 @@ namespace kspp {
         std::chrono::system_clock::from_time_t(0),
         key_codec,
         nullptr) {
+      this->key_codec_->template register_schema<K>(this->topic() + "-key");
     }
 
     kafka_source(std::shared_ptr<cluster_config> config,
@@ -349,6 +356,7 @@ namespace kspp {
         start_point,
         key_codec,
         nullptr) {
+      this->key_codec_->template register_schema<K>(this->topic() + "-key");
     }
 
   protected:

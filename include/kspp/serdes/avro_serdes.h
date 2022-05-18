@@ -32,10 +32,10 @@ namespace kspp {
     static std::string name() { return "kspp::avro"; }
 
     template<class T>
-    int32_t register_schema(std::string name, const T &dummy) {
+    int32_t register_schema(std::string name) {
       int32_t schema_id = 0;
       std::shared_ptr<const avro::ValidSchema> not_used;
-      std::tie(schema_id, not_used) = _put_schema(name, avro_utils::avro_utils<T>::schema_as_string(dummy));
+      std::tie(schema_id, not_used) = _put_schema(name, avro_utils::avro_utils<T>::schema_as_string());
       return schema_id;
     }
 

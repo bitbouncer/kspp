@@ -21,7 +21,7 @@ namespace kspp {
 
     // does not use schema registry
     template<class T>
-    int32_t register_schema(std::string name, const T &dummy) {
+    int32_t register_schema(std::string name) {
       return 0;
     }
 

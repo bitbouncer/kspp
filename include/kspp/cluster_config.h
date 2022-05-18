@@ -3,6 +3,7 @@
 #include <mutex>
 #include <memory>
 #include <kspp/serdes/avro_serdes.h>
+#include <kspp/serdes/proto_serdes.h>
 
 #pragma once
 
@@ -87,6 +88,8 @@ namespace kspp {
     std::chrono::seconds get_cluster_state_timeout() const;
 
     std::shared_ptr<kspp::avro_serdes> avro_serdes(bool relaxed_parsing = false);
+
+    std::shared_ptr<kspp::proto_serdes> proto_serdes();
 
     std::shared_ptr<kspp::schema_registry_client> get_schema_registry() {
       if (!schema_registry_)
