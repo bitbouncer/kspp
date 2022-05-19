@@ -2,7 +2,7 @@
 #include <chrono>
 #include <boost/uuid/uuid.hpp>
 #include <boost/functional/hash.hpp>
-#include <kspp/internal/serdes/binary_serdes.h>
+#include <kspp/serdes/binary_serdes.h>
 #include <kspp/topology_builder.h>
 #include <kspp/sinks/kafka_sink.h>
 #include <kspp/utils/env.h>

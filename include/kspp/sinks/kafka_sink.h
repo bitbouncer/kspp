@@ -113,8 +113,6 @@ namespace kspp {
 
     std::shared_ptr<KEY_CODEC> key_codec_;
     std::shared_ptr<VAL_CODEC> val_codec_;
-    int32_t key_schema_id_ = -1;
-    int32_t val_schema_id_ = -1;
     kafka_producer impl_;
     partitioner partitioner_;
   };
@@ -138,6 +136,8 @@ namespace kspp {
                                                       p,
                                                       key_codec,
                                                       val_codec) {
+      this->key_codec_->template register_schema<K>(this->topic() + "-key");
+      this->val_codec_->template register_schema<V>(this->topic() + "-value");
     }
 
     kafka_sink(std::shared_ptr<cluster_config> config,
@@ -148,6 +148,8 @@ namespace kspp {
                                                       topic,
                                                       key_codec,
                                                       val_codec) {
+      this->key_codec_->template register_schema<K>(this->topic() + "-key");
+      this->val_codec_->template register_schema<V>(this->topic() + "-value");
     }
 
     ~kafka_sink() override {
@@ -158,19 +160,6 @@ namespace kspp {
     int handle_event(std::shared_ptr<kevent<K, V>> ev) override {
       if (ev == nullptr)
         return 0;
-
-      // first time??
-      // register schemas under the topic-key, topic-value name to comply with kafka-connect behavior
-      if (this->key_schema_id_ < 0) {
-        //this->key_schema_id_ = this->key_codec_->register_schema(this->topic() + "-key", ev->record()->key());
-        this->key_schema_id_ = this->key_codec_->template register_schema<K>(this->topic() + "-key");
-        LOG_IF(FATAL, this->key_schema_id_ < 0) << "Failed to register schema - aborting";
-      }
-
-      if (this->val_schema_id_ < 0 && ev->record()->value()) {
-        this->val_schema_id_ = this->val_codec_->template register_schema<V>(this->topic() + "-value");
-        LOG_IF(FATAL, this->val_schema_id_ < 0) << "Failed to register schema - aborting";
-      }
 
       uint32_t partition_hash = 0;
 
@@ -209,6 +198,7 @@ namespace kspp {
                std::string topic,
                std::shared_ptr<VAL_CODEC> val_codec = std::make_shared<VAL_CODEC>())
         : kafka_sink_base<void, V, void, VAL_CODEC>(config, topic, nullptr, val_codec) {
+      this->val_codec_->template register_schema<V>(this->topic() + "-value");
     }
 
     ~kafka_sink() override {
@@ -219,15 +209,6 @@ namespace kspp {
     int handle_event(std::shared_ptr<kevent<void, V>> ev) override {
       if (ev == nullptr)
         return 0;
-
-      // first time??
-      // register schemas under the topic-key, topic-value name to comply with kafka-connect behavior
-      if (this->val_schema_id_ < 0 && ev->record()->value()) {
-        //this->val_schema_id_ = this->val_codec_->register_schema<V>(this->topic() + "-value", *ev->record()->value());
-        this->val_schema_id_ = this->val_codec_->template register_schema<V>(this->topic() + "-value");
-        LOG_IF(FATAL, this->val_schema_id_ < 0) << "Failed to register schema - aborting";
-      }
-
       static uint32_t s_partition = 0;
       uint32_t partition_hash = ev->has_partition_hash() ? ev->partition_hash() : ++s_partition;
       void *vp = nullptr;
@@ -258,11 +239,13 @@ namespace kspp {
                partitioner p,
                std::shared_ptr<KEY_CODEC> key_codec = std::make_shared<KEY_CODEC>())
         : kafka_sink_base<K, void, KEY_CODEC, void>(config, topic, p, key_codec, nullptr) {
+      this->key_codec_->template register_schema<K>(this->topic() + "-key");
     }
 
     kafka_sink(std::shared_ptr<cluster_config> config, std::string topic,
                std::shared_ptr<KEY_CODEC> key_codec = std::make_shared<KEY_CODEC>())
         : kafka_sink_base<K, void, KEY_CODEC, void>(config, topic, key_codec, nullptr) {
+      this->key_codec_->template register_schema<K>(this->topic() + "-key");
     }
 
     ~kafka_sink() override {
@@ -273,14 +256,6 @@ namespace kspp {
     int handle_event(std::shared_ptr<kevent<K, void>> ev) override {
       if (ev == nullptr)
         return 0;
-
-      // first time??
-      // register schemas under the topic-key, topic-value name to comply with kafka-connect behavior
-      if (this->key_schema_id_ < 0) {
-        //this->key_schema_id_ = this->key_codec_->register_schema(this->topic() + "-key", ev->record()->key());
-        this->key_schema_id_ = this->key_codec_->template register_schema<K>(this->topic() + "-key");
-        LOG_IF(FATAL, this->key_schema_id_ < 0) << "Failed to register schema - aborting";
-      }
 
       uint32_t partition_hash = 0;
       if (ev->has_partition_hash())

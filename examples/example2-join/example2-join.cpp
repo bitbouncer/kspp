@@ -1,6 +1,6 @@
 #include <iostream>
 #include <chrono>
-#include <kspp/internal/serdes/binary_serdes.h>
+#include <kspp/serdes/binary_serdes.h>
 #include <kspp/topology_builder.h>
 #include <kspp/sources/kafka_source.h>
 #include <kspp/processors/ktable.h>

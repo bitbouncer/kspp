@@ -104,6 +104,7 @@ file(GLOB LIB_SRCS
         src/internal/sinks/*.cpp
         src/internal/serdes/*.cpp
         src/internal/utils/*.cpp
+        src/serdes/*.cpp
         src/utils/*.cpp
         src/schema_registry/*.cpp
         src/beta/*.cpp

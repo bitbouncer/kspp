@@ -227,7 +227,6 @@ namespace kspp {
 
       K tmp_key;
       {
-
         size_t consumed = this->key_codec_->decode((const char *) ref->key_pointer(), ref->key_len(), tmp_key);
         if (consumed == 0) {
           LOG_IF(ERROR, ref->key_len() != 0)

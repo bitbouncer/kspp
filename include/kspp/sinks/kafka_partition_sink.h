@@ -24,6 +24,10 @@ namespace kspp {
       this->add_metrics_label(KSPP_PROCESSOR_TYPE_TAG, "kafka_partition_sink");
       this->add_metrics_label(KSPP_TOPIC_TAG, topic);
       this->add_metrics_label(KSPP_PARTITION_TAG, std::to_string(partition));
+      if (key_codec_)
+        key_codec_->template register_schema<K>(this->topic() + "-key");
+      if (val_codec_)
+        val_codec_->template register_schema<V>(this->topic() + "-value");
     }
 
     std::string log_name() const override {
@@ -105,8 +109,6 @@ namespace kspp {
 
     std::shared_ptr<KEY_CODEC> key_codec_;
     std::shared_ptr<VAL_CODEC> val_codec_;
-    int32_t key_schema_id_ = -1;
-    int32_t val_schema_id_= -1;
     size_t fixed_partition_;
     kafka_producer impl_;
   };
@@ -124,8 +126,8 @@ namespace kspp {
                                                                 partition,
                                                                 key_codec,
                                                                 val_codec) {
-      this->key_schema_id_ = this->key_codec_->template register_schema<K>(this->topic() + "-key");
-      this->val_schema_id_ = this->val_codec_->template register_schema<V>(this->topic() + "-value");
+      this->key_codec_->template register_schema<K>(this->topic() + "-key");
+      this->val_codec_->template register_schema<V>(this->topic() + "-value");
     }
 
     ~kafka_partition_sink() override {
@@ -138,20 +140,6 @@ namespace kspp {
       void *vp = nullptr;
       size_t ksize = 0;
       size_t vsize = 0;
-
-      // first time??
-      // register schemas under the topic-key, topic-value name to comply with kafka-connect behavior
-      /*if (this->key_schema_id_ < 0) {
-        //this->key_schema_id_ = this->key_codec_->register_schema(this->topic() + "-key", ev->record()->key());
-        this->key_schema_id_ = this->key_codec_->template register_schema<K>(this->topic() + "-key");
-        LOG_IF(FATAL, this->key_schema_id_ < 0) << "Failed to register schema - aborting";
-      }
-
-      if (this->val_schema_id_ < 0 && ev->record()->value()) {
-        this->val_schema_id_ = this->val_codec_->template register_schema<V>(this->topic() + "-value");
-        LOG_IF(FATAL, this->val_schema_id_ < 0) << "Failed to register schema - aborting";
-      }
-      */
 
       std::stringstream ks;
       ksize = this->key_codec_->encode(ev->record()->key(), ks);
@@ -183,7 +171,7 @@ namespace kspp {
                                                               partition,
                                                               nullptr,
                                                               val_codec) {
-      this->val_schema_id_ = this->val_codec_->template register_schema<V>(this->topic() + "-value");
+      this->val_codec_->template register_schema<V>(this->topic() + "-value");
     }
 
     ~kafka_partition_sink() override {
@@ -194,14 +182,6 @@ namespace kspp {
     int handle_event(std::shared_ptr<kevent<void, V>> ev) override {
       void *vp = nullptr;
       size_t vsize = 0;
-
-      // first time??
-      // register schemas under the topic-key, topic-value name to comply with kafka-connect behavior
-      //if (this->val_schema_id_ < 0 && ev->record()->value()) {
-      //  this->val_schema_id_ = this->_val_codec->register_schema(this->topic() + "-value", *ev->record()->value());
-      //  LOG_IF(FATAL, this->val_schema_id_ < 0) << "Failed to register schema - aborting";
-      //}
-
       if (ev->record()->value()) {
         std::stringstream vs;
         vsize = this->val_codec_->encode(*ev->record()->value(), vs);
@@ -229,7 +209,7 @@ namespace kspp {
                                                               partition,
                                                               key_codec,
                                                               nullptr) {
-      this->key_schema_id_ = this->key_codec_->template register_schema<K>(this->topic() + "-key");
+      this->key_codec_->template register_schema<K>(this->topic() + "-key");
     }
 
     ~kafka_partition_sink() override {
@@ -238,15 +218,6 @@ namespace kspp {
 
   protected:
     int handle_event(std::shared_ptr<kevent<K, void>> ev) override {
-
-      // first time??
-      // register schemas under the topic-key, topic-value name to comply with kafka-connect behavior
-      /*if (this->key_schema_id_ < 0) {
-        this->key_schema_id_ = this->key_codec_->register_schema(this->topic() + "-key", ev->record()->key());
-        LOG_IF(FATAL, this->key_schema_id_ < 0) << "Failed to register schema - aborting";
-      }
-      */
-
       void *kp = nullptr;
       size_t ksize = 0;
       std::stringstream ks;

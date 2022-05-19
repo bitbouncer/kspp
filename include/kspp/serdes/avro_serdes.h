@@ -32,11 +32,10 @@ namespace kspp {
     static std::string name() { return "kspp::avro"; }
 
     template<class T>
-    int32_t register_schema(std::string name) {
-      int32_t schema_id = 0;
+    int32_t register_schema(std::string subject) {
       std::shared_ptr<const avro::ValidSchema> not_used;
-      std::tie(schema_id, not_used) = _put_schema(name, avro_utils::avro_utils<T>::schema_as_string());
-      return schema_id;
+      std::tie(schema_id_, not_used) = _put_schema(subject, avro_utils::avro_utils<T>::schema_as_string());
+      return schema_id_;
     }
 
     /*
@@ -68,15 +67,7 @@ namespace kspp {
     */
     template<class T>
     size_t encode(const std::string &name, const T &src, std::ostream &dst) {
-      static int32_t schema_id = -1;
-      if (schema_id < 0) {
-        int32_t res = _registry->put_schema(name, src.valid_schema());
-        if (res >= 0)
-          schema_id = res;
-        else
-          return 0;
-      }
-      return encode(schema_id, src, dst);
+      return encode(schema_id_, src, dst);
     }
 
     /*
@@ -119,15 +110,7 @@ namespace kspp {
     */
     template<class T>
     size_t decode(const char *payload, size_t size, T &dst) {
-      static int32_t schema_id = -1;
-      if (schema_id < 0) {
-        int32_t res = _registry->put_schema(dst.avro_schema_name(), dst.valid_schema());
-        if (res >= 0)
-          schema_id = res;
-        else
-          return 0;
-      }
-      return decode(schema_id, dst.valid_schema(), payload, size, dst);
+       return decode(schema_id_, dst.valid_schema(), payload, size, dst);
     }
 
     template<class T>
@@ -172,6 +155,7 @@ namespace kspp {
 
     std::shared_ptr<schema_registry_client> _registry;
     bool _relaxed_parsing = false;
+    int32_t schema_id_=-1;
   };
 
   template<>

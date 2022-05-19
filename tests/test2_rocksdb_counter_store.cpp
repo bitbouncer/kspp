@@ -1,6 +1,6 @@
 #include <cassert>
 #include <kspp/state_stores/rocksdb_counter_store.h>
-#include <kspp/internal/serdes/binary_serdes.h>
+#include <kspp/serdes/binary_serdes.h>
 #include <kspp/utils/env.h>
 
 int main(int argc, char **argv) {
