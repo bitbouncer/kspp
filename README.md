@@ -10,7 +10,6 @@ search, influxdb and avrofiles
 Sources:
 
 - kafka (uses librdkafka)
-- kafka grpc proxy
 - aws kinesis (experimental, using aws sdk)
 - postgres (uses libpq)
 - microsoft sqlserver (uses freetds)
@@ -40,7 +39,8 @@ Statestores:
 
 Codecs:
 
-- avro (with confluent schema registry or grpc proxy)
+- avro with confluent schema registry
+- protobuf with confluent schema registry
 - text
 - json
 
