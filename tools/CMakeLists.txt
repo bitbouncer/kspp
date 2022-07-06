@@ -7,3 +7,7 @@ IF (ENABLE_ROCKSDB)
 ENDIF ()
 
 add_subdirectory(kspp_protobuf_register_schema)
+
+IF (ENABLE_MQTT)
+add_subdirectory(mqtt2kafka)
+ENDIF ()

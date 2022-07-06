@@ -25,15 +25,15 @@ docker cp $EXTRACT_CONTAINER:/usr/local/lib                                 ./ex
 echo $PWD
 find ./extract -name "*.a" -exec rm -rf {} \;
 
-docker cp $EXTRACT_CONTAINER:/usr/local/bin/kafka2es                    ./extract/bin
-docker cp $EXTRACT_CONTAINER:/usr/local/bin/kafka2influxdb              ./extract/bin
-docker cp $EXTRACT_CONTAINER:/usr/local/bin/kafka2postgres              ./extract/bin
-docker cp $EXTRACT_CONTAINER:/usr/local/bin/postgres2kafka              ./extract/bin
-docker cp $EXTRACT_CONTAINER:/usr/local/bin/tds2kafka                   ./extract/bin
-#docker cp $EXTRACT_CONTAINER:/usr/local/bin/bb2pg                       ./extract/bin
-#docker cp $EXTRACT_CONTAINER:/usr/local/bin/bb2console                  ./extract/bin
+docker cp $EXTRACT_CONTAINER:/usr/local/bin/kafka2es                       ./extract/bin
+docker cp $EXTRACT_CONTAINER:/usr/local/bin/kafka2influxdb                 ./extract/bin
+docker cp $EXTRACT_CONTAINER:/usr/local/bin/kafka2postgres                 ./extract/bin
+docker cp $EXTRACT_CONTAINER:/usr/local/bin/postgres2kafka                 ./extract/bin
+docker cp $EXTRACT_CONTAINER:/usr/local/bin/tds2kafka                      ./extract/bin
+docker cp $EXTRACT_CONTAINER:/usr/local/bin/mqtt2kafka                     ./extract/bin
+docker cp $EXTRACT_CONTAINER:/usr/local/bin/kspp_protobuf_register_schema  ./extract/bin
 
-docker cp $EXTRACT_CONTAINER:/src/runDeps                               ./extract/runDeps
+docker cp $EXTRACT_CONTAINER:/src/runDeps                                  ./extract/runDeps
 
 docker rm -f $EXTRACT_CONTAINER
 

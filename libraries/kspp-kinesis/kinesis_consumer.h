@@ -21,7 +21,7 @@ namespace kspp {
     void close();
 
     inline bool eof() const {
-      return (_incomming_msg.size() == 0) && eof_;
+      return (incomming_msg_.size() == 0) && eof_;
     }
 
     inline std::string logical_name() const {
@@ -37,11 +37,11 @@ namespace kspp {
     //void subscribe();
 
     inline event_queue<std::string, std::string>& queue(){
-      return _incomming_msg;
+      return incomming_msg_;
     };
 
     inline const event_queue<std::string, std::string>& queue() const {
-      return _incomming_msg;
+      return incomming_msg_;
     };
 
     void commit(bool flush) {
@@ -66,7 +66,7 @@ namespace kspp {
     const int32_t partition_;
     const std::string stream_name_;
     std::shared_ptr<offset_storage> offset_storage_;
-    event_queue<std::string, std::string> _incomming_msg;
+    event_queue<std::string, std::string> incomming_msg_;
     // move
     uint64_t msg_cnt_=0; // TODO move to metrics
   };
