@@ -48,7 +48,7 @@ namespace kspp {
       typename std::map<K, std::shared_ptr<const krecord<K, V>>>::const_iterator _it;
     };
 
-    mem_store(std::experimental::filesystem::path storage_path) {
+    mem_store(std::filesystem::path storage_path) {
     }
 
     static std::string type_name() {

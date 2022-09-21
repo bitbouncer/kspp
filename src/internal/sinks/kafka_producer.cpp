@@ -50,7 +50,6 @@ namespace kspp {
   void kafka_producer::MyDeliveryReportCb::dr_cb(RdKafka::Message &message) {
     producer_user_data *extra = (producer_user_data *) message.msg_opaque();
     assert(extra);
-
     // if error fail this commit
     if (message.err() != RdKafka::ErrorCode::ERR_NO_ERROR) {
       if (extra->done_marker)

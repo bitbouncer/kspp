@@ -8,7 +8,7 @@
 #include <thread>
 #include <chrono>
 #include <strstream>
-#include <experimental/filesystem>
+#include <filesystem>
 #include <boost/uuid/uuid.hpp>
 #include <boost/algorithm/string/replace.hpp>
 #include <glog/logging.h>
@@ -449,8 +449,8 @@ namespace kspp {
         : partition_source<K, V>(upstream, partition) {
     }
 
-    virtual std::experimental::filesystem::path get_storage_path(std::experimental::filesystem::path storage_path) {
-      std::experimental::filesystem::path p(std::move(storage_path));
+    virtual std::filesystem::path get_storage_path(std::filesystem::path storage_path) {
+      std::filesystem::path p(std::move(storage_path));
       p /= sanitize_filename(
           this->log_name() + this->record_type_name() + "#" + std::to_string(this->partition()));
       return p;

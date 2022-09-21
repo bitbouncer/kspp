@@ -30,7 +30,7 @@ namespace kspp {
   fs_offset_storage::fs_offset_storage(std::string path)
       : offset_storage(), offset_storage_path_(path) {
     if (!offset_storage_path_.empty()) {
-      std::experimental::filesystem::create_directories(offset_storage_path_.parent_path());
+      std::filesystem::create_directories(offset_storage_path_.parent_path());
     }
   }
 
@@ -39,7 +39,7 @@ namespace kspp {
   }
 
   int64_t fs_offset_storage::load_offset(int timeout_ms_not_used) {
-    if (!std::experimental::filesystem::exists(offset_storage_path_)) {
+    if (!std::filesystem::exists(offset_storage_path_)) {
       LOG(INFO) << "start(OFFSET_STORED), missing file " << offset_storage_path_ << ", starting from OFFSET_BEGINNING";
       return kspp::OFFSET_BEGINNING;
     }

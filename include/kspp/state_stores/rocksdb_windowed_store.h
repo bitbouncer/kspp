@@ -1,7 +1,7 @@
 #include <memory>
 #include <strstream>
 #include <fstream>
-#include <experimental/filesystem>
+#include <filesystem>
 #include <glog/logging.h>
 
 #include <kspp/kspp.h>
@@ -119,17 +119,17 @@ namespace kspp {
       std::shared_ptr<CODEC> _codec;
     };
 
-    rocksdb_windowed_store(std::experimental::filesystem::path storage_path, std::chrono::milliseconds slot_width,
+    rocksdb_windowed_store(std::filesystem::path storage_path, std::chrono::milliseconds slot_width,
                            size_t nr_of_slots, std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
         : storage_path_(storage_path), offset_storage_path_(storage_path), slot_width_(slot_width.count()),
           nr_of_slots_(nr_of_slots), codec_(codec), current_offset_(kspp::OFFSET_BEGINNING),
           last_comitted_offset_(kspp::OFFSET_BEGINNING), last_flushed_offset_(kspp::OFFSET_BEGINNING),
           oldest_kept_slot_(-1) {
       LOG_IF(FATAL, storage_path.generic_string().size() == 0);
-      std::experimental::filesystem::create_directories(storage_path);
+      std::filesystem::create_directories(storage_path);
       offset_storage_path_ /= "kspp_offset.bin";
 
-      if (std::experimental::filesystem::exists(offset_storage_path_)) {
+      if (std::filesystem::exists(offset_storage_path_)) {
         std::ifstream is(offset_storage_path_.generic_string(), std::ios::binary);
         int64_t tmp;
         is.read((char *) &tmp, sizeof(int64_t));
@@ -205,7 +205,7 @@ namespace kspp {
           options.IncreaseParallelism(); // should be #cores
           options.OptimizeLevelStyleCompaction();
           options.create_if_missing = true;
-          std::experimental::filesystem::path path(storage_path_);
+          std::filesystem::path path(storage_path_);
           path /= std::to_string(new_slot);
           rocksdb::DB *tmp = nullptr;
           auto s = rocksdb::DB::Open(options, path.generic_string(), &tmp);
@@ -360,8 +360,8 @@ namespace kspp {
       return timestamp / slot_width_;
     }
 
-    std::experimental::filesystem::path storage_path_;
-    std::experimental::filesystem::path offset_storage_path_;
+    std::filesystem::path storage_path_;
+    std::filesystem::path offset_storage_path_;
     std::map<int64_t, std::shared_ptr<rocksdb::DB>> buckets_;
     int64_t slot_width_;
     size_t nr_of_slots_;

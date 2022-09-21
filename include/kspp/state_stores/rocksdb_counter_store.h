@@ -3,7 +3,7 @@
 #include <memory>
 #include <strstream>
 #include <fstream>
-#include <experimental/filesystem>
+#include <filesystem>
 #include <glog/logging.h>
 #include <rocksdb/db.h>
 #include <kspp/kspp.h>
@@ -81,12 +81,12 @@ namespace kspp {
       std::shared_ptr<CODEC> _codec;
     };
 
-    rocksdb_counter_store(std::experimental::filesystem::path storage_path,
+    rocksdb_counter_store(std::filesystem::path storage_path,
                           std::shared_ptr<CODEC> codec = std::make_shared<CODEC>())
         : offset_storage_path_(storage_path), codec_(codec), current_offset_(kspp::OFFSET_BEGINNING),
           last_comitted_offset_(kspp::OFFSET_BEGINNING), last_flushed_offset_(kspp::OFFSET_BEGINNING) {
       LOG_IF(FATAL, storage_path.generic_string().size() == 0);
-      std::experimental::filesystem::create_directories(storage_path);
+      std::filesystem::create_directories(storage_path);
       offset_storage_path_ /= "kspp_offset.bin";
       rocksdb::Options options;
       options.IncreaseParallelism(); // should be #cores
@@ -103,7 +103,7 @@ namespace kspp {
             std::string("rocksdb_counter_store, failed to open rocks db, path:") + storage_path.generic_string());
       }
 
-      if (std::experimental::filesystem::exists(offset_storage_path_)) {
+      if (std::filesystem::exists(offset_storage_path_)) {
         std::ifstream is(offset_storage_path_.generic_string(), std::ios::binary);
         int64_t tmp;
         is.read((char *) &tmp, sizeof(int64_t));
@@ -224,7 +224,7 @@ namespace kspp {
     }
 
   private:
-    std::experimental::filesystem::path offset_storage_path_;
+    std::filesystem::path offset_storage_path_;
     std::unique_ptr<rocksdb::DB> db_;    // maybe this should be a shared ptr since we're letting iterators out...
     std::shared_ptr<CODEC> codec_;
     int64_t current_offset_;

@@ -3,7 +3,7 @@
 #include <memory>
 #include <iostream>
 #include <fstream>
-#include <experimental/filesystem>
+#include <filesystem>
 #include <avro/Generic.hh>
 #include <avro/DataFile.hh>
 #include <kspp/avro/avro_utils.h>
@@ -109,7 +109,7 @@ namespace kspp {
                   << " messages";
         LOG(INFO) << PROCESSOR_NAME << ", file: " << current_file_name_ << " uploading to S3 " << current_s3_file_name_;
         upload(current_file_name_, current_s3_file_name_);
-        std::experimental::filesystem::remove(current_file_name_);
+        std::filesystem::remove(current_file_name_);
         LOG(INFO) << PROCESSOR_NAME << ", file: " << current_file_name_ << " deleted";
       }
     }

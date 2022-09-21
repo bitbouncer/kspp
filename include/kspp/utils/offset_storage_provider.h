@@ -1,6 +1,6 @@
 #include <climits>
 #include <string>
-#include <experimental/filesystem>
+#include <filesystem>
 #include <kspp/typedefs.h>
 
 #pragma once
@@ -56,7 +56,7 @@ namespace kspp {
 
     void persist_offset(int64_t offset, int timeout_ms) override;
 
-    std::experimental::filesystem::path offset_storage_path_;
+    std::filesystem::path offset_storage_path_;
   };
 
   class null_offset_storage : public offset_storage {

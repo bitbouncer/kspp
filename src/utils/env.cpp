@@ -1,5 +1,5 @@
 #include <kspp/utils/env.h>
-#include <experimental/filesystem>
+#include <filesystem>
 #include <boost/asio/ip/host_name.hpp>
 #include <glog/logging.h>
 
@@ -43,7 +43,7 @@ namespace kspp {
 
   std::string default_statestore_root() {
     return get_env_and_log("KSPP_STATE_STORE_ROOT",
-                           std::experimental::filesystem::temp_directory_path().generic_string() + "/kspp");
+                           std::filesystem::temp_directory_path().generic_string() + "/kspp");
   }
 
   std::string default_pushgateway_uri() {

@@ -9,7 +9,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
-#include <experimental/filesystem>
+#include <filesystem>
 #include <nlohmann/json.hpp>
 #include <glog/logging.h>
 #include <kspp/utils/kspp_utils.h>
@@ -37,7 +37,7 @@ std::string trim(const std::string &s) {
  * https://stackoverflow.com/questions/1120140/how-can-i-read-and-parse-csv-files-in-c
 */
 
-namespace fs = std::experimental::filesystem;
+namespace fs = std::filesystem;
 using json = nlohmann::json;
 
 static std::string to_lower(std::string s) {

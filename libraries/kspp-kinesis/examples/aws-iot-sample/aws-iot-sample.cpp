@@ -55,12 +55,12 @@ int main(int argc, char **argv) {
   LOG(INFO) << "SSL_KEY_STORE    " << ssl_key_store;
   LOG(INFO) << "SSL_PRIVATE_KEY  " << ssl_private_key;
 
-  if (ssl_key_store.size() && !std::experimental::filesystem::exists(ssl_key_store)) {
+  if (ssl_key_store.size() && !std::filesystem::exists(ssl_key_store)) {
     std::cerr << "SSL_KEY_STORE at path: " << ssl_key_store << " not found - exiting";
     return -1;
   }
 
-  if (ssl_private_key.size() && !std::experimental::filesystem::exists(ssl_private_key)) {
+  if (ssl_private_key.size() && !std::filesystem::exists(ssl_private_key)) {
     std::cerr << "SSL_PRIVATE_KEY at path: " << ssl_private_key << " not found - exiting";
     return -1;
   }
