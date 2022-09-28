@@ -188,7 +188,7 @@ else ()
     SET(ALL_LIBS ${BB_GRPC_LIBS_STATIC} kspp_s ${EXT_LIBS})
 endif ()
 
-INSTALL(DIRECTORY ${CMAKE_SOURCE_DIR}/include/ DESTINATION include)
+INSTALL(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/ DESTINATION include)
 
 add_subdirectory(libraries)
 
